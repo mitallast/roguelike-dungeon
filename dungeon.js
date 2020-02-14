@@ -457,19 +457,16 @@
             const room_min_x = 2;
             const room_min_y = 2;
 
-            const retries = 20;
-            let last_max_x = room_min_x + room_min_w;
-            let last_max_y = room_min_y + room_min_h;
+            const retries = 200;
+            const max_corr_dist = 12;
 
             // create rooms
             for(let r = 0; r < rooms_total; r++) {
-                // console.log("last max", r, last_max_x, last_max_y);
-
                 const room_w = parseInt(Math.random() * (room_max_w - room_min_w) + room_min_w);
                 const room_h = parseInt(Math.random() * (room_max_h - room_min_h) + room_min_h);
 
-                const world_room_max_x = this.w - 2 - room_w;
-                const world_room_max_y = this.h - 2 - room_h;
+                const room_max_x = this.w - 2 - room_w;
+                const room_max_y = this.h - 2 - room_h;
 
                 const room = {
                     x: 0,
@@ -479,9 +476,6 @@
                 };
 
                 for(let t=0; t<retries; t++) {
-
-                    const room_max_x = Math.min(world_room_max_x, last_max_x + room_w + retries);
-                    const room_max_y = Math.min(world_room_max_y, last_max_y + room_h + retries);
 
                     room.x = parseInt(Math.random() * (room_max_x - room_min_x) + room_min_x);
                     room.y = parseInt(Math.random() * (room_max_y - room_min_y) + room_min_y);
@@ -522,7 +516,7 @@
                                             w: min_x_w - max_x - 4,
                                         }
                                     }
-                                    if(!this.isCorrVOverlap(rect)) {
+                                    if(rect.h < max_corr_dist && !this.isCorrVOverlap(rect)) {
                                         // console.log("has vertical", b);
                                         this.corridorsV.push(rect);
                                         connected = true;
@@ -549,7 +543,7 @@
                                             h: min_y_h - max_y - 2,
                                         };
                                     }
-                                    if(!this.isCorrHOverlap(rect)) {
+                                    if(rect.w < max_corr_dist && !this.isCorrHOverlap(rect)) {
                                         // console.log("has horizontal", b);
                                         this.corridorsH.push(rect);
                                         connected = true;
@@ -559,8 +553,6 @@
 
                             if(connected) {
                                 this.rooms.push(room);
-                                last_max_x = Math.max(last_max_x, room.x + room.w);
-                                last_max_y = Math.max(last_max_y, room.y + room.h);
                                 break;
                             }
                         }
