@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rogalike dungeon</title>
+    <style>
+        @font-face {
+            font-family: 'silkscreennormal';
+            src: url('slkscr-webfont.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        html, body, .container {
+            font-family: silkscreennormal;
+            height: 100%;
+            background-color: dimgrey;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #dungeon {
+            display: block;
+            margin: 0 auto;
+
+            font: 5px silkscreennormal;
+            background-color: white;
+            image-rendering: optimizeSpeed;             /* Older versions of FF          */
+            image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+            image-rendering: -webkit-optimize-contrast; /* Safari                        */
+            image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+            image-rendering: pixelated;                 /* Awesome future-browsers       */
+            -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rogalike dungeon</h1>
+
+        <canvas id="dungeon" width="1200" height="700"></canvas>
+    </div>
+    <script src="dungeon.js"></script>
+</body>
+</html>
