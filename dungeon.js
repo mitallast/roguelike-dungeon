@@ -46,10 +46,6 @@
 
     const tileSet = await loadTileSet();
 
-    const canvas = document.getElementById("dungeon");
-    const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = false;
-
     const tinyMonsterNames = [
         "tiny_zombie",
         "goblin",
@@ -421,8 +417,8 @@
 
     function Level(hero, l) {
         this.level = l;
-        this.w = parseInt(canvas.width / 16);
-        this.h = parseInt(canvas.height / 16);
+        this.w = 200;
+        this.h = 120;
 
         this.log = [];
         this.rooms = [];
@@ -1187,27 +1183,48 @@
         window.requestAnimationFrame(render);
     }
 
+    const canvas = document.getElementById("dungeon");
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    const buffer = document.createElement("canvas");
+    const b_ctx = buffer.getContext("2d");
+    b_ctx.imageSmoothingEnabled = false;
+
     function renderLevel() {
         const c_w = canvas.width;
         const c_h = canvas.height;
+        buffer.width = c_w;
+        buffer.height = c_h;
 
         ctx.save();
         ctx.fillStyle = "rgb(34,34,34)";
         ctx.fillRect(0, 0, c_w, c_h);
 
+        b_ctx.save();
+        b_ctx.fillStyle = "black";
+        b_ctx.fillRect(0, 0, c_w, c_h);
+        b_ctx.globalCompositeOperation = "lighter";
+
+        // render hero light
+        renderLight(c_w >> 1, c_h >> 1, 16 * scale * 6);
+
         // translate level to hero position
         if(level.hero.state === "run") {
-            const offset_x = scale * 16 * (level.hero.new_x - level.hero.x) * (level.hero.frame / level.hero.tile.numOfFrames);
-            const offset_y = scale * 16 * (level.hero.new_y - level.hero.y) * (level.hero.frame / level.hero.tile.numOfFrames);
-            const t_x = level.hero.x * 16 * scale - c_w / 2 + offset_x;
-            const t_y = level.hero.y * 16 * scale - c_h / 2 + offset_y;
+            const t_offset_x = scale * 16 * (level.hero.new_x - level.hero.x) * (level.hero.frame / level.hero.tile.numOfFrames);
+            const t_offset_y = scale * 16 * (level.hero.new_y - level.hero.y) * (level.hero.frame / level.hero.tile.numOfFrames);
+            const t_x = level.hero.x * 16 * scale + 8 - c_w / 2 + t_offset_x;
+            const t_y = level.hero.y * 16 * scale + 8 - c_h / 2 + t_offset_y;
             ctx.translate(-t_x, -t_y);
+            b_ctx.translate(-t_x, -t_y);
         } else {
-            const t_x = level.hero.x * 16 * scale - c_w / 2;
-            const t_y = level.hero.y * 16 * scale - c_h / 2;
+            const t_x = level.hero.x * 16 * scale + 8 - c_w / 2;
+            const t_y = level.hero.y * 16 * scale + 8 - c_h / 2;
             ctx.translate(-t_x, -t_y);
+            b_ctx.translate(-t_x, -t_y);
         }
 
+        // render floor, drop
         for(let l_x=0; l_x<level.w; l_x++) {
             for(let l_y=0; l_y<level.h; l_y++) {
                 const d_x = l_x * 16 * scale;
@@ -1218,6 +1235,7 @@
                 }
             }
         }
+        // render wall, monsters
         for(let l_y=0; l_y<level.h; l_y++) {
             for(let l_x=0; l_x<level.w; l_x++) {
                 const d_x = l_x * 16 * scale;
@@ -1235,6 +1253,24 @@
         }
 
         ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        ctx.globalCompositeOperation = "multiply";
+        ctx.drawImage(buffer, 0, 0);
+        ctx.restore();
+    }
+
+    function renderLight(x, y, radius) {
+        const diameter = radius << 1;
+        const box_x = x - radius;
+        const box_y = y - radius;
+
+        const grd = b_ctx.createRadialGradient(x, y, 16, x, y, radius);
+        grd.addColorStop(0.5, "rgb(255,255,255)");
+        grd.addColorStop(1, "transparent");
+        b_ctx.fillStyle = grd;
+        b_ctx.fillRect(box_x, box_y, diameter, diameter);
     }
 
     function renderHUD() {
@@ -1383,6 +1419,12 @@
     function renderTile(tileName, dx, dy) {
         const tile = tileMap[tileName];
         if(tile) {
+            if (tileName ===  "wall_fountain_mid_red_anim"
+              || tileName ===  "wall_fountain_mid_blue_anim"
+            ) {
+                renderLight(dx + 8, dy + 8, 16 * scale * 4);
+            }
+
             if (tile.isAnim && tile.numOfFrames > 1) {
                 const time = new Date().getTime();
                 let sf;
