@@ -212,6 +212,7 @@
         this.dead = false;
         this.weapon = weapon;
         this.speed = 100;
+        this.inventory = new Inventory();
         this.setAnimation("idle", now());
     }
     HeroMonster.prototype.setAnimation = function(state, time) {
@@ -281,6 +282,14 @@
     };
     HeroMonster.prototype.action = function(time) {
         this.scanDrop();
+        for(let d=0; d<10; d++) {
+            const digit = `digit${(d + 1) % 10}`;
+            if(!joystick[digit].processed) {
+                joystick[digit].processed = true;
+                this.inventory.cells[d].use(this);
+            }
+        }
+
         if(joystick.hit.triggered && !joystick.hit.processed) {
             if(level.floor[this.y][this.x] === "floor_ladder") {
                 joystick.hit.processed = true;
@@ -322,8 +331,7 @@
     HeroMonster.prototype.scanDrop = function() {
         if(level.drop[this.y][this.x]) {
             const drop = level.drop[this.y][this.x];
-            level.drop[this.y][this.x] = false;
-            drop.process(this);
+            drop.puckedUp(this);
         }
     };
     HeroMonster.prototype.scanHit = function(time) {
@@ -391,6 +399,64 @@
         this.coins = this.coins + coins;
     };
 
+    function Inventory() {
+        this.maxCells = 10;
+        this.cells = [];
+        this.init();
+    }
+    Inventory.prototype.init = function () {
+        for(let i=0; i<this.maxCells; i++) {
+            this.cells[i] = new InventoryCell(i);
+        }
+    };
+    Inventory.prototype.add = function (item) {
+        for(let i=0; i<this.cells.length; i++) {
+            if(this.cells[i].stack(item)) {
+                return true;
+            }
+        }
+        for(let i=0; i<this.cells.length; i++) {
+            if(this.cells[i].set(item)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    function InventoryCell(pos) {
+        this.maxInStack = 3;
+        this.item = false;
+        this.count = 0;
+        this.pos = pos;
+    }
+    InventoryCell.prototype.stack = function (item) {
+        if(this.item && this.item.same(item) && this.count < this.maxInStack) {
+            this.count++;
+            return true;
+        }
+        return false;
+    };
+    InventoryCell.prototype.set = function (item) {
+        if(!this.item) {
+            this.item = item;
+            this.count = 1;
+            return true;
+        }
+        return false;
+    };
+    InventoryCell.prototype.use = function (hero) {
+        if(this.item && this.count > 0) {
+            this.item.use(hero);
+            this.count--;
+            if(this.count <= 0) {
+                this.item = false;
+                this.count = 0;
+            }
+            return true;
+        }
+        return false;
+    };
+
     function Coins(x, y) {
         const maxCoins = 30;
         this.x = x;
@@ -398,7 +464,8 @@
         this.tileName = "coin_anim";
         this.coins = Math.floor(Math.random() * (maxCoins - 1)) + 1;
     }
-    Coins.prototype.process = function (hero) {
+    Coins.prototype.puckedUp = function (hero) {
+        level.drop[this.y][this.x] = false;
         hero.addCoins(this.coins);
     };
 
@@ -408,7 +475,15 @@
         this.tileName = "flask_red";
         this.health = 2;
     }
-    HealthFlask.prototype.process = function (hero) {
+    HealthFlask.prototype.puckedUp = function (hero) {
+        if(hero.inventory.add(this)) {
+            level.drop[this.y][this.x] = false;
+        }
+    };
+    HealthFlask.prototype.same = function (item) {
+        return item instanceof HealthFlask;
+    };
+    HealthFlask.prototype.use = function (hero) {
         hero.hill(this.health);
     };
 
@@ -418,7 +493,15 @@
         this.tileName = "flask_big_red";
         this.health = 5;
     }
-    HealthBigFlask.prototype.process = function (hero) {
+    HealthBigFlask.prototype.puckedUp = function (hero) {
+        if(hero.inventory.add(this)) {
+            level.drop[this.y][this.x] = false;
+        }
+    };
+    HealthBigFlask.prototype.same = function (item) {
+        return item instanceof HealthBigFlask;
+    };
+    HealthBigFlask.prototype.use = function (hero) {
         hero.hill(this.health);
     };
 
@@ -449,7 +532,7 @@
         this.tile = tileMap[this.tileName];
         this.frame = 0;
         this.numOfFrames = 4;
-        this.speed = 50;
+        this.speed = 100;
         this.distance = 1;
     }
 
@@ -489,7 +572,7 @@
     Level.prototype.generate = function () {
         const rooms_total = 1 + this.level;
         const monsters_total = 2 + this.level;
-        const drop_total = 3;
+        const drop_total = 5 + this.level;
 
         const room_min_w = 5;
         const room_min_h = 3;
@@ -643,13 +726,13 @@
         }
     };
     Level.prototype.randomDrop = function randomDrop(x, y) {
-        if(Math.random() < 0.6) {
+        if(Math.random() < 0.5) {
             this.drop[y][x] = new Coins(x, y);
         }
         else if(Math.random() < 0.3) {
             this.drop[y][x] = new HealthFlask(x, y);
         }
-        else if(Math.random() < 0.1) {
+        else if(Math.random() < 0.3) {
             this.drop[y][x] = new HealthBigFlask(x, y);
         }
     };
@@ -1182,6 +1265,17 @@
         this.moveDown = new KeyBind('KeyS');
         this.moveRight = new KeyBind('KeyD');
         this.hit = new KeyBind('KeyF');
+
+        this.digit1 = new KeyBind('Digit1');
+        this.digit2 = new KeyBind('Digit2');
+        this.digit3 = new KeyBind('Digit3');
+        this.digit4 = new KeyBind('Digit4');
+        this.digit5 = new KeyBind('Digit5');
+        this.digit6 = new KeyBind('Digit6');
+        this.digit7 = new KeyBind('Digit7');
+        this.digit8 = new KeyBind('Digit8');
+        this.digit9 = new KeyBind('Digit9');
+        this.digit0 = new KeyBind('Digit0');
         this.init();
     }
     Joystick.prototype.keydown = function (e) {
@@ -1190,6 +1284,16 @@
         this.moveDown.keydown(e);
         this.moveRight.keydown(e);
         this.hit.keydown(e);
+        this.digit1.keydown(e);
+        this.digit2.keydown(e);
+        this.digit3.keydown(e);
+        this.digit4.keydown(e);
+        this.digit5.keydown(e);
+        this.digit6.keydown(e);
+        this.digit7.keydown(e);
+        this.digit8.keydown(e);
+        this.digit9.keydown(e);
+        this.digit0.keydown(e);
     };
     Joystick.prototype.keyup = function (e) {
         this.moveUp.keyup(e);
@@ -1197,16 +1301,21 @@
         this.moveDown.keyup(e);
         this.moveRight.keyup(e);
         this.hit.keyup(e);
+        this.digit1.keyup(e);
+        this.digit2.keyup(e);
+        this.digit3.keyup(e);
+        this.digit4.keyup(e);
+        this.digit5.keyup(e);
+        this.digit6.keyup(e);
+        this.digit7.keyup(e);
+        this.digit8.keyup(e);
+        this.digit9.keyup(e);
+        this.digit0.keyup(e);
     };
     Joystick.prototype.init = function () {
         window.addEventListener("keydown", this.keydown.bind(this));
         window.addEventListener("keyup", this.keyup.bind(this));
     };
-
-    const joystick = new Joystick();
-    const hero_weapon = new Weapon("weapon_rusty_sword");
-    const hero = new HeroMonster(0, 0, "knight_f", hero_weapon);
-    let level = new Level(hero, 1);
 
     const canvas = document.getElementById("dungeon");
     const ctx = canvas.getContext("2d");
@@ -1215,6 +1324,11 @@
     const buffer = document.createElement("canvas");
     const b_ctx = buffer.getContext("2d");
     b_ctx.imageSmoothingEnabled = false;
+
+    const joystick = new Joystick();
+    const hero_weapon = new Weapon("weapon_rusty_sword");
+    const hero = new HeroMonster(0, 0, "knight_f", hero_weapon);
+    let level = new Level(hero, 1);
 
     const scale = 2;
     function render() {
@@ -1330,9 +1444,12 @@
     }
 
     function renderHUD() {
-        const c_w = canvas.width;
-        const c_h = canvas.height;
-
+        renderHealth();
+        renderLevelTitle();
+        renderYouDead();
+        renderInventory();
+    }
+    function renderHealth() {
         const border = 4;
         const height = 20;
         const point_w = 10;
@@ -1360,6 +1477,10 @@
         ctx.fillText(`$${hero.coins}`, 0, 50);
 
         ctx.restore();
+    }
+    function renderLevelTitle() {
+        const c_w = canvas.width;
+        const c_h = canvas.height;
 
         // render HUD - level
         ctx.save();
@@ -1381,8 +1502,11 @@
         }
 
         ctx.restore();
+    }
+    function renderYouDead() {
+        const c_w = canvas.width;
+        const c_h = canvas.height;
 
-        // render HUD - YOU DEAD
         if(level.hero.dead) {
             ctx.save();
 
@@ -1397,6 +1521,74 @@
             ctx.fillText("YOU DIED", 0, 0);
             ctx.restore();
         }
+    }
+    function renderInventory() {
+        const c_w = canvas.width;
+        const c_h = canvas.height;
+
+        const cells = level.hero.inventory.cells;
+        const cell_size = 16;
+        const grid_w = cells.length;
+        const grid_spacing = 2;
+
+        const inv_w = scale * (grid_w * (cell_size + grid_spacing) + grid_spacing);
+        const inv_h = scale * (cell_size + grid_spacing + grid_spacing);
+
+        ctx.save();
+        ctx.translate((c_w >> 1) - (inv_w >> 1), c_h - inv_h - 40);
+
+        // background
+        ctx.fillStyle = "rgb(100,100,100)";
+        ctx.fillRect(0, 0, inv_w, inv_h);
+
+        ctx.translate(grid_spacing * scale, grid_spacing * scale); // grid spacing
+
+        for (let g_x = 0; g_x < grid_w; g_x++) {
+            const c_x = scale * (g_x * (cell_size + grid_spacing));
+            const c_y = 0;
+
+            ctx.fillStyle = "rgb(70,70,70)";
+            ctx.fillRect(c_x, 0, cell_size * scale, cell_size * scale);
+            const cell = cells[g_x];
+            if(cell.item) {
+                const tile = tileMap[cell.item.tileName];
+                if (tile) {
+                    // @todo fix dw/dh for swords
+                    if (tile.isAnim && tile.numOfFrames > 1) {
+                        const time = now();
+                        let sf;
+                        if (tile.numOfFrames === 3) {
+                            sf = parseInt(time / 100) % tile.numOfFrames;
+                        } else if (tile.numOfFrames === 4) {
+                            sf = (time >> 2) % tile.numOfFrames;
+                        } else {
+                            sf = (time >> 2) % tile.numOfFrames;
+                        }
+                        const sw = tile.w;
+                        const sh = tile.h;
+                        const sx = tile.x + sw * sf;
+                        const sy = tile.y;
+                        const dw = sw * scale;
+                        const dh = sh * scale;
+                        ctx.drawImage(tileSet, sx, sy, sw, sh, c_x, c_y, dw, dh);
+                    } else {
+                        const sx = tile.x;
+                        const sy = tile.y;
+                        const sw = tile.w;
+                        const sh = tile.h;
+                        const dw = sw * scale;
+                        const dh = sh * scale;
+                        ctx.drawImage(tileSet, sx, sy, sw, sh, c_x, c_y, dw, dh);
+                    }
+                }
+                ctx.textAlign = "end";
+                ctx.textBaseline = "top";
+                ctx.font = "10px silkscreennormal";
+                ctx.fillStyle = "rgb(255,255,255)";
+                ctx.fillText(cell.count, c_x + (cell_size * scale), 0, cell_size * scale);
+            }
+        }
+        ctx.restore();
     }
 
     function renderMonster(monster, dx, dy, time) {
