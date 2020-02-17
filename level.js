@@ -1,6 +1,56 @@
 import {TinyMonster, tinyMonsterNames} from "./tiny.monster.js";
 import {Coins, HealthBigFlask, HealthFlask} from "./drop.js";
 
+const x_dist = 2;
+const y_dist = 3;
+
+export class Rect {
+  constructor(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+  }
+
+  expand() {
+    const a = this;
+    return new Rect(
+      a.x - x_dist,
+      a.y - y_dist,
+      a.w + x_dist + x_dist,
+      a.h + y_dist + y_dist
+    );
+  }
+
+  expandV() {
+    const a = this;
+    return new Rect(
+      a.x - x_dist,
+      a.y,
+      a.w + x_dist + x_dist,
+      a.h
+    );
+  }
+
+  expandH() {
+    const a = this;
+    return new Rect(
+      a.x,
+      a.y - y_dist,
+      a.w,
+      a.h + y_dist + y_dist
+    );
+  }
+
+  isOverlap(b) {
+    const a = this;
+    return a.x < b.x + b.w
+      && a.x + a.w > b.x
+      && a.y < b.y + b.h
+      && a.y + a.h > b.y;
+  }
+}
+
 export class Level {
   constructor(rng, registry, scene, hero, l, time) {
     this.rng = rng;
@@ -40,7 +90,7 @@ export class Level {
   };
   generate(time) {
     const rooms_total = 1 + this.level;
-    const monsters_total = 2 + this.level;
+    const monsters_total = 3 + this.level;
     const drop_total = 5 + this.level;
 
     // create rooms
@@ -102,17 +152,14 @@ export class Level {
       const room_w = this.rng.nextRange(room_min_w, room_max_w);
       const room_h = this.rng.nextRange(room_min_h, room_max_h);
 
-      const room_max_x = this.w - 2 - room_w;
-      const room_max_y = this.h - 2 - room_h;
+      const room = new Rect(
+        this.rng.nextRange(room_min_x, this.w - 2 - room_w),
+        this.rng.nextRange(room_min_y, this.h - 2 - room_h),
+        room_w,
+        room_h
+      );
 
-      const room = {
-        x: this.rng.nextRange(room_min_x, room_max_x),
-        y: this.rng.nextRange(room_min_y, room_max_y),
-        w: room_w,
-        h: room_h
-      };
-
-      if (!this.isRoomOverlap(room)) {
+      if (!this.isOverlap(room.expand())) {
         // free position found
         if (this.rooms.length === 0) {
           this.rooms.push(room);
@@ -121,8 +168,6 @@ export class Level {
           // find connection
           const a = room;
           let connected = false;
-
-          // console.log("try find corridor", a);
 
           // find closest room
           for (let i = 0; i < this.rooms.length; i++) {
@@ -134,22 +179,21 @@ export class Level {
             if (max_x + 5 <= min_x_w) {
               let rect;
               if (a.y + a.h < b.y) {
-                rect = {
-                  y: a.y + a.h,
-                  x: max_x + 2,
-                  h: b.y - a.y - a.h,
-                  w: min_x_w - max_x - 4,
-                }
+                rect = new Rect(
+                  max_x + 2,
+                  a.y + a.h,
+                  min_x_w - max_x - 4,
+                  b.y - a.y - a.h
+                );
               } else {
-                rect = {
-                  y: b.y + b.h,
-                  x: max_x + 2,
-                  h: a.y - b.y - b.h,
-                  w: min_x_w - max_x - 4,
-                }
+                rect = new Rect(
+                  max_x + 2,
+                  b.y + b.h,
+                  min_x_w - max_x - 4,
+                  a.y - b.y - b.h
+                );
               }
-              if (rect.h < max_corr_dist && !this.isCorrVOverlap(rect)) {
-                // console.log("has vertical", b);
+              if (rect.h < max_corr_dist && !this.isOverlap(rect.expandH())) {
                 this.corridorsV.push(rect);
                 connected = true;
               }
@@ -161,22 +205,21 @@ export class Level {
             if (max_y + 3 <= min_y_h) {
               let rect;
               if (a.x + a.w < b.x) {
-                rect = {
-                  x: a.x + a.w,
-                  y: max_y + 1,
-                  w: b.x - a.x - a.w,
-                  h: min_y_h - max_y - 2,
-                };
+                rect = new Rect(
+                  a.x + a.w,
+                  max_y + 1,
+                  b.x - a.x - a.w,
+                  min_y_h - max_y - 2
+                );
               } else {
-                rect = {
-                  x: b.x + b.w,
-                  y: max_y + 1,
-                  w: a.x - b.x - b.w,
-                  h: min_y_h - max_y - 2,
-                };
+                rect = new Rect(
+                  b.x + b.w,
+                  max_y + 1,
+                  a.x - b.x - b.w,
+                  min_y_h - max_y - 2,
+                );
               }
-              if (rect.w < max_corr_dist && !this.isCorrHOverlap(rect)) {
-                // console.log("has horizontal", b);
+              if (rect.w < max_corr_dist && !this.isOverlap(rect.expandH())) {
                 this.corridorsH.push(rect);
                 connected = true;
               }
@@ -191,6 +234,12 @@ export class Level {
       }
     }
   }
+  isOverlap(a) {
+    const f = a.isOverlap.bind(a);
+    return this.rooms.some(f) ||
+      this.corridorsV.some(f) ||
+      this.corridorsH.some(f);
+  };
   randomDrop(x, y) {
     if (this.rng.nextFloat() < 0.5) {
       this.drop[y][x] = new Coins(this.rng);
@@ -199,96 +248,6 @@ export class Level {
     } else if (this.rng.nextFloat() < 0.3) {
       this.drop[y][x] = new HealthBigFlask();
     }
-  };
-  isRoomOverlap(a) {
-    const min_dist = 5;
-    const a_dist = {
-      x: a.x - min_dist,
-      y: a.y - min_dist,
-      w: a.w + min_dist + min_dist,
-      h: a.h + min_dist + min_dist
-    };
-    for (let i = 0; i < this.rooms.length; i++) {
-      let b = this.rooms[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsV.length; i++) {
-      let b = this.corridorsV[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsH.length; i++) {
-      let b = this.corridorsH[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    return false;
-  };
-  isCorrHOverlap(a) {
-    const min_dist = 3;
-    const a_dist = {
-      x: a.x,
-      y: a.y - min_dist,
-      w: a.w,
-      h: a.h + min_dist + min_dist
-    };
-    for (let i = 0; i < this.rooms.length; i++) {
-      let b = this.rooms[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsV.length; i++) {
-      let b = this.corridorsV[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsH.length; i++) {
-      let b = this.corridorsH[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    return false;
-  };
-  isCorrVOverlap(a) {
-    const min_dist = 2;
-    const a_dist = {
-      x: a.x - min_dist,
-      y: a.y,
-      w: a.w + min_dist + min_dist,
-      h: a.h
-    };
-    for (let i = 0; i < this.rooms.length; i++) {
-      let b = this.rooms[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsV.length; i++) {
-      let b = this.corridorsV[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    for (let i = 0; i < this.corridorsH.length; i++) {
-      let b = this.corridorsH[i];
-      if (this.isRectOverlapWith(a_dist, b)) {
-        return true;
-      }
-    }
-    return false;
-  };
-  isRectOverlapWith(a, b) {
-    return a.x < b.x + b.w
-      && a.x + a.w > b.x
-      && a.y < b.y + b.h
-      && a.y + a.h > b.y;
   };
   fill() {
     this.rooms.forEach(r => this.fillRoom(r.x, r.y, r.w, r.h));
