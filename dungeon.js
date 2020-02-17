@@ -281,7 +281,7 @@
     };
     HeroMonster.prototype.action = function(time) {
         this.scanDrop();
-        if(!joystick.hit.processed) {
+        if(joystick.hit.triggered || !joystick.hit.processed) {
             joystick.hit.processed = true;
             if(level.floor[this.y][this.x] === "floor_ladder") {
                 level.exit();
