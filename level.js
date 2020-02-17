@@ -49,7 +49,7 @@ export class Level {
     const room_min_x = 2;
     const room_min_y = 2;
 
-    const retries = 200;
+    const retries = 500;
     const max_corr_dist = 12;
 
     // create rooms
