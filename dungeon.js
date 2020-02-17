@@ -93,7 +93,7 @@
         }
     };
     TinyMonster.prototype.animate = function(time) {
-        this.frame = Math.ceil((time - this.start) / this.speed);
+        this.frame = Math.floor((time - this.start) / this.speed);
         if(this.frame >= this.tile.numOfFrames) {
             if(this.state === "run") {
                 // console.log("finish run animation");
@@ -246,16 +246,15 @@
     HeroMonster.prototype.animate = function(time) {
         switch (this.state) {
             case "idle":
-                this.frame = Math.ceil((time - this.start) / this.speed);
-                if(this.frame >= this.tile.numOfFrames) {
-                    this.setAnimation("idle", time);
-                }
+                this.frame = Math.floor((time - this.start) / this.speed);
                 if(!this.action(time)) {
-                    this.setAnimation("idle", time);
+                    if(this.frame >= this.tile.numOfFrames) {
+                        this.setAnimation("idle", time);
+                    }
                 }
                 break;
             case "run":
-                this.frame = Math.ceil((time - this.start) / this.speed);
+                this.frame = Math.floor((time - this.start) / this.speed);
                 if(this.frame >= this.tile.numOfFrames) {
                     // this.frame = this.frame % this.tile.numOfFrames;
                     level.monsters[this.y][this.x] = false;
@@ -269,7 +268,7 @@
                 }
                 break;
             case "hit":
-                this.weapon.frame = Math.ceil((time - this.start) / this.weapon.speed);
+                this.weapon.frame = Math.floor((time - this.start) / this.weapon.speed);
                 if(this.weapon.frame >= this.weapon.numOfFrames) {
                     this.scanHit(time);
                     this.scanDrop();
@@ -1376,7 +1375,7 @@
         if(level.hero.state === "run") {
             const start = level.hero.start;
             const speed = level.hero.speed;
-            const numOfFrames = (level.hero.tile.numOfFrames - 1);
+            const numOfFrames = level.hero.tile.numOfFrames;
             const maxTime = speed * numOfFrames;
             const delta = Math.min(maxTime, time - start) / maxTime;
 
@@ -1608,7 +1607,7 @@
             if(monster.state === "run") {
                 const start = monster.start;
                 const speed = monster.speed;
-                const numOfFrames = (monster.tile.numOfFrames - 1);
+                const numOfFrames = monster.tile.numOfFrames;
                 const maxTime = speed * numOfFrames;
                 const delta = Math.min(maxTime, time - start) / maxTime;
 
