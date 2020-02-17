@@ -1,4 +1,4 @@
-# Rogalike dungeon game
+# Roguelike dungeon game
 
 ## Credits
 
