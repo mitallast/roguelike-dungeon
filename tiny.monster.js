@@ -10,7 +10,8 @@ export const tinyMonsterNames = [
 ];
 
 export class TinyMonster {
-  constructor(registry, level, x, y, name, time) {
+  constructor(rng, registry, level, x, y, name, time) {
+    this.rng = rng;
     this.registry = registry;
     this.level = level;
     this.x = x;
@@ -89,7 +90,7 @@ export class TinyMonster {
           }
         }
 
-        if (dist_x <= 1 && dist_y <= 1 && Math.random() < this.luck) {
+        if (dist_x <= 1 && dist_y <= 1 && this.rng.nextFloat() < this.luck) {
           this.level.hero.hitDamage(this.damage, this.name, time);
           return;
         }
@@ -97,9 +98,9 @@ export class TinyMonster {
 
       // random move ?
       const random_move_percent = 0.1;
-      if (Math.random() < random_move_percent) {
-        const move_x = Math.floor(Math.random() * 3 - 1);
-        const move_y = Math.floor(Math.random() * 3 - 1);
+      if (this.rng.nextFloat() < random_move_percent) {
+        const move_x = this.rng.nextRange(-1, 1);
+        const move_y = this.rng.nextRange(-1, 1);
         // console.log("random move", move_x, move_y);
         if (this.move(move_x, move_y, time)) {
           return;
@@ -136,7 +137,7 @@ export class TinyMonster {
       this.level.monsters[this.y][this.x] = false;
       this.level.monsters[this.new_y][this.new_x] = false;
       this.level.monsterList = this.level.monsterList.filter(s => s !== this);
-      if (Math.random() < this.luck) {
+      if (this.rng.nextFloat() < this.luck) {
         this.level.randomDrop(this.x, this.y);
       }
     }

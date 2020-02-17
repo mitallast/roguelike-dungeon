@@ -2,7 +2,8 @@ import {TinyMonster, tinyMonsterNames} from "./tiny.monster.js";
 import {Coins, HealthBigFlask, HealthFlask} from "./drop.js";
 
 export class Level {
-  constructor(registry, scene, hero, l, time) {
+  constructor(rng, registry, scene, hero, l, time) {
+    this.rng = rng;
     this.registry = registry;
     this.scene = scene;
     this.level = l;
@@ -42,127 +43,21 @@ export class Level {
     const monsters_total = 2 + this.level;
     const drop_total = 5 + this.level;
 
-    const room_min_w = 5;
-    const room_min_h = 3;
-    const room_max_w = 15;
-    const room_max_h = 10;
-    const room_min_x = 2;
-    const room_min_y = 2;
-
-    const retries = 500;
-    const max_corr_dist = 12;
-
     // create rooms
     for (let r = 0; r < rooms_total; r++) {
-      const room_w = Math.floor(Math.random() * (room_max_w - room_min_w) + room_min_w);
-      const room_h = Math.floor(Math.random() * (room_max_h - room_min_h) + room_min_h);
-
-      const room_max_x = this.w - 2 - room_w;
-      const room_max_y = this.h - 2 - room_h;
-
-      const room = {
-        x: 0,
-        y: 0,
-        w: room_w,
-        h: room_h
-      };
-
-      for (let t = 0; t < retries; t++) {
-
-        room.x = Math.floor(Math.random() * (room_max_x - room_min_x) + room_min_x);
-        room.y = Math.floor(Math.random() * (room_max_y - room_min_y) + room_min_y);
-
-        if (!this.isRoomOverlap(room)) {
-          // free position found
-          if (this.rooms.length === 0) {
-            this.rooms.push(room);
-            break;
-          } else {
-            // find connection
-            const a = room;
-            let connected = false;
-
-            // console.log("try find corridor", a);
-
-            // find closest room
-            for (let i = 0; i < this.rooms.length; i++) {
-              let b = this.rooms[i];
-
-              // try calculate horizontal distance
-              const max_x = Math.max(a.x, b.x);
-              const min_x_w = Math.min(a.x + a.w, b.x + b.w);
-              if (max_x + 5 <= min_x_w) {
-                let rect;
-                if (a.y + a.h < b.y) {
-                  rect = {
-                    y: a.y + a.h,
-                    x: max_x + 2,
-                    h: b.y - a.y - a.h,
-                    w: min_x_w - max_x - 4,
-                  }
-                } else {
-                  rect = {
-                    y: b.y + b.h,
-                    x: max_x + 2,
-                    h: a.y - b.y - b.h,
-                    w: min_x_w - max_x - 4,
-                  }
-                }
-                if (rect.h < max_corr_dist && !this.isCorrVOverlap(rect)) {
-                  // console.log("has vertical", b);
-                  this.corridorsV.push(rect);
-                  connected = true;
-                }
-              }
-
-              // try calculate vertical distance
-              const max_y = Math.max(a.y, b.y);
-              const min_y_h = Math.min(a.y + a.h, b.y + b.h);
-              if (max_y + 3 <= min_y_h) {
-                let rect;
-                if (a.x + a.w < b.x) {
-                  rect = {
-                    x: a.x + a.w,
-                    y: max_y + 1,
-                    w: b.x - a.x - a.w,
-                    h: min_y_h - max_y - 2,
-                  };
-                } else {
-                  rect = {
-                    x: b.x + b.w,
-                    y: max_y + 1,
-                    w: a.x - b.x - b.w,
-                    h: min_y_h - max_y - 2,
-                  };
-                }
-                if (rect.w < max_corr_dist && !this.isCorrHOverlap(rect)) {
-                  // console.log("has horizontal", b);
-                  this.corridorsH.push(rect);
-                  connected = true;
-                }
-              }
-            }
-
-            if (connected) {
-              this.rooms.push(room);
-              break;
-            }
-          }
-        }
-      }
+      this.generateRoom();
     }
 
     // create monsters
     for (let m = 0; m < monsters_total; m++) {
-      const r = Math.floor(Math.random() * (this.rooms.length - 2)) + 1;
+      const r = this.rng.nextRange(1, this.rooms.length);
       const room = this.rooms[r];
       for (let t = 0; t < 10; t++) {
-        const x = Math.floor(Math.random() * room.w) + room.x;
-        const y = Math.floor(Math.random() * room.h) + room.y;
+        const x = room.x + this.rng.nextRange(0, room.w);
+        const y = room.y + this.rng.nextRange(0, room.h);
         if (!this.monsters[y][x]) {
-          const n = Math.floor(Math.random() * tinyMonsterNames.length);
-          const name = tinyMonsterNames[n];
-          const monster = new TinyMonster(this.registry, this, x, y, name, time);
+          const name = this.rng.choice(tinyMonsterNames);
+          const monster = new TinyMonster(this.rng, this.registry, this, x, y, name, time);
           this.monsterList.push(monster);
           this.monsters[y][x] = monster;
           break;
@@ -172,11 +67,10 @@ export class Level {
 
     // create drop
     for (let d = 0; d < drop_total; d++) {
-      const r = Math.floor(Math.random() * this.rooms.length);
-      const room = this.rooms[r];
+      const room = this.rng.choice(this.rooms);
       for (let t = 0; t < 10; t++) {
-        const x = Math.floor(Math.random() * room.w) + room.x;
-        const y = Math.floor(Math.random() * room.h) + room.y;
+        const x = room.x + this.rng.nextRange(0, room.w);
+        const y = room.y + this.rng.nextRange(0, room.h);
         if (!this.drop[y][x]) {
           this.randomDrop(x, y);
           break;
@@ -194,12 +88,115 @@ export class Level {
       this.monsters[hero_y][hero_x] = this.hero;
     }
   };
+  generateRoom() {
+    const room_min_w = 5;
+    const room_min_h = 3;
+    const room_max_w = 15;
+    const room_max_h = 10;
+    const room_min_x = 2;
+    const room_min_y = 2;
+
+    const max_corr_dist = 12;
+
+    while (true) {
+      const room_w = this.rng.nextRange(room_min_w, room_max_w);
+      const room_h = this.rng.nextRange(room_min_h, room_max_h);
+
+      const room_max_x = this.w - 2 - room_w;
+      const room_max_y = this.h - 2 - room_h;
+
+      const room = {
+        x: this.rng.nextRange(room_min_x, room_max_x),
+        y: this.rng.nextRange(room_min_y, room_max_y),
+        w: room_w,
+        h: room_h
+      };
+
+      if (!this.isRoomOverlap(room)) {
+        // free position found
+        if (this.rooms.length === 0) {
+          this.rooms.push(room);
+          break;
+        } else {
+          // find connection
+          const a = room;
+          let connected = false;
+
+          // console.log("try find corridor", a);
+
+          // find closest room
+          for (let i = 0; i < this.rooms.length; i++) {
+            let b = this.rooms[i];
+
+            // try calculate horizontal distance
+            const max_x = Math.max(a.x, b.x);
+            const min_x_w = Math.min(a.x + a.w, b.x + b.w);
+            if (max_x + 5 <= min_x_w) {
+              let rect;
+              if (a.y + a.h < b.y) {
+                rect = {
+                  y: a.y + a.h,
+                  x: max_x + 2,
+                  h: b.y - a.y - a.h,
+                  w: min_x_w - max_x - 4,
+                }
+              } else {
+                rect = {
+                  y: b.y + b.h,
+                  x: max_x + 2,
+                  h: a.y - b.y - b.h,
+                  w: min_x_w - max_x - 4,
+                }
+              }
+              if (rect.h < max_corr_dist && !this.isCorrVOverlap(rect)) {
+                // console.log("has vertical", b);
+                this.corridorsV.push(rect);
+                connected = true;
+              }
+            }
+
+            // try calculate vertical distance
+            const max_y = Math.max(a.y, b.y);
+            const min_y_h = Math.min(a.y + a.h, b.y + b.h);
+            if (max_y + 3 <= min_y_h) {
+              let rect;
+              if (a.x + a.w < b.x) {
+                rect = {
+                  x: a.x + a.w,
+                  y: max_y + 1,
+                  w: b.x - a.x - a.w,
+                  h: min_y_h - max_y - 2,
+                };
+              } else {
+                rect = {
+                  x: b.x + b.w,
+                  y: max_y + 1,
+                  w: a.x - b.x - b.w,
+                  h: min_y_h - max_y - 2,
+                };
+              }
+              if (rect.w < max_corr_dist && !this.isCorrHOverlap(rect)) {
+                // console.log("has horizontal", b);
+                this.corridorsH.push(rect);
+                connected = true;
+              }
+            }
+          }
+
+          if (connected) {
+            this.rooms.push(room);
+            break;
+          }
+        }
+      }
+    }
+  }
   randomDrop(x, y) {
-    if (Math.random() < 0.5) {
-      this.drop[y][x] = new Coins();
-    } else if (Math.random() < 0.3) {
+    if (this.rng.nextFloat() < 0.5) {
+      this.drop[y][x] = new Coins(this.rng);
+    } else if (this.rng.nextFloat() < 0.3) {
       this.drop[y][x] = new HealthFlask();
-    } else if (Math.random() < 0.3) {
+    } else if (this.rng.nextFloat() < 0.3) {
       this.drop[y][x] = new HealthBigFlask();
     }
   };
@@ -613,9 +610,8 @@ export class Level {
     const percent = 0.2;
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
-        if (this.floor[y][x] && Math.random() < percent) {
-          const i = Math.floor(Math.random() * replacements.length);
-          this.floor[y][x] = replacements[i];
+        if (this.floor[y][x] && this.rng.nextFloat() < percent) {
+          this.floor[y][x] = this.rng.choice(replacements);
         }
       }
     }
@@ -651,7 +647,7 @@ export class Level {
         if (this.wall[y][x]) {
           switch (this.wall[y][x]) {
             case "wall_mid":
-              if (Math.random() < percent) {
+              if (this.rng.nextFloat() < percent) {
                 const is_top = !!this.floor[y + 1][x];
                 let replacements;
                 if (is_top) {
@@ -659,8 +655,7 @@ export class Level {
                 } else {
                   replacements = wall_mid_bottom_replaces;
                 }
-                const i = Math.floor(Math.random() * replacements.length);
-                const replacement = replacements[i];
+                const replacement = this.rng.choice(replacements);
                 switch (replacement) {
                   case "wall_goo":
                     this.wall[y][x] = "wall_goo";
@@ -691,7 +686,7 @@ export class Level {
     }
   };
   exit(time) {
-    this.scene.setLevel(new Level(this.registry, this.scene, this.hero, this.level + 1, time))
+    this.scene.setLevel(new Level(this.rng, this.registry, this.scene, this.hero, this.level + 1, time))
   };
   animate(time) {
     this.monsterList.forEach(m => m.animate(time));

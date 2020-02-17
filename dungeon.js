@@ -3,6 +3,7 @@ import {TileRegistry} from "./tilemap.js";
 import {HeroMonster, Weapon} from "./hero.js";
 import {Level} from "./level.js";
 import {Scene} from "./scene.js";
+import {RNG} from "./rng.js";
 
 (async function () {
 
@@ -20,11 +21,12 @@ import {Scene} from "./scene.js";
     b_ctx.imageSmoothingEnabled = false;
 
     const start = new Date().getTime();
+    const rng = new RNG();
     const joystick = new Joystick();
     const hero_weapon = new Weapon(registry,"weapon_rusty_sword");
     const hero = new HeroMonster(registry, joystick,0, 0, "knight_f", hero_weapon, start);
     const scene = new Scene();
-    scene.setLevel(new Level(registry, scene, hero, 1, start));
+    scene.setLevel(new Level(rng, registry, scene, hero, 1, start));
 
     const scale = 2;
     function render() {

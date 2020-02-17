@@ -1,8 +1,7 @@
 export class Coins {
-  constructor() {
-    const maxCoins = 30;
+  constructor(rng) {
     this.tileName = "coin_anim";
-    this.coins = Math.floor(Math.random() * (maxCoins - 1)) + 1;
+    this.coins = rng.nextRange(1, 30)
   }
 
   pickedUp(hero) {
