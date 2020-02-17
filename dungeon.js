@@ -236,6 +236,7 @@
                     this.tileName = this.name + "_hit_anim";
                     this.tile = tileMap[this.tileName];
                     this.frame = 0;
+                    this.weapon.frame = 0;
                     this.start = time;
                     break;
             }
@@ -245,21 +246,25 @@
         switch (this.state) {
             case "idle":
                 this.frame = Math.ceil((time - this.start) / this.speed);
-                if(this.frame > this.tile.numOfFrames) {
-                    this.scanDrop();
+                if(this.frame >= this.tile.numOfFrames) {
+                    this.setAnimation("idle", time);
+                }
+                if(!this.action(time)) {
                     this.setAnimation("idle", time);
                 }
                 break;
             case "run":
                 this.frame = Math.ceil((time - this.start) / this.speed);
-                if(this.frame > this.tile.numOfFrames) {
+                if(this.frame >= this.tile.numOfFrames) {
                     // this.frame = this.frame % this.tile.numOfFrames;
                     level.monsters[this.y][this.x] = false;
                     level.monsters[this.new_y][this.new_x] = this;
                     this.x = this.new_x;
                     this.y = this.new_y;
                     this.scanDrop();
-                    this.setAnimation("idle", time);
+                    if(!this.action(time)) {
+                        this.setAnimation("idle", time);
+                    }
                 }
                 break;
             case "hit":
@@ -267,10 +272,52 @@
                 if(this.weapon.frame >= this.weapon.numOfFrames) {
                     this.scanHit(time);
                     this.scanDrop();
-                    this.setAnimation("idle", time);
+                    if(!this.action(time)) {
+                        this.setAnimation("idle", time);
+                    }
                 }
                 break;
         }
+    };
+    HeroMonster.prototype.action = function(time) {
+        this.scanDrop();
+        if(!joystick.hit.processed) {
+            joystick.hit.processed = true;
+            if(level.floor[this.y][this.x] === "floor_ladder") {
+                level.exit();
+                return true;
+            } else {
+                this.setAnimation("hit", time);
+                return true;
+            }
+        }
+        if(joystick.moveUp.triggered || !joystick.moveUp.processed) {
+            joystick.moveUp.processed = true;
+            if(this.move(0, -1, time)) {
+                return true;
+            }
+        }
+        if(joystick.moveDown.triggered || !joystick.moveDown.processed) {
+            joystick.moveDown.processed = true;
+            if(this.move(0, 1, time)) {
+                return true;
+            }
+        }
+        if(joystick.moveLeft.triggered || !joystick.moveLeft.processed) {
+            joystick.moveLeft.processed = true;
+            this.is_left = true;
+            if(this.move(-1, 0, time)) {
+                return true;
+            }
+        }
+        if(joystick.moveRight.triggered || !joystick.moveRight.processed) {
+            joystick.moveRight.processed = true;
+            this.is_left = false;
+            if(this.move(1, 0, time)) {
+                return true;
+            }
+        }
+        return false;
     };
     HeroMonster.prototype.scanDrop = function() {
         if(level.drop[this.y][this.x]) {
@@ -300,20 +347,6 @@
             }
         }
     };
-    HeroMonster.prototype.moveUp = function (time) {
-        this.move(0, -1, time);
-    };
-    HeroMonster.prototype.moveLeft = function (time) {
-        this.is_left = true;
-        this.move(-1, 0, time);
-    };
-    HeroMonster.prototype.moveDown = function (time) {
-        this.move(0, 1, time);
-    };
-    HeroMonster.prototype.moveRight = function (time) {
-        this.is_left = false;
-        this.move(1, 0, time);
-    };
     HeroMonster.prototype.move = function (d_x, d_y, time) {
         if(!this.dead && this.state === "idle") {
             const new_x = this.x + d_x;
@@ -330,23 +363,15 @@
             this.new_x = new_x;
             this.new_y = new_y;
             this.setAnimation("run", time);
+            return true;
         }
+        return false;
     };
     HeroMonster.prototype.resetPosition = function(x, y) {
         this.x = x;
         this.y = y;
         this.new_x = x;
         this.new_y = y;
-    };
-    HeroMonster.prototype.hit = function (time) {
-        if(!this.dead && this.state === "idle") {
-            if(level.floor[this.y][this.x] === "floor_ladder") {
-                level.exit();
-                return;
-            }
-
-            this.setAnimation("hit", time);
-        }
     };
     HeroMonster.prototype.hitDamage = function (damage, name, time) {
         if(!this.dead) {
@@ -424,7 +449,7 @@
         this.tile = tileMap[this.tileName];
         this.frame = 0;
         this.numOfFrames = 4;
-        this.speed = 30;
+        this.speed = 50;
         this.distance = 1;
     }
 
@@ -1126,35 +1151,62 @@
         this.hero.animate(time);
     };
 
-    const hero_weapon = new Weapon("weapon_rusty_sword");
+    function KeyBind(code) {
+        this.code = code;
+        this.state = 'await';
+        this.triggered = false;
+        this.processed = true;
+    }
+    KeyBind.prototype.keydown = function (e) {
+        if(e.code === this.code) {
+            e.preventDefault();
+            if (this.state === 'await') {
+                this.triggered = true;
+                this.processed = false;
+                this.state = 'pressed';
+            }
+        }
+    };
+    KeyBind.prototype.keyup = function (e) {
+        if(e.code === this.code) {
+            e.preventDefault();
+            if (this.state === "pressed") {
+                this.triggered = false;
+                this.state = 'await';
+            }
+        }
+    };
+    function Joystick() {
+        this.moveUp = new KeyBind('KeyW');
+        this.moveLeft = new KeyBind('KeyA');
+        this.moveDown = new KeyBind('KeyS');
+        this.moveRight = new KeyBind('KeyD');
+        this.hit = new KeyBind('KeyF');
+        this.init();
+    }
+    Joystick.prototype.keydown = function (e) {
+        this.moveUp.keydown(e);
+        this.moveLeft.keydown(e);
+        this.moveDown.keydown(e);
+        this.moveRight.keydown(e);
+        this.hit.keydown(e);
+    };
+    Joystick.prototype.keyup = function (e) {
+        this.moveUp.keyup(e);
+        this.moveLeft.keyup(e);
+        this.moveDown.keyup(e);
+        this.moveRight.keyup(e);
+        this.hit.keyup(e);
+    };
+    Joystick.prototype.init = function () {
+        window.addEventListener("keydown", this.keydown.bind(this));
+        window.addEventListener("keyup", this.keyup.bind(this));
+    };
 
+    const joystick = new Joystick();
+    const hero_weapon = new Weapon("weapon_rusty_sword");
     const hero = new HeroMonster(0, 0, "knight_f", hero_weapon);
     let level = new Level(hero, 1);
-
-    window.addEventListener("keydown", function (e) {
-        switch (e.code) {
-            case "KeyW":
-                e.preventDefault();
-                level.hero.moveUp(now());
-                break;
-            case "KeyA":
-                e.preventDefault();
-                level.hero.moveLeft(now());
-                break;
-            case "KeyS":
-                e.preventDefault();
-                level.hero.moveDown(now());
-                break;
-            case "KeyD":
-                e.preventDefault();
-                level.hero.moveRight(now());
-                break;
-            case "KeyF":
-                e.preventDefault();
-                level.hero.hit(now());
-                break;
-        }
-    });
 
     const canvas = document.getElementById("dungeon");
     const ctx = canvas.getContext("2d");
@@ -1210,7 +1262,7 @@
         if(level.hero.state === "run") {
             const start = level.hero.start;
             const speed = level.hero.speed;
-            const numOfFrames = level.hero.tile.numOfFrames;
+            const numOfFrames = (level.hero.tile.numOfFrames - 1);
             const maxTime = speed * numOfFrames;
             const delta = Math.min(maxTime, time - start) / maxTime;
 
@@ -1364,7 +1416,7 @@
             if(monster.state === "run") {
                 const start = monster.start;
                 const speed = monster.speed;
-                const numOfFrames = monster.tile.numOfFrames;
+                const numOfFrames = (monster.tile.numOfFrames - 1);
                 const maxTime = speed * numOfFrames;
                 const delta = Math.min(maxTime, time - start) / maxTime;
 
