@@ -37,7 +37,6 @@ import {RNG} from "./rng.js";
         window.requestAnimationFrame(render);
     }
 
-    // @todo refactor to module-way
     function renderLevel(time) {
         const c_w = canvas.width;
         const c_h = canvas.height;
@@ -56,6 +55,9 @@ import {RNG} from "./rng.js";
         // render hero light
         renderLight(c_w >> 1, c_h >> 1, 16 * scale * 6);
 
+        let t_x = scene.level.hero.x * 16 * scale + 8 - c_w / 2;
+        let t_y = scene.level.hero.y * 16 * scale + 8 - c_h / 2;
+
         // translate level to hero position
         if(scene.level.hero.state === "run") {
             const start = scene.level.hero.start;
@@ -67,22 +69,15 @@ import {RNG} from "./rng.js";
             const t_offset_x = scale * 16 * (scene.level.hero.new_x - scene.level.hero.x) * delta;
             const t_offset_y = scale * 16 * (scene.level.hero.new_y - scene.level.hero.y) * delta;
 
-            const t_x = scene.level.hero.x * 16 * scale + 8 - c_w / 2 + t_offset_x;
-            const t_y = scene.level.hero.y * 16 * scale + 8 - c_h / 2 + t_offset_y;
-            ctx.translate(-t_x, -t_y);
-            b_ctx.translate(-t_x, -t_y);
-        } else {
-            const t_x = scene.level.hero.x * 16 * scale + 8 - c_w / 2;
-            const t_y = scene.level.hero.y * 16 * scale + 8 - c_h / 2;
-            ctx.translate(-t_x, -t_y);
-            b_ctx.translate(-t_x, -t_y);
+            t_x = t_x + t_offset_x;
+            t_y = t_y + t_offset_y;
         }
 
         // render floor, drop
         for(let l_x=0; l_x<scene.level.w; l_x++) {
             for(let l_y=0; l_y<scene.level.h; l_y++) {
-                const d_x = l_x * 16 * scale;
-                const d_y = l_y * 16 * scale;
+                const d_x = -t_x + l_x * 16 * scale;
+                const d_y = -t_y + l_y * 16 * scale;
                 renderTile(scene.level.floor[l_y][l_x], d_x, d_y);
                 if(scene.level.drop[l_y][l_x]) {
                     renderTile(scene.level.drop[l_y][l_x].tileName, d_x, d_y);
@@ -92,15 +87,20 @@ import {RNG} from "./rng.js";
         // render wall, monsters
         for(let l_y=0; l_y<scene.level.h; l_y++) {
             for(let l_x=0; l_x<scene.level.w; l_x++) {
-                const d_x = l_x * 16 * scale;
-                const d_y = l_y * 16 * scale;
-                renderTile(scene.level.wall[l_y][l_x], d_x, d_y);
+                const d_x = -t_x + l_x * 16 * scale;
+                const d_y = -t_y + l_y * 16 * scale;
+                const tile = scene.level.wall[l_y][l_x];
+                renderTile(tile, d_x, d_y);
+
+                if (tile ===  "wall_fountain_mid_red_anim" || tile ===  "wall_fountain_mid_blue_anim") {
+                    renderLight(d_x + 8 * scale, d_y + 8 * scale, 16 * scale * 4);
+                }
             }
             if(l_y < scene.level.h -1) {
                 for (let l_x = 0; l_x < scene.level.w; l_x++) {
                     const m_y = l_y + 1;
-                    const d_x = l_x * 16 * scale;
-                    const d_y = m_y * 16 * scale;
+                    const d_x = -t_x + l_x * 16 * scale;
+                    const d_y = -t_y + m_y * 16 * scale;
                     renderMonster(scene.level.monsters[m_y][l_x], d_x, d_y, time);
                 }
             }
@@ -299,94 +299,86 @@ import {RNG} from "./rng.js";
                 offset_y = scale * 16 * (monster.new_y - monster.y) * delta;
             }
 
-            ctx.save();
-            ctx.translate(dx + offset_x, dy + offset_y);
-            if(monster.is_left) {
-                ctx.scale(-1, 1);
-                if(monster.weapon) {
-                    ctx.save();
-                    const w = monster.weapon.tile;
-                    const w_dw = w.w * scale;
-                    const w_dh = w.h * scale;
+            if(dx + offset_x + dw > 0 && dx + offset_x < ctx.canvas.width &&
+               dy + offset_y + dh > 0 && dy + offset_y < ctx.canvas.height) {
 
-                    const w_dy = w_dh - 14 * scale;
-                    const w_dx = 4 * scale;
 
-                    ctx.translate(-w_dx, -w_dy);
+                ctx.save();
+                ctx.translate(dx + offset_x, dy + offset_y);
+                if(monster.is_left) {
+                    ctx.scale(-1, 1);
+                    if(monster.weapon) {
+                        ctx.save();
+                        const w = monster.weapon.tile;
+                        const w_dw = w.w * scale;
+                        const w_dh = w.h * scale;
 
-                    if(monster.state === "hit") {
-                        let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
-                        ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
-                        ctx.rotate(angle * Math.PI / 180); // 90 degree
-                        ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, -(w_dw >> 1), -w_dh, w_dw, w_dh);
-                    } else {
-                        ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, 0, 0, w_dw, w_dh);
+                        const w_dy = w_dh - 14 * scale;
+                        const w_dx = 4 * scale;
+
+                        ctx.translate(-w_dx, -w_dy);
+
+                        if(monster.state === "hit") {
+                            let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
+                            ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
+                            ctx.rotate(angle * Math.PI / 180); // 90 degree
+                            ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, -(w_dw >> 1), -w_dh, w_dw, w_dh);
+                        } else {
+                            ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, 0, 0, w_dw, w_dh);
+                        }
+                        ctx.restore();
                     }
-                    ctx.restore();
-                }
-                ctx.drawImage(monster.tile.tileSet, sx, sy, sw, sh, 0 - dw, -tile_offset_y, dw, dh);
-            } else {
-                if(monster.weapon) {
-                    ctx.save();
-                    const w = monster.weapon.tile;
-                    const w_dw = w.w * scale;
-                    const w_dh = w.h * scale;
+                    ctx.drawImage(monster.tile.tileSet, sx, sy, sw, sh, 0 - dw, -tile_offset_y, dw, dh);
+                } else {
+                    if(monster.weapon) {
+                        ctx.save();
+                        const w = monster.weapon.tile;
+                        const w_dw = w.w * scale;
+                        const w_dh = w.h * scale;
 
-                    const w_dy = w_dh - 14 * scale;
-                    const w_dx = 12 * scale;
+                        const w_dy = w_dh - 14 * scale;
+                        const w_dx = 12 * scale;
 
-                    ctx.translate(w_dx, -w_dy);
+                        ctx.translate(w_dx, -w_dy);
 
-                    if(monster.state === "hit") {
-                        let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
-                        ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
-                        ctx.rotate(angle * Math.PI / 180); // 90 degree
-                        ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, -(w_dw >> 1), -w_dh, w_dw, w_dh);
-                    }else {
-                        ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, 0, 0, w_dw, w_dh);
+                        if(monster.state === "hit") {
+                            let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
+                            ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
+                            ctx.rotate(angle * Math.PI / 180); // 90 degree
+                            ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, -(w_dw >> 1), -w_dh, w_dw, w_dh);
+                        }else {
+                            ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, 0, 0, w_dw, w_dh);
+                        }
+                        ctx.restore();
                     }
-                    ctx.restore();
+                    ctx.drawImage(monster.tile.tileSet, sx, sy, sw, sh, 0, -tile_offset_y, dw, dh);
                 }
-                ctx.drawImage(monster.tile.tileSet, sx, sy, sw, sh, 0, -tile_offset_y, dw, dh);
+                ctx.restore();
             }
-            ctx.restore();
         }
     }
 
     function renderTile(tileName, dx, dy) {
         const tile = registry.get(tileName);
         if(tile) {
-            if (tileName ===  "wall_fountain_mid_red_anim"
-              || tileName ===  "wall_fountain_mid_blue_anim"
-            ) {
-                renderLight(dx + 8, dy + 8, 16 * scale * 4);
-            }
+            const sw = tile.w;
+            const sh = tile.h;
+            const dw = sw * scale;
+            const dh = sh * scale;
 
-            if (tile.isAnim && tile.numOfFrames > 1) {
-                const time = new Date().getTime();
-                let sf;
-                if (tile.numOfFrames === 3) {
-                    sf = Math.floor(time / 100) % tile.numOfFrames;
-                } else if (tile.numOfFrames === 4) {
-                    sf = (time >> 2) % tile.numOfFrames;
+            if(dx + dw > 0 && dx < ctx.canvas.width &&
+               dy + dh > 0 && dy < ctx.canvas.height) {
+                if (tile.isAnim && tile.numOfFrames > 1) {
+                    const time = new Date().getTime();
+                    const sf = Math.floor(time / 100) % tile.numOfFrames;
+                    const sx = tile.x + sw * sf;
+                    const sy = tile.y;
+                    ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
                 } else {
-                    sf = (time >> 2) % tile.numOfFrames;
+                    const sx = tile.x;
+                    const sy = tile.y;
+                    ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
                 }
-                const sw = tile.w;
-                const sh = tile.h;
-                const sx = tile.x + sw * sf;
-                const sy = tile.y;
-                const dw = sw * scale;
-                const dh = sh * scale;
-                ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
-            } else {
-                const sx = tile.x;
-                const sy = tile.y;
-                const sw = tile.w;
-                const sh = tile.h;
-                const dw = sw * scale;
-                const dh = sh * scale;
-                ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
             }
         }
     }
