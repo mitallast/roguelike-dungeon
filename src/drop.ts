@@ -1,8 +1,9 @@
 import {RNG} from "./rng";
 import {HeroMonster} from "./hero";
+import {Tile, TileRegistry} from "./tilemap";
 
 export interface Drop {
-  readonly tileName: string
+  readonly tile: Tile
   pickedUp(hero: HeroMonster): boolean;
 }
 
@@ -12,11 +13,11 @@ export interface UsableDrop extends Drop {
 }
 
 export class Coins implements Drop {
-  readonly tileName: string;
+  readonly tile: Tile;
   private readonly coins: number;
 
-  constructor(rng: RNG) {
-    this.tileName = "coin_anim";
+  constructor(rng: RNG, registry: TileRegistry) {
+    this.tile = registry.get("coin_anim");
     this.coins = rng.nextRange(1, 30)
   }
 
@@ -27,11 +28,11 @@ export class Coins implements Drop {
 }
 
 export class HealthFlask implements UsableDrop {
-  readonly tileName: string;
+  readonly tile: Tile;
   private readonly health: number;
 
-  constructor() {
-    this.tileName = "flask_red";
+  constructor(registry: TileRegistry) {
+    this.tile = registry.get("flask_red");
     this.health = 2;
   }
 
@@ -50,11 +51,11 @@ export class HealthFlask implements UsableDrop {
 }
 
 export class HealthBigFlask implements UsableDrop {
-  readonly tileName: string;
+  readonly tile: Tile;
   private readonly health: number;
 
-  constructor() {
-    this.tileName = "flask_big_red";
+  constructor(registry: TileRegistry) {
+    this.tile = registry.get("flask_big_red");
     this.health = 5;
   }
 

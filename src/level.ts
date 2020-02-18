@@ -1,7 +1,7 @@
 import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {Coins, Drop, HealthBigFlask, HealthFlask} from "./drop";
 import {RNG} from "./rng";
-import {TileRegistry} from "./tilemap";
+import {Tile, TileRegistry} from "./tilemap";
 import {Scene} from "./scene";
 import {HeroMonster} from "./hero";
 import {Monster} from "./monster";
@@ -72,9 +72,9 @@ export class Level {
   private readonly rooms: Rect[];
   private readonly corridorsV: Rect[];
   private readonly corridorsH: Rect[];
-  readonly floor: string[][];
+  readonly floor: Tile[][];
   readonly drop: Drop[][];
-  readonly wall: string[][];
+  readonly wall: Tile[][];
 
   monsterList: TinyMonster[];
   readonly hero: HeroMonster;
@@ -275,11 +275,11 @@ export class Level {
 
   randomDrop(x: number, y: number) {
     if (this.rng.nextFloat() < 0.5) {
-      this.drop[y][x] = new Coins(this.rng);
+      this.drop[y][x] = new Coins(this.rng, this.registry);
     } else if (this.rng.nextFloat() < 0.3) {
-      this.drop[y][x] = new HealthFlask();
+      this.drop[y][x] = new HealthFlask(this.registry);
     } else if (this.rng.nextFloat() < 0.3) {
-      this.drop[y][x] = new HealthBigFlask();
+      this.drop[y][x] = new HealthBigFlask(this.registry);
     }
   };
 
@@ -293,38 +293,38 @@ export class Level {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
-        this.floor[r_y][r_x] = "floor_1";
+        this.floor[r_y][r_x] = this.registry.get("floor_1");
       }
     }
     // fill top wall
-    this.wall[y - 2][x] = "wall_corner_top_left";
-    this.wall[y - 1][x] = "wall_corner_left";
+    this.wall[y - 2][x] = this.registry.get("wall_corner_top_left");
+    this.wall[y - 1][x] = this.registry.get("wall_corner_left");
     if (w > 1) {
       for (let r_x = x + 1; r_x < x + w - 1; r_x++) {
-        this.wall[y - 2][r_x] = "wall_top_mid";
-        this.wall[y - 1][r_x] = "wall_mid";
+        this.wall[y - 2][r_x] = this.registry.get("wall_top_mid");
+        this.wall[y - 1][r_x] = this.registry.get("wall_mid");
       }
-      this.wall[y - 2][x + w - 1] = "wall_corner_top_right";
-      this.wall[y - 1][x + w - 1] = "wall_corner_right";
+      this.wall[y - 2][x + w - 1] = this.registry.get("wall_corner_top_right");
+      this.wall[y - 1][x + w - 1] = this.registry.get("wall_corner_right");
     }
     // fill bottom wall
-    this.wall[y + h - 1][x] = "wall_corner_bottom_left";
-    this.wall[y + h][x] = "wall_left";
+    this.wall[y + h - 1][x] = this.registry.get("wall_corner_bottom_left");
+    this.wall[y + h][x] = this.registry.get("wall_left");
     if (w > 1) {
       for (let r_x = x + 1; r_x < x + w - 1; r_x++) {
-        this.wall[y + h - 1][r_x] = "wall_top_mid";
-        this.wall[y + h][r_x] = "wall_mid"
+        this.wall[y + h - 1][r_x] = this.registry.get("wall_top_mid");
+        this.wall[y + h][r_x] = this.registry.get("wall_mid");
       }
-      this.wall[y + h - 1][x + w - 1] = "wall_corner_bottom_right";
-      this.wall[y + h][x + w - 1] = "wall_right";
+      this.wall[y + h - 1][x + w - 1] = this.registry.get("wall_corner_bottom_right");
+      this.wall[y + h][x + w - 1] = this.registry.get("wall_right");
     }
     // fill right wall
     for (let r_y = y; r_y < y + h - 1; r_y++) {
-      this.wall[r_y][x] = "wall_side_mid_right";
+      this.wall[r_y][x] = this.registry.get("wall_side_mid_right");
     }
     // fill left wall
     for (let r_y = y; r_y < y + h - 1; r_y++) {
-      this.wall[r_y][x + w - 1] = "wall_side_mid_left";
+      this.wall[r_y][x + w - 1] = this.registry.get("wall_side_mid_left");
     }
   };
 
@@ -332,14 +332,14 @@ export class Level {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
-        this.floor[r_y][r_x] = "floor_1";
+        this.floor[r_y][r_x] = this.registry.get("floor_1");
       }
     }
 
     // connect with room top left
-    switch (this.wall[y - 2][x - 1]) {
+    switch (this.wall[y - 2][x - 1].name) {
       case "wall_corner_top_right":
-        this.wall[y - 2][x - 1] = "wall_top_mid";
+        this.wall[y - 2][x - 1] = this.registry.get("wall_top_mid");
         break;
       case "wall_side_mid_left":
         break;
@@ -347,12 +347,12 @@ export class Level {
         console.log("top left 2", this.wall[y - 2][x - 1]);
         break;
     }
-    switch (this.wall[y - 1][x - 1]) {
+    switch (this.wall[y - 1][x - 1].name) {
       case "wall_corner_right":
-        this.wall[y - 1][x - 1] = "wall_mid";
+        this.wall[y - 1][x - 1] = this.registry.get("wall_mid");
         break;
       case "wall_side_mid_left":
-        this.wall[y - 1][x - 1] = "wall_side_front_left";
+        this.wall[y - 1][x - 1] = this.registry.get("wall_side_front_left");
         break;
       default:
         console.log("top left 1", this.wall[y - 1][x - 1]);
@@ -362,7 +362,7 @@ export class Level {
     // connect with room mid left
     if (h > 1) {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
-        switch (this.wall[l_y][x - 1]) {
+        switch (this.wall[l_y][x - 1].name) {
           case "wall_side_mid_left":
             this.wall[l_y][x - 1] = null;
             break;
@@ -374,22 +374,22 @@ export class Level {
     }
 
     // connect with room bottom left
-    switch (this.wall[y + h - 1][x - 1]) {
+    switch (this.wall[y + h - 1][x - 1].name) {
       case "wall_side_mid_left":
-        this.wall[y + h - 1][x - 1] = "wall_side_top_left";
+        this.wall[y + h - 1][x - 1] = this.registry.get("wall_side_top_left");
         break;
       case "wall_corner_bottom_right":
-        this.wall[y + h - 1][x - 1] = "wall_top_mid";
+        this.wall[y + h - 1][x - 1] = this.registry.get("wall_top_mid");
         break;
       default:
         console.log("bottom left 0", this.wall[y + h - 1][x - 1]);
         break;
     }
-    switch (this.wall[y + h][x - 1]) {
+    switch (this.wall[y + h][x - 1].name) {
       case "wall_side_mid_left":
         break;
       case "wall_right":
-        this.wall[y + h][x - 1] = "wall_mid";
+        this.wall[y + h][x - 1] = this.registry.get("wall_mid");
         break;
       default:
         console.log("bottom left 1", this.wall[y + h][x - 1]);
@@ -397,9 +397,9 @@ export class Level {
     }
 
     // connect with room top right
-    switch (this.wall[y - 2][x + w]) {
+    switch (this.wall[y - 2][x + w].name) {
       case "wall_corner_top_left":
-        this.wall[y - 2][x + w] = "wall_top_mid";
+        this.wall[y - 2][x + w] = this.registry.get("wall_top_mid");
         break;
       case "wall_side_mid_right":
         break;
@@ -407,12 +407,12 @@ export class Level {
         console.log("top right 2", this.wall[y - 2][x + w]);
         break;
     }
-    switch (this.wall[y - 1][x + w]) {
+    switch (this.wall[y - 1][x + w].name) {
       case "wall_corner_left":
-        this.wall[y - 1][x + w] = "wall_mid";
+        this.wall[y - 1][x + w] = this.registry.get("wall_mid");
         break;
       case "wall_side_mid_right":
-        this.wall[y - 1][x + w] = "wall_side_front_right";
+        this.wall[y - 1][x + w] = this.registry.get("wall_side_front_right");
         break;
       default:
         console.log("top right 1", this.wall[y - 1][x + w]);
@@ -422,7 +422,7 @@ export class Level {
     // connect with room mid right
     if (h > 1) {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
-        switch (this.wall[l_y][x + w]) {
+        switch (this.wall[l_y][x + w].name) {
           case "wall_side_mid_right":
             this.wall[l_y][x + w] = null;
             break;
@@ -434,22 +434,22 @@ export class Level {
     }
 
     // connect with room bottom right
-    switch (this.wall[y + h - 1][x + w]) {
+    switch (this.wall[y + h - 1][x + w].name) {
       case "wall_side_mid_right":
-        this.wall[y + h - 1][x + w] = "wall_side_top_right";
+        this.wall[y + h - 1][x + w] = this.registry.get("wall_side_top_right");
         break;
       case "wall_corner_bottom_left":
-        this.wall[y + h - 1][x + w] = "wall_top_mid";
+        this.wall[y + h - 1][x + w] = this.registry.get("wall_top_mid");
         break;
       default:
         console.log("bottom right 0", this.wall[y + h - 1][x + w]);
         break;
     }
-    switch (this.wall[y + h][x + w]) {
+    switch (this.wall[y + h][x + w].name) {
       case "wall_side_mid_right":
         break;
       case "wall_left":
-        this.wall[y + h][x + w] = "wall_mid";
+        this.wall[y + h][x + w] = this.registry.get("wall_mid");
         break;
       default:
         console.log("bottom right +1", this.wall[y + h][x + w]);
@@ -458,14 +458,14 @@ export class Level {
 
     // fill top wall
     for (let r_x = x; r_x < x + w; r_x++) {
-      this.wall[y - 2][r_x] = "wall_top_mid";
-      this.wall[y - 1][r_x] = "wall_mid";
+      this.wall[y - 2][r_x] = this.registry.get("wall_top_mid");
+      this.wall[y - 1][r_x] = this.registry.get("wall_mid");
     }
 
     // fill bottom wall
     for (let r_x = x; r_x < x + w; r_x++) {
-      this.wall[y + h - 1][r_x] = "wall_top_mid";
-      this.wall[y + h][r_x] = "wall_mid"
+      this.wall[y + h - 1][r_x] = this.registry.get("wall_top_mid");
+      this.wall[y + h][r_x] = this.registry.get("wall_mid");
     }
   };
 
@@ -473,22 +473,22 @@ export class Level {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
-        this.floor[r_y][r_x] = "floor_1";
+        this.floor[r_y][r_x] = this.registry.get("floor_1");
       }
     }
 
     // connect with room top left
-    switch (this.wall[y - 1][x - 1]) {
+    switch (this.wall[y - 1][x - 1].name) {
       case "wall_top_mid":
-        this.wall[y - 1][x - 1] = "wall_corner_top_right";
+        this.wall[y - 1][x - 1] = this.registry.get("wall_corner_top_right");
         break;
       default:
         console.log("top left -1 -1", this.wall[y - 1][x - 1]);
         break;
     }
-    switch (this.wall[y][x - 1]) {
+    switch (this.wall[y][x - 1].name) {
       case "wall_mid":
-        this.wall[y][x - 1] = "wall_corner_right";
+        this.wall[y][x - 1] = this.registry.get("wall_corner_right");
         break;
       default:
         console.log("top left 0 -1", this.wall[y][x - 1]);
@@ -497,7 +497,7 @@ export class Level {
 
     // connect with room top mid
     for (let r_x = x; r_x < x + w; r_x++) {
-      switch (this.wall[y - 1][r_x]) {
+      switch (this.wall[y - 1][r_x].name) {
         case "wall_top_mid":
           this.wall[y - 1][r_x] = null;
           break;
@@ -505,7 +505,7 @@ export class Level {
           console.log("top mid -1", this.wall[y - 1][r_x]);
           break;
       }
-      switch (this.wall[y][r_x]) {
+      switch (this.wall[y][r_x].name) {
         case "wall_mid":
           this.wall[y][r_x] = null;
           break;
@@ -516,17 +516,17 @@ export class Level {
     }
 
     // connect with room top right
-    switch (this.wall[y - 1][x + w]) {
+    switch (this.wall[y - 1][x + w].name) {
       case "wall_top_mid":
-        this.wall[y - 1][x + w] = "wall_corner_top_left";
+        this.wall[y - 1][x + w] = this.registry.get("wall_corner_top_left");
         break;
       default:
         console.log("top right -1 1", this.wall[y - 1][x + w]);
         break;
     }
-    switch (this.wall[y][x + w]) {
+    switch (this.wall[y][x + w].name) {
       case "wall_mid":
-        this.wall[y][x + w] = "wall_corner_left";
+        this.wall[y][x + w] = this.registry.get("wall_corner_left");
         break;
       default:
         console.log("top right 0 -1", this.wall[y][x + w]);
@@ -535,17 +535,17 @@ export class Level {
 
 
     // connect with room bottom left
-    switch (this.wall[y + h - 2][x - 1]) {
+    switch (this.wall[y + h - 2][x - 1].name) {
       case "wall_top_mid":
-        this.wall[y + h - 2][x - 1] = "wall_corner_bottom_right";
+        this.wall[y + h - 2][x - 1] = this.registry.get("wall_corner_bottom_right");
         break;
       default:
         console.log("bottom left -2 -1", this.wall[y + h - 2][x - 1]);
         break;
     }
-    switch (this.wall[y + h - 1][x - 1]) {
+    switch (this.wall[y + h - 1][x - 1].name) {
       case "wall_mid":
-        this.wall[y + h - 1][x - 1] = "wall_corner_front_right";
+        this.wall[y + h - 1][x - 1] = this.registry.get("wall_corner_front_right");
         break;
       default:
         console.log("top left 0 -1", this.wall[y + h - 1][x - 1]);
@@ -554,7 +554,7 @@ export class Level {
 
     // connect with room bottom mid
     for (let r_x = x; r_x < x + w; r_x++) {
-      switch (this.wall[y + h - 2][r_x]) {
+      switch (this.wall[y + h - 2][r_x].name) {
         case "wall_top_mid":
           this.wall[y + h - 2][r_x] = null;
           break;
@@ -562,7 +562,7 @@ export class Level {
           console.log("bottom mid -2", this.wall[y + h - 2][r_x]);
           break;
       }
-      switch (this.wall[y + h - 1][r_x]) {
+      switch (this.wall[y + h - 1][r_x].name) {
         case "wall_mid":
           this.wall[y + h - 1][r_x] = null;
           break;
@@ -573,17 +573,17 @@ export class Level {
     }
 
     // connect with room bottom right
-    switch (this.wall[y + h - 2][x + w]) {
+    switch (this.wall[y + h - 2][x + w].name) {
       case "wall_top_mid":
-        this.wall[y + h - 2][x + w] = "wall_corner_bottom_left";
+        this.wall[y + h - 2][x + w] = this.registry.get("wall_corner_bottom_left");
         break;
       default:
         console.log("bottom right -2 -1", this.wall[y + h - 2][x - 1]);
         break;
     }
-    switch (this.wall[y + h - 1][x + w]) {
+    switch (this.wall[y + h - 1][x + w].name) {
       case "wall_mid":
-        this.wall[y + h - 1][x + w] = "wall_corner_front_left";
+        this.wall[y + h - 1][x + w] = this.registry.get("wall_corner_front_left");
         break;
       default:
         console.log("bottom right 0 -1", this.wall[y + h - 1][x - 1]);
@@ -592,8 +592,8 @@ export class Level {
 
     // fill side walls
     for (let r_y = y + 1; r_y < y + h - 2; r_y++) {
-      this.wall[r_y][x - 1] = "wall_side_mid_left";
-      this.wall[r_y][x + w] = "wall_side_mid_right";
+      this.wall[r_y][x - 1] = this.registry.get("wall_side_mid_left");
+      this.wall[r_y][x + w] = this.registry.get("wall_side_mid_right");
     }
   };
 
@@ -609,7 +609,7 @@ export class Level {
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
         if (this.floor[y][x] && this.rng.nextFloat() < percent) {
-          this.floor[y][x] = this.rng.choice(replacements);
+          this.floor[y][x] = this.registry.get(this.rng.choice(replacements));
         }
       }
     }
@@ -622,7 +622,7 @@ export class Level {
     const ladder_x = last.x + (last.w >> 1);
     const ladder_y = last.y + (last.h >> 1);
     console.log(ladder_x, ladder_y, last);
-    this.floor[ladder_y][ladder_x] = "floor_ladder";
+    this.floor[ladder_y][ladder_x] = this.registry.get("floor_ladder");
   };
 
   replaceWallRandomly() {
@@ -645,7 +645,7 @@ export class Level {
     for (let y = 0; y < this.h; y++) {
       for (let x = 0; x < this.w; x++) {
         if (this.wall[y][x]) {
-          switch (this.wall[y][x]) {
+          switch (this.wall[y][x].name) {
             case "wall_mid":
               if (this.rng.nextFloat() < percent) {
                 const is_top = !!this.floor[y + 1][x];
@@ -658,21 +658,21 @@ export class Level {
                 const replacement = this.rng.choice(replacements);
                 switch (replacement) {
                   case "wall_goo":
-                    this.wall[y][x] = "wall_goo";
-                    this.floor[y + 1][x] = "wall_goo_base";
+                    this.wall[y][x] = this.registry.get("wall_goo");
+                    this.floor[y + 1][x] = this.registry.get("wall_goo_base");
                     break;
                   case "wall_fountain_mid_red_anim":
-                    this.wall[y - 1][x] = "wall_fountain_top";
-                    this.wall[y][x] = "wall_fountain_mid_red_anim";
-                    this.floor[y + 1][x] = "wall_fountain_basin_red_anim";
+                    this.wall[y - 1][x] = this.registry.get("wall_fountain_top");
+                    this.wall[y][x] = this.registry.get("wall_fountain_mid_red_anim");
+                    this.floor[y + 1][x] = this.registry.get("wall_fountain_basin_red_anim");
                     break;
                   case "wall_fountain_mid_blue_anim":
-                    this.wall[y - 1][x] = "wall_fountain_top";
-                    this.wall[y][x] = "wall_fountain_mid_blue_anim";
-                    this.floor[y + 1][x] = "wall_fountain_basin_blue_anim";
+                    this.wall[y - 1][x] = this.registry.get("wall_fountain_top");
+                    this.wall[y][x] = this.registry.get("wall_fountain_mid_blue_anim");
+                    this.floor[y + 1][x] = this.registry.get("wall_fountain_basin_blue_anim");
                     break;
                   default:
-                    this.wall[y][x] = replacement;
+                    this.wall[y][x] = this.registry.get(replacement);
                     break;
                 }
               }

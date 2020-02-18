@@ -31,7 +31,6 @@ export class TinyMonster implements Monster {
   private readonly luck: number;
   readonly speed: number;
   state: MonsterState;
-  private tileName: string;
   tile: Tile;
   frame: number;
   start: number;
@@ -59,15 +58,13 @@ export class TinyMonster implements Monster {
     switch (state) {
       case MonsterState.Idle:
         this.state = state;
-        this.tileName = this.name + "_idle_anim";
-        this.tile = this.registry.get(this.tileName);
+        this.tile = this.registry.get(this.name + "_idle_anim");
         this.frame = 0;
         this.start = time;
         break;
       case MonsterState.Run:
         this.state = state;
-        this.tileName = this.name + "_run_anim";
-        this.tile = this.registry.get(this.tileName);
+        this.tile = this.registry.get(this.name + "_run_anim");
         this.frame = 0;
         this.start = time;
         break;

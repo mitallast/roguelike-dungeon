@@ -32,7 +32,6 @@ export class HeroMonster implements Monster {
   readonly inventory: Inventory;
   private level: Level;
   state: MonsterState;
-  tileName: string;
   tile: Tile;
   frame: number;
   start: number;
@@ -66,22 +65,19 @@ export class HeroMonster implements Monster {
       switch (state) {
         case MonsterState.Idle:
           this.state = state;
-          this.tileName = this.name + "_idle_anim";
-          this.tile = this.registry.get(this.tileName);
+          this.tile = this.registry.get(this.name + "_idle_anim");
           this.frame = 0;
           this.start = time;
           break;
         case MonsterState.Run:
           this.state = state;
-          this.tileName = this.name + "_run_anim";
-          this.tile = this.registry.get(this.tileName);
+          this.tile = this.registry.get(this.name + "_run_anim");
           this.frame = 0;
           this.start = time;
           break;
         case MonsterState.Hit:
           this.state = state;
-          this.tileName = this.name + "_hit_anim";
-          this.tile = this.registry.get(this.tileName);
+          this.tile = this.registry.get(this.name + "_hit_anim");
           this.frame = 0;
           this.weapon.frame = 0;
           this.start = time;
@@ -137,7 +133,7 @@ export class HeroMonster implements Monster {
     }
 
     if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
-      if (this.level.floor[this.y][this.x] === "floor_ladder") {
+      if (this.level.floor[this.y][this.x].name === "floor_ladder") {
         this.joystick.hit.processed = true;
         this.level.exit(time);
         return true;
@@ -279,7 +275,6 @@ export const weaponNames = [
 ];
 
 export class Weapon {
-  readonly tileName: string;
   readonly tile: Tile;
   frame: number;
   readonly numOfFrames: number;
@@ -287,8 +282,7 @@ export class Weapon {
   readonly distance: number;
 
   constructor(registry: TileRegistry, tileName: string) {
-    this.tileName = tileName;
-    this.tile = registry.get(this.tileName);
+    this.tile = registry.get(tileName);
     this.frame = 0;
     this.numOfFrames = 4;
     this.speed = 100;
