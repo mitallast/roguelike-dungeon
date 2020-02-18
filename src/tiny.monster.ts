@@ -2,7 +2,7 @@ import {RNG} from "./rng";
 import {Tile, TileRegistry} from "./tilemap";
 import {Level} from "./level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
-import {Weapon} from "./hero";
+import {Weapon} from "./drop";
 
 export const tinyMonsterNames = [
   "tiny_zombie",

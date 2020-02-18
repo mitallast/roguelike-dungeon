@@ -1,5 +1,5 @@
 import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
-import {Coins, Drop, HealthBigFlask, HealthFlask} from "./drop";
+import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
 import {RNG} from "./rng";
 import {Tile, TileRegistry} from "./tilemap";
 import {Scene} from "./scene";
@@ -274,12 +274,24 @@ export class Level {
   };
 
   randomDrop(x: number, y: number) {
-    if (this.rng.nextFloat() < 0.5) {
-      this.drop[y][x] = new Coins(this.rng, this.registry);
-    } else if (this.rng.nextFloat() < 0.3) {
-      this.drop[y][x] = new HealthFlask(this.registry);
-    } else if (this.rng.nextFloat() < 0.3) {
+    const weight_coins = 30;
+    const weight_health_flask = 10;
+    const weight_health_big_flask = 10;
+    const weight_weapon = 3;
+
+    const total = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
+    const rnd = this.rng.nextFloat() * total;
+    console.log(rnd);
+
+    if (rnd < weight_weapon) {
+      const available = WeaponConfig.configs.filter(c => c.level <= this.level);
+      this.drop[y][x] = this.rng.choice(available).create(this.registry);
+    } else if (rnd < weight_health_big_flask) {
       this.drop[y][x] = new HealthBigFlask(this.registry);
+    } else if (rnd < weight_health_flask) {
+      this.drop[y][x] = new HealthFlask(this.registry);
+    } else if (rnd < weight_coins) {
+      this.drop[y][x] = new Coins(this.rng, this.registry);
     }
   };
 

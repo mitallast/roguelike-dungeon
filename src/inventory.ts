@@ -56,12 +56,7 @@ export class InventoryCell {
 
   use(hero: HeroMonster) {
     if (this.item && this.count > 0) {
-      this.item.use(hero);
-      this.count--;
-      if (this.count <= 0) {
-        this.item = null;
-        this.count = 0;
-      }
+      this.item.use(this, hero);
       return true;
     }
     return false;

@@ -3,6 +3,7 @@ import {Tile, TileRegistry} from "./tilemap";
 import {Joystick} from "./input";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {Level} from "./level";
+import {Weapon} from "./drop";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -25,7 +26,7 @@ export class HeroMonster implements Monster {
   readonly healthMax: number;
   health: number;
   coins: number;
-  private readonly damage: number;
+  private readonly baseDamage: number;
   dead: boolean;
   weapon: Weapon;
   readonly speed: number;
@@ -48,12 +49,16 @@ export class HeroMonster implements Monster {
     this.healthMax = 30;
     this.health = this.healthMax;
     this.coins = 0;
-    this.damage = 5;
+    this.baseDamage = 5;
     this.dead = false;
     this.weapon = weapon;
     this.speed = 100;
     this.inventory = new Inventory();
     this.setAnimation(MonsterState.Idle, time);
+  }
+
+  get damage(): number {
+    return this.baseDamage + this.weapon.damage;
   }
 
   setLevel(level: Level) {
@@ -249,43 +254,4 @@ export class HeroMonster implements Monster {
   addCoins(coins: number) {
     this.coins = this.coins + coins;
   };
-}
-
-export const weaponNames = [
-  "weapon_knife",
-  "weapon_rusty_sword",
-  "weapon_regular_sword",
-  "weapon_red_gem_sword",
-  "weapon_big_hammer",
-  "weapon_hammer",
-  "weapon_baton_with_spikes",
-  "weapon_mace",
-  "weapon_katana",
-  "weapon_saw_sword",
-  "weapon_anime_sword",
-  "weapon_axe",
-  "weapon_machete",
-  "weapon_cleaver",
-  "weapon_duel_sword",
-  "weapon_knight_sword",
-  "weapon_golden_sword",
-  "weapon_lavish_sword",
-  "weapon_red_magic_staff",
-  "weapon_green_magic_staff",
-];
-
-export class Weapon {
-  readonly tile: Tile;
-  frame: number;
-  readonly numOfFrames: number;
-  readonly speed: number;
-  readonly distance: number;
-
-  constructor(registry: TileRegistry, tileName: string) {
-    this.tile = registry.get(tileName);
-    this.frame = 0;
-    this.numOfFrames = 4;
-    this.speed = 100;
-    this.distance = 1;
-  }
 }

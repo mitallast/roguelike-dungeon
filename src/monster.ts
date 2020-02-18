@@ -1,5 +1,5 @@
 import {Tile} from "./tilemap";
-import {Weapon} from "./hero";
+import {Weapon} from "./drop";
 
 export enum MonsterState {
   Idle = 0, Run = 1, Hit = 2

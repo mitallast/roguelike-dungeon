@@ -1,10 +1,11 @@
 import {Joystick} from "./input";
 import {Tile, TileRegistry} from "./tilemap";
-import {HeroMonster, Weapon} from "./hero";
+import {HeroMonster} from "./hero";
 import {Level} from "./level";
 import {Scene} from "./scene";
 import {RNG} from "./rng";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Weapon, WeaponConfig} from "./drop";
 
 (async function () {
 
@@ -24,7 +25,7 @@ import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
   const start = new Date().getTime();
   const rng = new RNG();
   const joystick = new Joystick();
-  const hero_weapon = new Weapon(registry,"weapon_rusty_sword");
+  const hero_weapon = WeaponConfig.configs[0].create(registry);
   const hero = new HeroMonster(registry, joystick,0, 0, "knight_f", hero_weapon, start);
   const scene = new Scene();
   scene.setLevel(new Level(rng, registry, scene, hero, 1, start));
@@ -238,32 +239,22 @@ import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
       const cell = cells[g_x];
       if(cell.item) {
         const tile = cell.item.tile;
-          // @todo fix dw/dh for swords
+        let sx = tile.x;
+        const sy = tile.y;
+        const sw = tile.w;
+        const sh = tile.h;
+
         if (tile.isAnim && tile.numOfFrames > 1) {
-          let sf;
-          if (tile.numOfFrames === 3) {
-            sf = Math.floor(time / 100) % tile.numOfFrames;
-          } else if (tile.numOfFrames === 4) {
-            sf = (time >> 2) % tile.numOfFrames;
-          } else {
-            sf = (time >> 2) % tile.numOfFrames;
-          }
-          const sw = tile.w;
-          const sh = tile.h;
-          const sx = tile.x + sw * sf;
-          const sy = tile.y;
-          const dw = sw * scale;
-          const dh = sh * scale;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, c_x, c_y, dw, dh);
-        } else {
-          const sx = tile.x;
-          const sy = tile.y;
-          const sw = tile.w;
-          const sh = tile.h;
-          const dw = sw * scale;
-          const dh = sh * scale;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, c_x, c_y, dw, dh);
+          const sf = Math.floor(time / 100) % tile.numOfFrames;
+          sx = tile.x + sw * sf;
         }
+
+        const d_scale = sh <= cell_size ? 1 : cell_size / sh;
+        const dw = sw * scale * d_scale;
+        const dh = sh * scale * d_scale;
+        const c_offset_x = ((cell_size * scale) >> 1) - (dw >> 1);
+
+        ctx.drawImage(tile.tileSet, sx, sy, sw, sh, c_x + c_offset_x, c_y, dw, dh);
         ctx.textAlign = "end";
         ctx.textBaseline = "top";
         ctx.font = "10px silkscreennormal";
@@ -364,19 +355,20 @@ import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
       const sh = tile.h;
       const dw = sw * scale;
       const dh = sh * scale;
+      const offset_y = dh - 16 * scale;
 
       if(dx + dw > 0 && dx < ctx.canvas.width &&
-        dy + dh > 0 && dy < ctx.canvas.height) {
+        dy - offset_y + dh > 0 && dy - offset_y < ctx.canvas.height) {
         if (tile.isAnim && tile.numOfFrames > 1) {
           const time = new Date().getTime();
           const sf = Math.floor(time / 100) % tile.numOfFrames;
           const sx = tile.x + sw * sf;
           const sy = tile.y;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
+          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy - offset_y, dw, dh);
         } else {
           const sx = tile.x;
           const sy = tile.y;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy, dw, dh);
+          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy - offset_y, dw, dh);
         }
       }
     }
