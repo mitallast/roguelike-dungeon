@@ -1,4 +1,8 @@
-import {Inventory} from "./inventory.js";
+import {Inventory} from "./inventory";
+import {Tile, TileRegistry} from "./tilemap";
+import {Joystick} from "./input";
+import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Level} from "./level";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -9,8 +13,31 @@ export const heroMonsterNames = [
   "wizard_m",
 ];
 
-export class HeroMonster {
-  constructor(registry, joystick, x, y, name, weapon, time) {
+export class HeroMonster implements Monster {
+  private registry: TileRegistry;
+  private joystick: Joystick;
+  x: number;
+  y: number;
+  new_x: number;
+  new_y: number;
+  is_left: boolean;
+  readonly name: string;
+  readonly healthMax: number;
+  health: number;
+  coins: number;
+  private readonly damage: number;
+  dead: boolean;
+  weapon: Weapon;
+  readonly speed: number;
+  readonly inventory: Inventory;
+  private level: Level;
+  state: MonsterState;
+  tileName: string;
+  tile: Tile;
+  frame: number;
+  start: number;
+
+  constructor(registry: TileRegistry, joystick: Joystick, x: number, y: number, name: string, weapon: Weapon, time: number) {
     this.registry = registry;
     this.joystick = joystick;
     this.x = x;
@@ -27,31 +54,32 @@ export class HeroMonster {
     this.weapon = weapon;
     this.speed = 100;
     this.inventory = new Inventory();
-    this.setAnimation("idle", time);
+    this.setAnimation(MonsterState.Idle, time);
   }
 
-  setLevel(level) {
+  setLevel(level: Level) {
     this.level = level;
   };
-  setAnimation(state, time) {
+
+  setAnimation(state: MonsterState, time: number) {
     if (!this.dead) {
       switch (state) {
-        case "idle":
-          this.state = "idle";
+        case MonsterState.Idle:
+          this.state = state;
           this.tileName = this.name + "_idle_anim";
           this.tile = this.registry.get(this.tileName);
           this.frame = 0;
           this.start = time;
           break;
-        case "run":
-          this.state = "run";
+        case MonsterState.Run:
+          this.state = state;
           this.tileName = this.name + "_run_anim";
           this.tile = this.registry.get(this.tileName);
           this.frame = 0;
           this.start = time;
           break;
-        case "hit":
-          this.state = "hit";
+        case MonsterState.Hit:
+          this.state = state;
           this.tileName = this.name + "_hit_anim";
           this.tile = this.registry.get(this.tileName);
           this.frame = 0;
@@ -61,48 +89,49 @@ export class HeroMonster {
       }
     }
   };
-  animate(time) {
+
+  animate(time: number) {
     switch (this.state) {
-      case "idle":
+      case MonsterState.Idle:
         this.frame = Math.floor((time - this.start) / this.speed);
         if (!this.action(time)) {
           if (this.frame >= this.tile.numOfFrames) {
-            this.setAnimation("idle", time);
+            this.setAnimation(MonsterState.Idle, time);
           }
         }
         break;
-      case "run":
+      case MonsterState.Run:
         this.frame = Math.floor((time - this.start) / this.speed);
         if (this.frame >= this.tile.numOfFrames) {
-          // this.frame = this.frame % this.tile.numOfFrames;
-          this.level.monsters[this.y][this.x] = false;
+          this.level.monsters[this.y][this.x] = null;
           this.level.monsters[this.new_y][this.new_x] = this;
           this.x = this.new_x;
           this.y = this.new_y;
           this.scanDrop();
           if (!this.action(time)) {
-            this.setAnimation("idle", time);
+            this.setAnimation(MonsterState.Idle, time);
           }
         }
         break;
-      case "hit":
+      case MonsterState.Hit:
         this.weapon.frame = Math.floor((time - this.start) / this.weapon.speed);
         if (this.weapon.frame >= this.weapon.numOfFrames) {
           this.scanHit(time);
           this.scanDrop();
           if (!this.action(time)) {
-            this.setAnimation("idle", time);
+            this.setAnimation(MonsterState.Idle, time);
           }
         }
         break;
     }
   };
-  action(time) {
+
+  action(time: number) {
     this.scanDrop();
     for (let d = 0; d < 10; d++) {
-      const digit = `digit${(d + 1) % 10}`;
-      if (!this.joystick[digit].processed) {
-        this.joystick[digit].processed = true;
+      const digit = (d + 1) % 10;
+      if (!this.joystick.digit(digit).processed) {
+        this.joystick.digit(digit).processed = true;
         this.inventory.cells[d].use(this);
       }
     }
@@ -113,7 +142,7 @@ export class HeroMonster {
         this.level.exit(time);
         return true;
       } else {
-        this.setAnimation("hit", time);
+        this.setAnimation(MonsterState.Hit, time);
         return true;
       }
     }
@@ -145,15 +174,17 @@ export class HeroMonster {
     }
     return false;
   };
+
   scanDrop() {
     if (this.level.drop[this.y][this.x]) {
       const drop = this.level.drop[this.y][this.x];
       if (drop.pickedUp(this)) {
-        this.level.drop[this.y][this.x] = false;
+        this.level.drop[this.y][this.x] = null;
       }
     }
   };
-  scanHit(time) {
+
+  scanHit(time: number) {
     const max_distance = this.weapon.distance;
     // search only left or right path
     const scan_x_min = this.is_left ? Math.max(0, this.x - max_distance) : this.x;
@@ -167,15 +198,16 @@ export class HeroMonster {
         // not self
         if (!(s_x === this.x && s_y === this.y)) {
           const monster = this.level.monsters[s_y][s_x];
-          if (typeof monster === "object") {
+          if (monster) {
             monster.hitDamage(this.damage, this.name, time);
           }
         }
       }
     }
   };
-  move(d_x, d_y, time) {
-    if (!this.dead && this.state === "idle") {
+
+  move(d_x: number, d_y: number, time: number) {
+    if (!this.dead && this.state === MonsterState.Idle) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
@@ -186,35 +218,39 @@ export class HeroMonster {
       if (this.level.monsters[new_y][new_x]) return false;
 
       // start move animation
-      this.level.monsters[new_y][new_x] = true; // mark as used
+      this.level.monsters[new_y][new_x] = new MovingMonsterWrapper(this); // mark as used
       this.new_x = new_x;
       this.new_y = new_y;
-      this.setAnimation("run", time);
+      this.setAnimation(MonsterState.Run, time);
       return true;
     }
     return false;
   };
-  resetPosition(x, y) {
+
+  resetPosition(x: number, y: number) {
     this.x = x;
     this.y = y;
     this.new_x = x;
     this.new_y = y;
   };
-  hitDamage(damage, name, time) {
+
+  hitDamage(damage: number, name: string, time: number) {
     if (!this.dead) {
       this.level.log.push(`${this.name} damaged ${damage} by ${name}`);
       this.health = Math.max(0, this.health - damage);
       if (this.health <= 0) {
         this.level.log.push(`${this.name} killed by ${name}`);
-        this.setAnimation("idle", time);
+        this.setAnimation(MonsterState.Idle, time);
         this.dead = true;
       }
     }
   };
-  hill(health) {
+
+  hill(health: number) {
     this.health = Math.min(this.healthMax, this.health + health);
   };
-  addCoins(coins) {
+
+  addCoins(coins: number) {
     this.coins = this.coins + coins;
   };
 }
@@ -243,7 +279,14 @@ export const weaponNames = [
 ];
 
 export class Weapon {
-  constructor(registry, tileName) {
+  readonly tileName: string;
+  readonly tile: Tile;
+  frame: number;
+  readonly numOfFrames: number;
+  readonly speed: number;
+  readonly distance: number;
+
+  constructor(registry: TileRegistry, tileName: string) {
     this.tileName = tileName;
     this.tile = registry.get(this.tileName);
     this.frame = 0;

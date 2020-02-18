@@ -1,11 +1,21 @@
-import {TinyMonster, tinyMonsterNames} from "./tiny.monster.js";
-import {Coins, HealthBigFlask, HealthFlask} from "./drop.js";
+import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
+import {Coins, Drop, HealthBigFlask, HealthFlask} from "./drop";
+import {RNG} from "./rng";
+import {TileRegistry} from "./tilemap";
+import {Scene} from "./scene";
+import {HeroMonster} from "./hero";
+import {Monster} from "./monster";
 
 const x_dist = 2;
 const y_dist = 3;
 
 export class Rect {
-  constructor(x, y, w, h) {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+
+  constructor(x: number, y: number, w: number, h: number) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -42,7 +52,7 @@ export class Rect {
     );
   }
 
-  isOverlap(b) {
+  isOverlap(b: Rect) {
     const a = this;
     return a.x < b.x + b.w
       && a.x + a.w > b.x
@@ -52,7 +62,25 @@ export class Rect {
 }
 
 export class Level {
-  constructor(rng, registry, scene, hero, l, time) {
+  private readonly rng: RNG;
+  private readonly registry: TileRegistry;
+  private readonly scene: Scene;
+  readonly level: number;
+  readonly w: number;
+  readonly h: number;
+  log: string[];
+  private readonly rooms: Rect[];
+  private readonly corridorsV: Rect[];
+  private readonly corridorsH: Rect[];
+  readonly floor: string[][];
+  readonly drop: Drop[][];
+  readonly wall: string[][];
+
+  monsterList: TinyMonster[];
+  readonly hero: HeroMonster;
+  readonly monsters: Monster[][];
+
+  constructor(rng: RNG, registry: TileRegistry, scene: Scene, hero: HeroMonster, l: number, time: number) {
     this.rng = rng;
     this.registry = registry;
     this.scene = scene;
@@ -65,22 +93,23 @@ export class Level {
     this.corridorsV = [];
     this.corridorsH = [];
 
-    this.floor = this.createBuffer(() => false);
-    this.drop = this.createBuffer(() => false);
-    this.wall = this.createBuffer(() => false);
+    this.floor = this.createBuffer(() => null);
+    this.drop = this.createBuffer(() => null);
+    this.wall = this.createBuffer(() => null);
 
     this.monsterList = [];
     this.hero = hero;
-    this.monsters = this.createBuffer(() => false);
+    this.monsters = this.createBuffer(() => null);
 
     this.generate(time);
     this.fill();
     this.replace();
   }
-  createBuffer(defaultValue) {
-    const rows = [];
+
+  createBuffer<T>(defaultValue: () => T): T[][] {
+    const rows: T[][] = [];
     for (let y = 0; y < this.h; y++) {
-      const row = [];
+      const row: T[] = [];
       rows.push(row);
       for (let x = 0; x < this.w; x++) {
         row.push(defaultValue());
@@ -88,7 +117,8 @@ export class Level {
     }
     return rows;
   };
-  generate(time) {
+
+  generate(time: number) {
     const rooms_total = 1 + this.level;
     const monsters_total = 3 + this.level;
     const drop_total = 5 + this.level;
@@ -138,6 +168,7 @@ export class Level {
       this.monsters[hero_y][hero_x] = this.hero;
     }
   };
+
   generateRoom() {
     const room_min_w = 5;
     const room_min_h = 3;
@@ -193,7 +224,7 @@ export class Level {
                   a.y - b.y - b.h
                 );
               }
-              if (rect.h < max_corr_dist && !this.isOverlap(rect.expandH())) {
+              if (rect.h < max_corr_dist && !this.isOverlap(rect.expandV())) {
                 this.corridorsV.push(rect);
                 connected = true;
               }
@@ -234,13 +265,15 @@ export class Level {
       }
     }
   }
-  isOverlap(a) {
+
+  isOverlap(a: Rect) {
     const f = a.isOverlap.bind(a);
     return this.rooms.some(f) ||
       this.corridorsV.some(f) ||
       this.corridorsH.some(f);
   };
-  randomDrop(x, y) {
+
+  randomDrop(x: number, y: number) {
     if (this.rng.nextFloat() < 0.5) {
       this.drop[y][x] = new Coins(this.rng);
     } else if (this.rng.nextFloat() < 0.3) {
@@ -249,12 +282,14 @@ export class Level {
       this.drop[y][x] = new HealthBigFlask();
     }
   };
+
   fill() {
     this.rooms.forEach(r => this.fillRoom(r.x, r.y, r.w, r.h));
     this.corridorsH.forEach(r => this.fillCorridorH(r.x, r.y, r.w, r.h));
     this.corridorsV.forEach(r => this.fillCorridorV(r.x, r.y, r.w, r.h));
   };
-  fillRoom(x, y, w, h) {
+
+  fillRoom(x: number, y: number, w: number, h: number) {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
@@ -292,7 +327,8 @@ export class Level {
       this.wall[r_y][x + w - 1] = "wall_side_mid_left";
     }
   };
-  fillCorridorH(x, y, w, h) {
+
+  fillCorridorH(x: number, y: number, w: number, h: number) {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
@@ -328,7 +364,7 @@ export class Level {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
         switch (this.wall[l_y][x - 1]) {
           case "wall_side_mid_left":
-            this.wall[l_y][x - 1] = false;
+            this.wall[l_y][x - 1] = null;
             break;
           default:
             console.log("mid left", this.wall[l_y][x - 1]);
@@ -388,7 +424,7 @@ export class Level {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
         switch (this.wall[l_y][x + w]) {
           case "wall_side_mid_right":
-            this.wall[l_y][x + w] = false;
+            this.wall[l_y][x + w] = null;
             break;
           default:
             console.log("mid right", this.wall[l_y][x + w]);
@@ -432,7 +468,8 @@ export class Level {
       this.wall[y + h][r_x] = "wall_mid"
     }
   };
-  fillCorridorV(x, y, w, h) {
+
+  fillCorridorV(x: number, y: number, w: number, h: number) {
     // fill floor
     for (let r_y = y; r_y < y + h; r_y++) {
       for (let r_x = x; r_x < x + w; r_x++) {
@@ -462,7 +499,7 @@ export class Level {
     for (let r_x = x; r_x < x + w; r_x++) {
       switch (this.wall[y - 1][r_x]) {
         case "wall_top_mid":
-          this.wall[y - 1][r_x] = false;
+          this.wall[y - 1][r_x] = null;
           break;
         default:
           console.log("top mid -1", this.wall[y - 1][r_x]);
@@ -470,7 +507,7 @@ export class Level {
       }
       switch (this.wall[y][r_x]) {
         case "wall_mid":
-          this.wall[y][r_x] = false;
+          this.wall[y][r_x] = null;
           break;
         default:
           console.log("top mid 0", this.wall[y][r_x]);
@@ -519,7 +556,7 @@ export class Level {
     for (let r_x = x; r_x < x + w; r_x++) {
       switch (this.wall[y + h - 2][r_x]) {
         case "wall_top_mid":
-          this.wall[y + h - 2][r_x] = false;
+          this.wall[y + h - 2][r_x] = null;
           break;
         default:
           console.log("bottom mid -2", this.wall[y + h - 2][r_x]);
@@ -527,7 +564,7 @@ export class Level {
       }
       switch (this.wall[y + h - 1][r_x]) {
         case "wall_mid":
-          this.wall[y + h - 1][r_x] = false;
+          this.wall[y + h - 1][r_x] = null;
           break;
         default:
           console.log("bottom mid -1", this.wall[y + h - 1][r_x]);
@@ -559,11 +596,13 @@ export class Level {
       this.wall[r_y][x + w] = "wall_side_mid_right";
     }
   };
+
   replace() {
     this.replaceFloorRandomly();
     this.replaceLadder();
     this.replaceWallRandomly();
   };
+
   replaceFloorRandomly() {
     const replacements = ["floor_2", "floor_3", "floor_4", "floor_5", "floor_6", "floor_7", "floor_8"];
     const percent = 0.2;
@@ -575,6 +614,7 @@ export class Level {
       }
     }
   };
+
   replaceLadder() {
     // replace one tile in last room as ladder = out from level!
     const last = this.rooms[this.rooms.length - 1];
@@ -584,6 +624,7 @@ export class Level {
     console.log(ladder_x, ladder_y, last);
     this.floor[ladder_y][ladder_x] = "floor_ladder";
   };
+
   replaceWallRandomly() {
     const wall_mid_top_replaces = [
       "wall_hole_1",
@@ -608,7 +649,7 @@ export class Level {
             case "wall_mid":
               if (this.rng.nextFloat() < percent) {
                 const is_top = !!this.floor[y + 1][x];
-                let replacements;
+                let replacements: string[];
                 if (is_top) {
                   replacements = wall_mid_top_replaces;
                 } else {
@@ -644,10 +685,12 @@ export class Level {
       }
     }
   };
-  exit(time) {
+
+  exit(time: number) {
     this.scene.setLevel(new Level(this.rng, this.registry, this.scene, this.hero, this.level + 1, time))
   };
-  animate(time) {
+
+  animate(time: number) {
     this.monsterList.forEach(m => m.animate(time));
     this.hero.animate(time);
   };

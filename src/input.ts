@@ -1,34 +1,57 @@
+enum KeyBindState {Await = 1, Pressed = 2}
+
 export class KeyBind {
-  constructor(code) {
+  private readonly code: string;
+  private state: KeyBindState;
+  triggered: boolean;
+  processed: boolean;
+
+  constructor(code: string) {
     this.code = code;
-    this.state = 'await';
+    this.state = KeyBindState.Await;
     this.triggered = false;
     this.processed = true;
   }
 
-  keydown(e) {
-    if(e.code === this.code) {
+  keydown(e: KeyboardEvent) {
+    if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === 'await') {
+      if (this.state === KeyBindState.Await) {
         this.triggered = true;
         this.processed = false;
-        this.state = 'pressed';
+        this.state = KeyBindState.Pressed;
       }
     }
   }
 
-  keyup(e) {
-    if(e.code === this.code) {
+  keyup(e: KeyboardEvent) {
+    if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === "pressed") {
+      if (this.state === KeyBindState.Pressed) {
         this.triggered = false;
-        this.state = 'await';
+        this.state = KeyBindState.Await;
       }
     }
   }
 }
 
 export class Joystick {
+  readonly moveUp: KeyBind;
+  readonly moveLeft: KeyBind;
+  readonly moveDown: KeyBind;
+  readonly moveRight: KeyBind;
+  readonly hit: KeyBind;
+  readonly digit1: KeyBind;
+  readonly digit2: KeyBind;
+  readonly digit3: KeyBind;
+  readonly digit4: KeyBind;
+  readonly digit5: KeyBind;
+  readonly digit6: KeyBind;
+  readonly digit7: KeyBind;
+  readonly digit8: KeyBind;
+  readonly digit9: KeyBind;
+  readonly digit0: KeyBind;
+
   constructor() {
     this.moveUp = new KeyBind('KeyW');
     this.moveLeft = new KeyBind('KeyA');
@@ -49,12 +72,27 @@ export class Joystick {
     this.init();
   }
 
+  digit(num: number): KeyBind {
+    switch (num) {
+      case 1: return this.digit1;
+      case 2: return this.digit2;
+      case 3: return this.digit3;
+      case 4: return this.digit4;
+      case 5: return this.digit5;
+      case 6: return this.digit6;
+      case 7: return this.digit7;
+      case 8: return this.digit8;
+      case 9: return this.digit9;
+      case 0: return this.digit0;
+    }
+  }
+
   init() {
     window.addEventListener("keydown", this.keydown.bind(this));
     window.addEventListener("keyup", this.keyup.bind(this));
   };
 
-  keydown(e) {
+  keydown(e: KeyboardEvent) {
     this.moveUp.keydown(e);
     this.moveLeft.keydown(e);
     this.moveDown.keydown(e);
@@ -71,7 +109,8 @@ export class Joystick {
     this.digit9.keydown(e);
     this.digit0.keydown(e);
   };
-  keyup(e) {
+
+  keyup(e: KeyboardEvent) {
     this.moveUp.keyup(e);
     this.moveLeft.keyup(e);
     this.moveDown.keyup(e);

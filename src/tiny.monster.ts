@@ -1,3 +1,9 @@
+import {RNG} from "./rng";
+import {Tile, TileRegistry} from "./tilemap";
+import {Level} from "./level";
+import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Weapon} from "./hero";
+
 export const tinyMonsterNames = [
   "tiny_zombie",
   "goblin",
@@ -9,8 +15,29 @@ export const tinyMonsterNames = [
   "ice_zombie",
 ];
 
-export class TinyMonster {
-  constructor(rng, registry, level, x, y, name, time) {
+export class TinyMonster implements Monster {
+  private readonly rng: RNG;
+  private readonly registry: TileRegistry;
+  private readonly level: Level;
+  x: number;
+  y: number;
+  new_x: number;
+  new_y: number;
+  is_left: boolean;
+  private readonly name: string;
+  private readonly healthMax: number;
+  private health: number;
+  private readonly damage: number;
+  private readonly luck: number;
+  readonly speed: number;
+  state: MonsterState;
+  private tileName: string;
+  tile: Tile;
+  frame: number;
+  start: number;
+  weapon: Weapon;
+
+  constructor(rng: RNG, registry: TileRegistry, level: Level, x: number, y: number, name: string, time: number) {
     this.rng = rng;
     this.registry = registry;
     this.level = level;
@@ -25,19 +52,20 @@ export class TinyMonster {
     this.damage = 1;
     this.luck = 0.5;
     this.speed = 100;
-    this.setAnimation("idle", time);
+    this.setAnimation(MonsterState.Idle, time);
   }
-  setAnimation(state, time) {
+
+  setAnimation(state: MonsterState, time: number) {
     switch (state) {
-      case "idle":
-        this.state = "idle";
+      case MonsterState.Idle:
+        this.state = state;
         this.tileName = this.name + "_idle_anim";
         this.tile = this.registry.get(this.tileName);
         this.frame = 0;
         this.start = time;
         break;
-      case "run":
-        this.state = "run";
+      case MonsterState.Run:
+        this.state = state;
         this.tileName = this.name + "_run_anim";
         this.tile = this.registry.get(this.tileName);
         this.frame = 0;
@@ -45,18 +73,19 @@ export class TinyMonster {
         break;
     }
   };
-  animate(time) {
+
+  animate(time: number) {
     this.frame = Math.floor((time - this.start) / this.speed);
     if (this.frame >= this.tile.numOfFrames) {
-      if (this.state === "run") {
+      if (this.state === MonsterState.Run) {
         // console.log("finish run animation");
-        this.level.monsters[this.y][this.x] = false;
+        this.level.monsters[this.y][this.x] = null;
         this.level.monsters[this.new_y][this.new_x] = this;
         this.x = this.new_x;
         this.y = this.new_y;
       }
 
-      this.setAnimation("idle", time);
+      this.setAnimation(MonsterState.Idle, time);
 
       // search hero near
       const max_distance = 3;
@@ -108,9 +137,10 @@ export class TinyMonster {
       }
     }
   };
-  move(d_x, d_y, time) {
+
+  move(d_x: number, d_y: number, time: number) {
     this.is_left = d_x < 0;
-    if (this.state === "idle") {
+    if (this.state === MonsterState.Idle) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
@@ -121,21 +151,22 @@ export class TinyMonster {
       if (this.level.monsters[new_y][new_x]) return false;
 
       // start move animation
-      this.level.monsters[new_y][new_x] = true; // mark as used
+      this.level.monsters[new_y][new_x] = new MovingMonsterWrapper(this); // mark as used
       this.new_x = new_x;
       this.new_y = new_y;
-      this.setAnimation("run", time);
+      this.setAnimation(MonsterState.Run, time);
       return true;
     }
     return false;
   };
-  hitDamage(damage, name, time) {
+
+  hitDamage(damage: number, name: string, time: number) {
     this.level.log.push(`${this.name} damaged ${damage} by ${name}`);
     this.health = Math.max(0, this.health - damage);
     if (this.health <= 0) {
       this.level.log.push(`${this.name} killed by ${name}`);
-      this.level.monsters[this.y][this.x] = false;
-      this.level.monsters[this.new_y][this.new_x] = false;
+      this.level.monsters[this.y][this.x] = null;
+      this.level.monsters[this.new_y][this.new_x] = null;
       this.level.monsterList = this.level.monsterList.filter(s => s !== this);
       if (this.rng.nextFloat() < this.luck) {
         this.level.randomDrop(this.x, this.y);

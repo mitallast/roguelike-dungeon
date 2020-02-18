@@ -1,0 +1,33 @@
+{
+  "name": "roguelike-dungeon",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/dungeon.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mitallast/roguelike-dungeon.git"
+  },
+  "author": "mitallast@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mitallast/roguelike-dungeon/issues"
+  },
+  "homepage": "https://github.com/mitallast/roguelike-dungeon#readme",
+  "devDependencies": {
+    "browserify": "^16.5.0",
+    "fancy-log": "^1.3.3",
+    "gulp": "^4.0.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "gulp-uglify-es": "^2.0.0",
+    "tsify": "^4.0.1",
+    "typescript": "^3.7.5",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0",
+    "watchify": "^3.11.1"
+  }
+}
