@@ -1,9 +1,17 @@
-import {Level} from "./level";
+import {Render} from "./render";
 
-export class Scene {
-  level: Level;
+export interface Scene {
+  render(render: Render): void;
+}
 
-  setLevel(level: Level) {
-    this.level = level;
+export class SceneController {
+  private scene: Scene;
+
+  setScene(scene: Scene) {
+    this.scene = scene;
+  }
+
+  render(render: Render) {
+    this.scene.render(render);
   }
 }

@@ -10,7 +10,7 @@ gulp.task('default', () => {
   return browserify({
     basedir: '.',
     debug: true,
-    entries: ['src/dungeon.ts'],
+    entries: ['src/app.ts'],
     cache: {},
     packageCache: {}
   })

@@ -2,10 +2,10 @@ import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
 import {RNG} from "./rng";
 import {Tile, TileRegistry} from "./tilemap";
-import {Scene} from "./scene";
 import {HeroMonster} from "./hero";
 import {Monster} from "./monster";
 import {BossMonster, mossMonsterNames} from "./boss.monster";
+import {DungeonScene} from "./dungeon";
 
 const x_dist = 2;
 const y_dist = 3;
@@ -65,7 +65,7 @@ export class Rect {
 export class Level {
   private readonly rng: RNG;
   private readonly registry: TileRegistry;
-  private readonly scene: Scene;
+  private readonly scene: DungeonScene;
   readonly level: number;
   readonly w: number;
   readonly h: number;
@@ -82,7 +82,7 @@ export class Level {
   readonly hero: HeroMonster;
   readonly monsters: Monster[][];
 
-  constructor(rng: RNG, registry: TileRegistry, scene: Scene, hero: HeroMonster, l: number, time: number) {
+  constructor(rng: RNG, registry: TileRegistry, scene: DungeonScene, hero: HeroMonster, l: number, time: number) {
     this.rng = rng;
     this.registry = registry;
     this.scene = scene;
