@@ -6,14 +6,22 @@ import {RNG} from "./rng";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {Render} from "./render";
 import {Scene, SceneController} from "./scene";
+import {SelectHeroScene} from "./create.hero";
 
 const scale = 2;
 
 export class DungeonScene implements Scene {
+  private readonly rng: RNG;
+  private readonly joystick: Joystick;
+  private readonly registry: TileRegistry;
+  private readonly controller: SceneController;
+
   private level: Level;
-  private controller: SceneController;
 
   constructor(rng: RNG, joystick: Joystick, registry: TileRegistry, controller: SceneController, hero: HeroMonster) {
+    this.rng = rng;
+    this.joystick = joystick;
+    this.registry = registry;
     this.controller = controller;
     const start = new Date().getTime();
     this.level = new Level(rng, registry, this, hero, 1, start);
@@ -21,6 +29,10 @@ export class DungeonScene implements Scene {
 
   setLevel(level: Level) {
     this.level = level;
+  }
+
+  restart() {
+    this.controller.setScene(new SelectHeroScene(this.rng, this.joystick, this.registry, this.controller));
   }
 
   render(render: Render) {
@@ -230,6 +242,12 @@ export class DungeonScene implements Scene {
       render.ctx.textAlign = "center";
       render.ctx.font = "200px silkscreennormal";
       render.ctx.fillText("YOU DIED", 0, 0);
+
+      render.ctx.fillStyle = "rgb(255,255,255)";
+      render.ctx.textAlign = "center";
+      render.ctx.font = "40px silkscreennormal";
+      render.ctx.fillText("PRESS F TO RESTART", 0, 200);
+
       render.ctx.restore();
     }
   }
@@ -399,30 +417,3 @@ export class DungeonScene implements Scene {
     }
   }
 }
-//
-// (async function () {
-//
-//   // https://0x72.itch.io/dungeontileset-ii
-//
-//   const registry = new TileRegistry();
-//   await registry.load();
-//
-//   const render = new Render();
-//   const canvas = render.canvas;
-//   const ctx = render.ctx;
-//
-//   const buffer = render.buffer;
-//   const b_ctx = render.b_ctx;
-//
-//   const start = new Date().getTime();
-//   const rng = new RNG();
-//   const joystick = new Joystick();
-//   const hero_weapon = WeaponConfig.configs[0].create(registry);
-//   const hero = new HeroMonster(registry, joystick, 0, 0, "knight_f", hero_weapon, start);
-//   const scene = new Scene();
-//   this.setLevel(new Level(rng, registry, scene, hero, 1, start));
-//
-//   const scale = 2;
-//
-//
-// })();

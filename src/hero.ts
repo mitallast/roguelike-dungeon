@@ -143,7 +143,12 @@ export class HeroMonster implements Monster {
   };
 
   action(time: number) {
-    if (!this.dead) {
+    if (this.dead) {
+      if (!this.joystick.hit.processed) {
+        this.joystick.hit.processed = true;
+        this.level.restart();
+      }
+    } else {
       this.scanDrop();
       for (let d = 0; d < 10; d++) {
         const digit = (d + 1) % 10;

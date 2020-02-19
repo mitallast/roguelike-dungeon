@@ -727,6 +727,10 @@ export class Level {
     this.scene.setLevel(new Level(this.rng, this.registry, this.scene, this.hero, this.level + 1, time))
   };
 
+  restart() {
+    this.scene.restart();
+  }
+
   animate(time: number) {
     this.hero.animate(time);
     if(this.boss) this.boss.animate(time);
