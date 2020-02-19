@@ -163,14 +163,13 @@ export class HeroMonster implements Monster {
       }
 
       if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
+        this.joystick.hit.processed = true;
         if (this.level.floor[this.y][this.x].name === "floor_ladder") {
-          this.joystick.hit.processed = true;
           this.level.exit(time);
-          return true;
         } else {
           this.setAnimation(MonsterState.Hit, time);
-          return true;
         }
+        return true;
       }
       if (this.joystick.moveUp.triggered || !this.joystick.moveUp.processed) {
         this.joystick.moveUp.processed = true;
