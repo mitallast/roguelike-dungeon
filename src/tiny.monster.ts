@@ -48,7 +48,7 @@ export class TinyMonster implements Monster {
     this.name = name;
     this.healthMax = 10;
     this.health = this.healthMax;
-    this.damage = 1;
+    this.damage = 3;
     this.luck = 0.5;
     this.speed = 100;
     this.setAnimation(MonsterState.Idle, time);
@@ -125,8 +125,8 @@ export class TinyMonster implements Monster {
       // random move ?
       const random_move_percent = 0.1;
       if (this.rng.nextFloat() < random_move_percent) {
-        const move_x = this.rng.nextRange(-1, 1);
-        const move_y = this.rng.nextRange(-1, 1);
+        const move_x = this.rng.nextRange(-1, 2);
+        const move_y = this.rng.nextRange(-1, 2);
         // console.log("random move", move_x, move_y);
         if (this.move(move_x, move_y, time)) {
           return;
