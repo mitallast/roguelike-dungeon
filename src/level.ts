@@ -5,6 +5,7 @@ import {Tile, TileRegistry} from "./tilemap";
 import {Scene} from "./scene";
 import {HeroMonster} from "./hero";
 import {Monster} from "./monster";
+import {BossMonster, mossMonsterNames} from "./boss.monster";
 
 const x_dist = 2;
 const y_dist = 3;
@@ -76,6 +77,7 @@ export class Level {
   readonly drop: Drop[][];
   readonly wall: Tile[][];
 
+  boss: BossMonster;
   monsterList: TinyMonster[];
   readonly hero: HeroMonster;
   readonly monsters: Monster[][];
@@ -122,6 +124,7 @@ export class Level {
     const rooms_total = 1 + this.level;
     const monsters_total = 3 + this.level;
     const drop_total = 5 + this.level;
+    const is_boss = this.level % 5 === 0;
 
     // create rooms
     for (let r = 0; r < rooms_total; r++) {
@@ -129,16 +132,38 @@ export class Level {
     }
 
     // create monsters
-    for (let m = 0; m < monsters_total; m++) {
-      const r = this.rng.nextRange(1, this.rooms.length);
-      const room = this.rooms[r];
+    const max_room = this.rooms.length - (is_boss ? 1 : 0);
+    if (max_room > 1) {
+      for (let m = 0; m < monsters_total; m++) {
+        const r = this.rng.nextRange(1, max_room);
+        const room = this.rooms[r];
+        for (let t = 0; t < 10; t++) {
+          const x = room.x + this.rng.nextRange(0, room.w);
+          const y = room.y + this.rng.nextRange(0, room.h);
+          if (!this.monsters[y][x]) {
+            const name = this.rng.choice(tinyMonsterNames);
+            const monster = new TinyMonster(this.rng, this.registry, this, x, y, name, time);
+            this.monsterList.push(monster);
+            this.monsters[y][x] = monster;
+            break;
+          }
+        }
+      }
+    }
+
+    // generate boss
+    if (is_boss) {
+      const room = this.rooms[this.rooms.length - 1];
       for (let t = 0; t < 10; t++) {
-        const x = room.x + this.rng.nextRange(0, room.w);
-        const y = room.y + this.rng.nextRange(0, room.h);
-        if (!this.monsters[y][x]) {
-          const name = this.rng.choice(tinyMonsterNames);
-          const monster = new TinyMonster(this.rng, this.registry, this, x, y, name, time);
-          this.monsterList.push(monster);
+        const x = room.x + this.rng.nextRange(1, room.w);
+        const y = room.y + this.rng.nextRange(1, room.h);
+        if (
+          !this.monsters[y][x] && !this.monsters[y][x + 1] &&
+          !this.monsters[y - 1][x] && !this.monsters[y - 1][x + 1]
+        ) {
+          const name = mossMonsterNames[Math.floor(this.level / 5) % mossMonsterNames.length];
+          const monster = new BossMonster(this.rng, this.registry, this, x, y, name, time);
+          this.boss = monster;
           this.monsters[y][x] = monster;
           break;
         }
@@ -179,7 +204,7 @@ export class Level {
 
     const max_corr_dist = 12;
 
-    while (true) {
+    for (let retry = 0; retry < 1000; retry++) {
       const room_w = this.rng.nextRange(room_min_w, room_max_w);
       const room_h = this.rng.nextRange(room_min_h, room_max_h);
 
@@ -258,6 +283,7 @@ export class Level {
           }
 
           if (connected) {
+            console.log("add room", room);
             this.rooms.push(room);
             break;
           }
@@ -281,7 +307,6 @@ export class Level {
 
     const total = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
     const rnd = this.rng.nextFloat() * total;
-    console.log(rnd);
 
     if (rnd < weight_weapon) {
       const available = WeaponConfig.configs.filter(c => c.level <= this.level);
@@ -703,7 +728,8 @@ export class Level {
   };
 
   animate(time: number) {
-    this.monsterList.forEach(m => m.animate(time));
     this.hero.animate(time);
+    if(this.boss) this.boss.animate(time);
+    this.monsterList.forEach(m => m.animate(time));
   };
 }

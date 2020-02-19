@@ -18,6 +18,7 @@ export interface Monster {
   state: MonsterState
   weapon: Weapon
   hitDamage(damage: number, name: string, time: number): void;
+  animate(time: number): void;
 }
 
 export class MovingMonsterWrapper implements Monster {
@@ -73,5 +74,8 @@ export class MovingMonsterWrapper implements Monster {
 
   get weapon(): Weapon {
     return this.monster.weapon;
+  }
+
+  animate(time: number): void {
   }
 }

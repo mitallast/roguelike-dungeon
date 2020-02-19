@@ -26,11 +26,12 @@ import {Weapon, WeaponConfig} from "./drop";
   const rng = new RNG();
   const joystick = new Joystick();
   const hero_weapon = WeaponConfig.configs[0].create(registry);
-  const hero = new HeroMonster(registry, joystick,0, 0, "knight_f", hero_weapon, start);
+  const hero = new HeroMonster(registry, joystick, 0, 0, "knight_f", hero_weapon, start);
   const scene = new Scene();
   scene.setLevel(new Level(rng, registry, scene, hero, 1, start));
 
   const scale = 2;
+
   function render() {
     const time = new Date().getTime();
     scene.level.animate(time);
@@ -61,7 +62,7 @@ import {Weapon, WeaponConfig} from "./drop";
     let t_y = scene.level.hero.y * 16 * scale + 8 - c_h / 2;
 
     // translate level to hero position
-    if(scene.level.hero.state === MonsterState.Run) {
+    if (scene.level.hero.state === MonsterState.Run) {
       const start = scene.level.hero.start;
       const speed = scene.level.hero.speed;
       const numOfFrames = scene.level.hero.tile.numOfFrames;
@@ -76,30 +77,30 @@ import {Weapon, WeaponConfig} from "./drop";
     }
 
     // render floor, drop
-    for(let l_x=0; l_x<scene.level.w; l_x++) {
-      for(let l_y=0; l_y<scene.level.h; l_y++) {
+    for (let l_x = 0; l_x < scene.level.w; l_x++) {
+      for (let l_y = 0; l_y < scene.level.h; l_y++) {
         const d_x = -t_x + l_x * 16 * scale;
         const d_y = -t_y + l_y * 16 * scale;
         renderTile(scene.level.floor[l_y][l_x], d_x, d_y);
-        if(scene.level.drop[l_y][l_x]) {
+        if (scene.level.drop[l_y][l_x]) {
           renderTile(scene.level.drop[l_y][l_x].tile, d_x, d_y);
         }
       }
     }
     // render wall, monsters
-    for(let l_y=0; l_y<scene.level.h; l_y++) {
-      for(let l_x=0; l_x<scene.level.w; l_x++) {
+    for (let l_y = 0; l_y < scene.level.h; l_y++) {
+      for (let l_x = 0; l_x < scene.level.w; l_x++) {
         const d_x = -t_x + l_x * 16 * scale;
         const d_y = -t_y + l_y * 16 * scale;
         const tile = scene.level.wall[l_y][l_x];
-        if(tile) {
+        if (tile) {
           renderTile(tile, d_x, d_y);
           if (tile.name === "wall_fountain_mid_red_anim" || tile.name === "wall_fountain_mid_blue_anim") {
             renderLight(d_x + 8 * scale, d_y + 8 * scale, 16 * scale * 4);
           }
         }
       }
-      if(l_y < scene.level.h -1) {
+      if (l_y < scene.level.h - 1) {
         for (let l_x = 0; l_x < scene.level.w; l_x++) {
           const m_y = l_y + 1;
           const d_x = -t_x + l_x * 16 * scale;
@@ -136,6 +137,7 @@ import {Weapon, WeaponConfig} from "./drop";
     renderYouDead(time);
     renderInventory(time);
   }
+
   function renderHealth(time: number) {
     const border = 4;
     const height = 20;
@@ -165,6 +167,7 @@ import {Weapon, WeaponConfig} from "./drop";
 
     ctx.restore();
   }
+
   function renderLevelTitle(time: number) {
     const c_w = canvas.width;
     const c_h = canvas.height;
@@ -178,23 +181,54 @@ import {Weapon, WeaponConfig} from "./drop";
     ctx.fillText(`level ${scene.level.level}`, 0, 0);
     ctx.restore();
 
+    // render HUD - boss health
+    if (scene.level.boss) {
+      ctx.save();
+      ctx.translate(c_w / 2, 100);
+
+      const border = 4;
+      const height = 20;
+      const max_width = 500;
+
+      const h_m = scene.level.boss.healthMax;
+      const h = scene.level.boss.health;
+
+      const point_w = Math.min(10, Math.floor(max_width / h_m));
+
+      // background
+      const b_w = border * 2 + point_w * h_m;
+      ctx.fillStyle = "rgb(0,0,0)";
+      ctx.fillRect(-(b_w >> 1), 0, b_w, border * 2 + height);
+
+      // health red line
+      const h_w = point_w * h;
+      ctx.fillStyle = "rgb(255,0,0)";
+      ctx.fillRect(border - ((point_w * h_m) >> 1), border, h_w, height);
+
+      // health points text
+      ctx.fillStyle = "rgb(255,255,255)";
+      ctx.font = "20px silkscreennormal";
+      ctx.fillText(`${scene.level.boss.name} - ${h}`, border * 2 - ((point_w * h_m) >> 1), border + 16);
+      ctx.restore();
+    }
+
     // render HUD - log info
     scene.level.log = scene.level.log.slice(-5);
     ctx.save();
     ctx.translate(40, c_h - 100);
-    for(let i=0; i<scene.level.log.length; i++) {
+    for (let i = 0; i < scene.level.log.length; i++) {
       ctx.fillStyle = "rgb(255,255,255)";
       ctx.font = "20px silkscreennormal";
       ctx.fillText(scene.level.log[i], 0, i * 20);
     }
-
     ctx.restore();
   }
+
   function renderYouDead(time: number) {
     const c_w = canvas.width;
     const c_h = canvas.height;
 
-    if(scene.level.hero.dead) {
+    if (scene.level.hero.dead) {
       ctx.save();
 
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -209,6 +243,7 @@ import {Weapon, WeaponConfig} from "./drop";
       ctx.restore();
     }
   }
+
   function renderInventory(time: number) {
     const c_w = canvas.width;
     const c_h = canvas.height;
@@ -237,7 +272,7 @@ import {Weapon, WeaponConfig} from "./drop";
       ctx.fillStyle = "rgb(70,70,70)";
       ctx.fillRect(c_x, 0, cell_size * scale, cell_size * scale);
       const cell = cells[g_x];
-      if(cell.item) {
+      if (cell.item) {
         const tile = cell.item.tile;
         let sx = tile.x;
         const sy = tile.y;
@@ -266,7 +301,7 @@ import {Weapon, WeaponConfig} from "./drop";
   }
 
   function renderMonster(monster: Monster, dx: number, dy: number, time: number) {
-    if(monster && !(monster instanceof MovingMonsterWrapper)) {
+    if (monster && !(monster instanceof MovingMonsterWrapper)) {
       const sw = monster.tile.w;
       const sh = monster.tile.h;
       const sx = monster.tile.x + sw * monster.frame;
@@ -279,7 +314,7 @@ import {Weapon, WeaponConfig} from "./drop";
       let offset_x = 0;
       let offset_y = 0;
 
-      if(monster.state === MonsterState.Run) {
+      if (monster.state === MonsterState.Run) {
         const start = monster.start;
         const speed = monster.speed;
         const numOfFrames = monster.tile.numOfFrames;
@@ -290,15 +325,15 @@ import {Weapon, WeaponConfig} from "./drop";
         offset_y = scale * 16 * (monster.new_y - monster.y) * delta;
       }
 
-      if(dx + offset_x + dw > 0 && dx + offset_x < ctx.canvas.width &&
+      if (dx + offset_x + dw > 0 && dx + offset_x < ctx.canvas.width &&
         dy + offset_y + dh > 0 && dy + offset_y < ctx.canvas.height) {
 
 
         ctx.save();
         ctx.translate(dx + offset_x, dy + offset_y);
-        if(monster.is_left) {
+        if (monster.is_left) {
           ctx.scale(-1, 1);
-          if(monster.weapon) {
+          if (monster.weapon) {
             ctx.save();
             const w = monster.weapon.tile;
             const w_dw = w.w * scale;
@@ -309,7 +344,7 @@ import {Weapon, WeaponConfig} from "./drop";
 
             ctx.translate(-w_dx, -w_dy);
 
-            if(monster.state === MonsterState.Hit) {
+            if (monster.state === MonsterState.Hit) {
               let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
               ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
               ctx.rotate(angle * Math.PI / 180); // 90 degree
@@ -321,7 +356,7 @@ import {Weapon, WeaponConfig} from "./drop";
           }
           ctx.drawImage(monster.tile.tileSet, sx, sy, sw, sh, 0 - dw, -tile_offset_y, dw, dh);
         } else {
-          if(monster.weapon) {
+          if (monster.weapon) {
             ctx.save();
             const w = monster.weapon.tile;
             const w_dw = w.w * scale;
@@ -332,12 +367,12 @@ import {Weapon, WeaponConfig} from "./drop";
 
             ctx.translate(w_dx, -w_dy);
 
-            if(monster.state === MonsterState.Hit) {
+            if (monster.state === MonsterState.Hit) {
               let angle = 90 * monster.weapon.frame / (monster.weapon.numOfFrames - 1);
               ctx.translate(w_dw >> 1, w_dh); // to bottom center of tile
               ctx.rotate(angle * Math.PI / 180); // 90 degree
               ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, -(w_dw >> 1), -w_dh, w_dw, w_dh);
-            }else {
+            } else {
               ctx.drawImage(w.tileSet, w.x, w.y, w.w, w.h, 0, 0, w_dw, w_dh);
             }
             ctx.restore();
@@ -350,7 +385,7 @@ import {Weapon, WeaponConfig} from "./drop";
   }
 
   function renderTile(tile: Tile, dx: number, dy: number) {
-    if(tile) {
+    if (tile) {
       const sw = tile.w;
       const sh = tile.h;
       const dw = sw * scale;
@@ -358,7 +393,7 @@ import {Weapon, WeaponConfig} from "./drop";
       const offset_y = dh - 16 * scale;
       const offset_x = (16 * scale - dw) >> 1;
 
-      if(dx + dw > 0 && dx < ctx.canvas.width &&
+      if (dx + dw > 0 && dx < ctx.canvas.width &&
         dy - offset_y + dh > 0 && dy - offset_y < ctx.canvas.height) {
         if (tile.isAnim && tile.numOfFrames > 1) {
           const time = new Date().getTime();
