@@ -2,7 +2,7 @@ import {Scene, SceneController} from "./scene";
 import {Render} from "./render";
 import {RNG} from "./rng";
 import {Joystick} from "./input";
-import {Tile, TileRegistry} from "./tilemap";
+import {TileRegistry} from "./tilemap";
 import {HeroMonster, heroMonsterNames} from "./hero";
 import {WeaponConfig} from "./drop";
 import {DungeonScene} from "./dungeon";
