@@ -41,6 +41,7 @@ export class Joystick {
   readonly moveDown: KeyBind;
   readonly moveRight: KeyBind;
   readonly hit: KeyBind;
+  readonly drop: KeyBind;
   readonly digit1: KeyBind;
   readonly digit2: KeyBind;
   readonly digit3: KeyBind;
@@ -58,6 +59,7 @@ export class Joystick {
     this.moveDown = new KeyBind('KeyS');
     this.moveRight = new KeyBind('KeyD');
     this.hit = new KeyBind('KeyF');
+    this.drop = new KeyBind('KeyQ');
 
     this.digit1 = new KeyBind('Digit1');
     this.digit2 = new KeyBind('Digit2');
@@ -98,6 +100,7 @@ export class Joystick {
     this.moveDown.keydown(e);
     this.moveRight.keydown(e);
     this.hit.keydown(e);
+    this.drop.keydown(e);
     this.digit1.keydown(e);
     this.digit2.keydown(e);
     this.digit3.keydown(e);
@@ -116,6 +119,7 @@ export class Joystick {
     this.moveDown.keyup(e);
     this.moveRight.keyup(e);
     this.hit.keyup(e);
+    this.drop.keyup(e);
     this.digit1.keyup(e);
     this.digit2.keyup(e);
     this.digit3.keyup(e);

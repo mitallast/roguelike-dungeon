@@ -49,7 +49,7 @@ export class HeroMonster implements Monster {
     this.healthMax = 30;
     this.health = this.healthMax;
     this.coins = 0;
-    this.baseDamage = 5;
+    this.baseDamage = 1;
     this.dead = false;
     this.weapon = weapon;
     this.speed = 100;
@@ -58,7 +58,7 @@ export class HeroMonster implements Monster {
   }
 
   get damage(): number {
-    return this.baseDamage + this.weapon.damage;
+    return this.baseDamage + (this.weapon ? this.weapon.damage : 0);
   }
 
   setLevel(level: Level) {
@@ -84,7 +84,9 @@ export class HeroMonster implements Monster {
           this.state = state;
           this.tile = this.registry.get(this.name + "_hit_anim");
           this.frame = 0;
-          this.weapon.frame = 0;
+          if (this.weapon) {
+            this.weapon.frame = 0;
+          }
           this.start = time;
           break;
       }
@@ -115,12 +117,23 @@ export class HeroMonster implements Monster {
         }
         break;
       case MonsterState.Hit:
-        this.weapon.frame = Math.floor((time - this.start) / this.weapon.speed);
-        if (this.weapon.frame >= this.weapon.numOfFrames) {
-          this.scanHit(time);
-          this.scanDrop();
-          if (!this.action(time)) {
-            this.setAnimation(MonsterState.Idle, time);
+        if (this.weapon) {
+          this.weapon.frame = Math.floor((time - this.start) / this.weapon.speed);
+          if (this.weapon.frame >= this.weapon.numOfFrames) {
+            this.scanHit(time);
+            this.scanDrop();
+            if (!this.action(time)) {
+              this.setAnimation(MonsterState.Idle, time);
+            }
+          }
+        } else {
+          this.frame = Math.floor((time - this.start) / this.speed);
+          if (this.frame >= this.tile.numOfFrames) {
+            this.scanHit(time);
+            this.scanDrop();
+            if (!this.action(time)) {
+              this.setAnimation(MonsterState.Idle, time);
+            }
           }
         }
         break;
@@ -135,6 +148,10 @@ export class HeroMonster implements Monster {
         this.joystick.digit(digit).processed = true;
         this.inventory.cells[d].use(this);
       }
+    }
+    if (!this.joystick.drop.processed) {
+      this.joystick.drop.processed = true;
+      this.dropWeapon();
     }
 
     if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
@@ -176,6 +193,78 @@ export class HeroMonster implements Monster {
     return false;
   };
 
+  dropWeapon() {
+    if (this.weapon) {
+      const max_distance = 5;
+      let left_x = this.x;
+      let right_x = this.x;
+      let min_y = this.y;
+      let max_y = this.y;
+      // find free floor cell;
+
+      // scan from center by x
+      for(let dist_x = 0; dist_x<max_distance; dist_x++) {
+        left_x--;
+        right_x++;
+        min_y--;
+        max_y++;
+
+        // scan from center by y
+        console.log("scan from center by y", left_x, right_x, min_y, max_y);
+        let t_y = this.y;
+        let b_y = this.y;
+        for(let dist_y = 0; dist_y<=dist_x; dist_y++) {
+          let scan_x = this.is_left ? [left_x, right_x] : [right_x, left_x];
+          let scan_y = [t_y, b_y];
+
+          for(let i=0; i<2; i++) {
+            let s_x = scan_x[i];
+            for(let j=0; j<2; j++) {
+              let s_y = scan_y[j];
+              if(s_x >= 0 && s_y >= 0) {
+                console.log("test scan", s_x, s_y);
+                if (!this.level.drop[s_y][s_x] && this.level.floor[s_y][s_x]) {
+                  const drop = this.weapon;
+                  this.weapon = null;
+                  this.level.drop[s_y][s_x] = drop;
+                  return;
+                }
+              }
+            }
+          }
+
+          t_y--;
+          b_y++;
+        }
+
+        // after reach max y, scan to center by x
+        console.log("scan to center by x", left_x, right_x, t_y, b_y);
+        for(let dist_r = 0; dist_r<dist_x; dist_x++) {
+          left_x++;
+          right_x--;
+
+          let scan_x = this.is_left ? [left_x, right_x] : [right_x, left_x];
+          let scan_y = [t_y, b_y];
+
+          for(let i=0; i<2; i++) {
+            let s_x = scan_x[i];
+            for(let j=0; j<2; j++) {
+              let s_y = scan_y[j];
+              if(s_x >= 0 && s_y >= 0) {
+                if (!this.level.drop[s_y][s_x] && this.level.floor[s_y][s_x]) {
+                  const drop = this.weapon;
+                  this.weapon = null;
+                  this.level.drop[s_y][s_x] = drop;
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   scanDrop() {
     if (this.level.drop[this.y][this.x]) {
       const drop = this.level.drop[this.y][this.x];
@@ -186,7 +275,7 @@ export class HeroMonster implements Monster {
   };
 
   scanHit(time: number) {
-    const max_distance = this.weapon.distance;
+    const max_distance = this.weapon ? this.weapon.distance : 1;
     // search only left or right path
     const scan_x_min = this.is_left ? Math.max(0, this.x - max_distance) : this.x;
     const scan_x_max = this.is_left ? this.x : Math.min(this.level.w, this.x + max_distance);
