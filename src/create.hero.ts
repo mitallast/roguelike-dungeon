@@ -102,7 +102,7 @@ export class SelectHeroScene implements Scene {
       this.selected = (this.selected + 1) % heroMonsterNames.length;
     }
     if (!this.joystick.hit.processed) {
-      this.joystick.hit.processed = true;
+      this.joystick.hit.reset();
       const name = heroMonsterNames[this.selected];
       const hero_weapon = WeaponConfig.configs[0].create(this.registry);
       const hero = new HeroMonster(this.registry, this.joystick, 0, 0, name, hero_weapon, 0);

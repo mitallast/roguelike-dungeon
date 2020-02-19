@@ -1,4 +1,4 @@
-enum KeyBindState {Await = 1, Pressed = 2}
+enum KeyBindState {Await = 1, Pressed = 2, Reset = 3}
 
 export class KeyBind {
   private readonly code: string;
@@ -27,11 +27,17 @@ export class KeyBind {
   keyup(e: KeyboardEvent) {
     if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === KeyBindState.Pressed) {
+      if (this.state === KeyBindState.Pressed || this.state === KeyBindState.Reset) {
         this.triggered = false;
         this.state = KeyBindState.Await;
       }
     }
+  }
+
+  reset() {
+    this.state = KeyBindState.Reset;
+    this.triggered = false;
+    this.processed = true;
   }
 }
 
@@ -76,16 +82,26 @@ export class Joystick {
 
   digit(num: number): KeyBind {
     switch (num) {
-      case 1: return this.digit1;
-      case 2: return this.digit2;
-      case 3: return this.digit3;
-      case 4: return this.digit4;
-      case 5: return this.digit5;
-      case 6: return this.digit6;
-      case 7: return this.digit7;
-      case 8: return this.digit8;
-      case 9: return this.digit9;
-      case 0: return this.digit0;
+      case 1:
+        return this.digit1;
+      case 2:
+        return this.digit2;
+      case 3:
+        return this.digit3;
+      case 4:
+        return this.digit4;
+      case 5:
+        return this.digit5;
+      case 6:
+        return this.digit6;
+      case 7:
+        return this.digit7;
+      case 8:
+        return this.digit8;
+      case 9:
+        return this.digit9;
+      case 0:
+        return this.digit0;
     }
   }
 

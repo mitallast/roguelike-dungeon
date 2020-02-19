@@ -145,7 +145,7 @@ export class HeroMonster implements Monster {
   action(time: number) {
     if (this.dead) {
       if (!this.joystick.hit.processed) {
-        this.joystick.hit.processed = true;
+        this.joystick.hit.reset();
         this.level.restart();
       }
     } else {
@@ -162,7 +162,7 @@ export class HeroMonster implements Monster {
         this.dropWeapon();
       }
 
-      if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
+      if (this.joystick.hit.triggered || !this.joystick.hit.processed) {
         this.joystick.hit.processed = true;
         if (this.level.floor[this.y][this.x].name === "floor_ladder") {
           this.level.exit(time);
