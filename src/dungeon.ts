@@ -356,6 +356,7 @@ import {Weapon, WeaponConfig} from "./drop";
       const dw = sw * scale;
       const dh = sh * scale;
       const offset_y = dh - 16 * scale;
+      const offset_x = (16 * scale - dw) >> 1;
 
       if(dx + dw > 0 && dx < ctx.canvas.width &&
         dy - offset_y + dh > 0 && dy - offset_y < ctx.canvas.height) {
@@ -364,11 +365,11 @@ import {Weapon, WeaponConfig} from "./drop";
           const sf = Math.floor(time / 100) % tile.numOfFrames;
           const sx = tile.x + sw * sf;
           const sy = tile.y;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy - offset_y, dw, dh);
+          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx + offset_x, dy - offset_y, dw, dh);
         } else {
           const sx = tile.x;
           const sy = tile.y;
-          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx, dy - offset_y, dw, dh);
+          ctx.drawImage(tile.tileSet, sx, sy, sw, sh, dx + offset_x, dy - offset_y, dw, dh);
         }
       }
     }
