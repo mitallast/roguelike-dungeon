@@ -66,21 +66,23 @@ export class HeroMonster implements Monster {
   };
 
   setAnimation(state: MonsterState, time: number) {
-    if (!this.dead) {
-      switch (state) {
-        case MonsterState.Idle:
-          this.state = state;
-          this.tile = this.registry.get(this.name + "_idle_anim");
-          this.frame = 0;
-          this.start = time;
-          break;
-        case MonsterState.Run:
+    switch (state) {
+      case MonsterState.Idle:
+        this.state = state;
+        this.tile = this.registry.get(this.name + "_idle_anim");
+        this.frame = 0;
+        this.start = time;
+        break;
+      case MonsterState.Run:
+        if (!this.dead) {
           this.state = state;
           this.tile = this.registry.get(this.name + "_run_anim");
           this.frame = 0;
           this.start = time;
-          break;
-        case MonsterState.Hit:
+        }
+        break;
+      case MonsterState.Hit:
+        if (!this.dead) {
           this.state = state;
           this.tile = this.registry.get(this.name + "_hit_anim");
           this.frame = 0;
@@ -88,10 +90,10 @@ export class HeroMonster implements Monster {
             this.weapon.frame = 0;
           }
           this.start = time;
-          break;
-      }
+        }
+        break;
     }
-  };
+  }
 
   animate(time: number) {
     switch (this.state) {
@@ -141,53 +143,55 @@ export class HeroMonster implements Monster {
   };
 
   action(time: number) {
-    this.scanDrop();
-    for (let d = 0; d < 10; d++) {
-      const digit = (d + 1) % 10;
-      if (!this.joystick.digit(digit).processed) {
-        this.joystick.digit(digit).processed = true;
-        this.inventory.cells[d].use(this);
+    if (!this.dead) {
+      this.scanDrop();
+      for (let d = 0; d < 10; d++) {
+        const digit = (d + 1) % 10;
+        if (!this.joystick.digit(digit).processed) {
+          this.joystick.digit(digit).processed = true;
+          this.inventory.cells[d].use(this);
+        }
       }
-    }
-    if (!this.joystick.drop.processed) {
-      this.joystick.drop.processed = true;
-      this.dropWeapon();
-    }
+      if (!this.joystick.drop.processed) {
+        this.joystick.drop.processed = true;
+        this.dropWeapon();
+      }
 
-    if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
-      if (this.level.floor[this.y][this.x].name === "floor_ladder") {
-        this.joystick.hit.processed = true;
-        this.level.exit(time);
-        return true;
-      } else {
-        this.setAnimation(MonsterState.Hit, time);
-        return true;
+      if (this.joystick.hit.triggered && !this.joystick.hit.processed) {
+        if (this.level.floor[this.y][this.x].name === "floor_ladder") {
+          this.joystick.hit.processed = true;
+          this.level.exit(time);
+          return true;
+        } else {
+          this.setAnimation(MonsterState.Hit, time);
+          return true;
+        }
       }
-    }
-    if (this.joystick.moveUp.triggered || !this.joystick.moveUp.processed) {
-      this.joystick.moveUp.processed = true;
-      if (this.move(0, -1, time)) {
-        return true;
+      if (this.joystick.moveUp.triggered || !this.joystick.moveUp.processed) {
+        this.joystick.moveUp.processed = true;
+        if (this.move(0, -1, time)) {
+          return true;
+        }
       }
-    }
-    if (this.joystick.moveDown.triggered || !this.joystick.moveDown.processed) {
-      this.joystick.moveDown.processed = true;
-      if (this.move(0, 1, time)) {
-        return true;
+      if (this.joystick.moveDown.triggered || !this.joystick.moveDown.processed) {
+        this.joystick.moveDown.processed = true;
+        if (this.move(0, 1, time)) {
+          return true;
+        }
       }
-    }
-    if (this.joystick.moveLeft.triggered || !this.joystick.moveLeft.processed) {
-      this.joystick.moveLeft.processed = true;
-      this.is_left = true;
-      if (this.move(-1, 0, time)) {
-        return true;
+      if (this.joystick.moveLeft.triggered || !this.joystick.moveLeft.processed) {
+        this.joystick.moveLeft.processed = true;
+        this.is_left = true;
+        if (this.move(-1, 0, time)) {
+          return true;
+        }
       }
-    }
-    if (this.joystick.moveRight.triggered || !this.joystick.moveRight.processed) {
-      this.joystick.moveRight.processed = true;
-      this.is_left = false;
-      if (this.move(1, 0, time)) {
-        return true;
+      if (this.joystick.moveRight.triggered || !this.joystick.moveRight.processed) {
+        this.joystick.moveRight.processed = true;
+        this.is_left = false;
+        if (this.move(1, 0, time)) {
+          return true;
+        }
       }
     }
     return false;
@@ -203,7 +207,7 @@ export class HeroMonster implements Monster {
       // find free floor cell;
 
       // scan from center by x
-      for(let dist_x = 0; dist_x<max_distance; dist_x++) {
+      for (let dist_x = 0; dist_x < max_distance; dist_x++) {
         left_x--;
         right_x++;
         min_y--;
@@ -212,15 +216,15 @@ export class HeroMonster implements Monster {
         // scan from center by y
         let t_y = this.y;
         let b_y = this.y;
-        for(let dist_y = 0; dist_y<=dist_x; dist_y++) {
+        for (let dist_y = 0; dist_y <= dist_x; dist_y++) {
           let scan_x = this.is_left ? [left_x, right_x] : [right_x, left_x];
           let scan_y = [t_y, b_y];
 
-          for(let i=0; i<2; i++) {
+          for (let i = 0; i < 2; i++) {
             let s_x = scan_x[i];
-            for(let j=0; j<2; j++) {
+            for (let j = 0; j < 2; j++) {
               let s_y = scan_y[j];
-              if(s_x >= 0 && s_y >= 0) {
+              if (s_x >= 0 && s_y >= 0) {
                 if (!this.level.drop[s_y][s_x] && this.level.floor[s_y][s_x]) {
                   const drop = this.weapon;
                   this.weapon = null;
@@ -236,18 +240,18 @@ export class HeroMonster implements Monster {
         }
 
         // after reach max y, scan to center by x
-        for(let dist_r = 0; dist_r<dist_x; dist_x++) {
+        for (let dist_r = 0; dist_r < dist_x; dist_x++) {
           left_x++;
           right_x--;
 
           let scan_x = this.is_left ? [left_x, right_x] : [right_x, left_x];
           let scan_y = [t_y, b_y];
 
-          for(let i=0; i<2; i++) {
+          for (let i = 0; i < 2; i++) {
             let s_x = scan_x[i];
-            for(let j=0; j<2; j++) {
+            for (let j = 0; j < 2; j++) {
               let s_y = scan_y[j];
-              if(s_x >= 0 && s_y >= 0) {
+              if (s_x >= 0 && s_y >= 0) {
                 if (!this.level.drop[s_y][s_x] && this.level.floor[s_y][s_x]) {
                   const drop = this.weapon;
                   this.weapon = null;
