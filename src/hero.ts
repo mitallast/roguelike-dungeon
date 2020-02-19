@@ -210,7 +210,6 @@ export class HeroMonster implements Monster {
         max_y++;
 
         // scan from center by y
-        console.log("scan from center by y", left_x, right_x, min_y, max_y);
         let t_y = this.y;
         let b_y = this.y;
         for(let dist_y = 0; dist_y<=dist_x; dist_y++) {
@@ -222,7 +221,6 @@ export class HeroMonster implements Monster {
             for(let j=0; j<2; j++) {
               let s_y = scan_y[j];
               if(s_x >= 0 && s_y >= 0) {
-                console.log("test scan", s_x, s_y);
                 if (!this.level.drop[s_y][s_x] && this.level.floor[s_y][s_x]) {
                   const drop = this.weapon;
                   this.weapon = null;
@@ -238,7 +236,6 @@ export class HeroMonster implements Monster {
         }
 
         // after reach max y, scan to center by x
-        console.log("scan to center by x", left_x, right_x, t_y, b_y);
         for(let dist_r = 0; dist_r<dist_x; dist_x++) {
           left_x++;
           right_x--;
