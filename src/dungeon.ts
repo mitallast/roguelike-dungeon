@@ -4,7 +4,6 @@ import {HeroMonster} from "./hero";
 import {Level} from "./level";
 import {RNG} from "./rng";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
-import {WeaponConfig} from "./drop";
 import {Render} from "./render";
 import {Scene, SceneController} from "./scene";
 
@@ -14,11 +13,9 @@ export class DungeonScene implements Scene {
   private level: Level;
   private controller: SceneController;
 
-  constructor(rng: RNG, joystick: Joystick, registry: TileRegistry, controller: SceneController) {
+  constructor(rng: RNG, joystick: Joystick, registry: TileRegistry, controller: SceneController, hero: HeroMonster) {
     this.controller = controller;
     const start = new Date().getTime();
-    const hero_weapon = WeaponConfig.configs[0].create(registry);
-    const hero = new HeroMonster(registry, joystick, 0, 0, "knight_f", hero_weapon, start);
     this.level = new Level(rng, registry, this, hero, 1, start);
   }
 
