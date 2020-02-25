@@ -1,8 +1,11 @@
-import {RNG} from "./rng";
-import {Tile, TileRegistry} from "./tilemap";
-import {Level} from "./level";
+import {TileRegistry} from "./tilemap";
+import {DungeonLevel} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
-import {Weapon} from "./drop";
+import {View} from "./view";
+// @ts-ignore
+import * as PIXI from "pixi.js";
+
+const TILE_SIZE = 16;
 
 export const tinyMonsterNames = [
   "tiny_zombie",
@@ -15,157 +18,208 @@ export const tinyMonsterNames = [
   "ice_zombie",
 ];
 
-export class TinyMonster implements Monster {
-  private readonly rng: RNG;
+export class TinyMonster implements Monster, View {
+  private readonly level: DungeonLevel;
   private readonly registry: TileRegistry;
-  private readonly level: Level;
+  private readonly wrapper: MovingMonsterWrapper;
+
   x: number;
   y: number;
   new_x: number;
   new_y: number;
-  is_left: boolean;
-  private readonly name: string;
-  private readonly healthMax: number;
-  private health: number;
-  private readonly damage: number;
-  private readonly luck: number;
-  readonly speed: number;
+  is_left: boolean = false;
   state: MonsterState;
-  tile: Tile;
-  frame: number;
-  start: number;
-  weapon: Weapon;
 
-  constructor(rng: RNG, registry: TileRegistry, level: Level, x: number, y: number, name: string, time: number) {
-    this.rng = rng;
-    this.registry = registry;
+  private readonly name: string;
+  private readonly healthMax: number = 10;
+  private health: number = this.healthMax;
+  private readonly damage: number = 1.5;
+  private readonly luck: number = 0.3;
+  private readonly speed: number = 0.2;
+
+  private duration: number;
+  sprite: PIXI.AnimatedSprite;
+  readonly container: PIXI.Container;
+
+  constructor(level: DungeonLevel, x: number, y: number, name: string) {
     this.level = level;
-    this.x = x;
-    this.y = y;
-    this.new_x = x;
-    this.new_y = y;
-    this.is_left = false;
+    this.registry = level.scene.registry;
+    this.wrapper = new MovingMonsterWrapper(this);
     this.name = name;
-    this.healthMax = 10;
-    this.health = this.healthMax;
-    this.damage = 3;
-    this.luck = 0.5;
-    this.speed = 100;
-    this.setAnimation(MonsterState.Idle, time);
+    this.container = new PIXI.Container();
+    this.container.zIndex = 100; // @todo maintain zIndex
+    this.level.container.addChild(this.container);
+    this.setAnimation(MonsterState.Idle);
+    this.resetPosition(x, y);
   }
 
-  setAnimation(state: MonsterState, time: number) {
+  update(delta: number): void {
+    this.duration += delta;
+    this.animate();
+  }
+
+  destroy(): void {
+    this.level.monsterMap[this.y][this.x] = null;
+    this.level.monsterMap[this.new_y][this.new_x] = null;
+    this.level.monsters = this.level.monsters.filter(s => s !== this);
+
+    this.sprite?.destroy();
+    this.container.destroy();
+  }
+
+  private setSprite(postfix: string): void {
+    this.sprite?.destroy();
+    this.sprite = this.registry.animated(this.name + postfix);
+    this.sprite.loop = false;
+    this.sprite.animationSpeed = this.speed;
+    this.sprite.anchor.set(0, 1);
+    this.sprite.position.y = TILE_SIZE - 2;
+    this.sprite.zIndex = 1;
+    this.sprite.play();
+    this.container.addChild(this.sprite);
+    this.duration = 0;
+
+    if (this.is_left) {
+      this.sprite.position.x = this.sprite.width;
+      this.sprite.scale.x = -1;
+    } else {
+      this.sprite.position.x = 0;
+      this.sprite.scale.x = 1;
+    }
+  }
+
+  setAnimation(state: MonsterState) {
     switch (state) {
       case MonsterState.Idle:
         this.state = state;
-        this.tile = this.registry.get(this.name + "_idle_anim");
-        this.frame = 0;
-        this.start = time;
+        this.setSprite('_idle');
         break;
       case MonsterState.Run:
         this.state = state;
-        this.tile = this.registry.get(this.name + "_run_anim");
-        this.frame = 0;
-        this.start = time;
+        this.setSprite('_run');
         break;
     }
   };
 
-  animate(time: number) {
-    this.frame = Math.floor((time - this.start) / this.speed);
-    if (this.frame >= this.tile.numOfFrames) {
-      if (this.state === MonsterState.Run) {
-        // console.log("finish run animation");
-        this.level.monsters[this.y][this.x] = null;
-        this.level.monsters[this.new_y][this.new_x] = this;
-        this.x = this.new_x;
-        this.y = this.new_y;
-      }
-
-      this.setAnimation(MonsterState.Idle, time);
-
-      // search hero near
-      const max_distance = 3;
-      const scan_x_min = Math.max(0, this.x - max_distance);
-      const scan_y_min = Math.max(0, this.y - max_distance);
-      const scan_x_max = Math.min(this.level.w, this.x + max_distance);
-      const scan_y_max = Math.min(this.level.h, this.y + max_distance);
-
-      const is_hero_near = !this.level.hero.dead
-        && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
-        && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
-
-      // console.log("hero is near", scan_x_min, scan_x_max, scan_y_min, scan_y_max);
-
-      if (is_hero_near) {
-        const dist_x = Math.abs(this.x - this.level.hero.x);
-        const dist_y = Math.abs(this.y - this.level.hero.y);
-
-        if (dist_x > 1) {
-          const move_x = Math.max(-1, Math.min(1, this.level.hero.x - this.x));
-          if (this.move(move_x, 0, time)) {
-            console.log("move to hero x");
-            return;
+  animate() {
+    switch (this.state) {
+      case MonsterState.Idle:
+        if (!this.sprite.playing) {
+          if (!this.action()) {
+            this.setAnimation(MonsterState.Idle);
           }
         }
-        if (dist_y > 0) {
-          const move_y = Math.max(-1, Math.min(1, this.level.hero.y - this.y));
-          if (this.move(0, move_y, time)) {
-            console.log("move to hero y");
-            return;
+        break;
+      case MonsterState.Run:
+        const delta = this.duration / (this.sprite.totalFrames / this.speed);
+        const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
+        const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
+        this.container.position.set(t_x, t_y);
+
+        if (!this.sprite.playing) {
+          this.resetPosition(this.new_x, this.new_y);
+          if (!this.action()) {
+            this.setAnimation(MonsterState.Idle);
           }
         }
-
-        if (dist_x <= 1 && dist_y <= 1 && this.rng.nextFloat() < this.luck) {
-          this.level.hero.hitDamage(this.damage, this.name, time);
-          return;
-        }
-      }
-
-      // random move ?
-      const random_move_percent = 0.1;
-      if (this.rng.nextFloat() < random_move_percent) {
-        const move_x = this.rng.nextRange(-1, 2);
-        const move_y = this.rng.nextRange(-1, 2);
-        // console.log("random move", move_x, move_y);
-        if (this.move(move_x, move_y, time)) {
-          return;
-        }
-      }
+        break;
     }
   };
 
-  move(d_x: number, d_y: number, time: number) {
+  action(): boolean {
+    // search hero near
+    const max_distance = 3;
+    const scan_x_min = Math.max(0, this.x - max_distance);
+    const scan_y_min = Math.max(0, this.y - max_distance);
+    const scan_x_max = Math.min(this.level.width, this.x + max_distance);
+    const scan_y_max = Math.min(this.level.height, this.y + max_distance);
+
+    const is_hero_near = !this.level.hero.dead
+      && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
+      && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
+
+    if (is_hero_near) {
+      const dist_x = Math.abs(this.x - this.level.hero.x);
+      const dist_y = Math.abs(this.y - this.level.hero.y);
+
+      if (dist_x > 1) {
+        const move_x = Math.max(-1, Math.min(1, this.level.hero.x - this.x));
+        if (this.move(move_x, 0)) {
+          console.log("move to hero x");
+          return true;
+        }
+      }
+      if (dist_y > 0) {
+        const move_y = Math.max(-1, Math.min(1, this.level.hero.y - this.y));
+        if (this.move(0, move_y)) {
+          console.log("move to hero y");
+          return true;
+        }
+      }
+
+      if (dist_x <= 1 && dist_y <= 1 && Math.random() < this.luck) {
+        this.level.hero.hitDamage(this.damage, this.name);
+        return true;
+      }
+    }
+
+    // random move ?
+    const random_move_percent = 0.1;
+    if (Math.random() < random_move_percent) {
+      const move_x = Math.floor(Math.random() * 3) - 1;
+      const move_y = Math.floor(Math.random() * 3) - 1;
+      if (this.move(move_x, move_y)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  move(d_x: number, d_y: number) {
     this.is_left = d_x < 0;
     if (this.state === MonsterState.Idle) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
       // check is floor exists
-      if (!this.level.floor[new_y][new_x]) return false;
+      if (!this.level.floorMap[new_y][new_x]) return false;
 
       // check is no monster
-      if (this.level.monsters[new_y][new_x]) return false;
+      if (this.level.monsterMap[new_y][new_x]) return false;
 
-      // start move animation
-      this.level.monsters[new_y][new_x] = new MovingMonsterWrapper(this); // mark as used
-      this.new_x = new_x;
-      this.new_y = new_y;
-      this.setAnimation(MonsterState.Run, time);
+      this.markNewPosition(new_x, new_y);
+      this.setAnimation(MonsterState.Run);
       return true;
     }
     return false;
   };
 
-  hitDamage(damage: number, name: string, time: number) {
+  markNewPosition(x: number, y: number) {
+    this.level.monsterMap[y][x] = this.wrapper;
+    this.new_x = x;
+    this.new_y = y;
+  }
+
+  resetPosition(x: number, y: number) {
+    if (this.x >= 0 && this.y >= 0) {
+      this.level.monsterMap[this.y][this.x] = null;
+    }
+    this.x = x;
+    this.y = y;
+    this.new_x = x;
+    this.new_y = y;
+    this.level.monsterMap[y][x] = this;
+    this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
+  };
+
+  hitDamage(damage: number, name: string) {
     this.level.log.push(`${this.name} damaged ${damage} by ${name}`);
     this.health = Math.max(0, this.health - damage);
     if (this.health <= 0) {
       this.level.log.push(`${this.name} killed by ${name}`);
-      this.level.monsters[this.y][this.x] = null;
-      this.level.monsters[this.new_y][this.new_x] = null;
-      this.level.monsterList = this.level.monsterList.filter(s => s !== this);
-      if (this.rng.nextFloat() < this.luck) {
+      this.destroy();
+      if (Math.random() < this.luck) {
         this.level.randomDrop(this.x, this.y);
       }
     }

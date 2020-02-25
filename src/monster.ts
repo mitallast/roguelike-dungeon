@@ -1,6 +1,3 @@
-import {Tile} from "./tilemap";
-import {Weapon} from "./drop";
-
 export enum MonsterState {
   Idle = 0, Run = 1, Hit = 2
 }
@@ -11,14 +8,8 @@ export interface Monster {
   new_x: number
   new_y: number
   is_left: boolean
-  frame: number
-  start: number
-  speed: number
-  tile: Tile
   state: MonsterState
-  weapon: Weapon
-  hitDamage(damage: number, name: string, time: number): void;
-  animate(time: number): void;
+  hitDamage(damage: number, name: string): void;
 }
 
 export class MovingMonsterWrapper implements Monster {
@@ -28,8 +19,8 @@ export class MovingMonsterWrapper implements Monster {
     this.monster = monster;
   }
 
-  hitDamage(damage: number, name: string, time: number) {
-    this.monster.hitDamage(damage, name, time);
+  hitDamage(damage: number, name: string) {
+    this.monster.hitDamage(damage, name);
   }
 
   get x(): number {
@@ -52,30 +43,7 @@ export class MovingMonsterWrapper implements Monster {
     return this.monster.is_left;
   }
 
-  get frame(): number {
-    return this.monster.frame;
-  }
-
-  get start(): number {
-    return this.monster.start;
-  }
-
-  get speed(): number {
-    return this.monster.speed;
-  }
-
-  get tile(): Tile {
-    return this.monster.tile;
-  }
-
   get state(): MonsterState {
     return this.monster.state;
-  }
-
-  get weapon(): Weapon {
-    return this.monster.weapon;
-  }
-
-  animate(time: number): void {
   }
 }

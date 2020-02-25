@@ -2,24 +2,34 @@ import {Joystick} from "./input";
 import {TileRegistry} from "./tilemap";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
-import {Render} from "./render";
 import {KeyBindScene} from "./keybind.scene";
-
+// @ts-ignore
+import * as PIXI from 'pixi.js';
+// @ts-ignore
+window.PIXI = PIXI;
+import "pixi-layers";
 
 (async function () {
-  const registry = new TileRegistry();
+
+  const app = new PIXI.Application({
+    width: 1200,
+    height: 700,
+  });
+
+  // create the stage instead of container
+  const stage = new PIXI.display.Stage();
+  app.stage = stage;
+
+  const registry = new TileRegistry(app.loader);
   await registry.load();
 
-  const render = new Render();
+  document.getElementById("container").appendChild(app.view);
 
   const rng = new RNG();
   const joystick = new Joystick();
-  const controller = new SceneController();
-  controller.setScene(new KeyBindScene(rng, joystick, registry, controller));
+  const controller = new SceneController(rng, joystick, registry, app, stage);
+  controller.setScene(new KeyBindScene(controller));
 
-  function renderFrame() {
-    controller.render(render);
-    window.requestAnimationFrame(renderFrame);
-  }
-  renderFrame();
+  app.renderer.backgroundColor = 0x202020;
+  app.ticker.add((delta: number) => controller.tick(delta));
 })();

@@ -3,7 +3,7 @@ import {SelectHeroScene} from "./create.hero";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
-export class KeyBindScene implements Scene {
+export class YouDeadScene implements Scene {
   private readonly controller: SceneController;
 
   constructor(controller: SceneController) {
@@ -26,12 +26,15 @@ export class KeyBindScene implements Scene {
   renderTitle() {
     let style = new PIXI.TextStyle({
       fontFamily: "silkscreennormal",
-      fontSize: 100,
-      fill: "white"
+      fontSize: 200,
+      fill: "red"
     });
-    let title = new PIXI.Text("ROGUELIKE DUNGEON", style);
-    title.anchor.set(0.5, 0);
-    title.position.set(this.controller.app.screen.width >> 1, 64);
+    let title = new PIXI.Text("YOU DEAD", style);
+    title.anchor.set(0.5, 0.5);
+    title.position.set(
+      this.controller.app.screen.width >> 1,
+      this.controller.app.screen.height >> 1
+    );
     this.controller.stage.addChild(title);
   }
 
@@ -41,23 +44,13 @@ export class KeyBindScene implements Scene {
       fontSize: 20,
       fill: "white"
     });
-
-    const bindings = [
-      "WASD - top, left, bottom, right",
-      "F - action",
-      "Q - drop weapon",
-      "1 ... 0 - inventory",
-      "",
-      "PRESS F TO CONTINUE",
-    ];
-    for (let i = 0; i < bindings.length; i++) {
-      const text = bindings[i];
-      if (text.length > 0) {
-        const line = new PIXI.Text(text, style);
-        line.position.set(40, 200 + i * 30);
-        this.controller.stage.addChild(line);
-      }
-    }
+    const line = new PIXI.Text("PRESS F TO RESTART", style);
+    line.anchor.set(0.5, 1);
+    line.position.set(
+      this.controller.app.screen.width >> 1,
+      this.controller.app.screen.height - 64
+    );
+    this.controller.stage.addChild(line);
   }
 
   handleInput() {

@@ -1,113 +1,188 @@
 import {Scene, SceneController} from "./scene";
-import {Render} from "./render";
-import {RNG} from "./rng";
-import {Joystick} from "./input";
-import {TileRegistry} from "./tilemap";
-import {HeroMonster, heroMonsterNames} from "./hero";
+import {heroMonsterNames, HeroState} from "./hero";
 import {WeaponConfig} from "./drop";
 import {DungeonScene} from "./dungeon";
+// @ts-ignore
+import * as PIXI from "pixi.js";
 
 export class SelectHeroScene implements Scene {
-  private readonly rng: RNG;
-  private readonly joystick: Joystick;
-  private readonly registry: TileRegistry;
   private readonly controller: SceneController;
 
   private selected = 0;
+  private readonly heroes: SelectHeroView[] = [];
 
-  constructor(rng: RNG, joystick: Joystick, registry: TileRegistry, controller: SceneController) {
-    this.rng = rng;
-    this.joystick = joystick;
-    this.registry = registry;
+  constructor(controller: SceneController) {
     this.controller = controller;
   }
 
-  render(render: Render): void {
+  init(): void {
+    this.renderTitle();
+    this.renderHeroes();
+  }
+
+  tick(delta: number): void {
     this.handleInput();
-
-    const time = new Date().getTime();
-    const c_w = render.canvas.width;
-    const c_h = render.canvas.height;
-
-    render.ctx.save();
-    render.ctx.fillStyle = "rgb(34,34,34)";
-    render.ctx.fillRect(0, 0, c_w, c_h);
-
-    this.renderTitle(render);
-    this.renderHeroes(render, time);
-
-    render.ctx.restore();
+    this.updateHeroes();
   }
 
-  renderTitle(render: Render) {
-    render.ctx.textAlign = "center";
-    render.ctx.textBaseline = "top";
-    render.ctx.font = "100px silkscreennormal";
-    render.ctx.fillStyle = "rgb(255,255,255)";
-    render.ctx.fillText("ROGUELIKE DUNGEON", render.canvas.width >> 1, 100);
+  destroy(): void {
+    this.heroes.forEach(h => h.destroy());
+    this.controller.stage.removeChildren();
   }
 
-  renderHeroes(render: Render, time: number) {
-    const c_w = render.canvas.width;
-    const c_h = render.canvas.height;
+  renderTitle() {
+    let style = new PIXI.TextStyle({
+      fontFamily: "silkscreennormal",
+      fontSize: 100,
+      fill: "white"
+    });
+    let title = new PIXI.Text("ROGUELIKE DUNGEON", style);
+    title.anchor.set(0.5, 0);
+    title.position.set(this.controller.app.screen.width >> 1, 64);
+    this.controller.stage.addChild(title);
+  }
+
+  renderHeroes() {
+    const c_w = this.controller.app.screen.width;
+    const c_h = this.controller.app.screen.height;
 
     const total = heroMonsterNames.length;
-    const width = Math.floor(c_w / total);
-    const margin = Math.floor(width / 10);
+    const margin = 40;
+    const rect_w = Math.floor((c_w - margin * (total + 1)) / total);
+
+    const tile_w = 16;
+    const tile_h = 28;
+
+    const title_h = 20;
+
+    const sprite_w = rect_w - (margin << 1);
+    const scale = sprite_w / tile_w;
+    const sprite_h = Math.floor(tile_h * scale);
+    const rect_h = sprite_h + title_h + margin * 3;
+
+    console.log("stage", c_w, c_h);
+    console.log("rect", rect_w, rect_h);
+    console.log("sprite", sprite_w, sprite_h);
 
     for (let i = 0; i < total; i++) {
       const heroName = heroMonsterNames[i];
-      const tile = this.registry.get(heroName + "_idle_anim");
+      console.log(heroName);
 
-      const d_x = width * i + margin;
-      const d_y = (c_h >> 1) - (width >> 1);
+      const d_x = margin * (i + 1) + rect_w * i;
+      const d_y = (c_h >> 1) - (rect_h >> 1);
+      const container = new PIXI.Container();
+      console.log(d_x, d_y);
+      container.position.set(d_x, d_y);
 
-      const d_w = width - (margin << 1);
-      const scale = Math.floor(d_w / tile.w);
-      const d_h = Math.floor(tile.h * scale);
+      const selected = new PIXI.Graphics();
+      selected.beginFill(0x909090);
+      selected.drawRect(0, 0, rect_w, rect_h);
+      selected.endFill();
+      container.addChild(selected);
 
-      let sw = 0;
-      if (tile.isAnim && tile.numOfFrames > 1) {
-        const sf = Math.floor(time / 100) % tile.numOfFrames;
-        sw = sf * tile.w;
-      }
-      if (this.selected === i) {
-        render.ctx.fillStyle = "rgb(90, 90, 90)";
+      const notSelected = new PIXI.Graphics();
+      notSelected.beginFill(0x505050);
+      notSelected.drawRect(0, 0, rect_w, rect_h);
+      notSelected.endFill();
+      container.addChild(notSelected);
+
+      let style = new PIXI.TextStyle({
+        fontFamily: "silkscreennormal",
+        fontSize: title_h,
+        fill: "white"
+      });
+      let title = new PIXI.Text(heroName, style);
+      title.position.set((container.width >> 1) - (title.width >> 1), margin);
+      title.visible = this.selected === i;
+      container.addChild(title);
+
+      const sprite = this.controller.registry.animated(heroName + "_idle");
+      sprite.animationSpeed = 0.2;
+      sprite.width = sprite_w;
+      sprite.height = sprite_h;
+      sprite.position.set(margin, margin + margin + title_h);
+      container.addChild(sprite);
+
+      this.heroes.push(new SelectHeroView(selected, notSelected, title, sprite));
+
+      this.controller.stage.addChild(container);
+    }
+  }
+
+  updateHeroes() {
+    this.heroes.forEach((h, i) => {
+      h.setSelected(i == this.selected);
+    });
+  }
+
+  handleInput() {
+    const joystick = this.controller.joystick;
+    if (!joystick.moveLeft.processed) {
+      joystick.moveLeft.processed = true;
+      if (this.selected === 0) this.selected = heroMonsterNames.length - 1;
+      else this.selected--;
+    }
+    if (!joystick.moveRight.processed) {
+      joystick.moveRight.processed = true;
+      this.selected = (this.selected + 1) % heroMonsterNames.length;
+    }
+    if (!joystick.hit.processed) {
+      joystick.hit.reset();
+      const name = heroMonsterNames[this.selected];
+      const weapon = WeaponConfig.configs[0].create(this.controller.registry);
+      const hero = new HeroState(name, weapon);
+      const scene = new DungeonScene(this.controller, hero);
+      this.controller.setScene(scene);
+    }
+  }
+}
+
+class SelectHeroView {
+  private readonly selected: PIXI.Graphics;
+  private readonly notSelected: PIXI.Graphics;
+  private readonly title: PIXI.Text;
+  private readonly sprite: PIXI.AnimatedSprite;
+  private isSelected = false;
+
+  constructor(
+    selected: PIXI.Graphics,
+    notSelected: PIXI.Graphics,
+    title: PIXI.Text,
+    sprite: PIXI.AnimatedSprite
+  ) {
+    this.selected = selected;
+    this.notSelected = notSelected;
+    this.title = title;
+    this.sprite = sprite;
+  }
+
+  setSelected(isSelected: boolean): void {
+    if (this.isSelected !== isSelected) {
+      this.isSelected = isSelected;
+      if (isSelected) {
+        this.selected.visible = true;
+        this.notSelected.visible = false;
+        this.title.visible = true;
+        this.sprite.gotoAndPlay(0);
       } else {
-        render.ctx.fillStyle = "rgb(50, 50, 50)";
+        this.selected.visible = false;
+        this.notSelected.visible = true;
+        this.title.visible = false;
+        this.sprite.gotoAndStop(0);
       }
-
-      render.ctx.fillRect(d_x - (margin >> 1), d_y + margin, d_w + margin, d_h);
-
-      render.ctx.drawImage(tile.tileSet, tile.x + sw, tile.y, tile.w, tile.h, d_x, d_y, d_w, d_h);
-
-      if (this.selected === i) {
-        render.ctx.textAlign = "center";
-        render.ctx.textBaseline = "top";
-        render.ctx.font = "20px silkscreennormal";
-        render.ctx.fillStyle = "rgb(255,255,255)";
-        render.ctx.fillText(heroName, d_x + (d_w >> 1), d_y - 20, d_w);
+    } else {
+      if (this.isSelected) {
+        this.sprite.play();
+      } else {
+        this.sprite.stop();
       }
     }
   }
 
-  handleInput() {
-    if (!this.joystick.moveLeft.processed) {
-      this.joystick.moveLeft.processed = true;
-      if (this.selected === 0) this.selected = heroMonsterNames.length - 1;
-      else this.selected--;
-    }
-    if (!this.joystick.moveRight.processed) {
-      this.joystick.moveRight.processed = true;
-      this.selected = (this.selected + 1) % heroMonsterNames.length;
-    }
-    if (!this.joystick.hit.processed) {
-      this.joystick.hit.reset();
-      const name = heroMonsterNames[this.selected];
-      const hero_weapon = WeaponConfig.configs[0].create(this.registry);
-      const hero = new HeroMonster(this.registry, this.joystick, 0, 0, name, hero_weapon, 0);
-      const scene = new DungeonScene(this.rng, this.joystick, this.registry, this.controller, hero);
-      this.controller.setScene(scene);
-    }
+  destroy() {
+    this.selected.destroy();
+    this.notSelected.destroy();
+    this.title.destroy();
+    this.sprite.destroy();
   }
 }
