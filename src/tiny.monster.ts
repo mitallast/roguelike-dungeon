@@ -4,6 +4,7 @@ import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {PathFinding} from "./pathfinding";
 
 const TILE_SIZE = 16;
 
@@ -88,7 +89,7 @@ export class TinyMonster implements Monster, View {
     }
   }
 
-  setAnimation(state: MonsterState) {
+  private setAnimation(state: MonsterState) {
     switch (state) {
       case MonsterState.Idle:
         this.state = state;
@@ -101,7 +102,7 @@ export class TinyMonster implements Monster, View {
     }
   };
 
-  animate() {
+  private animate() {
     switch (this.state) {
       case MonsterState.Idle:
         if (!this.sprite.playing) {
@@ -126,41 +127,9 @@ export class TinyMonster implements Monster, View {
     }
   };
 
-  action(): boolean {
-    // search hero near
-    const max_distance = 3;
-    const scan_x_min = Math.max(0, this.x - max_distance);
-    const scan_y_min = Math.max(0, this.y - max_distance);
-    const scan_x_max = Math.min(this.level.width, this.x + max_distance);
-    const scan_y_max = Math.min(this.level.height, this.y + max_distance);
-
-    const is_hero_near = !this.level.hero.dead
-      && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
-      && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
-
-    if (is_hero_near) {
-      const dist_x = Math.abs(this.x - this.level.hero.x);
-      const dist_y = Math.abs(this.y - this.level.hero.y);
-
-      if (dist_x > 1) {
-        const move_x = Math.max(-1, Math.min(1, this.level.hero.x - this.x));
-        if (this.move(move_x, 0)) {
-          console.log("move to hero x");
-          return true;
-        }
-      }
-      if (dist_y > 0) {
-        const move_y = Math.max(-1, Math.min(1, this.level.hero.y - this.y));
-        if (this.move(0, move_y)) {
-          console.log("move to hero y");
-          return true;
-        }
-      }
-
-      if (dist_x <= 1 && dist_y <= 1 && Math.random() < this.luck) {
-        this.level.hero.hitDamage(this.damage, this.name);
-        return true;
-      }
+  private action(): boolean {
+    if (this.scanHero()) {
+      return true;
     }
 
     // random move ?
@@ -176,7 +145,56 @@ export class TinyMonster implements Monster, View {
     return false;
   }
 
-  move(d_x: number, d_y: number) {
+  private scanHero(): boolean {
+    // search hero near
+    const max_distance = 7;
+    const scan_x_min = Math.max(0, this.x - max_distance);
+    const scan_y_min = Math.max(0, this.y - max_distance);
+    const scan_x_max = Math.min(this.level.width, this.x + max_distance);
+    const scan_y_max = Math.min(this.level.height, this.y + max_distance);
+
+    const is_hero_near = !this.level.hero.dead
+      && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
+      && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
+
+    if (is_hero_near) {
+      const dist_x = Math.abs(this.x - this.level.hero.x);
+      const dist_y = Math.abs(this.y - this.level.hero.y);
+
+      if (dist_x > 1 || dist_y > 1) {
+        const level = this.level;
+        const pf = new PathFinding(level.width, level.height);
+        level.rooms.forEach(r => pf.clearRect(r));
+        level.corridorsH.forEach(r => pf.clearRect(r));
+        level.corridorsV.forEach(r => pf.clearRect(r));
+
+        for (let y = 0; y < level.height; y++) {
+          for (let x = 0; x < level.width; x++) {
+            const m = level.monsterMap[y][x];
+            if (m && m !== this && m !== this.wrapper && m !== level.hero) {
+              pf.mark(x, y);
+            }
+          }
+        }
+
+        const start = new PIXI.Point(this.x, this.y);
+        const end = new PIXI.Point(level.hero.x, level.hero.y);
+        const path = pf.find(start, end);
+        if (path.length > 1) {
+          const next = path[1];
+          const d_x = next.x - this.x;
+          const d_y = next.y - this.y;
+          return this.move(d_x, d_y);
+        }
+      } else if (Math.random() < this.luck) {
+        this.level.hero.hitDamage(this.damage, this.name);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private move(d_x: number, d_y: number) {
     this.is_left = d_x < 0;
     if (this.state === MonsterState.Idle) {
       const new_x = this.x + d_x;
@@ -195,13 +213,13 @@ export class TinyMonster implements Monster, View {
     return false;
   };
 
-  markNewPosition(x: number, y: number) {
+  private markNewPosition(x: number, y: number) {
     this.level.monsterMap[y][x] = this.wrapper;
     this.new_x = x;
     this.new_y = y;
   }
 
-  resetPosition(x: number, y: number) {
+  private resetPosition(x: number, y: number) {
     if (this.x >= 0 && this.y >= 0) {
       this.level.monsterMap[this.y][this.x] = null;
     }

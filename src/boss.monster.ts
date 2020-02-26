@@ -4,6 +4,7 @@ import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
 import {Observable} from "./observable";
 import {Colors} from "./colors";
+import {PathFinding} from "./pathfinding";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
@@ -50,7 +51,7 @@ export class BossMonster implements Monster, View {
   state: MonsterState;
 
   private duration: number;
-  sprite: PIXI.AnimatedSprite;
+  private sprite: PIXI.AnimatedSprite;
   readonly container: PIXI.Container;
 
   constructor(registry: TileRegistry, dungeon: DungeonLevel, x: number, y: number, name: string) {
@@ -101,7 +102,7 @@ export class BossMonster implements Monster, View {
     }
   }
 
-  setAnimation(state: MonsterState) {
+  private setAnimation(state: MonsterState) {
     switch (state) {
       case MonsterState.Idle:
         this.state = state;
@@ -139,9 +140,26 @@ export class BossMonster implements Monster, View {
     }
   }
 
-  action(): boolean {
-    // search hero near
-    const max_distance = 5;
+  private action(): boolean {
+    if (this.scanHero()) {
+      return true;
+    }
+
+    // random move ?
+    const random_move_percent = 0.1;
+    if (Math.random() < random_move_percent) {
+      const move_x = Math.floor(Math.random() * 3) - 1;
+      const move_y = Math.floor(Math.random() * 3) - 1;
+      if (this.move(move_x, move_y)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private scanHero(): boolean {
+    const max_distance = 7;
     const scan_x_min = Math.max(0, this.x - max_distance);
     const scan_y_min = Math.max(0, this.y - max_distance - 1);
     const scan_x_max = Math.min(this.level.width, this.x + max_distance + 1);
@@ -162,33 +180,33 @@ export class BossMonster implements Monster, View {
         Math.abs(this.y - this.level.hero.y - 1), // from top
       );
 
-      if (dist_x > 1) {
-        const move_x = Math.max(-1, Math.min(1, this.level.hero.x - this.x));
-        if (this.move(move_x, 0)) {
-          console.log("move to hero x");
-          return true;
-        }
-      }
-      if (dist_y > 0) {
-        const move_y = Math.max(-1, Math.min(1, this.level.hero.y - this.y));
-        if (this.move(0, move_y)) {
-          console.log("move to hero y");
-          return true;
-        }
-      }
+      if (dist_x > 1 || dist_y > 1) {
+        const level = this.level;
+        const pf = new PathFinding(level.width, level.height);
+        level.rooms.forEach(r => pf.clearRect(r));
+        level.corridorsH.forEach(r => pf.clearRect(r));
+        level.corridorsV.forEach(r => pf.clearRect(r));
 
-      if (dist_x <= 1 && dist_y <= 1 && Math.random() < this.bossState.luck) {
+        for (let y = 0; y < level.height; y++) {
+          for (let x = 0; x < level.width; x++) {
+            const m = level.monsterMap[y][x];
+            if (m && m !== this && m !== this.wrapper && m !== level.hero) {
+              pf.mark(x, y);
+            }
+          }
+        }
+
+        const start = new PIXI.Point(this.x, this.y);
+        const end = new PIXI.Point(level.hero.x, level.hero.y);
+        const path = pf.find(start, end);
+        if (path.length > 1) {
+          const next = path[1];
+          const d_x = next.x - this.x;
+          const d_y = next.y - this.y;
+          return this.move(d_x, d_y);
+        }
+      } else if (Math.random() < this.bossState.luck) {
         this.level.hero.hitDamage(this.bossState.damage, this.bossState.name);
-        return true;
-      }
-    }
-
-    // random move ?
-    const random_move_percent = 0.1;
-    if (Math.random() < random_move_percent) {
-      const move_x = Math.floor(Math.random() * 3) - 1;
-      const move_y = Math.floor(Math.random() * 3) - 1;
-      if (this.move(move_x, move_y)) {
         return true;
       }
     }
@@ -196,7 +214,7 @@ export class BossMonster implements Monster, View {
     return false;
   }
 
-  move(d_x: number, d_y: number) {
+  private move(d_x: number, d_y: number) {
     this.is_left = d_x < 0;
     if (this.state === MonsterState.Idle) {
 
@@ -248,7 +266,7 @@ export class BossMonster implements Monster, View {
     this.new_y = y;
   }
 
-  resetPosition(x: number, y: number) {
+  private resetPosition(x: number, y: number) {
     this.clearMap(this.x, this.y);
     this.clearMap(this.new_x, this.new_y);
     this.x = x;
