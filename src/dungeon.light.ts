@@ -161,6 +161,7 @@ export class DungeonLightView implements View {
     // fill hero light source
     this.lights.push(new LightSource(
       this.level.hero.container.position,
+      500,
       this.heroLightTexture,
       this.container
     ));
@@ -174,6 +175,7 @@ export class DungeonLightView implements View {
             case 'wall_fountain_basin_red':
               this.lights.push(new LightSource(
                 new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
+                100,
                 this.fountainRedTexture,
                 this.container
               ));
@@ -181,6 +183,7 @@ export class DungeonLightView implements View {
             case 'wall_fountain_basin_blue':
               this.lights.push(new LightSource(
                 new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
+                100,
                 this.fountainBlueTexture,
                 this.container
               ));
@@ -196,7 +199,7 @@ export class DungeonLightView implements View {
   update(delta: number): void {
     this.lights.forEach((light) => {
       const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
-      this.visibility.setLightLocation(start.x, start.y);
+      this.visibility.setLightLocation(start.x, start.y, light.maxDistance);
       this.visibility.sweep();
       light.sprite.position.set(start.x, start.y);
       light.mask.clear()
@@ -225,11 +228,13 @@ export class DungeonLightView implements View {
 
 class LightSource {
   readonly position: PIXI.IPoint;
+  readonly maxDistance: number;
   readonly sprite: PIXI.Sprite;
   readonly mask: PIXI.Graphics;
 
-  constructor(position: PIXI.IPoint, texture: PIXI.Texture, container: PIXI.Container) {
+  constructor(position: PIXI.IPoint, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
     this.position = position;
+    this.maxDistance = maxDistance;
 
     this.mask = new PIXI.Graphics();
     this.mask.isMask = true;
@@ -281,14 +286,15 @@ enum SegmentType {
 class Segment {
   p1: EndPoint;
   p2: EndPoint;
-  d: number;
+  distance: number;
   type: SegmentType;
 }
 
 class Visibility {
   segments: Segment[] = [];
   endpoints: EndPoint[] = [];
-  center: PIXI.Point;
+  light: PIXI.Point;
+  maxDistance: number;
 
   open: Segment[] = [];
 
@@ -302,7 +308,7 @@ class Visibility {
     this.segments = [];
     this.endpoints = [];
     this.open = [];
-    this.center = new PIXI.Point(0.0, 0.0);
+    this.light = new PIXI.Point(0.0, 0.0);
     this.output = [];
   }
 
@@ -323,7 +329,7 @@ class Visibility {
 
     segment.p1 = p1;
     segment.p2 = p2;
-    segment.d = 0.0;
+    segment.distance = 0.0;
     segment.type = type;
 
     this.segments.push(segment);
@@ -331,9 +337,10 @@ class Visibility {
     this.endpoints.push(p2);
   }
 
-  setLightLocation(x: number, y: number) {
-    this.center.x = x;
-    this.center.y = y;
+  setLightLocation(x: number, y: number, maxDistance: number) {
+    this.light.x = x;
+    this.light.y = y;
+    this.maxDistance = maxDistance;
 
     this.segments.forEach((segment) => {
 
@@ -343,7 +350,9 @@ class Visibility {
       // distance squared instead of distance. However in
       // practice the sqrt is plenty fast and this doesn't
       // really help in this situation.
-      segment.d = dx * dx + dy * dy;
+      //
+      // UPD. use distance to pre-filter by light max distance
+      segment.distance = Math.sqrt(dx * dx + dy * dy);
 
       // NOTE: future optimization: we could record the quadrant
       // and the y/x or x/y ratio, and sort by (quadrant,
@@ -451,7 +460,9 @@ class Visibility {
   sweep(maxAngle: number = 999.0) {
     this.output = [];  // output set of triangles
     // this.demo_intersectionsDetected = [];
-    this.endpoints.sort(Visibility.compare);
+    const endpoints = this.endpoints
+      .filter((e) => e.segment.distance < this.maxDistance)
+      .sort(Visibility.compare);
 
     this.open = [];
     let beginAngle = 0.0;
@@ -463,8 +474,8 @@ class Visibility {
     // efficient to go through all the segments, figure out which
     // ones intersect the initial sweep line, and then sort them.
     for (let pass = 0; pass <= 2; pass++) {
-      for (let p_i = 0; p_i < this.endpoints.length; p_i++) {
-        const p = this.endpoints[p_i];
+      for (let p_i = 0; p_i < endpoints.length; p_i++) {
+        const p = endpoints[p_i];
 
         if (pass == 1 && p.angle > maxAngle) {
           // Early exit for the visualization to show the sweep process
@@ -477,7 +488,7 @@ class Visibility {
           // Insert into the right place in the list
           let i = 0;
           let node = this.open[i];
-          while (node != null && Visibility.segmentInFrontOf(p.segment, node, this.center)) {
+          while (node != null && Visibility.segmentInFrontOf(p.segment, node, this.light)) {
             i++;
             node = this.open[i];
           }
@@ -510,8 +521,8 @@ class Visibility {
   }
 
   private addTriangle(angle1: number, angle2: number, segment: Segment) {
-    let p1 = this.center;
-    let p2 = new PIXI.Point(this.center.x + Math.cos(angle1), this.center.y + Math.sin(angle1));
+    let p1 = this.light;
+    let p2 = new PIXI.Point(this.light.x + Math.cos(angle1), this.light.y + Math.sin(angle1));
     let p3 = new PIXI.Point(0.0, 0.0);
     let p4 = new PIXI.Point(0.0, 0.0);
 
@@ -524,18 +535,18 @@ class Visibility {
     } else {
       // Stop the triangle at a fixed distance; this probably is
       // not what we want, but it never gets used in the demo
-      p3.x = this.center.x + Math.cos(angle1) * 500;
-      p3.y = this.center.y + Math.sin(angle1) * 500;
-      p4.x = this.center.x + Math.cos(angle2) * 500;
-      p4.y = this.center.y + Math.sin(angle2) * 500;
+      p3.x = this.light.x + Math.cos(angle1) * this.maxDistance;
+      p3.y = this.light.y + Math.sin(angle1) * this.maxDistance;
+      p4.x = this.light.x + Math.cos(angle2) * this.maxDistance;
+      p4.y = this.light.y + Math.sin(angle2) * this.maxDistance;
     }
 
     let pBegin = Visibility.lineIntersection(p3, p4, p1, p2);
     pBegin.x = Math.round(pBegin.x); // round for pixel perfect
     pBegin.y = Math.round(pBegin.y); // round for pixel perfect
 
-    p2.x = this.center.x + Math.cos(angle2);
-    p2.y = this.center.y + Math.sin(angle2);
+    p2.x = this.light.x + Math.cos(angle2);
+    p2.y = this.light.y + Math.sin(angle2);
     let pEnd = Visibility.lineIntersection(p3, p4, p1, p2);
     pEnd.x = Math.round(pEnd.x); // round for pixel perfect
     pEnd.y = Math.round(pEnd.y); // round for pixel perfect
