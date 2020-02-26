@@ -3,6 +3,7 @@ import {DungeonLevel} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
 import {Observable} from "./observable";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
@@ -314,14 +315,14 @@ export class BossHealthView implements View {
 
   updateHealth(health: number) {
     this.healthRect.clear();
-    this.healthRect.beginFill(0x000000, 0.3);
+    this.healthRect.beginFill(Colors.healthBackground, 0.3);
     this.healthRect.drawRect(
       -(this.width >> 1), 0,
       this.width, this.height);
     this.healthRect.endFill();
 
     const width = this.point_width * health;
-    this.healthRect.beginFill(0xFF0000, 0.3);
+    this.healthRect.beginFill(Colors.healthRed, 0.3);
     this.healthRect.drawRect(-(width >> 1), HEALTH_BORDER, width, HEALTH_HEIGHT);
     this.healthRect.endFill();
 

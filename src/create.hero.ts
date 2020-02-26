@@ -2,6 +2,7 @@ import {Scene, SceneController} from "./scene";
 import {heroMonsterNames, HeroState} from "./hero";
 import {WeaponConfig} from "./drop";
 import {DungeonScene} from "./dungeon";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -75,13 +76,13 @@ export class SelectHeroScene implements Scene {
       container.position.set(d_x, d_y);
 
       const selected = new PIXI.Graphics();
-      selected.beginFill(0x909090);
+      selected.beginFill(Colors.uiSelected);
       selected.drawRect(0, 0, rect_w, rect_h);
       selected.endFill();
       container.addChild(selected);
 
       const notSelected = new PIXI.Graphics();
-      notSelected.beginFill(0x505050);
+      notSelected.beginFill(Colors.uiNotSelected);
       notSelected.drawRect(0, 0, rect_w, rect_h);
       notSelected.endFill();
       container.addChild(notSelected);

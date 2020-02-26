@@ -2,6 +2,7 @@ import {UsableDrop} from "./drop";
 import {HeroView} from "./hero";
 import {View} from "./view";
 import {Observable} from "./observable";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -88,7 +89,7 @@ export class InventoryView implements View {
     this.container = new PIXI.Container();
 
     this.background = new PIXI.Graphics();
-    this.background.beginFill(0x505050, 0.3);
+    this.background.beginFill(Colors.uiBackground, 0.3);
     this.background.drawRect(
       0, 0,
       BORDER + (CELL_SIZE + BORDER) * inventory.cells.length,
@@ -130,7 +131,7 @@ export class InventoryCellView implements View {
     this.container = new PIXI.Container();
 
     this.background = new PIXI.Graphics();
-    this.background.beginFill(0x909090, 0.3);
+    this.background.beginFill(Colors.uiSelected, 0.3);
     this.background.drawRect(0, 0, CELL_SIZE, CELL_SIZE);
     this.background.endFill();
     this.container.addChild(this.background);

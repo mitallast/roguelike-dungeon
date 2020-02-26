@@ -8,6 +8,7 @@ import {Observable} from "./observable";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {Colors} from "./colors";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -476,7 +477,7 @@ export class HeroStateView implements View {
 
   updateHealth(health: number) {
     this.healthRect.clear();
-    this.healthRect.beginFill(0x000000, 0.3);
+    this.healthRect.beginFill(Colors.healthBackground, 0.3);
     this.healthRect.drawRect(
       0, 0,
       HEALTH_WIDTH * this.heroState.healthMax + (HEALTH_BORDER << 1),
@@ -484,7 +485,7 @@ export class HeroStateView implements View {
     );
     this.healthRect.endFill();
 
-    this.healthRect.beginFill(0xFF0000, 0.3);
+    this.healthRect.beginFill(Colors.healthRed, 0.3);
     this.healthRect.drawRect(
       HEALTH_BORDER,
       HEALTH_BORDER,

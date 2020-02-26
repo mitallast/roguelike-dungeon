@@ -3,6 +3,7 @@ import {TileRegistry} from "./tilemap";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
 import {KeyBindScene} from "./keybind.scene";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 // @ts-ignore
@@ -30,6 +31,6 @@ import "pixi-layers";
   const controller = new SceneController(rng, joystick, registry, app, stage);
   controller.setScene(new KeyBindScene(controller));
 
-  app.renderer.backgroundColor = 0x202020;
+  app.renderer.backgroundColor = Colors.background;
   app.ticker.add((delta: number) => controller.tick(delta));
 })();
