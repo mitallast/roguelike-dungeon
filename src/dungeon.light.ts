@@ -115,26 +115,42 @@ export class DungeonLightView implements View {
 
       walls.forEach(wall => {
         if (wall.start.x === wall.end.x) {
-          const window = windowsV
-            .find(v => v.start.x === wall.start.x &&
+          const windows = windowsV
+            .filter(v => v.start.x === wall.start.x &&
               v.start.y > wall.start.y &&
-              v.end.y < wall.end.y);
-          if (window) {
+              v.end.y < wall.end.y)
+            .sort((a, b) => a.start.y - b.start.y);
+          if (windows.length > 0) {
+            const points = [wall.start.y];
+            windows.forEach(w => {
+              points.push(w.start.y);
+              points.push(w.end.y);
+            });
+            points.push(wall.end.y);
             const x = wall.start.x;
-            this.visibility.addSegment(x, wall.start.y, x, window.start.y, wall.type);
-            this.visibility.addSegment(x, window.end.y, x, wall.end.y, wall.type);
+            for (let i = 0; i < points.length; i += 2) {
+              this.visibility.addSegment(x, points[i], x, points[i + 1], wall.type);
+            }
           } else {
             this.visibility.addSegment(wall.start.x, wall.start.y, wall.end.x, wall.end.y, wall.type);
           }
         } else {
-          const window = windowsH
-            .find(v => v.start.y === wall.start.y &&
+          const windows = windowsH
+            .filter(v => v.start.y === wall.start.y &&
               v.start.x > wall.start.x &&
-              v.end.x < wall.end.x);
-          if (window) {
+              v.end.x < wall.end.x)
+            .sort((a, b) => a.start.x - b.start.x);
+          if (windows.length > 0) {
+            const points = [wall.start.x];
+            windows.forEach(w => {
+              points.push(w.start.x);
+              points.push(w.end.x);
+            });
+            points.push(wall.end.x);
             const y = wall.start.y;
-            this.visibility.addSegment(wall.start.x, y, window.start.x, y, wall.type);
-            this.visibility.addSegment(window.end.x, y, wall.end.x, y, wall.type);
+            for (let i = 0; i < points.length; i += 2) {
+              this.visibility.addSegment(points[i], y, points[i + 1], y, wall.type);
+            }
           } else {
             this.visibility.addSegment(wall.start.x, wall.start.y, wall.end.x, wall.end.y, wall.type);
           }
