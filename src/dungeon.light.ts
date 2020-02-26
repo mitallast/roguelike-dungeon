@@ -175,7 +175,7 @@ export class DungeonLightView implements View {
             case 'wall_fountain_basin_red':
               this.lights.push(new LightSource(
                 new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
-                100,
+                200,
                 this.fountainRedTexture,
                 this.container
               ));
@@ -183,7 +183,7 @@ export class DungeonLightView implements View {
             case 'wall_fountain_basin_blue':
               this.lights.push(new LightSource(
                 new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
-                100,
+                200,
                 this.fountainBlueTexture,
                 this.container
               ));
