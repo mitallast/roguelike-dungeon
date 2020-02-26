@@ -234,8 +234,6 @@ export class DungeonLevel {
 
     this.light.update(delta);
 
-    this.container.sortChildren();
-
     const t_x = this.hero.container.position.x;
     const t_y = this.hero.container.position.y;
     const c_w = this.scene.controller.app.screen.width;
