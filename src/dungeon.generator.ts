@@ -6,7 +6,7 @@ import {BossMonster, mossMonsterNames} from "./boss.monster";
 import {DungeonScene} from "./dungeon";
 import {SceneController} from "./scene";
 import {Rect} from "./geometry";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {TunnelingAlgorithm} from "./tunneling";
 
 const level_size = 200;
@@ -138,36 +138,36 @@ export class DungeonGenerator {
     }
 
     // fill top wall
-    dungeon.setWall(x, y - 2, 'wall_corner_top_left.png');
-    dungeon.setWall(x, y - 1, 'wall_corner_left.png');
+    dungeon.setWall(x, y - 2, 'wall_corner_top_left.png', DungeonZIndexes.wallBack);
+    dungeon.setWall(x, y - 1, 'wall_corner_left.png', DungeonZIndexes.wallBack);
 
     if (w > 1) {
       for (let r_x = x + 1; r_x < x + w - 1; r_x++) {
-        dungeon.setWall(r_x, y - 2, 'wall_top_mid.png');
-        dungeon.setWall(r_x, y - 1, 'wall_mid.png');
+        dungeon.setWall(r_x, y - 2, 'wall_top_mid.png', DungeonZIndexes.wallBack);
+        dungeon.setWall(r_x, y - 1, 'wall_mid.png', DungeonZIndexes.wallBack);
       }
 
-      dungeon.setWall(x + w - 1, y - 2, 'wall_corner_top_right.png');
-      dungeon.setWall(x + w - 1, y - 1, 'wall_corner_right.png');
+      dungeon.setWall(x + w - 1, y - 2, 'wall_corner_top_right.png', DungeonZIndexes.wallBack);
+      dungeon.setWall(x + w - 1, y - 1, 'wall_corner_right.png', DungeonZIndexes.wallBack);
     }
     // fill bottom wall
-    dungeon.setWall(x, y + h - 1, 'wall_corner_bottom_left.png');
-    dungeon.setWall(x, y + h, 'wall_left.png');
+    dungeon.setWall(x, y + h - 1, 'wall_corner_bottom_left.png', DungeonZIndexes.wallFront);
+    dungeon.setWall(x, y + h, 'wall_left.png', DungeonZIndexes.wallFront);
     if (w > 1) {
       for (let r_x = x + 1; r_x < x + w - 1; r_x++) {
-        dungeon.setWall(r_x, y + h - 1, 'wall_top_mid.png');
-        dungeon.setWall(r_x, y + h, 'wall_mid.png');
+        dungeon.setWall(r_x, y + h - 1, 'wall_top_mid.png', DungeonZIndexes.wallFront);
+        dungeon.setWall(r_x, y + h, 'wall_mid.png', DungeonZIndexes.wallFront);
       }
-      dungeon.setWall(x + w - 1, y + h - 1, 'wall_corner_bottom_right.png');
-      dungeon.setWall(x + w - 1, y + h, 'wall_right.png');
+      dungeon.setWall(x + w - 1, y + h - 1, 'wall_corner_bottom_right.png', DungeonZIndexes.wallFront);
+      dungeon.setWall(x + w - 1, y + h, 'wall_right.png', DungeonZIndexes.wallFront);
     }
     // fill right wall
     for (let r_y = y; r_y < y + h - 1; r_y++) {
-      dungeon.setWall(x, r_y, 'wall_side_mid_right.png');
+      dungeon.setWall(x, r_y, 'wall_side_mid_right.png', DungeonZIndexes.wallFront);
     }
     // fill left wall
     for (let r_y = y; r_y < y + h - 1; r_y++) {
-      dungeon.setWall(x + w - 1, r_y, 'wall_side_mid_left.png');
+      dungeon.setWall(x + w - 1, r_y, 'wall_side_mid_left.png', DungeonZIndexes.wallFront);
     }
   }
 
@@ -187,7 +187,7 @@ export class DungeonGenerator {
     // connect with room top left
     switch (dungeon.wallMap[y - 2][x - 1].name) {
       case 'wall_corner_top_right.png':
-        dungeon.setWall(x - 1, y - 2, 'wall_top_mid.png');
+        dungeon.setWall(x - 1, y - 2, 'wall_top_mid.png', DungeonZIndexes.wallBack);
         break;
       case 'wall_side_mid_left.png':
         break;
@@ -197,10 +197,10 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y - 1][x - 1].name) {
       case 'wall_corner_right.png':
-        dungeon.setWall(x - 1, y - 1, 'wall_mid.png');
+        dungeon.setWall(x - 1, y - 1, 'wall_mid.png', DungeonZIndexes.wallBack);
         break;
       case 'wall_side_mid_left.png':
-        dungeon.setWall(x - 1, y - 1, 'wall_side_front_left.png');
+        dungeon.setWall(x - 1, y - 1, 'wall_side_front_left.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('top left 1', dungeon.wallMap[y - 1][x - 1].name);
@@ -212,7 +212,7 @@ export class DungeonGenerator {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
         switch (dungeon.wallMap[l_y][x - 1].name) {
           case 'wall_side_mid_left.png':
-            dungeon.setWall(x - 1, l_y, null);
+            dungeon.setWall(x - 1, l_y, null, 0);
             break;
           default:
             console.log('mid left', dungeon.wallMap[l_y][x - 1].name);
@@ -224,10 +224,10 @@ export class DungeonGenerator {
     // connect with room bottom left
     switch (dungeon.wallMap[y + h - 1][x - 1].name) {
       case 'wall_side_mid_left.png':
-        dungeon.setWall(x - 1, y + h - 1, 'wall_side_top_left.png');
+        dungeon.setWall(x - 1, y + h - 1, 'wall_side_top_left.png', DungeonZIndexes.wallFront);
         break;
       case 'wall_corner_bottom_right.png':
-        dungeon.setWall(x - 1, y + h - 1, 'wall_top_mid.png');
+        dungeon.setWall(x - 1, y + h - 1, 'wall_top_mid.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom left 0', dungeon.wallMap[y + h - 1][x - 1].name);
@@ -237,7 +237,7 @@ export class DungeonGenerator {
       case 'wall_side_mid_left.png':
         break;
       case 'wall_right.png':
-        dungeon.setWall(x - 1, y + h, 'wall_mid.png');
+        dungeon.setWall(x - 1, y + h, 'wall_mid.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom left 1', dungeon.wallMap[y + h][x - 1].name);
@@ -247,7 +247,7 @@ export class DungeonGenerator {
     // connect with room top right
     switch (dungeon.wallMap[y - 2][x + w].name) {
       case 'wall_corner_top_left.png':
-        dungeon.setWall(x + w, y - 2, 'wall_top_mid.png');
+        dungeon.setWall(x + w, y - 2, 'wall_top_mid.png', DungeonZIndexes.wallBack);
         break;
       case 'wall_side_mid_right.png':
         break;
@@ -257,10 +257,10 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y - 1][x + w].name) {
       case 'wall_corner_left.png':
-        dungeon.setWall(x + w, y - 1, 'wall_mid.png');
+        dungeon.setWall(x + w, y - 1, 'wall_mid.png', DungeonZIndexes.wallBack);
         break;
       case 'wall_side_mid_right.png':
-        dungeon.setWall(x + w, y - 1, 'wall_side_front_right.png');
+        dungeon.setWall(x + w, y - 1, 'wall_side_front_right.png', DungeonZIndexes.wallBack);
         break;
       default:
         console.log('top right 1', dungeon.wallMap[y - 1][x + w].name);
@@ -272,7 +272,7 @@ export class DungeonGenerator {
       for (let l_y = y; l_y < y + h - 1; l_y++) {
         switch (dungeon.wallMap[l_y][x + w].name) {
           case 'wall_side_mid_right.png':
-            dungeon.setWall(x + w, l_y, null);
+            dungeon.setWall(x + w, l_y, null, 0);
             break;
           default:
             console.log('mid right', dungeon.wallMap[l_y][x + w].name);
@@ -284,10 +284,10 @@ export class DungeonGenerator {
     // connect with room bottom right
     switch (dungeon.wallMap[y + h - 1][x + w].name) {
       case 'wall_side_mid_right.png':
-        dungeon.setWall(x + w, y + h - 1, 'wall_side_top_right.png');
+        dungeon.setWall(x + w, y + h - 1, 'wall_side_top_right.png', DungeonZIndexes.wallFront);
         break;
       case 'wall_corner_bottom_left.png':
-        dungeon.setWall(x + w, y + h - 1, 'wall_top_mid.png');
+        dungeon.setWall(x + w, y + h - 1, 'wall_top_mid.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom right 0', dungeon.wallMap[y + h - 1][x + w].name);
@@ -297,7 +297,7 @@ export class DungeonGenerator {
       case 'wall_side_mid_right.png':
         break;
       case 'wall_left.png':
-        dungeon.setWall(x + w, y + h, 'wall_mid.png');
+        dungeon.setWall(x + w, y + h, 'wall_mid.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom right +1', dungeon.wallMap[y + h][x + w].name);
@@ -306,14 +306,14 @@ export class DungeonGenerator {
 
     // fill top wall
     for (let r_x = x; r_x < x + w; r_x++) {
-      dungeon.setWall(r_x, y - 2, 'wall_top_mid.png');
-      dungeon.setWall(r_x, y - 1, 'wall_mid.png');
+      dungeon.setWall(r_x, y - 2, 'wall_top_mid.png', DungeonZIndexes.wallBack);
+      dungeon.setWall(r_x, y - 1, 'wall_mid.png', DungeonZIndexes.wallBack);
     }
 
     // fill bottom wall
     for (let r_x = x; r_x < x + w; r_x++) {
-      dungeon.setWall(r_x, y + h - 1, 'wall_top_mid.png');
-      dungeon.setWall(r_x, y + h, 'wall_mid.png');
+      dungeon.setWall(r_x, y + h - 1, 'wall_top_mid.png', DungeonZIndexes.wallFront);
+      dungeon.setWall(r_x, y + h, 'wall_mid.png', DungeonZIndexes.wallFront);
     }
   }
 
@@ -333,7 +333,7 @@ export class DungeonGenerator {
     // connect with room top left
     switch (dungeon.wallMap[y - 1][x - 1].name) {
       case 'wall_top_mid.png':
-        dungeon.setWall(x - 1, y - 1, 'wall_corner_top_right.png');
+        dungeon.setWall(x - 1, y - 1, 'wall_corner_top_right.png', DungeonZIndexes.wallBack);
         break;
       default:
         console.log('top left -1 -1', dungeon.wallMap[y - 1][x - 1].name);
@@ -341,7 +341,7 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y][x - 1].name) {
       case 'wall_mid.png':
-        dungeon.setWall(x - 1, y, 'wall_corner_right.png');
+        dungeon.setWall(x - 1, y, 'wall_corner_right.png', DungeonZIndexes.wallBack);
         break;
       default:
         console.log('top left 0 -1', dungeon.wallMap[y][x - 1].name);
@@ -352,7 +352,7 @@ export class DungeonGenerator {
     for (let r_x = x; r_x < x + w; r_x++) {
       switch (dungeon.wallMap[y - 1][r_x].name) {
         case 'wall_top_mid.png':
-          dungeon.setWall(r_x, y - 1, null);
+          dungeon.setWall(r_x, y - 1, null, 0);
           break;
         default:
           console.log('top mid -1', dungeon.wallMap[y - 1][r_x].name);
@@ -360,7 +360,7 @@ export class DungeonGenerator {
       }
       switch (dungeon.wallMap[y][r_x].name) {
         case 'wall_mid.png':
-          dungeon.setWall(r_x, y, null);
+          dungeon.setWall(r_x, y, null, 0);
           break;
         default:
           console.log('top mid 0', dungeon.wallMap[y][r_x].name);
@@ -371,7 +371,7 @@ export class DungeonGenerator {
     // connect with room top right
     switch (dungeon.wallMap[y - 1][x + w].name) {
       case 'wall_top_mid':
-        dungeon.setWall(x + w, y - 1, 'wall_corner_top_left');
+        dungeon.setWall(x + w, y - 1, 'wall_corner_top_left', DungeonZIndexes.wallBack);
         break;
       default:
         console.log('top right -1 1', dungeon.wallMap[y - 1][x + w].name);
@@ -379,7 +379,7 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y][x + w].name) {
       case 'wall_mid.png':
-        dungeon.setWall(x + w, y, 'wall_corner_left.png');
+        dungeon.setWall(x + w, y, 'wall_corner_left.png', DungeonZIndexes.wallBack);
         break;
       default:
         console.log('top right 0 -1', dungeon.wallMap[y][x + w].name);
@@ -390,7 +390,7 @@ export class DungeonGenerator {
     // connect with room bottom left
     switch (dungeon.wallMap[y + h - 2][x - 1].name) {
       case 'wall_top_mid.png':
-        dungeon.setWall(x - 1, y + h - 2, 'wall_corner_bottom_right.png');
+        dungeon.setWall(x - 1, y + h - 2, 'wall_corner_bottom_right.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom left -2 -1', dungeon.wallMap[y + h - 2][x - 1].name);
@@ -398,7 +398,7 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y + h - 1][x - 1].name) {
       case 'wall_mid.png':
-        dungeon.setWall(x - 1, y + h - 1, 'wall_corner_front_right.png');
+        dungeon.setWall(x - 1, y + h - 1, 'wall_corner_front_right.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('top left 0 -1', dungeon.wallMap[y + h - 1][x - 1].name);
@@ -409,7 +409,7 @@ export class DungeonGenerator {
     for (let r_x = x; r_x < x + w; r_x++) {
       switch (dungeon.wallMap[y + h - 2][r_x].name) {
         case 'wall_top_mid.png':
-          dungeon.setWall(r_x, y + h - 2, null);
+          dungeon.setWall(r_x, y + h - 2, null, 0);
           break;
         default:
           console.log('bottom mid -2', dungeon.wallMap[y + h - 2][r_x].name);
@@ -417,7 +417,7 @@ export class DungeonGenerator {
       }
       switch (dungeon.wallMap[y + h - 1][r_x].name) {
         case 'wall_mid.png':
-          dungeon.setWall(r_x, y + h - 1, null);
+          dungeon.setWall(r_x, y + h - 1, null, 0);
           break;
         default:
           console.log('bottom mid -1', dungeon.wallMap[y + h - 1][r_x].name);
@@ -428,7 +428,7 @@ export class DungeonGenerator {
     // connect with room bottom right
     switch (dungeon.wallMap[y + h - 2][x + w].name) {
       case 'wall_top_mid.png':
-        dungeon.setWall(x + w, y + h - 2, 'wall_corner_bottom_left.png');
+        dungeon.setWall(x + w, y + h - 2, 'wall_corner_bottom_left.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom right -2 -1', dungeon.wallMap[y + h - 2][x - 1].name);
@@ -436,7 +436,7 @@ export class DungeonGenerator {
     }
     switch (dungeon.wallMap[y + h - 1][x + w].name) {
       case 'wall_mid.png':
-        dungeon.setWall(x + w, y + h - 1, 'wall_corner_front_left.png');
+        dungeon.setWall(x + w, y + h - 1, 'wall_corner_front_left.png', DungeonZIndexes.wallFront);
         break;
       default:
         console.log('bottom right 0 -1', dungeon.wallMap[y + h - 1][x - 1].name);
@@ -445,8 +445,8 @@ export class DungeonGenerator {
 
     // fill side walls
     for (let r_y = y + 1; r_y < y + h - 2; r_y++) {
-      dungeon.setWall(x - 1, r_y, 'wall_side_mid_left.png');
-      dungeon.setWall(x + w, r_y, 'wall_side_mid_right.png');
+      dungeon.setWall(x - 1, r_y, 'wall_side_mid_left.png', DungeonZIndexes.wallFront);
+      dungeon.setWall(x + w, r_y, 'wall_side_mid_right.png', DungeonZIndexes.wallFront);
     }
   }
 
@@ -509,21 +509,21 @@ export class DungeonGenerator {
                 const replacement = this.rng.choice(replacements);
                 switch (replacement) {
                   case 'wall_goo.png':
-                    dungeon.setWall(x, y, 'wall_goo.png');
+                    dungeon.setWall(x, y, 'wall_goo.png', DungeonZIndexes.wallBack);
                     dungeon.setFloor(x, y + 1, 'wall_goo_base.png');
                     break;
                   case 'wall_fountain_mid_red':
-                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png');
-                    dungeon.setWall(x, y, 'wall_fountain_mid_red');
+                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png', DungeonZIndexes.wallBack);
+                    dungeon.setWall(x, y, 'wall_fountain_mid_red', DungeonZIndexes.wallBack);
                     dungeon.setFloor(x, y + 1, 'wall_fountain_basin_red');
                     break;
                   case 'wall_fountain_mid_blue':
-                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png');
-                    dungeon.setWall(x, y, 'wall_fountain_mid_blue');
+                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png', DungeonZIndexes.wallBack);
+                    dungeon.setWall(x, y, 'wall_fountain_mid_blue', DungeonZIndexes.wallBack);
                     dungeon.setFloor(x, y + 1, 'wall_fountain_basin_blue');
                     break;
                   default:
-                    dungeon.setWall(x, y, replacement);
+                    dungeon.setWall(x, y, replacement, is_top ? DungeonZIndexes.wallBack : DungeonZIndexes.wallFront);
                     break;
                 }
               }

@@ -1,5 +1,5 @@
 import {TileRegistry} from "./tilemap";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
 import {Observable} from "./observable";
@@ -61,7 +61,7 @@ export class BossMonster implements Monster, View {
     this.bossState = new BossState(name, dungeon.level);
 
     this.container = new PIXI.Container();
-    this.container.zIndex = 101; // @todo maintain zIndex
+    this.container.zIndex = DungeonZIndexes.monster;
     this.level.container.addChild(this.container);
     this.setAnimation(MonsterState.Idle);
     this.resetPosition(x, y);

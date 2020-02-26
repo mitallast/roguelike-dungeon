@@ -2,7 +2,7 @@ import {Inventory} from "./inventory";
 import {TileRegistry} from "./tilemap";
 import {Joystick} from "./input";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {UsableDrop, Weapon} from "./drop";
 import {Observable} from "./observable";
 import {View} from "./view";
@@ -70,7 +70,7 @@ export class HeroView implements Monster, View {
     this.wrapper = new MovingMonsterWrapper(this);
     this.heroState = heroState;
     this.container = new PIXI.Container();
-    this.container.zIndex = 100; // @todo maintain zIndex
+    this.container.zIndex = DungeonZIndexes.monster;
     this.level.container.addChild(this.container);
     this.setAnimation(MonsterState.Idle);
     this.initWeapon();

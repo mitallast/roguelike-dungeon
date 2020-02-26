@@ -2,7 +2,7 @@ import {RNG} from "./rng";
 import {HeroView} from "./hero";
 import {TileRegistry} from "./tilemap";
 import {InventoryCell} from "./inventory";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
@@ -33,7 +33,7 @@ export class DropView implements View {
       y * TILE_SIZE + TILE_SIZE - 2
     );
     this.sprite.anchor.set(0, 1);
-    this.sprite.zIndex = 50; // @todo maintain zIndex
+    this.sprite.zIndex = DungeonZIndexes.drop;
     if (this.sprite instanceof PIXI.AnimatedSprite) {
       this.sprite.animationSpeed = 0.2;
     }

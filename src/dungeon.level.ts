@@ -12,6 +12,22 @@ import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
 
+export interface DungeonZIndexScheme {
+  readonly monster: number
+  readonly drop: number
+  readonly floor: number
+  readonly wallBack: number
+  readonly wallFront: number
+}
+
+export const DungeonZIndexes: DungeonZIndexScheme = {
+  monster: 60,
+  drop: 50,
+  floor: 1,
+  wallBack: 2,
+  wallFront: 100,
+};
+
 export class DungeonLevel {
   readonly scene: DungeonScene;
 
@@ -150,19 +166,19 @@ export class DungeonLevel {
       const sprite = this.scene.registry.animated(name);
       sprite.animationSpeed = 0.2;
       sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-      sprite.zIndex = 1;
+      sprite.zIndex = DungeonZIndexes.floor;
       this.container.addChild(sprite);
       this.floorMap[y][x] = new FloorView(sprite);
     } else {
       const sprite = this.scene.registry.sprite(name);
       sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-      sprite.zIndex = 1;
+      sprite.zIndex = DungeonZIndexes.floor;
       this.container.addChild(sprite);
       this.floorMap[y][x] = new FloorView(sprite);
     }
   }
 
-  setWall(x: number, y: number, name: string): void {
+  setWall(x: number, y: number, name: string, zIndex: number): void {
     if (this.wallMap[y][x]) {
       this.wallMap[y][x].destroy();
       this.wallMap[y][x] = null;
@@ -173,13 +189,13 @@ export class DungeonLevel {
         const sprite = this.scene.registry.animated(name);
         sprite.animationSpeed = 0.2;
         sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-        sprite.zIndex = 3; // @todo maintain zIndex with monsters
+        sprite.zIndex = zIndex;
         this.container.addChild(sprite);
         this.wallMap[y][x] = new WallView(sprite);
       } else {
         const sprite = this.scene.registry.sprite(name);
         sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-        sprite.zIndex = 3; // @todo maintain zIndex with monsters
+        sprite.zIndex = zIndex;
         this.container.addChild(sprite);
         this.wallMap[y][x] = new WallView(sprite);
       }
