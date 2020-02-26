@@ -158,7 +158,6 @@ export class HeroView implements Monster, View {
 
         if (!this.sprite.playing) {
           this.resetPosition(this.new_x, this.new_y);
-          this.scanDrop();
           if (!this.action()) {
             this.setAnimation(MonsterState.Idle);
           }
@@ -348,7 +347,7 @@ export class HeroView implements Monster, View {
   }
 
   move(d_x: number, d_y: number) {
-    if (!this.heroState.dead.get() && this.state === MonsterState.Idle) {
+    if (!this.heroState.dead.get() && this.state === MonsterState.Idle || this.state === MonsterState.Run) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
@@ -415,7 +414,7 @@ export class HeroView implements Monster, View {
       this.weaponSprite.zIndex = 2;
       this.weaponSprite.position.x = TILE_SIZE;
       this.weaponSprite.position.y = TILE_SIZE - 4;
-      if(this.is_left) {
+      if (this.is_left) {
         this.weaponSprite.position.x = 0;
         this.weaponSprite.scale.x = -1;
       }
