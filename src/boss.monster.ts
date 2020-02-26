@@ -77,6 +77,7 @@ export class BossMonster implements Monster, View {
     this.clearMap(this.new_x, this.new_y);
     this.sprite?.destroy();
     this.container.destroy();
+    this.level.boss = null;
   }
 
   private setSprite(postfix: string): void {
@@ -228,9 +229,8 @@ export class BossMonster implements Monster, View {
     this.bossState.health.update(h => Math.max(0, h - damage));
     if (this.bossState.health.get() <= 0) {
       this.level.log.push(`${this.bossState.name} killed by ${name}`);
-      this.clearMap(this.x, this.y);
-      this.clearMap(this.new_x, this.new_y);
       this.bossState.dead.set(true);
+      this.destroy();
       if (Math.random() < this.bossState.luck) {
         this.level.randomDrop(this.x, this.y);
       }
@@ -264,10 +264,15 @@ export class BossMonster implements Monster, View {
 
   private clearMap(x: number, y: number): void {
     if (x >= 0 && y >= 0) {
-      this.level.monsterMap[this.y][this.x] = null;
-      this.level.monsterMap[this.y][this.x + 1] = null;
-      this.level.monsterMap[this.y - 1][this.x] = null;
-      this.level.monsterMap[this.y - 1][this.x + 1] = null;
+      for (let test_x = x; test_x <= x + 1; test_x++) {
+        for (let test_y = y - 1; test_y <= y; test_y++) {
+          // check is no monster
+          const m = this.level.monsterMap[test_y][test_x];
+          if (m && (m === this || m === this.wrapper)) {
+            this.level.monsterMap[test_y][test_x] = null;
+          }
+        }
+      }
     }
   }
 }
@@ -314,6 +319,7 @@ export class BossHealthView implements View {
   }
 
   updateHealth(health: number) {
+    console.trace();
     this.healthRect.clear();
     this.healthRect.beginFill(Colors.healthBackground, 0.3);
     this.healthRect.drawRect(
@@ -330,12 +336,16 @@ export class BossHealthView implements View {
   }
 
   updateDead(dead: boolean) {
-    this.healthRect.visible = !dead;
-    this.healthText.visible = !dead;
+    console.trace();
+    if (dead) {
+      this.destroy();
+    }
   }
 
   destroy(): void {
+    console.trace();
     this.boss.health.unsubscribe(this.updateHealth);
+    this.boss.dead.unsubscribe(this.updateDead);
 
     this.healthText.destroy();
     this.healthRect.destroy();
