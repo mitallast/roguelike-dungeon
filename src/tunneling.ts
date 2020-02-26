@@ -143,8 +143,6 @@ export class TunnelingAlgorithm {
     console.log("corridorsV", [...this.corridorsV]);
     console.log("corridorsH", [...this.corridorsH]);
 
-    this.debug();
-
     while (this.possible.length > 0) {
       const i = this.rng.nextRange(0, this.possible.length);
       const possible = this.possible[i];
@@ -760,9 +758,9 @@ export class TunnelingAlgorithm {
     }
   }
 
-  private debug() {
+  private debug(drawPossible: boolean = false) {
     const canvas = document.createElement("canvas");
-    const scale = 4;
+    const scale = 8;
     canvas.width = this.width * scale;
     canvas.height = this.height * scale;
     canvas.style.margin = "10px";
@@ -779,26 +777,28 @@ export class TunnelingAlgorithm {
     this.corridorsH.forEach(r => render(r, "rgb(0, 255, 0)"));
     this.corridorsV.forEach(r => render(r, "rgb(0, 0, 255)"));
 
-    this.possible.forEach(p => {
-      switch (p.direction) {
-        case Direction.TOP:
-          render(p.room, "rgba(255, 0, 0, 0.3)");
-          render(p.corridor, "rgba(0, 255, 0, 0.3)");
-          break;
-        case Direction.BOTTOM:
-          render(p.room, "rgba(255, 0, 0, 0.3)");
-          render(p.corridor, "rgba(0, 255, 0, 0.3)");
-          break;
-        case Direction.LEFT:
-          render(p.room, "rgba(255, 0, 0, 0.3)");
-          render(p.corridor, "rgba(0, 0, 255, 0.3)");
-          break;
-        case Direction.RIGHT:
-          render(p.room, "rgba(255, 0, 0, 0.3)");
-          render(p.corridor, "rgba(0, 0, 255, 0.3)");
-          break;
-      }
-    });
+    if (drawPossible) {
+      this.possible.forEach(p => {
+        switch (p.direction) {
+          case Direction.TOP:
+            render(p.room, "rgba(255, 0, 0, 0.3)");
+            render(p.corridor, "rgba(0, 255, 0, 0.3)");
+            break;
+          case Direction.BOTTOM:
+            render(p.room, "rgba(255, 0, 0, 0.3)");
+            render(p.corridor, "rgba(0, 255, 0, 0.3)");
+            break;
+          case Direction.LEFT:
+            render(p.room, "rgba(255, 0, 0, 0.3)");
+            render(p.corridor, "rgba(0, 0, 255, 0.3)");
+            break;
+          case Direction.RIGHT:
+            render(p.room, "rgba(255, 0, 0, 0.3)");
+            render(p.corridor, "rgba(0, 0, 255, 0.3)");
+            break;
+        }
+      });
+    }
 
     document.body.appendChild(canvas);
   }

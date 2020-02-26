@@ -292,6 +292,8 @@ export class BossHealthView implements View {
   private readonly height: number;
   private readonly point_width: number;
 
+  private destroyed = false;
+
   constructor(boss: BossState) {
     this.container = new PIXI.Container();
     this.boss = boss;
@@ -341,12 +343,15 @@ export class BossHealthView implements View {
   }
 
   destroy(): void {
-    this.boss.health.unsubscribe(this.updateHealth);
-    this.boss.dead.unsubscribe(this.updateDead);
+    if (!this.destroyed) {
+      this.destroyed = true;
+      this.boss.health.unsubscribe(this.updateHealth);
+      this.boss.dead.unsubscribe(this.updateDead);
 
-    this.healthText.destroy();
-    this.healthRect.destroy();
-    this.container.destroy();
+      this.healthText.destroy();
+      this.healthRect.destroy();
+      this.container.destroy();
+    }
   }
 
   update(delta: number): void {
