@@ -3,12 +3,12 @@ import {RNG} from "./rng";
 
 const room_min_w = 5;
 const room_min_h = 5;
-const room_max_w = 15;
-const room_max_h = 10;
+const room_max_w = 20;
+const room_max_h = 20;
 const room_min_x = 2;
 const room_min_y = 2;
 
-const max_corr_dist = 12;
+const max_corr_dist = 20;
 const max_corr_width = 5;
 
 const x_dist = 2;
@@ -16,6 +16,8 @@ const y_dist = 2;
 
 const min_corr_dist_x = (x_dist << 1) + 1;
 const min_corr_dist_y = (y_dist << 1) + 1;
+
+const skew = 3;
 
 export class TunnelingAlgorithm {
   private readonly possible: Possible[] = [];
@@ -67,9 +69,15 @@ export class TunnelingAlgorithm {
     const room_w = this.rng.nextRange(room_min_w, room_max_w);
     const room_h = this.rng.nextRange(room_min_h, room_max_h);
 
+    const min_x = Math.max(room_min_x, (this.width >> 1) - room_w);
+    const min_y = Math.max(room_min_y, (this.height >> 1) - room_h);
+
+    const max_x = Math.min(this.width - room_min_x - room_w, (this.width >> 1) + room_w);
+    const max_y = Math.min(this.height - room_min_y - room_h, (this.height >> 1) + room_h);
+
     const room = new ImmutableRect(
-      170, // this.rng.nextRange(room_min_x, this.width - 2 - room_w),
-      this.rng.nextRange(room_min_y, this.height - 2 - room_h),
+      this.nextRange(min_x, max_x),
+      this.nextRange(min_y, max_y),
       room_w,
       room_h
     );
@@ -100,31 +108,31 @@ export class TunnelingAlgorithm {
       const leftC = this.findLeftCorridorArea(room);
 
       if (topC) {
-        console.log("possible top corridor area", room, topC);
+        // console.log("possible top corridor area", room, topC);
         const topR = this.findTopRoomArea(topC);
         if (topR) {
-          console.log("add possible top room area", room, topC, topR);
+          // console.log("add possible top room area", room, topC, topR);
           this.possible.push(new Possible(topR, topC, Direction.TOP));
         }
       }
       if (bottomC) {
         const bottomR = this.findBottomRoomArea(bottomC);
         if (bottomR) {
-          console.log("add possible bottom room area", room, bottomC, bottomR);
+          // console.log("add possible bottom room area", room, bottomC, bottomR);
           this.possible.push(new Possible(bottomR, bottomC, Direction.BOTTOM));
         }
       }
       if (rightC) {
         const rightR = this.findRightRoomArea(rightC);
         if (rightR) {
-          console.log("add possible right room area", room, rightC, rightR);
+          // console.log("add possible right room area", room, rightC, rightR);
           this.possible.push(new Possible(rightR, rightC, Direction.RIGHT));
         }
       }
       if (leftC) {
         const leftR = this.findLeftRoomArea(leftC);
         if (leftR) {
-          console.log("add possible left room area", room, leftC, leftR);
+          // console.log("add possible left room area", room, leftC, leftR);
           this.possible.push(new Possible(leftR, leftC, Direction.LEFT));
         }
       }
@@ -134,6 +142,8 @@ export class TunnelingAlgorithm {
     console.log("rooms", [...this.rooms]);
     console.log("corridorsV", [...this.corridorsV]);
     console.log("corridorsH", [...this.corridorsH]);
+
+    this.debug();
 
     while (this.possible.length > 0) {
       const i = this.rng.nextRange(0, this.possible.length);
@@ -162,83 +172,6 @@ export class TunnelingAlgorithm {
           }
           break;
       }
-
-      // @todo connect with other rooms
-
-      // if (this.valid(room.expand())) {
-      //   // find connection
-      //   const a = room;
-      //   let connected = false;
-      //
-      //   // connect with all possible rooms
-      //   for (let i = 0; i < this.rooms.length; i++) {
-      //     let b = this.rooms[i];
-      //
-      //     // try calculate horizontal distance
-      //     const max_x = Math.max(a.x, b.x);
-      //     const min_x_w = Math.min(a.x + a.w, b.x + b.w);
-      //     if (max_x + 5 <= min_x_w) {
-      //       let rect: ImmutableRect;
-      //       if (a.y + a.h < b.y) {
-      //         rect = new ImmutableRect(
-      //           max_x + 2,
-      //           a.y + a.h,
-      //           min_x_w - max_x - 4,
-      //           b.y - a.y - a.h
-      //         );
-      //       } else {
-      //         rect = new ImmutableRect(
-      //           max_x + 2,
-      //           b.y + b.h,
-      //           min_x_w - max_x - 4,
-      //           a.y - b.y - b.h
-      //         );
-      //       }
-      //       console.log("test v corr", rect);
-      //       if (rect.w < max_corr_dist && this.valid(rect.expandV())) {
-      //         this.corridorsV.push(rect);
-      //         connected = true;
-      //       }
-      //     }
-      //
-      //     // try calculate vertical distance
-      //     const max_y = Math.max(a.y, b.y);
-      //     const min_y_h = Math.min(a.y + a.h, b.y + b.h);
-      //     if (max_y + 3 <= min_y_h) {
-      //       let rect: ImmutableRect;
-      //       if (a.x + a.w < b.x) {
-      //         rect = new ImmutableRect(
-      //           a.x + a.w,
-      //           max_y + 1,
-      //           b.x - a.x - a.w,
-      //           min_y_h - max_y - 2
-      //         );
-      //       } else {
-      //         rect = new ImmutableRect(
-      //           b.x + b.w,
-      //           max_y + 1,
-      //           a.x - b.x - b.w,
-      //           min_y_h - max_y - 2,
-      //         );
-      //       }
-      //       console.log("test h corr", rect);
-      //       if (rect.h < max_corr_dist && this.isOverlap(rect.expandH())) {
-      //         this.corridorsH.push(rect);
-      //         connected = true;
-      //       }
-      //     }
-      //   }
-      //
-      //   if (connected) {
-      //     console.log('v2 add next room', room);
-      //     this.rooms.push(room);
-      //     return true;
-      //   } else {
-      //     console.warn('v2 room not connected', room, possibleRoom);
-      //   }
-      // } else {
-      //   console.warn('v2 room overlap', room);
-      // }
     }
     return false;
   }
@@ -593,25 +526,25 @@ export class TunnelingAlgorithm {
   // generate rooms
 
   private generateTopRoom(possible: Possible): boolean {
-    const corr_w = this.rng.nextRange(1, Math.min(max_corr_width, possible.corridor.w));
-    const corr_h = this.rng.nextRange(min_corr_dist_y, possible.corridor.h);
+    const corr_w = this.nextRange(1, Math.min(max_corr_width, possible.corridor.w));
+    const corr_h = this.nextRange(min_corr_dist_y, possible.corridor.h);
     const corr_y = possible.corridor.y + (possible.corridor.h - corr_h);
-    const corr_x = this.rng.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
+    const corr_x = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
     const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
 
     if (this.valid(corr.expandV())) {
       const room_min_y = Math.max(3, possible.room.y, corr.y - room_max_h);
-      const room_y = this.rng.nextRange(room_min_y, corr.y - room_min_h);
+      const room_y = this.nextRange(room_min_y, corr.y - room_min_h);
       const room_h = corr.y - room_y;
 
       const room_max_x = corr.x - x_dist;
       const room_min_x = Math.max(2, possible.room.x, corr.x + corr.w + x_dist - room_max_w);
-      const room_x = this.rng.nextRange(room_min_x, room_max_x);
+      const room_x = this.nextRange(room_min_x, room_max_x);
 
       const room_min_right_x = corr.x + corr.w + x_dist;
       const room_max_right_x = Math.min(possible.room.x + possible.room.w, room_x + room_max_w);
 
-      const room_right_x = this.rng.nextRange(room_min_right_x, room_max_right_x);
+      const room_right_x = this.nextRange(room_min_right_x, room_max_right_x);
       const room_w = room_right_x - room_x;
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
@@ -619,6 +552,7 @@ export class TunnelingAlgorithm {
         console.log("add top room", corr, room);
         this.corridorsV.push(corr);
         this.rooms.push(room);
+        this.connectWithOthers(room);
         return true;
       } else {
         console.warn("top room not valid");
@@ -631,26 +565,26 @@ export class TunnelingAlgorithm {
 
   private generateBottomRoom(possible: Possible): boolean {
     const corr_y = possible.corridor.y;
-    const corr_w = this.rng.nextRange(1, Math.min(max_corr_width, possible.corridor.w));
-    const corr_h = this.rng.nextRange(min_corr_dist_y, possible.corridor.h);
-    const corr_x = this.rng.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
+    const corr_w = this.nextRange(1, Math.min(max_corr_width, possible.corridor.w));
+    const corr_h = this.nextRange(min_corr_dist_y, possible.corridor.h);
+    const corr_x = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
     const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
 
     if (this.valid(corr.expandV())) {
       const room_y = corr.y + corr.h;
       const room_min_y = room_y + room_min_h;
       const room_max_y = Math.min(possible.room.y + possible.room.h, room_min_y + room_max_h);
-      const room_bottom_y = this.rng.nextRange(room_min_y, room_max_y);
+      const room_bottom_y = this.nextRange(room_min_y, room_max_y);
       const room_h = room_bottom_y - room_y;
 
       const room_max_x = corr.x - x_dist;
       const room_min_x = Math.max(2, possible.room.x, corr.x + corr.w + x_dist - room_max_w);
-      const room_x = this.rng.nextRange(room_min_x, room_max_x);
+      const room_x = this.nextRange(room_min_x, room_max_x);
 
       const room_min_right_x = corr.x + corr.w + x_dist;
       const room_max_right_x = Math.min(possible.room.x + possible.room.w, room_x + room_max_w);
 
-      const room_right_x = this.rng.nextRange(room_min_right_x, room_max_right_x);
+      const room_right_x = this.nextRange(room_min_right_x, room_max_right_x);
       const room_w = room_right_x - room_x;
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
@@ -658,6 +592,7 @@ export class TunnelingAlgorithm {
         console.log("add bottom room", corr, room);
         this.corridorsV.push(corr);
         this.rooms.push(room);
+        this.connectWithOthers(room);
         return true;
       } else {
         console.warn("bottom room not valid", corr, room);
@@ -670,26 +605,26 @@ export class TunnelingAlgorithm {
 
   private generateRightRoom(possible: Possible): boolean {
     const corr_x = possible.corridor.x;
-    const corr_h = this.rng.nextRange(1, Math.min(max_corr_width, possible.corridor.h));
-    const corr_w = this.rng.nextRange(min_corr_dist_x, possible.corridor.w);
-    const corr_y = this.rng.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
+    const corr_h = this.nextRange(1, Math.min(max_corr_width, possible.corridor.h));
+    const corr_w = this.nextRange(min_corr_dist_x, possible.corridor.w);
+    const corr_y = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
     const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
 
     if (this.valid(corr.expandH())) {
       const room_x = corr.x + corr.w;
       const room_min_x = room_x + room_min_w;
       const room_max_x = Math.min(possible.room.x + possible.room.w, room_min_x + room_max_w);
-      const room_right_x = this.rng.nextRange(room_min_x, room_max_x);
+      const room_right_x = this.nextRange(room_min_x, room_max_x);
       const room_w = room_right_x - room_x;
 
       const room_max_y = corr.y - y_dist;
       const room_min_y = Math.max(2, possible.room.y, corr.y + corr.h + y_dist - room_max_h);
-      const room_y = this.rng.nextRange(room_min_y, room_max_y);
+      const room_y = this.nextRange(room_min_y, room_max_y);
 
       const room_min_bottom_y = corr.y + corr.h + y_dist;
       const room_max_bottom_y = Math.min(possible.room.y + possible.room.h, room_y + room_max_h);
 
-      const room_bottom_y = this.rng.nextRange(room_min_bottom_y, room_max_bottom_y);
+      const room_bottom_y = this.nextRange(room_min_bottom_y, room_max_bottom_y);
       const room_h = room_bottom_y - room_y;
       console.log({
         room_min_bottom_y: room_min_bottom_y,
@@ -704,6 +639,7 @@ export class TunnelingAlgorithm {
         console.log("add right room", corr, room);
         this.corridorsH.push(corr);
         this.rooms.push(room);
+        this.connectWithOthers(room);
         return true;
       } else {
         console.warn("right room not valid", corr, room);
@@ -716,25 +652,25 @@ export class TunnelingAlgorithm {
   }
 
   private generateLeftRoom(possible: Possible): boolean {
-    const corr_h = this.rng.nextRange(1, Math.min(max_corr_width, possible.corridor.h));
-    const corr_w = this.rng.nextRange(min_corr_dist_x, possible.corridor.w);
+    const corr_h = this.nextRange(1, Math.min(max_corr_width, possible.corridor.h));
+    const corr_w = this.nextRange(min_corr_dist_x, possible.corridor.w);
     const corr_x = possible.corridor.x + (possible.corridor.w - corr_w);
-    const corr_y = this.rng.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
+    const corr_y = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
     const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
 
     if (this.valid(corr.expandH())) {
       const room_min_x = Math.max(2, possible.room.x, corr.x - room_max_w);
-      const room_x = this.rng.nextRange(room_min_x, corr.x - room_min_w);
+      const room_x = this.nextRange(room_min_x, corr.x - room_min_w);
       const room_w = corr.x - room_x;
 
       const room_max_y = corr.y - y_dist;
       const room_min_y = Math.max(3, possible.room.y, corr.y + corr.h + y_dist - room_max_h);
-      const room_y = this.rng.nextRange(room_min_y, room_max_y);
+      const room_y = this.nextRange(room_min_y, room_max_y);
 
       const room_min_bottom_y = corr.y + corr.h + y_dist;
       const room_max_bottom_y = Math.min(possible.room.y + possible.room.h, room_y + room_max_h);
 
-      const room_bottom_y = this.rng.nextRange(room_min_bottom_y, room_max_bottom_y);
+      const room_bottom_y = this.nextRange(room_min_bottom_y, room_max_bottom_y);
       const room_h = room_bottom_y - room_y;
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
@@ -742,6 +678,7 @@ export class TunnelingAlgorithm {
         console.log("add left room", corr, room);
         this.corridorsH.push(corr);
         this.rooms.push(room);
+        this.connectWithOthers(room);
         return true;
       } else {
         console.warn("left room not valid");
@@ -750,6 +687,124 @@ export class TunnelingAlgorithm {
       console.warn("left corridor not valid");
     }
     return false;
+  }
+
+  // additional
+
+  private connectWithOthers(room: Rect): void {
+    // @todo maybe refactor to using precomputed this.possible?
+
+    // old version of connections:
+
+    // find connection
+    const a = room;
+
+    // connect with all possible rooms
+    for (let i = 0; i < this.rooms.length - 1; i++) {
+      let b = this.rooms[i];
+
+      // try calculate horizontal distance
+      const max_x = Math.max(a.x, b.x);
+      const min_x_w = Math.min(a.x + a.w, b.x + b.w);
+      if (max_x + 5 <= min_x_w) {
+        let rect: ImmutableRect;
+        if (a.y + a.h < b.y) {
+          rect = new ImmutableRect(
+            max_x + 2,
+            a.y + a.h,
+            min_x_w - max_x - 4,
+            b.y - a.y - a.h
+          );
+        } else {
+          rect = new ImmutableRect(
+            max_x + 2,
+            b.y + b.h,
+            min_x_w - max_x - 4,
+            a.y - b.y - b.h
+          );
+        }
+        console.log("test v corr", rect);
+        if (rect.w < max_corr_dist && this.valid(rect.expandV())) {
+          console.log("add v corr", rect);
+          this.corridorsV.push(rect);
+        }
+      }
+
+      // try calculate vertical distance
+      const max_y = Math.max(a.y, b.y);
+      const min_y_h = Math.min(a.y + a.h, b.y + b.h);
+      if (max_y + 3 <= min_y_h) {
+        let rect: ImmutableRect;
+        if (a.x + a.w < b.x) {
+          rect = new ImmutableRect(
+            a.x + a.w,
+            max_y + 1,
+            b.x - a.x - a.w,
+            min_y_h - max_y - 2
+          );
+        } else {
+          rect = new ImmutableRect(
+            b.x + b.w,
+            max_y + 1,
+            a.x - b.x - b.w,
+            min_y_h - max_y - 2,
+          );
+        }
+
+        console.log("test h corr", rect);
+        if (rect.h < max_corr_dist && this.valid(rect.expandH())) {
+          console.log("add h corr", rect);
+          this.corridorsH.push(rect);
+        }
+      }
+    }
+  }
+
+  private debug() {
+    const canvas = document.createElement("canvas");
+    const scale = 4;
+    canvas.width = this.width * scale;
+    canvas.height = this.height * scale;
+    canvas.style.margin = "10px";
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgb(50,50,50)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    const render = (rect: Rect, color: string) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    };
+
+    this.rooms.forEach(r => render(r, "rgb(255, 0, 0)"));
+    this.corridorsH.forEach(r => render(r, "rgb(0, 255, 0)"));
+    this.corridorsV.forEach(r => render(r, "rgb(0, 0, 255)"));
+
+    this.possible.forEach(p => {
+      switch (p.direction) {
+        case Direction.TOP:
+          render(p.room, "rgba(255, 0, 0, 0.3)");
+          render(p.corridor, "rgba(0, 255, 0, 0.3)");
+          break;
+        case Direction.BOTTOM:
+          render(p.room, "rgba(255, 0, 0, 0.3)");
+          render(p.corridor, "rgba(0, 255, 0, 0.3)");
+          break;
+        case Direction.LEFT:
+          render(p.room, "rgba(255, 0, 0, 0.3)");
+          render(p.corridor, "rgba(0, 0, 255, 0.3)");
+          break;
+        case Direction.RIGHT:
+          render(p.room, "rgba(255, 0, 0, 0.3)");
+          render(p.corridor, "rgba(0, 0, 255, 0.3)");
+          break;
+      }
+    });
+
+    document.body.appendChild(canvas);
+  }
+
+  private nextRange(min: number, max: number): number {
+    return Math.round(this.rng.nextNormal(min, max, skew));
   }
 }
 
