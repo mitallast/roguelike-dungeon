@@ -319,7 +319,6 @@ export class BossHealthView implements View {
   }
 
   updateHealth(health: number) {
-    console.trace();
     this.healthRect.clear();
     this.healthRect.beginFill(Colors.healthBackground, 0.3);
     this.healthRect.drawRect(
@@ -336,14 +335,12 @@ export class BossHealthView implements View {
   }
 
   updateDead(dead: boolean) {
-    console.trace();
     if (dead) {
       this.destroy();
     }
   }
 
   destroy(): void {
-    console.trace();
     this.boss.health.unsubscribe(this.updateHealth);
     this.boss.dead.unsubscribe(this.updateDead);
 
