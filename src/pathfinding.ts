@@ -2,6 +2,8 @@ import {Rect} from "./geometry";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
+export enum Heuristic {Manhattan = 0, Euclidean = 1, Chebyshev = 2, Octile = 3}
+
 class Node {
   parent: Node;
   position: PIXI.Point;
@@ -26,9 +28,14 @@ export class PathFinding {
   private readonly height: number;
   private readonly map: number[][] = []; // x => y
 
-  constructor(width: number, height: number) {
+  private readonly heuristic: Heuristic;
+  private readonly weight: number = 1;
+
+  constructor(width: number, height: number, heuristic: Heuristic = Heuristic.Chebyshev, weight: number = 1) {
     this.width = width;
     this.height = height;
+    this.heuristic = heuristic;
+    this.weight = weight;
     for (let x = 0; x < width; x++) {
       const row: number[] = [];
       this.map.push(row);
@@ -127,7 +134,7 @@ export class PathFinding {
 
         // Create the f, g, and h values
         child.g = current_node.g + 1;
-        child.h = ((child.position.x - end_node.position.x) ^ 2) + ((child.position.y - end_node.position.y) ^ 2);
+        child.h = this.heuristicFunction(child.position, end_node.position);
         child.f = child.g + child.h;
 
         // Child is already in the open list
@@ -140,6 +147,50 @@ export class PathFinding {
     }
 
     return [];
+  }
+
+  private heuristicFunction(
+    pos0: PIXI.Point,
+    pos1: PIXI.Point,
+  ): number {
+    let dx = Math.abs(pos1.x - pos0.x);
+    let dy = Math.abs(pos1.y - pos0.y);
+
+    switch (this.heuristic) {
+      case Heuristic.Manhattan:
+        /**
+         * Calculate the Manhatten distance.
+         * Generally: Overestimates distances because diagonal movement not taken into accout.
+         * Good for a 4-connected grid (diagonal movement not allowed)
+         */
+        return (dx + dy) * this.weight;
+      case Heuristic.Euclidean:
+        /**
+         * Calculate the Euclidean distance.
+         * Generally: Underestimates distances, assuming paths can have any angle.
+         * Can be used f.e. when units can move at any angle.
+         */
+        return Math.sqrt(dx * dx + dy * dy) * this.weight;
+      case Heuristic.Chebyshev:
+        /**
+         * Calculate the Chebyshev distance.
+         * Should be used when diagonal movement is allowed.
+         * D * (dx + dy) + (D2 - 2 * D) * Math.min(dx, dy)
+         * D = 1 and D2 = 1
+         * => (dx + dy) - Math.min(dx, dy)
+         * This is equivalent to Math.max(dx, dy)
+         */
+        return Math.max(dx, dy) * this.weight;
+      case Heuristic.Octile:
+        /**
+         * Calculate the Octile distance.
+         * Should be used on an 8-connected grid (diagonal movement allowed).
+         * D * (dx + dy) + (D2 - 2 * D) * Math.min(dx, dy)
+         * D = 1 and D2 = sqrt(2)
+         * => (dx + dy) - 0.58 * Math.min(dx, dy)
+         */
+        return (dx + dy - 0.58 * Math.min(dx, dy)) * this.weight;
+    }
   }
 
   private static adjacentSquares: PIXI.Point[] = [
