@@ -31,9 +31,22 @@ export class PathFinding {
   private readonly heuristic: Heuristic;
   private readonly weight: number = 1;
 
-  constructor(width: number, height: number, heuristic: Heuristic = Heuristic.Chebyshev, weight: number = 1) {
+  private readonly includeStart: boolean;
+  private readonly includeEnd: boolean;
+  private readonly diagonalAllowed: boolean;
+
+  constructor(width: number,
+              height: number,
+              diagonalAllowed: boolean = true,
+              includeStart: boolean = false,
+              includeEnd: boolean = false,
+              heuristic: Heuristic = Heuristic.Chebyshev,
+              weight: number = 1) {
     this.width = width;
     this.height = height;
+    this.diagonalAllowed = diagonalAllowed;
+    this.includeStart = includeStart;
+    this.includeEnd = includeEnd;
     this.heuristic = heuristic;
     this.weight = weight;
     for (let x = 0; x < width; x++) {
@@ -90,18 +103,28 @@ export class PathFinding {
       // Found the goal
       if (current_node.equal(end_node)) {
         const path: PIXI.Point[] = [];
-        let current = current_node;
-        while (current != null) {
+        let current: Node;
+        if (this.includeEnd) {
+          current = current_node;
+        } else {
+          current = current_node.parent;
+        }
+        while (current.parent !== null) {
           path.push(current.position);
           current = current.parent;
+        }
+        if (this.includeStart) {
+          path.push(current.position);
         }
         return path.reverse();
       }
 
       // Generate children
       const children: Node[] = [];
-      for (let i = 0; i < PathFinding.adjacentSquares.length; i++) {
-        let new_position = PathFinding.adjacentSquares[i];
+      const squares = this.diagonalAllowed ? PathFinding.adjacentSquaresDiagonal : PathFinding.adjacentSquares;
+
+      for (let i = 0; i < squares.length; i++) {
+        let new_position = squares[i];
         // Get node position
         let node_position = new PIXI.Point(current_node.position.x + new_position.x, current_node.position.y + new_position.y);
 
@@ -198,10 +221,16 @@ export class PathFinding {
     new PIXI.Point(0, 1),
     new PIXI.Point(-1, 0),
     new PIXI.Point(1, 0),
-    // uncomment if monsters can walk diagonally
-    // new PIXI.Point(-1, -1),
-    // new PIXI.Point(-1, 1),
-    // new PIXI.Point(1, -1),
-    // new PIXI.Point(1, 1)
+  ];
+
+  private static adjacentSquaresDiagonal: PIXI.Point[] = [
+    new PIXI.Point(0, -1),
+    new PIXI.Point(0, 1),
+    new PIXI.Point(-1, 0),
+    new PIXI.Point(1, 0),
+    new PIXI.Point(-1, -1),
+    new PIXI.Point(-1, 1),
+    new PIXI.Point(1, -1),
+    new PIXI.Point(1, 1)
   ];
 }

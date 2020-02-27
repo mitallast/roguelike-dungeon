@@ -180,8 +180,8 @@ export class TinyMonster implements Monster, View {
         const start = new PIXI.Point(this.x, this.y);
         const end = new PIXI.Point(level.hero.x, level.hero.y);
         const path = pf.find(start, end);
-        if (path.length > 1) {
-          const next = path[1];
+        if (path.length > 0) {
+          const next = path[0];
           const d_x = next.x - this.x;
           const d_y = next.y - this.y;
           return this.move(d_x, d_y);

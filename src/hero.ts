@@ -141,7 +141,7 @@ export class HeroView implements Monster, View {
     }
   }
 
-  animate() {
+  private animate() {
     switch (this.state) {
       case MonsterState.Idle:
         if (!this.action()) {
@@ -184,7 +184,7 @@ export class HeroView implements Monster, View {
     }
   }
 
-  action() {
+  private action() {
     if (!this.heroState.dead.get()) {
       this.scanDrop();
       for (let d = 0; d < 10; d++) {
@@ -209,29 +209,30 @@ export class HeroView implements Monster, View {
         }
         return true;
       }
+
+
+      let d_y = 0;
       if (this.joystick.moveUp.triggered || !this.joystick.moveUp.processed) {
         this.joystick.moveUp.processed = true;
-        if (this.move(0, -1)) {
-          return true;
-        }
-      }
-      if (this.joystick.moveDown.triggered || !this.joystick.moveDown.processed) {
+        d_y = -1;
+      } else if (this.joystick.moveDown.triggered || !this.joystick.moveDown.processed) {
         this.joystick.moveDown.processed = true;
-        if (this.move(0, 1)) {
-          return true;
-        }
+        d_y = 1;
       }
+
+      let d_x = 0;
       if (this.joystick.moveLeft.triggered || !this.joystick.moveLeft.processed) {
         this.joystick.moveLeft.processed = true;
         this.is_left = true;
-        if (this.move(-1, 0)) {
-          return true;
-        }
-      }
-      if (this.joystick.moveRight.triggered || !this.joystick.moveRight.processed) {
+        d_x = -1;
+      } else if (this.joystick.moveRight.triggered || !this.joystick.moveRight.processed) {
         this.joystick.moveRight.processed = true;
         this.is_left = false;
-        if (this.move(1, 0)) {
+        d_x = 1;
+      }
+
+      if (d_x !== 0 || d_y !== 0) {
+        if (this.move(d_x, d_y)) {
           return true;
         }
       }
@@ -239,7 +240,7 @@ export class HeroView implements Monster, View {
     return false;
   }
 
-  dropWeapon() {
+  private dropWeapon() {
     if (this.heroState.weapon.get()) {
       const max_distance = 5;
       let left_x = this.x;
@@ -312,7 +313,7 @@ export class HeroView implements Monster, View {
     }
   }
 
-  scanDrop() {
+  private scanDrop() {
     this.level.getDrop(this.x, this.y)?.pickedUp(this);
   }
 
@@ -324,7 +325,7 @@ export class HeroView implements Monster, View {
     return this.heroState.dead.get();
   }
 
-  scanHit() {
+  private scanHit() {
     const max_distance = this.heroState.weapon.get()?.distance || 1;
     // search only left or right path
     const scan_x_min = this.is_left ? Math.max(0, this.x - max_distance) : this.x;
@@ -346,7 +347,7 @@ export class HeroView implements Monster, View {
     }
   }
 
-  move(d_x: number, d_y: number) {
+  private move(d_x: number, d_y: number) {
     if (!this.heroState.dead.get() && this.state === MonsterState.Idle || this.state === MonsterState.Run) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
@@ -363,7 +364,7 @@ export class HeroView implements Monster, View {
     return false;
   }
 
-  markNewPosition(x: number, y: number) {
+  private markNewPosition(x: number, y: number) {
     this.level.monsterMap[y][x] = this.wrapper;
     this.new_x = x;
     this.new_y = y;
