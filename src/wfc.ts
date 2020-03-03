@@ -1,6 +1,4 @@
 import {RNG} from "./rng";
-// @ts-ignore
-import * as PIXI from 'pixi.js';
 
 // origin: https://github.com/mxgmn/WaveFunctionCollapse/
 
@@ -46,23 +44,40 @@ class Color {
   }
 }
 
+// Indicates whether something has been fully resolved or not.
+// This is the return code for many functions, but can also
+// describe the state of individual locations in a generated output.
+enum Resolution {
+  // The operation has successfully completed and a value is known.
+  Decided = 0,
+  // The operation has not yet found a value
+  Undecided = -1,
+  // It was not possible to find a successful value.
+  Contradiction = -2,
+}
+
 abstract class Model {
-  protected wave: boolean[][] = null;
+  wave: boolean[][] = null; // wave => pattern map
 
-  protected propagator: number[][][];
+  propagator: number[][][]; // direction => pattern1 => pattern2[]
   compatible: number[][][];
-  protected observed: number[];
+  observed: number[];
 
-  stack: [number, number][];
-  stacksize: number;
+  toPropagate: [number, number][];
 
-  protected random: RNG;
-  protected FMX: number;
-  protected FMY: number;
-  protected T: number;
-  protected periodic: boolean;
+  backtrackItems: [number, number][]; // wave, pattern
+  private backtrackItemsLengths: number[];
+  private prevChoices: [number, number][];
+  private droppedBacktrackItemsCount: number;
+  private backtrackCount: number; // Purely informational
 
-  protected weights: number[];
+  random: RNG;
+  FMX: number;
+  FMY: number;
+  T: number;
+  periodic: boolean;
+
+  weights: number[];
   weightLogWeights: number[];
 
   sumsOfOnes: number[];
@@ -74,6 +89,10 @@ abstract class Model {
   sumsOfWeightLogWeights: number[];
   entropies: number[];
 
+  // The overall status of the propagator, always kept up to date
+  status: Resolution;
+  protected deferredConstraintsStep: boolean;
+
   constructor(width: number, height: number) {
     this.FMX = width;
     this.FMY = height;
@@ -83,10 +102,10 @@ abstract class Model {
     this.wave = array(this.FMX * this.FMY);
     this.compatible = array(this.wave.length);
     for (let i = 0; i < this.wave.length; i++) {
-      this.wave[i] = array(this.T);
+      this.wave[i] = array(this.T, true);
       this.compatible[i] = array(this.T);
       for (let t = 0; t < this.T; t++) {
-        this.compatible[i][t] = array(4);
+        this.compatible[i][t] = array(4, 0);
       }
     }
 
@@ -107,174 +126,9 @@ abstract class Model {
     this.sumsOfWeightLogWeights = array(this.FMX * this.FMY);
     this.entropies = array(this.FMX * this.FMY);
 
-    this.stack = array(this.wave.length * this.T);
-    this.stacksize = 0;
-  }
+    this.status = Resolution.Undecided;
 
-  observe(): boolean | null {
-    // console.log("observe", this);
-    let min = 1E+3;
-    let argmin = -1;
-
-    for (let i = 0; i < this.wave.length; i++) {
-      if (this.onBoundary(i % this.FMX, Math.floor(i / this.FMX))) continue;
-
-      let amount = this.sumsOfOnes[i];
-      if (amount == 0) {
-        console.error(`[wave=${i}] found zero sum of ones`);
-        return false;
-      }
-
-      let entropy = this.entropies[i];
-      // console.log("entropy", entropy, "amount", amount);
-      if (amount > 1 && entropy <= min) {
-        let noise = 1E-6 * this.random.nextFloat();
-        if (entropy + noise < min) {
-          min = entropy + noise;
-          argmin = i;
-        }
-      }
-    }
-
-    // console.log("min", min);
-    // console.log("argmin", argmin);
-    if (argmin == -1) {
-      this.observed = array(this.FMX * this.FMY);
-      for (let i = 0; i < this.wave.length; i++) {
-        for (let t = 0; t < this.T; t++) {
-          if (this.wave[i][t]) {
-            this.observed[i] = t;
-            break;
-          }
-        }
-      }
-      return true;
-    }
-
-    let distribution_sum: number = 0;
-    let distribution: number[] = array(this.T);
-    for (let t = 0; t < this.T; t++) {
-      distribution[t] = this.wave[argmin][t] ? this.weights[t] : 0;
-      distribution_sum += distribution[t];
-    }
-    // console.log("distribution", distribution, distribution_sum);
-
-    let rnd = this.random.nextFloat() * distribution_sum;
-    let r = 0;
-    for (let weight of distribution) {
-      rnd -= weight;
-      if (rnd < 0) break;
-      r++;
-    }
-    // console.log("choice r", r);
-
-    let w = this.wave[argmin];
-    // console.log("wave[argmin]", w);
-    // console.log("this.T", this.T);
-    for (let t = 0; t < this.T; t++) {
-      if (w[t] != (t == r)) {
-        // console.log(`ban argmin=${argmin}, t=${t}`);
-        this.ban(argmin, t);
-      } else {
-        // console.log("collapsed argmin, t", t);
-      }
-    }
-
-    return null;
-  }
-
-  protected propagate(): void {
-    // console.log("propagate");
-    while (this.stacksize > 0) {
-      // console.log("pop stack");
-      let e1 = this.stack[this.stacksize - 1];
-      this.stack[this.stacksize - 1] = null;
-      this.stacksize--;
-
-      let i1 = e1[0]; // item1
-      let x1 = i1 % this.FMX;
-      let y1 = Math.floor(i1 / this.FMX); // @todo maybe FMY ?
-
-      for (let d = 0; d < 4; d++) {
-        let dx = Model.DX[d], dy = Model.DY[d];
-        let x2 = x1 + dx, y2 = y1 + dy;
-        if (this.onBoundary(x2, y2)) {
-          continue;
-        }
-
-        if (x2 < 0) x2 += this.FMX;
-        else if (x2 >= this.FMX) x2 -= this.FMX;
-        if (y2 < 0) y2 += this.FMY;
-        else if (y2 >= this.FMY) y2 -= this.FMY;
-
-        // console.log("x2", x2, "y2", y2, this.FMX, this.FMY);
-        let i2 = x2 + y2 * this.FMX;
-
-        let p = this.propagator[d][e1[1]]; // item2
-        // // console.log("p", p);
-        let compat = this.compatible[i2];
-        // // console.log("compat", JSON.stringify(compat));
-
-        for (let l = 0; l < p.length; l++) {
-          let t2 = p[l];
-          let comp = compat[t2];
-          comp[d]--;
-          if (comp[d] == 0) {
-            // console.log(`ban i2=${i2} t2=${t2}`);
-            this.ban(i2, t2);
-          }
-        }
-      }
-    }
-  }
-
-  run(seed: number = null, limit: number = 0): boolean {
-    if (this.wave === null) this.init();
-    this.clear();
-    this.random = new RNG(seed);
-    for (let i = 0; i < limit || limit === 0; i++) {
-      let result = this.observe();
-      if (result !== null) return result;
-      this.propagate();
-    }
-
-    return true;
-  }
-
-  protected ban(i: number, t: number): void {
-    this.wave[i][t] = false;
-
-    let comp = this.compatible[i][t];
-    for (let d = 0; d < 4; d++) {
-      comp[d] = 0;
-    }
-    this.stack[this.stacksize] = [i, t];
-    this.stacksize++;
-
-    // console.log("old this.entropies[i]", this.entropies[i],
-    //   "this.sumsOfWeightLogWeights[i]", this.sumsOfWeightLogWeights[i],
-    //   "this.sumsOfWeights[i]", this.sumsOfWeights[i],
-    //   "this.weights[t]", this.weights[t],
-    //   "Math.log(this.sumsOfWeights[i])", Math.log(this.sumsOfWeights[i]),
-    //   "this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i]", this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i],
-    //   "entropy", Math.log(this.sumsOfWeights[i]) - this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i]
-    // );
-
-    this.sumsOfOnes[i] -= 1;
-    this.sumsOfWeights[i] -= this.weights[t];
-    this.sumsOfWeightLogWeights[i] -= this.weightLogWeights[t];
-
-    let sum = this.sumsOfWeights[i];
-    this.entropies[i] = Math.log(sum) - this.sumsOfWeightLogWeights[i] / sum;
-
-    // console.log("new this.entropies[i]", this.entropies[i],
-    //   "this.sumsOfWeightLogWeights[i]", this.sumsOfWeightLogWeights[i],
-    //   "this.sumsOfWeights[i]", this.sumsOfWeights[i],
-    //   "this.weights[t]", this.weights[t],
-    //   "Math.log(this.sumsOfWeights[i])", Math.log(this.sumsOfWeights[i]),
-    //   "this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i]", this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i],
-    //   "entropy", Math.log(this.sumsOfWeights[i]) - this.sumsOfWeightLogWeights[i] / this.sumsOfWeights[i]
-    // );
+    this.initConstraint();
   }
 
   protected clear(): void {
@@ -291,22 +145,342 @@ abstract class Model {
       this.sumsOfWeightLogWeights[i] = this.sumOfWeightLogWeights;
       this.entropies[i] = this.startingEntropy;
     }
+
+    this.toPropagate = [];
+
+    this.backtrackItems = [];
+    this.backtrackItemsLengths = [0];
+    this.droppedBacktrackItemsCount = 0;
+    this.backtrackCount = 0;
+    this.prevChoices = [];
+
+    this.status = Resolution.Undecided;
   }
 
-  protected abstract onBoundary(x: number, y: number): boolean;
+  run(seed: number = null, limit: number = 0): Resolution {
+    if (this.wave === null) this.init();
+    this.clear();
+    this.random = new RNG(seed);
+    for (let i = 0; i < limit || limit === 0; i++) {
+      // console.log("step", i);
+      this.step();
+      if (this.status !== Resolution.Undecided) {
+        break;
+      }
+      // if (i % 10 == 0) {
+      // }
+      // this.graphics([]);
+    }
+    return this.status;
+  }
 
-  abstract graphics(): void;
+  step(): Resolution {
+    let index: number;
+    let pattern: number;
+    let restart: boolean = false;
 
-  protected static DX: number[] = [-1, 0, 1, 0];
-  protected static DY: number[] = [0, 1, 0, -1];
+    // This will true if the user has called Ban, etc, since the last step.
+    if (this.deferredConstraintsStep) {
+      this.stepConstraint();
+    }
+
+    // If we're already in a final state. skip making an observation,
+    // and jump to backtrack handling / return.
+    if (this.status != Resolution.Undecided) {
+      index = 0;
+      restart = true;
+    }
+
+    if (!restart) {
+
+      // Record state before making a choice
+      console.assert(this.toPropagate.length == 0);
+      this.backtrackItemsLengths.push(this.droppedBacktrackItemsCount + this.backtrackItems.length);
+      // Clean up backtracks if they are too long
+
+      // Pick a tile and Select a pattern from it.
+      [index, pattern] = this.observe();
+
+      // Record what was selected for backtracking purposes
+      if (index !== -1) {
+        this.prevChoices.push([index, pattern]);
+      }
+    }
+
+    do {
+      // console.log("do loop");
+
+      restart = false;
+
+      if (this.status === Resolution.Undecided) this.propagate();
+      if (this.status === Resolution.Undecided) this.stepConstraint();
+
+      // Are all things are fully chosen?
+      if (index === -1 && this.status === Resolution.Undecided) {
+        this.status = Resolution.Decided;
+        return this.status;
+      }
+
+      if (this.status === Resolution.Contradiction) {
+        // After back tracking, it's no longer the case things are fully chosen
+        index = 0;
+
+        // Actually backtrack
+        while (true) {
+          if (this.backtrackItemsLengths.length == 1) {
+            // We've backtracked as much as we can, but
+            // it's still not possible. That means it is impossible
+            return Resolution.Contradiction;
+          }
+          this.backtrack();
+          let item = this.prevChoices.pop();
+          this.backtrackCount++;
+          this.toPropagate = [];
+          this.status = Resolution.Undecided;
+          // Mark the given choice as impossible
+          if (this.internalBan(item[0], item[1])) {
+            this.status = Resolution.Contradiction;
+          }
+          if (this.status === Resolution.Undecided) this.propagate();
+
+          if (this.status === Resolution.Contradiction) {
+            // If still in contradiction, repeat backtracking
+            continue;
+          } else {
+            // Include the last ban as part of the previous backtrack
+            console.assert(this.toPropagate.length === 0);
+            this.backtrackItemsLengths.pop();
+            this.backtrackItemsLengths.push(this.droppedBacktrackItemsCount + this.backtrackItems.length);
+          }
+          restart = true;
+          break;
+        }
+      }
+    } while (restart);
+    return this.status;
+  }
+
+  protected observe(): [number, number] {
+    // console.log("observe");
+    let min = 1E+3;
+    let argmin = -1;
+
+    for (let i = 0; i < this.wave.length; i++) {
+      if (this.onBoundary(i % this.FMX, Math.floor(i / this.FMX))) continue;
+
+      let amount = this.sumsOfOnes[i];
+      if (amount == 0) {
+        console.error(`[wave=${i}] found zero sum of ones`);
+        // this.graphics([i]);
+        this.status = Resolution.Contradiction;
+        return [-1, -1]
+      }
+
+      let entropy = this.entropies[i];
+      if (amount > 1 && entropy <= min) {
+        let noise = 1E-6 * this.random.nextFloat();
+        if (entropy + noise < min) {
+          min = entropy + noise;
+          argmin = i;
+        }
+      }
+    }
+
+    if (argmin == -1) {
+      this.observed = array(this.FMX * this.FMY);
+      for (let i = 0; i < this.wave.length; i++) {
+        for (let t = 0; t < this.T; t++) {
+          if (this.wave[i][t]) {
+            this.observed[i] = t;
+            break;
+          }
+        }
+      }
+      return [-1, -1]
+    }
+
+    let distribution_sum: number = 0;
+    let distribution: number[] = array(this.T);
+    for (let t = 0; t < this.T; t++) {
+      distribution[t] = this.wave[argmin][t] ? this.weights[t] : 0;
+      distribution_sum += distribution[t];
+    }
+
+    let rnd = this.random.nextFloat() * distribution_sum;
+    let r = 0;
+    for (let weight of distribution) {
+      rnd -= weight;
+      if (rnd < 0) break;
+      r++;
+    }
+
+    let w = this.wave[argmin];
+    for (let t = 0; t < this.T; t++) {
+      if (w[t] != (t == r)) {
+        // console.log("observe select");
+        if (this.internalBan(argmin, t)) {
+          this.status = Resolution.Contradiction;
+        }
+      }
+    }
+
+    return [argmin, r];
+  }
+
+  protected propagate(): void {
+    while (this.toPropagate.length > 0) {
+      let [i, t] = this.toPropagate.pop();
+      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+      for (let direction = 0; direction < 4; direction++) {
+        let dx = Model.DX[direction], dy = Model.DY[direction];
+        let sx = x + dx, sy = y + dy;
+        if (this.onBoundary(sx, sy)) {
+          continue;
+        }
+
+        if (sx < 0) sx += this.FMX;
+        else if (sx >= this.FMX) sx -= this.FMX;
+        if (sy < 0) sy += this.FMY;
+        else if (sy >= this.FMY) sy -= this.FMY;
+
+        let s = sx + sy * this.FMX;
+
+        let pattern1 = this.propagator[direction][t]; // item2
+        let compat = this.compatible[s];
+
+        for (let st of pattern1) {
+          let comp = compat[st];
+          comp[direction]--;
+          if (comp[direction] == 0) {
+            if (this.internalBan(s, st)) {
+              this.status = Resolution.Contradiction;
+            }
+          }
+        }
+
+        if (this.status == Resolution.Contradiction) {
+          return;
+        }
+      }
+    }
+  }
+
+  ban(index: number, pattern: number): Resolution {
+    if (this.wave[index][pattern]) {
+      this.deferredConstraintsStep = true;
+      if (this.internalBan(index, pattern)) {
+        return this.status = Resolution.Contradiction;
+      }
+    }
+    this.propagate();
+    return this.status;
+  }
+
+  internalBan(index: number, pattern: number): boolean {
+    // console.log("ban", i, patternIndex);
+    this.wave[index][pattern] = false;
+
+    let comp = this.compatible[index][pattern];
+    for (let d = 0; d < 4; d++) {
+      comp[d] -= this.T;
+    }
+    this.toPropagate.push([index, pattern]);
+
+    this.sumsOfOnes[index] -= 1;
+    this.sumsOfWeights[index] -= this.weights[pattern];
+    this.sumsOfWeightLogWeights[index] -= this.weightLogWeights[pattern];
+
+    let sum = this.sumsOfWeights[index];
+    this.entropies[index] = Math.log(sum) - this.sumsOfWeightLogWeights[index] / sum;
+
+    this.backtrackItems.push([index, pattern]);
+    this.banConstraint(index, pattern);
+
+    if (this.sumsOfOnes[index] === 0) {
+      console.error("sum is zero", index);
+      // this.graphics([index]);
+      return true; // result is contradiction
+    } else {
+      return false; // result is not contradiction
+    }
+  }
+
+  protected backtrack(): void {
+    const targetLength = this.backtrackItemsLengths.pop() - this.droppedBacktrackItemsCount;
+    // console.log(`backtrack to ${targetLength}`);
+    const markup: number[] = [];
+    while (this.backtrackItems.length > targetLength) {
+      let [index, patternIndex] = this.backtrackItems.pop();
+
+      this.wave[index][patternIndex] = true;
+      markup.push(index);
+
+      let comp = this.compatible[index][patternIndex];
+      for (let d = 0; d < 4; d++) {
+        comp[d] += this.T;
+      }
+
+      this.sumsOfOnes[index] += 1;
+      this.sumsOfWeights[index] += this.weights[patternIndex];
+      this.sumsOfWeightLogWeights[index] += this.weightLogWeights[patternIndex];
+
+      let sum = this.sumsOfWeights[index];
+      this.entropies[index] = Math.log(sum) - this.sumsOfWeightLogWeights[index] / sum;
+
+      // Next, undo the decrements done in propagate
+
+      let x = index % this.FMX, y = Math.floor(index / this.FMX);
+      for (let direction = 0; direction < 4; direction++) {
+        let dx = Model.DX[direction], dy = Model.DY[direction];
+        let sx = x + dx, sy = y + dy;
+        if (this.onBoundary(sx, sy)) {
+          continue;
+        }
+
+        if (sx < 0) sx += this.FMX;
+        else if (sx >= this.FMX) sx -= this.FMX;
+        if (sy < 0) sy += this.FMY;
+        else if (sy >= this.FMY) sy -= this.FMY;
+
+        let s = sx + sy * this.FMX;
+
+        const pattern = this.propagator[direction][patternIndex];
+        for (let st of pattern) {
+          this.compatible[s][st][direction]++;
+        }
+
+      }
+
+      this.backtrackConstraint(index, patternIndex);
+    }
+
+    // console.log('after backtrack');
+    // this.graphics(markup);
+  }
+
+  abstract initConstraint(): void;
+
+  abstract stepConstraint(): void;
+
+  abstract banConstraint(index: number, pattern: number): void;
+
+  abstract backtrackConstraint(index: number, pattern: number): void;
+
+  abstract onBoundary(x: number, y: number): boolean;
+
+  abstract graphics(markup: number[]): void;
+
+  static DX: number[] = [-1, 0, 1, 0];
+  static DY: number[] = [0, 1, 0, -1];
   static opposite: number[] = [2, 3, 0, 1];
 }
 
 class OverlappingModel extends Model {
   N: number;
-  patterns: number[][];
+  patterns: number[][]; // array of patterns
   colors: Color[];
   ground: number;
+  private readonly constraints: Constraint[];
 
   constructor(
     image: Color[][], // y >> x
@@ -316,11 +490,14 @@ class OverlappingModel extends Model {
     periodicInput: boolean,
     periodicOutput: boolean,
     symmetry: number,
-    ground: number) {
+    ground: number,
+    constraints: Constraint[]
+  ) {
     super(width, height);
 
     this.N = N;
     this.periodic = periodicOutput;
+    this.constraints = constraints;
     let SMY = image.length;
     let SMX = image[0].length;
     this.colors = [];
@@ -344,10 +521,8 @@ class OverlappingModel extends Model {
       }
     }
 
-    // console.log(sample);
-
     const C = this.colors.length;
-    const W = Math.pow(C, N * N); // @todo bigint
+    const W = Math.pow(C, N * N);
 
     function pattern(f: (x: number, y: number) => number): number[] {
       const result = [];
@@ -380,11 +555,11 @@ class OverlappingModel extends Model {
       return result;
     }
 
-    function patternFromIndex(ind: number): number[] {  // // @todo ind bigint
-      let residue = ind, power = W; // @todo bigint
+    function patternFromIndex(ind: number): number[] {
+      let residue = ind, power = W;
       let result: number[] = [];
       for (let i = 0; i < N * N; i++) {
-        power /= C; // @todo bigint
+        power /= C;
         let count = 0;
         while (residue >= power) {
           residue -= power;
@@ -395,7 +570,7 @@ class OverlappingModel extends Model {
       return result;
     }
 
-    let weights = new Map<number, number>();
+    let weights = new Map<number, number>(); // pattern index => weight
 
     for (let y = 0; y < (periodicInput ? SMY : SMY - N + 1); y++) {
       for (let x = 0; x < (periodicInput ? SMX : SMX - N + 1); x++) {
@@ -418,15 +593,13 @@ class OverlappingModel extends Model {
       }
     }
 
-    // console.log("weights", weights);
-
-    this.T = weights.size;
+    this.T = weights.size; // patterns count
     this.ground = (ground + this.T) % this.T;
     this.patterns = [];
     this.weights = [];
 
-    for (const [ind, weight] of weights) {
-      this.patterns.push(patternFromIndex(ind));
+    for (const [index, weight] of weights) {
+      this.patterns.push(patternFromIndex(index));
       this.weights.push(weight);
     }
 
@@ -446,21 +619,58 @@ class OverlappingModel extends Model {
     }
 
     this.propagator = array(4);
-    for (let d = 0; d < 4; d++) {
-      this.propagator[d] = array(this.T);
-      for (let t = 0; t < this.T; t++) {
-        let list: number[] = [];
-        for (let t2 = 0; t2 < this.T; t2++) {
-          if (agrees(this.patterns[t], this.patterns[t2], Model.DX[d], Model.DY[d])) {
-            list.push(t2);
+    for (let direction = 0; direction < 4; direction++) {
+      this.propagator[direction] = array(this.T);
+      for (let pattern1 = 0; pattern1 < this.T; pattern1++) {
+        this.propagator[direction][pattern1] = [];
+        for (let pattern2 = 0; pattern2 < this.T; pattern2++) {
+          if (agrees(this.patterns[pattern1], this.patterns[pattern2], Model.DX[direction], Model.DY[direction])) {
+            this.propagator[direction][pattern1].push(pattern2);
           }
         }
-        this.propagator[d][t] = list;
       }
     }
   }
 
-  protected onBoundary(x: number, y: number): boolean {
+  initConstraint(): void {
+    for (let constraint of this.constraints) {
+      constraint.init(this);
+      if (this.status != Resolution.Undecided) {
+        console.warn("failed init constraint", this.status);
+        return;
+      }
+    }
+  }
+
+  stepConstraint(): void {
+    for (let constraint of this.constraints) {
+      constraint.check();
+      if (this.status != Resolution.Undecided) {
+        console.warn("failed step constraint check");
+        return;
+      }
+      this.propagate();
+      if (this.status != Resolution.Undecided) {
+        console.warn("failed step constraint propagate");
+        return;
+      }
+    }
+    this.deferredConstraintsStep = false;
+  }
+
+  backtrackConstraint(index: number, pattern: number): void {
+    for (let constraint of this.constraints) {
+      constraint.onBacktrack(index, pattern);
+    }
+  }
+
+  banConstraint(index: number, pattern: number): void {
+    for (let constraint of this.constraints) {
+      constraint.onBan(index, pattern);
+    }
+  }
+
+  onBoundary(x: number, y: number): boolean {
     return !this.periodic && (x + this.N > this.FMX || y + this.N > this.FMY || x < 0 || y < 0);
   }
 
@@ -470,18 +680,28 @@ class OverlappingModel extends Model {
       for (let x = 0; x < this.FMX; x++) {
         for (let t = 0; t < this.T; t++) {
           if (t != this.ground) {
-            this.ban(x + (this.FMY - 1) * this.FMX, t);
+            if (this.internalBan(x + (this.FMY - 1) * this.FMX, t)) {
+              this.status = Resolution.Contradiction;
+              return;
+            }
           }
         }
         for (let y = 0; y < this.FMY - 1; y++) {
-          this.ban(x + y * this.FMX, this.ground);
+          if (this.internalBan(x + y * this.FMX, this.ground)) {
+            this.status = Resolution.Contradiction;
+            return;
+          }
         }
       }
       this.propagate();
     }
+    for (let constraint of this.constraints) {
+      constraint.onClear();
+      this.propagate();
+    }
   }
 
-  graphics(): void {
+  graphics(markup: number[]): void {
     const bitmap = new Uint8Array(4 * this.FMX * this.FMY);
     if (this.observed != null) {
       for (let y = 0; y < this.FMY; y++) {
@@ -501,29 +721,25 @@ class OverlappingModel extends Model {
     } else {
       for (let i = 0; i < this.wave.length; i++) {
         let contributors = 0, r = 0, g = 0, b = 0, a = 0;
-        let x = i % this.FMX, y = i / this.FMX;
+        let x = i % this.FMX, y = Math.floor(i / this.FMX);
 
         for (let dy = 0; dy < this.N; dy++) {
           for (let dx = 0; dx < this.N; dx++) {
-            let sx = x - dx;
-            if (sx < 0) sx += this.FMX;
-
-            let sy = y - dy;
-            if (sy < 0) sy += this.FMY;
-
-            let s = sx + sy * this.FMX;
+            let sx = x - dx, sy = y - dy;
             if (this.onBoundary(sx, sy)) {
               continue;
             }
+
+            if (sx < 0) sx += this.FMX;
+            else if (sx >= this.FMX) sx -= this.FMX;
+            if (sy < 0) sy += this.FMY;
+            else if (sy >= this.FMY) sy -= this.FMY;
+
+            let s = sx + sy * this.FMX;
+
             for (let t = 0; t < this.T; t++) {
-              // console.log("this.wave", s, t);
               if (this.wave[s][t]) {
                 contributors++;
-                // console.log("this.patterns[t][dx + dy * this.N]", this.patterns[t][dx + dy * this.N],
-                //   "this.patterns[t]", this.patterns[t],
-                //   "dx + dy * this.N", dx + dy * this.N,
-                //   "this.colors", this.colors,
-                // );
                 let color = this.colors[this.patterns[t][dx + dy * this.N]];
                 r += color.R;
                 g += color.G;
@@ -541,292 +757,492 @@ class OverlappingModel extends Model {
       }
     }
 
-    let canvas = document.createElement("canvas");
-    canvas.width = this.FMX;
-    canvas.height = this.FMY;
+    const scale = 10;
+    const canvas = document.createElement("canvas");
+    canvas.width = this.FMX * scale;
+    canvas.height = this.FMY * scale;
     canvas.style.margin = "10px";
-    let ctx = canvas.getContext("2d");
-    let img = ctx.createImageData(this.FMX, this.FMY);
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const img = ctx.createImageData(this.FMX, this.FMY);
     img.data.set(bitmap);
-    ctx.putImageData(img, 0, 0);
-    document.body.appendChild(canvas);
+    ctx.strokeStyle = "grey";
+    for (let i = 0, j = 0; j < bitmap.length; i++, j += 4) {
+      ctx.fillStyle = `rgb(${bitmap[j]},${bitmap[j + 1]},${bitmap[j + 2]})`;
+      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+      ctx.strokeRect(x * scale, y * scale, scale, scale);
+    }
+
+    ctx.strokeStyle = "green";
+    for (let i of markup) {
+      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+      ctx.strokeRect(x * scale, y * scale, scale, scale);
+    }
+    console.log('%c ', `
+      font-size: 1px;
+      padding: ${canvas.height / 2}px ${canvas.width / 2}px;
+      background: no-repeat url(${canvas.toDataURL('image/png')});
+      background-size: ${canvas.width}px ${canvas.height}px;
+    `);
   }
 }
 
-class SimpleTiledModel extends Model {
-  tiles: Color[][];
-  tilenames: string[];
-  tilesize: number;
-  black: boolean;
+// origin https://github.com/BorisTheBrave/DeBroglie/
 
-  constructor(
-    tileset: ITileSet,
-    subsetName: string,
-    width: number,
-    height: number,
-    periodic: boolean,
-    black: boolean
-  ) {
-    super(width, height);
-    this.periodic = periodic;
-    this.black = black;
+interface Constraint {
+  init(model: OverlappingModel): void;
+  onClear(): void;
+  onBan(index: number, pattern: number): void
+  onBacktrack(index: number, pattern: number): void
+  check(): void;
+}
 
-    let tilesize: number = tileset.size || 16;
-    let unique: boolean = tileset.unique || false;
+class PathConstraint implements Constraint {
+  private readonly pathColor: Color;
+  private pathColorIndex: number;
+  private model: OverlappingModel;
+  private graph: SimpleGraph;
+  private couldBePath: boolean[];
+  private mustBePath: boolean[];
+  private refreshSet: Set<number>;
 
-    let subset: string[] = null;
-    if (subsetName != null) {
-      let xsubset = tileset.subsets.find(s => s.name === subsetName);
-      if (xsubset == null) {
-        console.error("subset not found");
-      } else {
-        subset = xsubset.tiles.map(t => t.name);
-      }
+  constructor(pathColor: Color) {
+    this.pathColor = pathColor;
+  }
+
+  init(model: OverlappingModel): void {
+    this.model = model;
+    this.pathColorIndex = this.model.colors.findIndex(c => this.pathColor.equals(c));
+    this.graph = this.createGraph();
+
+    let indices = this.model.FMX * this.model.FMY;
+    this.couldBePath = array(indices, false);
+    this.mustBePath = array(indices, false);
+    this.refreshSet = new Set<number>();
+  }
+
+  onClear(): void {
+    let indices = this.model.FMX * this.model.FMY;
+    this.couldBePath = array(indices, false);
+    this.mustBePath = array(indices, false);
+    for (let i = 0; i < indices; i++) {
+      this.refreshIndex(i);
     }
+  }
 
-    function tile(f: (x: number, y: number) => Color): Color[] {
-      let result: Color[] = array(tilesize * tilesize);
-      for (let y = 0; y < tilesize; y++) {
-        for (let x = 0; x < tilesize; x++) {
-          result[x + y * tilesize] = f(x, y);
-        }
-      }
-      return result;
-    }
+  onBan(index: number, patternIndex: number): void {
+    this.addRefresh(index);
+  }
 
-    function rotate(array: Color[]): Color[] {
-      return tile((x, y) => array[tilesize - 1 - y + x * tilesize]);
-    }
+  onBacktrack(index: number, patternIndex: number): void {
+    this.addRefresh(index);
+  }
 
-    this.tiles = [];
-    this.tilenames = [];
-    let tempStationary: number[] = [];
+  private addRefresh(index: number): void {
+    const FMX = this.model.FMX;
+    const FMY = this.model.FMY;
+    let x = index % FMX, y = Math.floor(index / FMX);
 
-    let action: number[][] = [];
-    let firstOccurrence = new Map<string, number>();
-
-    const app = new PIXI.Application();
-    let sheet: PIXI.Spritesheet = PIXI.Loader.shared.resources["tiles.json"].spritesheet;
-    let renderTexture = PIXI.RenderTexture.create({width: tilesize, height: tilesize});
-
-    for (let xtile of tileset.tiles) {
-      let tilename = xtile.name;
-      if (subset != null && subset.indexOf(tilename) < 0) continue;
-
-      let a: (i: number) => number;
-      let b: (i: number) => number;
-      let cardinality: number;
-
-      let sym = xtile.symmetry || 'X';
-      if (sym == 'L') {
-        cardinality = 4;
-        a = (i) => (i + 1) % 4;
-        b = (i) => i % 2 == 0 ? i + 1 : i - 1;
-      } else if (sym == 'T') {
-        cardinality = 4;
-        a = (i) => (i + 1) % 4;
-        b = (i) => i % 2 == 0 ? i : 4 - i;
-      } else if (sym == 'I') {
-        cardinality = 2;
-        a = (i) => 1 - i;
-        b = (i) => i;
-      } else if (sym == '\\') {
-        cardinality = 2;
-        a = (i) => 1 - i;
-        b = (i) => 1 - i;
-      } else {
-        cardinality = 1;
-        a = (i) => i;
-        b = (i) => i;
-      }
-
-      this.T = action.length;
-      firstOccurrence.set(tilename, this.T);
-
-      let map: number[][] = array(cardinality);
-      for (let t = 0; t < cardinality; t++) {
-        map[t] = array(8);
-        map[t][0] = t;
-        map[t][1] = a(t);
-        map[t][2] = a(a(t));
-        map[t][3] = a(a(a(t)));
-        map[t][4] = b(t);
-        map[t][5] = b(a(t));
-        map[t][6] = b(a(a(t)));
-        map[t][7] = b(a(a(a(t))));
-
-        for (let s = 0; s < 8; s++) map[t][s] += this.T;
-
-        action.push(map[t]);
-      }
-
-      if (unique) {
-        for (let t = 0; t < cardinality; t++) {
-          let texture: PIXI.Texture = sheet.textures[`${tilename}-${t}.png`];
-          app.renderer.render(new PIXI.Sprite(texture), renderTexture);
-          let bitmap = app.renderer.plugins.extract.pixels(renderTexture);
-          this.tiles.push(tile((x, y) => Color.fromBuffer(bitmap, tilesize, x, y)));
-          this.tilenames.push(`${tilename} ${t}`);
-        }
-      } else {
-        let texture: PIXI.Texture = sheet.textures[`${tilename}.png`];
-        app.renderer.render(new PIXI.Sprite(texture), renderTexture);
-        let bitmap = app.renderer.plugins.extract.pixels(renderTexture);
-        this.tiles.push(tile((x, y) => Color.fromBuffer(bitmap, tilesize, x, y)));
-        this.tilenames.push(`${tilename} 0`);
-
-        for (let t = 1; t < cardinality; t++) {
-          this.tiles.push(rotate(this.tiles[this.T + t - 1]));
-          this.tilenames.push(`${tilename} ${t}`);
-        }
-      }
-
-      for (let t = 0; t < cardinality; t++) {
-        tempStationary.push(xtile.weight || 1);
-      }
-    }
-
-    this.T = action.length;
-    this.weights = tempStationary;
-
-    this.propagator = array(4);
-    let tempPropagator: boolean[][][] = array(4);
-    for (let d = 0; d < 4; d++) {
-      tempPropagator[d] = array(this.T);
-      this.propagator[d] = array(this.T);
-      for (let t = 0; t < this.T; t++) {
-        tempPropagator[d][t] = array(this.T);
-      }
-    }
-
-    for (let xneighbor of tileset.neighbors) {
-      let left = xneighbor.left;
-      let right = xneighbor.right;
-
-      if (subset != null && (subset.indexOf(left[0]) < 0 || subset.indexOf(right[0]) < 0)) {
+    for (let direction = 0; direction < 4; direction++) {
+      let dx = Model.DX[direction], dy = Model.DY[direction];
+      let sx = x + dx, sy = y + dy;
+      if (this.model.onBoundary(sx, sy)) {
         continue;
       }
 
-      let L = action[firstOccurrence.get(left[0])][left.length == 1 ? 0 : parseInt(left[1])];
-      let D = action[L][1];
-      let R = action[firstOccurrence.get(right[0])][right.length == 1 ? 0 : parseInt(right[1])];
-      let U = action[R][1];
+      if (sx < 0) sx += FMX;
+      else if (sx >= FMX) sx -= FMX;
+      if (sy < 0) sy += FMY;
+      else if (sy >= FMY) sy -= FMY;
 
-      tempPropagator[0][R][L] = true;
-      tempPropagator[0][action[R][6]][action[L][6]] = true;
-      tempPropagator[0][action[L][4]][action[R][4]] = true;
-      tempPropagator[0][action[L][2]][action[R][2]] = true;
-
-      tempPropagator[1][U][D] = true;
-      tempPropagator[1][action[D][6]][action[U][6]] = true;
-      tempPropagator[1][action[U][4]][action[D][4]] = true;
-      tempPropagator[1][action[D][2]][action[U][2]] = true;
+      let s = sx + sy * FMX;
+      this.refreshSet.add(s);
     }
+  }
 
-    for (let t2 = 0; t2 < this.T; t2++) {
-      for (let t1 = 0; t1 < this.T; t1++) {
-        tempPropagator[2][t2][t1] = tempPropagator[0][t1][t2];
-        tempPropagator[3][t2][t1] = tempPropagator[1][t1][t2];
-      }
-    }
+  private refreshIndex(i: number): void {
+    const FMX = this.model.FMX;
+    const FMY = this.model.FMY;
+    const N = this.model.N;
+    const T = this.model.T;
+    let x = i % FMX, y = Math.floor(i / FMX);
 
-    let sparsePropagator: number[][][] = array(4);
-    for (let d = 0; d < 4; d++) {
-      sparsePropagator[d] = array(this.T);
-      for (let t = 0; t < this.T; t++) {
-        sparsePropagator[d][t] = [];
-      }
-    }
+    let pathCount = 0;
+    let totalCount = 0;
 
-    for (let d = 0; d < 4; d++)
-      for (let t1 = 0; t1 < this.T; t1++) {
-        let sp = sparsePropagator[d][t1];
-        let tp = tempPropagator[d][t1];
-
-        for (let t2 = 0; t2 < this.T; t2++) {
-          if (tp[t2]) {
-            sp.push(t2);
-          }
+    for (let dy = 0; dy < this.model.N; dy++) {
+      for (let dx = 0; dx < N; dx++) {
+        let sx = x - dx, sy = y - dy;
+        if (this.model.onBoundary(sx, sy)) {
+          continue;
         }
 
-        let ST = sp.length;
-        this.propagator[d][t1] = array(ST);
-        for (let st = 0; st < ST; st++) {
-          this.propagator[d][t1][st] = sp[st];
-        }
-      }
-  }
+        if (sx < 0) sx += FMX;
+        else if (sx >= FMX) sx -= FMX;
+        if (sy < 0) sy += FMY;
+        else if (sy >= FMY) sy -= FMY;
 
-  protected onBoundary(x: number, y: number): boolean {
-    return !this.periodic && (x < 0 || y < 0 || x >= this.FMX || y >= this.FMY);
-  }
+        let s = sx + sy * FMX;
 
-  text(): void {
-    let result = [];
-    for (let y = 0; y < this.FMY; y++) {
-      for (let x = 0; x < this.FMX; x++) {
-        result.push(`${this.tilenames[this.observed[x + y * this.FMX]]}, `);
-      }
-      result.push("\n");
-    }
-    // console.log(result.join());
-  }
-
-  graphics(): void {
-    const bitmap = new Uint8Array(4 * this.FMX * this.FMY);
-
-    if (this.observed != null) {
-      for (let x = 0; x < this.FMX; x++) {
-        for (let y = 0; y < this.FMY; y++) {
-          let tile = this.tiles[this.observed[x + y * this.FMX]];
-          for (let yt = 0; yt < this.tilesize; yt++) {
-            for (let xt = 0; xt < this.tilesize; xt++) {
-              let c = tile[xt + yt * this.tilesize];
-              let offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
-              bitmap[offset * 4] = c.R;
-              bitmap[offset * 4 + 1] = c.G;
-              bitmap[offset * 4 + 2] = c.B;
-              bitmap[offset * 4 + 3] = c.A;
+        for (let t = 0; t < T; t++) {
+          if (this.model.wave[s][t]) {
+            totalCount++;
+            let colorIndex = this.model.patterns[t][dx + dy * N];
+            if (colorIndex === this.pathColorIndex) {
+              pathCount++;
             }
           }
         }
       }
-    } else {
-      for (let x = 0; x < this.FMX; x++) {
-        for (let y = 0; y < this.FMY; y++) {
-          let a = this.wave[x + y * this.FMX];
-          let amount = a.filter(v => v).length;
+    }
+    this.couldBePath[i] = pathCount > 0;
+    this.mustBePath[i] = pathCount > 0 && totalCount === pathCount;
+  }
 
-          let weights_sum = 0;
-          for (let t = 0; t < this.T; t++) {
-            if (a[t]) {
-              weights_sum += this.weights[t];
-            }
-          }
-          let lambda = 1 / weights_sum;
+  check(): void {
+    const FMX = this.model.FMX;
+    const FMY = this.model.FMY;
+    let indices = FMX * FMY;
 
-          for (let yt = 0; yt < this.tilesize; yt++) {
-            for (let xt = 0; xt < this.tilesize; xt++) {
-              if (this.black && amount === this.T) {
-                let offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
-                bitmap[offset * 4] = 0;
-                bitmap[offset * 4 + 1] = 0;
-                bitmap[offset * 4 + 2] = 0;
-                bitmap[offset * 4 + 3] = 0xFF;
-              } else {
-                let r = 0, g = 0, b = 0, aa = 0;
-                for (let t = 0; t < this.T; t++) if (a[t]) {
-                  let c = this.tiles[t][xt + yt * this.tilesize];
-                  r += c.R * this.weights[t] * lambda;
-                  g += c.G * this.weights[t] * lambda;
-                  b += c.B * this.weights[t] * lambda;
-                  aa += c.A * this.weights[t] * lambda;
+    while (true) {
+      for (let i of this.refreshSet) {
+        this.refreshIndex(i);
+      }
+      this.refreshSet.clear();
+
+      let isArticulation = this.getArticulationPoints(this.couldBePath, this.mustBePath);
+      if (isArticulation == null) {
+        console.error("no articulation");
+        this.model.status = Resolution.Contradiction;
+        return;
+      }
+
+      // All articulation points must be paths,
+      // So ban any other possibilities
+      let changed = false;
+      for (let i = 0; i < indices; i++) {
+        if (isArticulation[i] && !this.mustBePath[i]) {
+          // console.log("articulation", i);
+          let x = i % this.model.FMX, y = Math.floor(i / this.model.FMX);
+          // console.log("x, y, i", x, y, i);
+          for (let dy = 0; dy < this.model.N; dy++) {
+            for (let dx = 0; dx < this.model.N; dx++) {
+              let sx = x - dx;
+              if (sx < 0) sx += this.model.FMX;
+
+              let sy = y - dy;
+              if (sy < 0) sy += this.model.FMY;
+
+              let s = sx + sy * this.model.FMX;
+              // console.log("sx, sy s", sx, sy, s);
+              if (this.model.onBoundary(sx, sy)) {
+                continue;
+              }
+              for (let t = 0; t < this.model.T; t++) {
+                if (this.model.wave[s][t]) {
+                  let colorIndex = this.model.patterns[t][dx + dy * this.model.N];
+                  if (colorIndex !== this.pathColorIndex) {
+                    // console.log("ban not path", colorIndex, t, this.model.patterns[t]);
+                    this.model.ban(s, t);
+                    changed = true;
+                  } else {
+                    // console.log("ban is path", colorIndex, t, this.model.patterns[t]);
+                  }
                 }
-                let offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
-                bitmap[offset * 4] = r;
-                bitmap[offset * 4 + 1] = g;
-                bitmap[offset * 4 + 2] = b;
-                bitmap[offset * 4 + 3] = aa;
+              }
+            }
+          }
+        }
+      }
+
+      if (changed) {
+        console.log("articulation");
+        // let markup: number[] = isArticulation
+        //   .map<[boolean, number]>((v, i) => [v, i])
+        //   .filter(a => a[0])
+        //   .map(a => a[1]);
+        // this.model.graphics(markup);
+        // console.log("continue articulation loop");
+      } else {
+        break;
+      }
+    }
+  }
+
+  private getArticulationPoints(walkable: boolean[], relevant: boolean[] = null): boolean[] {
+    const graph = this.graph;
+    const indices = walkable.length;
+
+    const low: number[] = array(indices, 0);
+    let num = 1;
+    const dfsNum: number[] = array(indices, 0);
+    const isArticulation: boolean[] = array(indices, false);
+    let markup: number[] = [];
+
+    // This hideous function is a iterative version
+    // of the much more elegant recursive version below.
+    // Unfortunately, the recursive version tends to blow the stack for large graphs
+    function cutVertex(initialU: number): number {
+      const stack: CutVertexFrame[] = [];
+      stack.push(new CutVertexFrame(initialU));
+
+      // This is the "returned" value from recursion
+      let childRelevantSubtree: boolean = false;
+      let childCount = 0;
+
+      while (true) {
+        const frameIndex = stack.length - 1;
+        const frame = stack[frameIndex];
+        const u = frame.u;
+
+        let switchState = frame.state;
+        let loop: boolean;
+        do {
+          loop = false;
+          // console.log("switchState", switchState);
+          switch (switchState) {
+            // Initialization
+            case 0: {
+              // console.log("switch 0");
+              let isRelevant = relevant != null && relevant[u];
+              if (isRelevant) {
+                isArticulation[u] = true;
+              }
+              frame.isRelevantSubtree = isRelevant;
+              low[u] = dfsNum[u] = num++;
+              markup.push(u);
+              // Enter loop
+              switchState = 1;
+              loop = true;
+              break;
+            }
+            // Loop over neighbours
+            case 1: {
+              // console.log("switch 1");
+              // Check loop condition
+              let neighbours = graph.neighbours[u];
+              let neighbourIndex = frame.neighbourIndex;
+              if (neighbourIndex >= neighbours.length) {
+                // Exit loop
+                switchState = 3;
+                loop = true;
+                break;
+              }
+              let v = neighbours[neighbourIndex];
+              if (!walkable[v]) {
+                // continue to next iteration of loop
+                frame.neighbourIndex = neighbourIndex + 1;
+                switchState = 1;
+                loop = true;
+                break;
+              }
+
+              // v is a neighbour of u
+              let unvisited = dfsNum[v] === 0;
+              if (unvisited) {
+                // Recurse into v
+                stack.push(new CutVertexFrame(v));
+                frame.state = 2;
+                switchState = 2;
+                stack[frameIndex] = frame;
+                break;
+              } else {
+                low[u] = Math.min(low[u], dfsNum[v]);
+              }
+
+              // continue to next iteration of loop
+              frame.neighbourIndex = neighbourIndex + 1;
+              switchState = 1;
+              loop = true;
+              break;
+            }
+            // Return from recursion (still in loop)
+            case 2: {
+              // console.log("switch 2");
+              // At this point, childRelevantSubtree
+              // has been set to the by the recursion call we've just returned from
+              let neighbours = graph.neighbours[u];
+              let neighbourIndex = frame.neighbourIndex;
+              let v = neighbours[neighbourIndex];
+
+              if (frameIndex == 0) {
+                // Root frame
+                childCount++;
+              }
+
+              if (childRelevantSubtree) {
+                frame.isRelevantSubtree = true;
+              }
+              if (low[v] >= dfsNum[u]) {
+                if (relevant == null || childRelevantSubtree) {
+                  isArticulation[u] = true;
+                }
+              }
+              low[u] = Math.min(low[u], low[v]);
+
+              // continue to next iteration of loop
+              frame.neighbourIndex = neighbourIndex + 1;
+              switchState = 1;
+              loop = true;
+              break;
+            }
+            // Cleanup
+            case 3: {
+              // console.log("switch 3");
+              if (frameIndex == 0) {
+                // Root frame
+                return childCount;
+              } else {
+                // Set childRelevantSubtree with the return value from this recursion call
+                childRelevantSubtree = frame.isRelevantSubtree;
+                // Pop the frame
+                stack.splice(frameIndex, 1);
+                // Resume the caller (which will be in state 2)
+                break;
+              }
+            }
+          }
+        } while (loop);
+      }
+    }
+
+    // Check we've visited every relevant point.
+    // If not, there's no way to satisfy the constraint.
+    if (relevant != null) {
+      // Find starting point
+      for (let i = 0; i < indices; i++) {
+        if (!walkable[i]) continue;
+        if (!relevant[i]) continue;
+        // Already visited
+        if (dfsNum[i] != 0) continue;
+
+        cutVertex(i);
+        // Relevant points are always articulation points
+        isArticulation[i] = true;
+        break;
+      }
+
+      // Check connectivity
+      for (let i = 0; i < indices; i++) {
+        if (relevant[i] && dfsNum[i] == 0) {
+          const w = this.model.FMX;
+          let x = i % w, y = Math.floor(i / w);
+
+          // console.warn("walkable:");
+          // let markupW: number[] = walkable
+          //   .map<[boolean, number]>((v, i) => [v, i])
+          //   .filter(a => a[0])
+          //   .map(a => a[1]);
+          // this.model.graphics(markupW);
+          // console.warn("visited");
+          // this.model.graphics(markup);
+          //
+          console.error(`not visited relevant point i=${i} x=${x} y=${y}`);
+          // console.warn('graph neighbours', graph.neighbours[i]);
+          // this.model.graphics([i]);
+          return null;
+        }
+      }
+    }
+
+    // compute articulation points
+    for (let i = 0; i < indices; i++) {
+      if (!walkable[i]) continue;
+      // Already visited
+      if (dfsNum[i] != 0) continue;
+
+      let childCount = cutVertex(i);
+      // The root of the tree is an exception to CutVertex's calculations
+      // It's an articulation point if it has multiple children
+      // as removing it would give multiple subtrees.
+      isArticulation[i] = childCount > 1;
+    }
+
+    return isArticulation;
+  }
+
+  private createGraph(): SimpleGraph {
+    let nodeCount = this.model.FMX * this.model.FMY;
+    let neighbours: number[][] = [];
+    for (let i = 0; i < nodeCount; i++) {
+      neighbours[i] = [];
+
+      let x = i % this.model.FMX, y = Math.floor(i / this.model.FMX);
+
+      for (let direction = 0; direction < 4; direction++) {
+        let dx = Model.DX[direction], dy = Model.DY[direction];
+        let sx = x + dx, sy = y + dy;
+        if (!this.model.periodic && (sx >= this.model.FMX || sy >= this.model.FMY || sx < 0 || sy < 0)) {
+          continue;
+        }
+
+        if (sx < 0) sx += this.model.FMX;
+        else if (sx >= this.model.FMX) sx -= this.model.FMX;
+        if (sy < 0) sy += this.model.FMY;
+        else if (sy >= this.model.FMY) sy -= this.model.FMY;
+
+        let s = sx + sy * this.model.FMX;
+
+        neighbours[i].push(s);
+      }
+    }
+
+    // console.log("neighbours", neighbours);
+
+    return {
+      nodeCount: nodeCount,
+      neighbours: neighbours,
+    };
+  }
+}
+
+class BorderConstraint implements Constraint {
+  private readonly borderColor: Color;
+  private model: OverlappingModel;
+
+  constructor(borderColor: Color) {
+    this.borderColor = borderColor;
+  }
+
+  init(model: OverlappingModel): void {
+    this.model = model;
+  }
+
+  onClear(): void {
+    const model = this.model;
+    const indices = model.FMX * model.FMY;
+    const borderColorIndex = model.colors.findIndex(c => this.borderColor.equals(c));
+
+    const markup: number[] = [];
+
+    for (let i = 0; i < indices; i++) {
+      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      if (x === 0 || x === model.FMX - 1 || y === 0 || y === model.FMY - 1) {
+        markup.push(i);
+        // console.log("x, y, i", x, y, i);
+        for (let dy = 0; dy < model.N; dy++) {
+          for (let dx = 0; dx < model.N; dx++) {
+            let sx = x - dx;
+            if (sx < 0) sx += model.FMX;
+
+            let sy = y - dy;
+            if (sy < 0) sy += model.FMY;
+
+            let s = sx + sy * model.FMX;
+            // console.log("sx, sy s", sx, sy, s);
+            if (model.onBoundary(sx, sy)) {
+              continue;
+            }
+            for (let t = 0; t < model.T; t++) {
+              if (model.wave[s][t]) {
+                let colorIndex = model.patterns[t][dx + dy * model.N];
+                if (colorIndex !== borderColorIndex) {
+                  // console.log("ban not border", colorIndex, t, model.patterns[t]);
+                  model.ban(s, t);
+                } else {
+                  // console.log("ban is border", colorIndex, t, model.patterns[t]);
+                }
               }
             }
           }
@@ -834,104 +1250,89 @@ class SimpleTiledModel extends Model {
       }
     }
 
-    let canvas = document.createElement("canvas");
-    canvas.width = this.FMX;
-    canvas.height = this.FMY;
-    let ctx = canvas.getContext("2d");
-    let img = ctx.createImageData(this.FMX, this.FMY);
-    img.data.set(bitmap);
-    ctx.putImageData(img, 0, 0);
-    document.body.appendChild(canvas);
+    // console.log("border constraint");
+    model.graphics(markup);
+  }
+
+  onBan(index: number, pattern: number): void {
+  }
+
+  onBacktrack(index: number, pattern: number): void {
+  }
+
+  check(): boolean {
+    return true;
   }
 }
 
-interface ITileSet {
-  readonly size?: number;
-  readonly unique?: boolean;
-  tiles: ITile[];
-  neighbors: INeighbor[];
-  subsets: ISubset[];
+class CutVertexFrame {
+  u: number;
+  state: number = 0;
+  neighbourIndex: number = 0;
+  isRelevantSubtree: boolean = false;
+
+  constructor(u: number) {
+    this.u = u;
+  }
 }
 
-interface ITile {
-  name: string
-  symmetry?: string;
-  weight?: number;
-}
-
-interface INeighbor {
-  left: string[];
-  right: string[];
-}
-
-interface ISubset {
-  name: string
-  tiles: ITile[]
+interface SimpleGraph {
+  readonly nodeCount: number;
+  readonly neighbours: number[][];
 }
 
 export class TestOverlappingModel {
-  static test() {
-    let image: Color[][] = []; // y >> x
+  static async test() {
     let N: number = 3,
-      width: number = 100,
-      height: number = 100,
-      periodicInput = true,
+      width: number = 60,
+      height: number = 60,
+      periodicInput = false,
       periodicOutput = false,
       symmetry: number = 8,
       ground: number = 0;
 
-    let size = 1 + 7 + 5 + 7 + 1;
-    let canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    document.body.appendChild(canvas);
-    let ctx = canvas.getContext("2d");
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, size, size);
+    const w = new Color(255, 255, 255, 255);
+    const r = new Color(255, 0, 0, 255);
+    const b = new Color(0, 0, 0, 255);
+    const sample: Color[][] = [
+      [w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w],
+      [w, b, b, b, b, b, b, b, w, w, w, w, w, w, w, w, w, b, b, b, b, b, b, b, w],
+      [w, b, r, r, r, r, r, b, w, w, w, w, w, w, w, w, w, b, r, r, r, r, r, b, w],
+      [w, b, r, r, r, r, r, b, b, b, b, b, b, b, b, b, b, b, r, r, r, r, r, b, w],
+      [w, b, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, b, w],
+      [w, b, r, r, r, r, r, b, b, b, b, r, r, b, b, b, b, b, r, r, r, r, r, b, w],
+      [w, b, r, r, r, r, r, b, w, w, b, r, r, b, w, w, w, b, r, r, r, r, r, b, w],
+      [w, b, r, r, r, r, r, b, w, w, b, r, r, b, w, w, w, b, r, r, r, r, r, b, w],
+      [w, b, b, b, r, b, b, b, w, w, b, r, r, b, w, w, w, b, b, b, r, b, b, b, w],
+      [w, w, w, b, r, b, w, w, w, w, b, r, r, b, w, w, w, w, w, b, r, b, w, w, w],
+      [w, w, w, b, r, b, w, w, w, w, b, r, r, b, w, w, w, w, w, b, r, b, w, w, w],
+      [w, w, w, b, r, b, b, b, b, b, b, r, r, b, b, b, b, b, b, b, r, b, w, w, w],
+      [w, w, w, b, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, b, w, w, w],
+      [w, w, w, b, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, b, w, w, w],
+      [w, w, w, b, b, b, b, b, b, b, b, r, b, b, b, b, b, b, b, b, r, b, w, w, w],
+      [w, w, w, w, w, w, w, w, w, w, b, r, b, w, w, w, w, w, w, b, r, b, w, w, w],
+      [w, w, w, w, w, w, w, w, w, w, b, r, b, w, w, w, w, b, b, b, r, b, w, w, w],
+      [w, w, w, w, w, w, w, w, w, w, b, r, b, w, w, w, w, b, r, r, r, b, w, w, w],
+      [w, w, w, w, w, w, w, w, w, w, b, r, b, w, w, w, w, b, r, b, b, b, w, w, w],
+      [w, b, b, b, b, b, b, b, w, w, b, r, b, w, w, w, w, b, r, b, w, w, w, w, w],
+      [w, b, r, r, r, r, r, b, w, w, b, r, b, w, w, w, w, b, r, b, w, w, w, w, w],
+      [w, b, r, r, r, r, r, b, b, b, b, b, b, b, b, b, b, b, r, b, w, w, w, w, w],
+      [w, b, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, r, b, w, w, w, w, w],
+      [w, b, r, r, r, r, r, b, b, b, b, b, b, b, b, b, b, b, b, b, w, w, w, w, w],
+      [w, b, r, r, r, r, r, b, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w],
+      [w, b, b, b, b, b, b, b, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w],
+      [w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w],
+    ];
 
-
-    ctx.fillStyle = "black";
-    // room
-    ctx.fillRect(1, 1, 7, 7);
-    ctx.fillRect(1 + 7 + 5, 1, 7, 7);
-    ctx.fillRect(1, 1 + 7 + 5, 7, 7);
-    ctx.fillRect(1 + 7 + 5, 1 + 7 + 5, 7, 7);
-    // corridor
-    ctx.fillRect(1 + 7, 1 + 2, 5, 3);
-    ctx.fillRect(1 + 7, 1 + 7 + 5 + 2, 5, 3);
-    ctx.fillRect(1 + 2, 1 + 7, 3, 5);
-    ctx.fillRect(1 + 7 + 5 + 2, 1 + 7, 3, 5);
-
-    ctx.fillStyle = "red";
-    // room
-    ctx.fillRect(2, 2, 5, 5);
-    ctx.fillRect(1 + 7 + 5 + 1, 2, 5, 5);
-    ctx.fillRect(2, 1 + 7 + 5 + 1, 5, 5);
-    ctx.fillRect(1 + 7 + 5 + 1, 1 + 7 + 5 + 1, 5, 5);
-    // corridor
-    ctx.fillRect(1 + 6, 1 + 3, 7, 1);
-    ctx.fillRect(1 + 6, 1 + 7 + 5 + 3, 7, 1);
-    ctx.fillRect(1 + 3, 1 + 6, 1, 7);
-    ctx.fillRect(1 + 7 + 5 + 3, 1 + 6, 1, 7);
-
-    let img = ctx.getImageData(0, 0, size, size);
-
-    for (let y = 0; y < size; y++) {
-      let row: Color[] = [];
-      image.push(row);
-      for (let x = 0; x < size; x++) {
-        row.push(Color.fromImage(img, x, y));
-      }
-    }
-
-    console.log("input image", image);
-    let model = new OverlappingModel(image, N, width, height, periodicInput, periodicOutput, symmetry, ground);
+    let border = new BorderConstraint(new Color(255, 255, 255, 255));
+    let path = new PathConstraint(new Color(255, 0, 0, 255));
+    let model = new OverlappingModel(sample, N, width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
     if (!model.run()) {
       console.log("fail");
     } else {
       console.log("success");
-      console.log("model", model);
-      model.graphics();
     }
+    console.log("model", model);
+    model.graphics([]);
   }
 }
