@@ -1,6 +1,4 @@
-import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {HeroState} from "./hero";
-import {BossMonster, mossMonsterNames} from "./boss.monster";
 import {DungeonScene} from "./dungeon";
 import {Rect} from "./geometry";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
@@ -30,75 +28,21 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     gen.corridorsV.forEach(r => this.fillCorridorV(dungeon, r));
 
     this.replaceFloorRandomly(dungeon);
-    this.replaceLadder(dungeon, gen);
     this.replaceWallRandomly(dungeon);
 
-    for (let m = 0; m < monsters_total; m++) {
-      this.generateMonster(dungeon, gen, is_boss);
-    }
+    this.placeHero(dungeon);
+    this.placeLadder(dungeon);
+
+    this.placeMonsters(dungeon, monsters_total);
     if (is_boss) {
-      this.generateBoss(dungeon, gen);
+      this.placeBoss(dungeon);
     }
 
-    for (let d = 0; d < drop_total; d++) {
-      this.generateDrop(dungeon, gen);
-    }
+    this.placeDrop(dungeon, drop_total);
 
-    const first = gen.rooms[0];
-    const hero_x = first.x + (first.w >> 1);
-    const hero_y = first.y + (first.h >> 1);
-    dungeon.hero.resetPosition(hero_x, hero_y);
-    dungeon.monsterMap[hero_y][hero_x] = dungeon.hero;
     dungeon.container.sortChildren();
     dungeon.light.loadMap();
     return dungeon;
-  }
-
-  private generateMonster(dungeon: DungeonLevel, gen: TunnelingAlgorithm, isBoss: boolean): void {
-    const max_room = gen.rooms.length - (isBoss ? 1 : 0);
-    if (max_room > 1) {
-      const r = this.rng.nextRange(1, max_room);
-      const room = gen.rooms[r];
-      for (let t = 0; t < 10; t++) {
-        const x = room.x + this.rng.nextRange(0, room.w);
-        const y = room.y + this.rng.nextRange(0, room.h);
-        if (!dungeon.monsterMap[y][x]) {
-          const name = this.rng.choice(tinyMonsterNames);
-          const monster = new TinyMonster(dungeon, x, y, name);
-          dungeon.monsters.push(monster);
-          dungeon.monsterMap[y][x] = monster;
-          break;
-        }
-      }
-    }
-  }
-
-  private generateBoss(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
-    const room = gen.rooms[gen.rooms.length - 1];
-    for (let t = 0; t < 10; t++) {
-      const x = room.x + this.rng.nextRange(1, room.w - 1);
-      const y = room.y + this.rng.nextRange(1, room.h - 1);
-      if (
-        !dungeon.monsterMap[y][x] && !dungeon.monsterMap[y][x + 1] &&
-        !dungeon.monsterMap[y - 1][x] && !dungeon.monsterMap[y - 1][x + 1]
-      ) {
-        const name = mossMonsterNames[Math.floor(dungeon.level / 5) % mossMonsterNames.length];
-        dungeon.boss = new BossMonster(this.registry, dungeon, x, y, name);
-        return;
-      }
-    }
-  }
-
-  private generateDrop(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
-    const room = this.rng.choice(gen.rooms);
-    for (let t = 0; t < 64; t++) {
-      const x = room.x + this.rng.nextRange(0, room.w);
-      const y = room.y + this.rng.nextRange(0, room.h);
-      if (!dungeon.hasDrop(x, y)) {
-        dungeon.randomDrop(x, y);
-        return;
-      }
-    }
   }
 
   private fillRoom(dungeon: DungeonLevel, room: Rect): void {
@@ -426,12 +370,4 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
       dungeon.setWall(x + w, r_y, 'wall_side_mid_right.png', DungeonZIndexes.wallFront);
     }
   }
-
-  private replaceLadder(dungeon: DungeonLevel, gen: TunnelingAlgorithm) {
-    // replace one tile in last room as ladder = out from level!
-    const last = gen.rooms[gen.rooms.length - 1];
-    const ladder_x = last.x + (last.w >> 1);
-    const ladder_y = last.y + (last.h >> 1);
-    dungeon.setFloor(ladder_x, ladder_y, 'floor_ladder.png');
-  };
 }
