@@ -2,14 +2,13 @@ import {Joystick} from "./input";
 import {TileRegistry} from "./tilemap";
 import {HeroState, HeroStateView} from "./hero";
 import {DungeonGenerator} from "./dungeon.generator";
+import {TunnelingDungeonGenerator} from "./tunneling.generator";
 import {DungeonLevel, DungeonTitleView} from "./dungeon.level";
 import {YouDeadScene} from "./dead.scene";
 import {RNG} from "./rng";
 import {Scene, SceneController} from "./scene";
 import {InventoryView} from "./inventory";
 import {BossHealthView} from "./boss.monster";
-// @ts-ignore
-import * as PIXI from 'pixi.js';
 
 export class DungeonScene implements Scene {
   readonly rng: RNG;
@@ -30,7 +29,7 @@ export class DungeonScene implements Scene {
     this.joystick = controller.joystick;
     this.registry = controller.registry;
     this.controller = controller;
-    this.generator = new DungeonGenerator(this, hero);
+    this.generator = new TunnelingDungeonGenerator(this, hero);
 
     this.titleView = new DungeonTitleView();
     this.inventoryView = new InventoryView(hero.inventory);
