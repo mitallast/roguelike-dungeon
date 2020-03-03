@@ -48,129 +48,26 @@ export class DungeonLightView implements View {
   }
 
   loadMap() {
-    const windowsH: Edge[] = []; // same Y
-    const windowsV: Edge[] = []; // same X
-
     // clear
     this.lights.forEach(l => l.destroy());
     this.lights.splice(0, this.lights.length);
     this.visibility.init();
 
-    // fill wall segments
-    this.level.corridorsH.forEach((rect) => {
-      const x = rect.x * TILE_SIZE - WALL_SIZE_X;
-      const y = rect.y * TILE_SIZE;
-      const w = rect.w * TILE_SIZE + (WALL_SIZE_X << 1);
-      const h = rect.h * TILE_SIZE - WALL_SIZE_Y;
+    const level = this.level;
 
-      const t_l = new PIXI.Point(x, y);
-      const t_r = new PIXI.Point(x + w, y);
-      const b_l = new PIXI.Point(x, y + h);
-      const b_r = new PIXI.Point(x + w, y + h);
-
-      this.visibility.addSegment(x, y, x + w, y, SegmentType.CORRIDOR_H_TOP);
-      this.visibility.addSegment(x, y + h, x + w, y + h, SegmentType.NORMAL);
-
-      windowsV.push(
-        new Edge(t_r, b_r, SegmentType.NORMAL),
-        new Edge(t_l, b_l, SegmentType.NORMAL),
-      );
-    });
-    this.level.corridorsV.forEach((rect) => {
-      const x = rect.x * TILE_SIZE;
-      const y = rect.y * TILE_SIZE - WALL_SIZE_Y;
-      const w = rect.w * TILE_SIZE;
-      const h = rect.h * TILE_SIZE + WALL_SIZE_Y;
-
-      const t_l = new PIXI.Point(x, y);
-      const t_r = new PIXI.Point(x + w, y);
-      const b_l = new PIXI.Point(x, y + h);
-      const b_r = new PIXI.Point(x + w, y + h);
-
-      this.visibility.addSegment(x, y, x, y + h, SegmentType.NORMAL);
-      this.visibility.addSegment(x + w, y, x + w, y + h, SegmentType.NORMAL);
-
-      windowsH.push(
-        new Edge(t_l, t_r, SegmentType.NORMAL),
-        new Edge(b_l, b_r, SegmentType.NORMAL),
-      );
-    });
-    this.level.rooms.forEach((rect) => {
-      const x = rect.x * TILE_SIZE + WALL_SIZE_X;
-      const y = rect.y * TILE_SIZE;
-      const w = rect.w * TILE_SIZE - (WALL_SIZE_X << 1);
-      const h = rect.h * TILE_SIZE - WALL_SIZE_Y;
-
-      const t_l = new PIXI.Point(x, y);
-      const t_r = new PIXI.Point(x + w, y);
-      const b_l = new PIXI.Point(x, y + h);
-      const b_r = new PIXI.Point(x + w, y + h);
-
-      const walls = [
-        new Edge(t_l, t_r, SegmentType.ROOM_TOP),
-        new Edge(t_l, b_l, SegmentType.NORMAL),
-        new Edge(b_l, b_r, SegmentType.NORMAL),
-        new Edge(t_r, b_r, SegmentType.NORMAL),
-      ];
-
-      walls.forEach(wall => {
-        if (wall.start.x === wall.end.x) {
-          const windows = windowsV
-            .filter(v => v.start.x === wall.start.x &&
-              v.start.y > wall.start.y &&
-              v.end.y < wall.end.y)
-            .sort((a, b) => a.start.y - b.start.y);
-          if (windows.length > 0) {
-            const points = [wall.start.y];
-            windows.forEach(w => {
-              points.push(w.start.y);
-              points.push(w.end.y);
-            });
-            points.push(wall.end.y);
-            const x = wall.start.x;
-            for (let i = 0; i < points.length; i += 2) {
-              this.visibility.addSegment(x, points[i], x, points[i + 1], wall.type);
-            }
-          } else {
-            this.visibility.addSegment(wall.start.x, wall.start.y, wall.end.x, wall.end.y, wall.type);
-          }
-        } else {
-          const windows = windowsH
-            .filter(v => v.start.y === wall.start.y &&
-              v.start.x > wall.start.x &&
-              v.end.x < wall.end.x)
-            .sort((a, b) => a.start.x - b.start.x);
-          if (windows.length > 0) {
-            const points = [wall.start.x];
-            windows.forEach(w => {
-              points.push(w.start.x);
-              points.push(w.end.x);
-            });
-            points.push(wall.end.x);
-            const y = wall.start.y;
-            for (let i = 0; i < points.length; i += 2) {
-              this.visibility.addSegment(points[i], y, points[i + 1], y, wall.type);
-            }
-          } else {
-            this.visibility.addSegment(wall.start.x, wall.start.y, wall.end.x, wall.end.y, wall.type);
-          }
-        }
-      });
-    });
-
-    // fill hero light source
+    // hero light source
     this.lights.push(new LightSource(
-      this.level.hero.container.position,
+      level.hero.container.position,
       500,
       this.heroLightTexture,
       this.container
     ));
 
-    // fill static light sources
-    for (let y = 0; y < this.level.width; y++) {
-      for (let x = 0; x < this.level.height; x++) {
-        const view = this.level.floorMap[y][x];
+    for (let y = 0; y < level.height; y++) {
+      for (let x = 0; x < level.width; x++) {
+        const view = level.floorMap[y][x];
         if (view) {
+          // find static light sources
           switch (view.name) {
             case 'wall_fountain_basin_red':
               this.lights.push(new LightSource(
@@ -191,6 +88,65 @@ export class DungeonLightView implements View {
             default:
               break;
           }
+
+          // find wall segments
+          const has_top = y > 0 && !!level.floorMap[y - 1][x];
+          const has_bottom = y + 1 < level.height && !!level.floorMap[y + 1][x];
+          const has_left = x > 0 && !!level.floorMap[y][x - 1];
+          const has_right = x + 1 < level.width && !!level.floorMap[y][x + 1];
+
+          const has_top_left = y > 0 && !!level.floorMap[y - 1][x - 1];
+          const has_top_right = y > 0 && !!level.floorMap[y - 1][x + 1];
+          const has_bottom_left = y + 1 < level.height && !!level.floorMap[y + 1][x - 1];
+          const has_bottom_right = y + 1 < level.height && !!level.floorMap[y + 1][x + 1];
+
+          const has_wall = !!level.wallMap[y][x];
+
+          const x_left = x * TILE_SIZE + (!has_left && has_wall ? WALL_SIZE_X : 0);
+          const x_right = x * TILE_SIZE + TILE_SIZE - (!has_right && has_wall ? WALL_SIZE_X : 0);
+          const y_top = y * TILE_SIZE;
+          const y_bottom = y * TILE_SIZE + TILE_SIZE - (!has_bottom && has_wall ? WALL_SIZE_Y : 0);
+
+          if (!has_top) this.visibility.addSegment(x_left, y_top, x_right, y_top, SegmentType.TOP);
+          if (!has_bottom) {
+            this.visibility.addSegment(x_left, y_bottom, x_right, y_bottom, SegmentType.NORMAL);
+            if (has_wall && y + 1 < level.height) {
+              const has_bottom_left = x > 0 && !!level.floorMap[y + 1][x - 1];
+              const has_bottom_right = x + 1 < level.width && !!level.floorMap[y + 1][x + 1];
+              if (has_bottom_left && has_left) {
+                this.visibility.addSegment(x_left, y_bottom, x_left, y_bottom + WALL_SIZE_Y, SegmentType.NORMAL);
+              }
+              if (has_bottom_right && has_right) {
+                this.visibility.addSegment(x_right, y_bottom, x_right, y_bottom + WALL_SIZE_Y, SegmentType.NORMAL);
+              }
+            }
+          }
+          if (!has_left) {
+            this.visibility.addSegment(x_left, y_top, x_left, y_bottom, SegmentType.NORMAL);
+            if (has_wall && x > 0) {
+              if (has_top_left && has_top) {
+                // reverse {Г} - form
+                this.visibility.addSegment(x_left - WALL_SIZE_X, y_top - WALL_SIZE_Y, x_left, y_top - WALL_SIZE_Y, SegmentType.NORMAL);
+                this.visibility.addSegment(x_left, y_top - WALL_SIZE_Y, x_left, y_top, SegmentType.NORMAL);
+              }
+              if (has_bottom_left && has_bottom) {
+                this.visibility.addSegment(x_left - WALL_SIZE_X, y_bottom, x_left, y_bottom, SegmentType.TOP);
+              }
+            }
+          }
+          if (!has_right) {
+            this.visibility.addSegment(x_right, y_top, x_right, y_bottom, SegmentType.NORMAL);
+            if (has_wall && x + 1 < this.level.width) {
+              if (has_top_right && has_top) {
+                // {Г} - form
+                this.visibility.addSegment(x_right, y_top - WALL_SIZE_Y, x_right + WALL_SIZE_X, y_top - WALL_SIZE_Y, SegmentType.NORMAL);
+                this.visibility.addSegment(x_right, y_top - WALL_SIZE_Y, x_right, y_top, SegmentType.NORMAL);
+              }
+              if (has_bottom_right && has_bottom) {
+                this.visibility.addSegment(x_right, y_bottom, x_right + WALL_SIZE_X, y_bottom, SegmentType.TOP);
+              }
+            }
+          }
         }
       }
     }
@@ -205,7 +161,7 @@ export class DungeonLightView implements View {
       light.mask.clear()
         .beginFill(0xFFFFFF, 1)
         .drawPolygon(this.visibility.output)
-        .endFill();
+        .endFill()
     });
   }
 
@@ -254,18 +210,6 @@ class LightSource {
   }
 }
 
-class Edge {
-  readonly start: PIXI.Point;
-  readonly end: PIXI.Point;
-  readonly type: SegmentType;
-
-  constructor(start: PIXI.Point, end: PIXI.Point, type: SegmentType) {
-    this.start = start;
-    this.end = end;
-    this.type = type;
-  }
-}
-
 class EndPoint {
   point: PIXI.Point;
   begin: boolean = false;
@@ -279,8 +223,7 @@ class EndPoint {
 
 enum SegmentType {
   NORMAL = 0,
-  ROOM_TOP = 1,
-  CORRIDOR_H_TOP = 2,
+  TOP = 1,
 }
 
 class Segment {
@@ -554,20 +497,13 @@ class Visibility {
     if (segment != null) {
       // extend segment to light walls
       switch (segment.type) {
-        case SegmentType.ROOM_TOP:
-          this.output.push(pBegin);
-          this.output.push(new PIXI.Point(pBegin.x, pBegin.y - TILE_SIZE));
-          this.output.push(new PIXI.Point(pEnd.x, pEnd.y - TILE_SIZE));
-          this.output.push(pEnd);
-          break;
-        case SegmentType.CORRIDOR_H_TOP:
+        case SegmentType.TOP:
           this.output.push(pBegin);
           this.output.push(new PIXI.Point(pBegin.x, pBegin.y - TILE_SIZE));
           this.output.push(new PIXI.Point(pEnd.x, pEnd.y - TILE_SIZE));
           this.output.push(pEnd);
           break;
         case SegmentType.NORMAL:
-        default:
           this.output.push(pBegin);
           this.output.push(pEnd);
           break;

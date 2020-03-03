@@ -1,4 +1,3 @@
-import {Rect} from "./geometry";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
@@ -58,12 +57,8 @@ export class PathFinding {
     }
   }
 
-  clearRect(rect: Rect): void {
-    for (let x = rect.x; x < rect.x + rect.w; x++) {
-      for (let y = rect.y; y < rect.y + rect.h; y++) {
-        this.map[x][y] = 0;
-      }
-    }
+  clear(x: number, y: number): void {
+    this.map[x][y] = 0;
   }
 
   mark(x: number, y: number): void {

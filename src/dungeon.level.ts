@@ -5,7 +5,6 @@ import {Monster} from "./monster";
 import {BossMonster} from "./boss.monster";
 import {DungeonScene} from "./dungeon";
 import {DungeonLightView} from "./dungeon.light";
-import {Rect} from "./geometry";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
@@ -39,9 +38,6 @@ export class DungeonLevel {
   readonly hero: HeroView;
   boss: BossMonster;
   monsters: TinyMonster[] = [];
-  readonly rooms: Rect[] = [];
-  readonly corridorsV: Rect[] = [];
-  readonly corridorsH: Rect[] = [];
 
   readonly floorMap: FloorView[][];
   readonly wallMap: WallView[][];

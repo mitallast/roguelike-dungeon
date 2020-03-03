@@ -183,15 +183,14 @@ export class BossMonster implements Monster, View {
       if (dist_x > 1 || dist_y > 1) {
         const level = this.level;
         const pf = new PathFinding(level.width, level.height);
-        level.rooms.forEach(r => pf.clearRect(r));
-        level.corridorsH.forEach(r => pf.clearRect(r));
-        level.corridorsV.forEach(r => pf.clearRect(r));
 
         for (let y = 0; y < level.height; y++) {
           for (let x = 0; x < level.width; x++) {
             const m = level.monsterMap[y][x];
             if (m && m !== this && m !== this.wrapper && m !== level.hero) {
               pf.mark(x, y);
+            } else if (level.floorMap[y][x]) {
+              pf.clear(x, y);
             }
           }
         }

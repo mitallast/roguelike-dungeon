@@ -33,20 +33,25 @@ export class DungeonGenerator {
 
     const dungeon = new DungeonLevel(this.scene, this.heroState, level, level_size, level_size);
 
-    this.generateRooms(dungeon);
+    const rooms_total = 1 + dungeon.level;
+    const gen = new TunnelingAlgorithm(this.rng, dungeon.width, dungeon.height);
+    gen.generate(rooms_total);
+
+    this.fill(dungeon, gen);
+    this.replace(dungeon, gen);
 
     for (let m = 0; m < monsters_total; m++) {
-      this.generateMonster(dungeon, is_boss);
+      this.generateMonster(dungeon, gen, is_boss);
     }
     if (is_boss) {
-      this.generateBoss(dungeon);
+      this.generateBoss(dungeon, gen);
     }
 
     for (let d = 0; d < drop_total; d++) {
-      this.generateDrop(dungeon);
+      this.generateDrop(dungeon, gen);
     }
 
-    const first = dungeon.rooms[0];
+    const first = gen.rooms[0];
     const hero_x = first.x + (first.w >> 1);
     const hero_y = first.y + (first.h >> 1);
     dungeon.hero.resetPosition(hero_x, hero_y);
@@ -56,26 +61,11 @@ export class DungeonGenerator {
     return dungeon;
   }
 
-  generateRooms(dungeon: DungeonLevel): boolean {
-    const rooms_total = 1 + dungeon.level;
-    const gen = new TunnelingAlgorithm(this.rng, dungeon.width, dungeon.height);
-    if (gen.generate(rooms_total)) {
-      dungeon.corridorsH.push(...gen.corridorsH);
-      dungeon.corridorsV.push(...gen.corridorsV);
-      dungeon.rooms.push(...gen.rooms);
-
-      this.fill(dungeon);
-      this.replace(dungeon);
-      return true;
-    }
-    return false;
-  }
-
-  generateMonster(dungeon: DungeonLevel, isBoss: boolean): void {
-    const max_room = dungeon.rooms.length - (isBoss ? 1 : 0);
+  generateMonster(dungeon: DungeonLevel, gen: TunnelingAlgorithm, isBoss: boolean): void {
+    const max_room = gen.rooms.length - (isBoss ? 1 : 0);
     if (max_room > 1) {
       const r = this.rng.nextRange(1, max_room);
-      const room = dungeon.rooms[r];
+      const room = gen.rooms[r];
       for (let t = 0; t < 10; t++) {
         const x = room.x + this.rng.nextRange(0, room.w);
         const y = room.y + this.rng.nextRange(0, room.h);
@@ -90,8 +80,8 @@ export class DungeonGenerator {
     }
   }
 
-  generateBoss(dungeon: DungeonLevel): void {
-    const room = dungeon.rooms[dungeon.rooms.length - 1];
+  generateBoss(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
+    const room = gen.rooms[gen.rooms.length - 1];
     for (let t = 0; t < 10; t++) {
       const x = room.x + this.rng.nextRange(1, room.w - 1);
       const y = room.y + this.rng.nextRange(1, room.h - 1);
@@ -106,8 +96,8 @@ export class DungeonGenerator {
     }
   }
 
-  generateDrop(dungeon: DungeonLevel): void {
-    const room = this.rng.choice(dungeon.rooms);
+  generateDrop(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
+    const room = this.rng.choice(gen.rooms);
     for (let t = 0; t < 64; t++) {
       const x = room.x + this.rng.nextRange(0, room.w);
       const y = room.y + this.rng.nextRange(0, room.h);
@@ -118,10 +108,10 @@ export class DungeonGenerator {
     }
   }
 
-  fill(dungeon: DungeonLevel): void {
-    dungeon.rooms.forEach(r => this.fillRoom(dungeon, r));
-    dungeon.corridorsH.forEach(r => this.fillCorridorH(dungeon, r));
-    dungeon.corridorsV.forEach(r => this.fillCorridorV(dungeon, r));
+  fill(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
+    gen.rooms.forEach(r => this.fillRoom(dungeon, r));
+    gen.corridorsH.forEach(r => this.fillCorridorH(dungeon, r));
+    gen.corridorsV.forEach(r => this.fillCorridorV(dungeon, r));
   }
 
   fillRoom(dungeon: DungeonLevel, room: Rect): void {
@@ -450,9 +440,9 @@ export class DungeonGenerator {
     }
   }
 
-  replace(dungeon: DungeonLevel): void {
+  replace(dungeon: DungeonLevel, gen: TunnelingAlgorithm): void {
     this.replaceFloorRandomly(dungeon);
-    this.replaceLadder(dungeon);
+    this.replaceLadder(dungeon, gen);
     this.replaceWallRandomly(dungeon);
   }
 
@@ -468,9 +458,9 @@ export class DungeonGenerator {
     }
   };
 
-  replaceLadder(dungeon: DungeonLevel) {
+  replaceLadder(dungeon: DungeonLevel, gen: TunnelingAlgorithm) {
     // replace one tile in last room as ladder = out from level!
-    const last = dungeon.rooms[dungeon.rooms.length - 1];
+    const last = gen.rooms[gen.rooms.length - 1];
     const ladder_x = last.x + (last.w >> 1);
     const ladder_y = last.y + (last.h >> 1);
     dungeon.setFloor(ladder_x, ladder_y, 'floor_ladder.png');
