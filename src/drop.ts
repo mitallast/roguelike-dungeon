@@ -12,7 +12,7 @@ const TILE_SIZE = 16;
 export interface Drop {
   pickedUp(hero: HeroView): boolean;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
-  dropView(level: DungeonLevel, x: number, y: number): DropView;
+  dropView(dungeon: DungeonLevel, x: number, y: number): DropView;
 }
 
 export class DropView implements View {
@@ -43,7 +43,7 @@ export class DropView implements View {
 
   pickedUp(hero: HeroView): void {
     if (this.drop.pickedUp(hero)) {
-      this.level.setDrop(this.x, this.y, null);
+      this.level.cell(this.x, this.y).drop = null;
     }
   }
 

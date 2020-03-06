@@ -78,7 +78,7 @@ export class DungeonScene implements Scene {
     this.dungeon?.destroy();
 
     let generator: DungeonGenerator;
-    if (this.level === 1) {
+    if (this.level <= 5) {
       generator = new TunnelingDungeonGenerator(this, this.hero);
     } else {
       generator = new WfcDungeonGenerator(this, this.hero);

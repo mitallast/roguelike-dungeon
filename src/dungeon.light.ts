@@ -65,10 +65,10 @@ export class DungeonLightView implements View {
 
     for (let y = 0; y < level.height; y++) {
       for (let x = 0; x < level.width; x++) {
-        const view = level.floorMap[y][x];
-        if (view) {
+        const cell = level.cell(x, y);
+        if (cell.hasFloor) {
           // find static light sources
-          switch (view.name) {
+          switch (cell.floor) {
             case 'wall_fountain_basin_red':
               this.lights.push(new LightSource(
                 new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
@@ -90,65 +90,36 @@ export class DungeonLightView implements View {
           }
 
           // find wall segments
-          const has_top = y > 0 && !!level.floorMap[y - 1][x];
-          const has_bottom = y + 1 < level.height && !!level.floorMap[y + 1][x];
-          const has_left = x > 0 && !!level.floorMap[y][x - 1];
-          const has_right = x + 1 < level.width && !!level.floorMap[y][x + 1];
+          const has_top = y > 0 && level.cell(x, y - 1).hasFloor;
+          const has_bottom = y + 1 < level.height && level.cell(x, y + 1).hasFloor;
+          const has_left = x > 0 && level.cell(x - 1, y).hasFloor;
+          const has_right = x + 1 < level.width && level.cell(x + 1, y).hasFloor;
 
-          const has_top_left = y > 0 && !!level.floorMap[y - 1][x - 1];
-          const has_top_right = y > 0 && !!level.floorMap[y - 1][x + 1];
-          const has_bottom_left = y + 1 < level.height && !!level.floorMap[y + 1][x - 1];
-          const has_bottom_right = y + 1 < level.height && !!level.floorMap[y + 1][x + 1];
-
-          const has_wall = !!level.wallMap[y][x];
-
-          const x_left = x * TILE_SIZE + (!has_left && has_wall ? WALL_SIZE_X : 0);
-          const x_right = x * TILE_SIZE + TILE_SIZE - (!has_right && has_wall ? WALL_SIZE_X : 0);
-          const y_top = y * TILE_SIZE;
-          const y_bottom = y * TILE_SIZE + TILE_SIZE - (!has_bottom && has_wall ? WALL_SIZE_Y : 0);
-
-          if (!has_top) this.visibility.addSegment(x_left, y_top, x_right, y_top, SegmentType.TOP);
-          if (!has_bottom) {
-            this.visibility.addSegment(x_left, y_bottom, x_right, y_bottom, SegmentType.NORMAL);
-            if (has_wall && y + 1 < level.height) {
-              const has_bottom_left = x > 0 && !!level.floorMap[y + 1][x - 1];
-              const has_bottom_right = x + 1 < level.width && !!level.floorMap[y + 1][x + 1];
-              if (has_bottom_left && has_left) {
-                this.visibility.addSegment(x_left, y_bottom, x_left, y_bottom + WALL_SIZE_Y, SegmentType.NORMAL);
-              }
-              if (has_bottom_right && has_right) {
-                this.visibility.addSegment(x_right, y_bottom, x_right, y_bottom + WALL_SIZE_Y, SegmentType.NORMAL);
-              }
-            }
+          let config: WallConfig;
+          if (cell.hasWall && this.config[cell.wall]) {
+            config = this.config[cell.wall];
+          } else {
+            config = this.config["default"];
           }
-          if (!has_left) {
-            this.visibility.addSegment(x_left, y_top, x_left, y_bottom, SegmentType.NORMAL);
-            if (has_wall && x > 0) {
-              if (has_top_left && has_top) {
-                // reverse {Г} - form
-                this.visibility.addSegment(x_left - WALL_SIZE_X, y_top - WALL_SIZE_Y, x_left, y_top - WALL_SIZE_Y, SegmentType.NORMAL);
-                this.visibility.addSegment(x_left, y_top - WALL_SIZE_Y, x_left, y_top, SegmentType.NORMAL);
-              }
-              if (has_bottom_left && has_bottom) {
-                this.visibility.addSegment(x_left - WALL_SIZE_X, y_bottom, x_left, y_bottom, SegmentType.TOP);
-              }
-            }
-          }
-          if (!has_right) {
-            this.visibility.addSegment(x_right, y_top, x_right, y_bottom, SegmentType.NORMAL);
-            if (has_wall && x + 1 < this.level.width) {
-              if (has_top_right && has_top) {
-                // {Г} - form
-                this.visibility.addSegment(x_right, y_top - WALL_SIZE_Y, x_right + WALL_SIZE_X, y_top - WALL_SIZE_Y, SegmentType.NORMAL);
-                this.visibility.addSegment(x_right, y_top - WALL_SIZE_Y, x_right, y_top, SegmentType.NORMAL);
-              }
-              if (has_bottom_right && has_bottom) {
-                this.visibility.addSegment(x_right, y_bottom, x_right + WALL_SIZE_X, y_bottom, SegmentType.TOP);
-              }
-            }
-          }
+          this.add(x, y, config.default);
+          if (!has_top) this.add(x, y, config.top);
+          if (!has_bottom) this.add(x, y, config.bottom);
+          if (!has_left) this.add(x, y, config.left);
+          if (!has_right) this.add(x, y, config.right);
         }
       }
+    }
+  }
+
+  private add(x: number, y: number, segments: WallSegment[]): void {
+    for (let segment of segments) {
+      this.visibility.addSegment(
+        x * TILE_SIZE + segment.x1,
+        y * TILE_SIZE + segment.y1,
+        x * TILE_SIZE + segment.x2,
+        y * TILE_SIZE + segment.y2,
+        segment.type
+      );
     }
   }
 
@@ -180,6 +151,333 @@ export class DungeonLightView implements View {
 
     return PIXI.Texture.from(c);
   }
+
+  config: Partial<Record<string, WallConfig>> = {
+    "wall_top_mid.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: []
+    },
+    "wall_side_front_left.png": {
+      default: [
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.TOP},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      right: [],
+      bottom: [
+        {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE - WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_side_front_right.png": {
+      default: [
+        {x1: WALL_SIZE_X, y1: 0, x2: WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: 0, y1: 0, x2: WALL_SIZE_X, y2: 0, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE, x2: WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.TOP},
+      ],
+      top: [
+        {x1: WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      bottom: [
+        {x1: WALL_SIZE_X, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_side_mid_left.png": {
+      default: [
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE - WALL_SIZE_X, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.TOP},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      right: [],
+      bottom: [
+        {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE - WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_side_mid_right.png": {
+      default: [
+        {x1: WALL_SIZE_X, y1: 0, x2: WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: 0, y1: 0, x2: WALL_SIZE_X, y2: 0, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE, x2: WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.TOP},
+      ],
+      top: [
+        {x1: WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      bottom: [
+        {x1: WALL_SIZE_X, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_side_top_left.png": {
+      default: [
+        {
+          x1: TILE_SIZE - WALL_SIZE_X,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+        {
+          x1: TILE_SIZE - WALL_SIZE_X,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE - WALL_SIZE_X,
+          y2: TILE_SIZE,
+          type: SegmentType.NORMAL
+        },
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: [
+        {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE - WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_side_top_right.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: WALL_SIZE_X, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: WALL_SIZE_X, y1: TILE_SIZE - WALL_SIZE_Y, x2: WALL_SIZE_X, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      bottom: [
+        {x1: WALL_SIZE_X, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    },
+    "wall_inner_corner_t_top_left.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: []
+    },
+    "wall_inner_corner_t_top_right.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: []
+    },
+    "wall_inner_corner_l_top_left.png": {
+      default: [
+        {x1: WALL_SIZE_X, y1: 0, x2: WALL_SIZE_X, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {
+          x1: WALL_SIZE_X,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+      ],
+      top: [
+        {x1: WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: [],
+    },
+    "wall_inner_corner_l_top_right.png": {
+      default: [
+        {
+          x1: TILE_SIZE - WALL_SIZE_X,
+          y1: 0,
+          x2: TILE_SIZE - WALL_SIZE_X,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+        {
+          x1: 0,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE - WALL_SIZE_X,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [],
+      bottom: [],
+    },
+    "wall_corner_bottom_left.png": {
+      default: [
+        {x1: WALL_SIZE_X, y1: 0, x2: WALL_SIZE_X, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {
+          x1: WALL_SIZE_X,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+      ],
+      top: [
+        {x1: WALL_SIZE_X, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: [],
+    },
+    "wall_corner_bottom_right.png": {
+      default: [
+        {
+          x1: TILE_SIZE - WALL_SIZE_X,
+          y1: 0,
+          x2: TILE_SIZE - WALL_SIZE_X,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+        {
+          x1: 0,
+          y1: TILE_SIZE - WALL_SIZE_Y,
+          x2: TILE_SIZE - WALL_SIZE_X,
+          y2: TILE_SIZE - WALL_SIZE_Y,
+          type: SegmentType.NORMAL
+        },
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE - WALL_SIZE_X, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [],
+      bottom: [],
+    },
+    "wall_corner_top_left.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: []
+    },
+    "wall_corner_top_right.png": {
+      default: [
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+        {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+        {x1: TILE_SIZE, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
+      ],
+      bottom: []
+    },
+    "default": {
+      default: [],
+      top: [
+        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+      ],
+      left: [
+        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      right: [
+        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+      bottom: [
+        {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+      ],
+    }
+  };
+}
+
+interface WallConfig {
+  default: WallSegment[]
+  top: WallSegment[]
+  bottom: WallSegment[]
+  left: WallSegment[]
+  right: WallSegment[]
+}
+
+interface WallSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  type: SegmentType;
 }
 
 class LightSource {

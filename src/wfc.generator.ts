@@ -1,6 +1,6 @@
 import {HeroState} from './hero';
 import {DungeonScene} from './dungeon';
-import {DungeonLevel, DungeonZIndexes} from './dungeon.level';
+import {DungeonLevel} from './dungeon.level';
 import {BaseDungeonGenerator} from './dungeon.generator';
 import {BorderConstraint, Color, Constraint, OverlappingModel, PathConstraint, Resolution, Tile} from './wfc';
 
@@ -47,20 +47,20 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    model.graphics([]);
-
     const dungeon = new DungeonLevel(this.scene, this.heroState, 1, model.FMX, model.FMY);
     for (let y = 0; y < model.FMY; y++) {
       let dy = y < model.FMY - model.N + 1 ? 0 : model.N - 1;
       for (let x = 0; x < model.FMX; x++) {
         let dx = x < model.FMX - model.N + 1 ? 0 : model.N - 1;
         let tileset = model.tiles[model.patterns[model.observed[x - dx + (y - dy) * model.FMX]][dx + dy * model.N]].value;
+        let cell = dungeon.cell(x, y);
 
         if (tileset.floor) {
-          dungeon.setFloor(x, y, tileset.floor);
+          cell.floor = tileset.floor;
         }
         if (tileset.wall) {
-          dungeon.setWall(x, y, tileset.wall, tileset.zIndex);
+          cell.wall = tileset.wall;
+          cell.zIndex = tileset.zIndex;
         }
       }
     }

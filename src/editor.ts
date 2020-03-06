@@ -53,7 +53,11 @@ export class Editor {
       width: map_width * scale,
       height: (palette_height + map_height) * scale,
     });
-    document.getElementById("editor").appendChild(this.app.view);
+
+    const div = document.createElement("div");
+    div.classList.add("container");
+    div.appendChild(this.app.view);
+    document.body.appendChild(div);
 
     this.initPalette();
     this.initCells();
@@ -322,10 +326,6 @@ class EditorMapCell {
     const r: number = this.floorSprite ? 0 : 255;
     const g: number = this.wallSprite ? 0 : 255;
     return new Color(r, g, 255, 0);
-  }
-
-  get notEmpty(): boolean {
-    return !!this.floorSprite || !!this.wallSprite;
   }
 }
 

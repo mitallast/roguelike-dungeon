@@ -1,4 +1,4 @@
-import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
+import {DungeonCellView, DungeonLevel} from "./dungeon.level";
 import {RNG} from "./rng";
 import {DungeonScene} from "./dungeon";
 import {HeroState} from "./hero";
@@ -33,8 +33,9 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const percent = 0.2;
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
-        if (dungeon.floorMap[y][x] && this.rng.nextFloat() < percent) {
-          dungeon.setFloor(x, y, this.rng.choice(replacements));
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor && this.rng.nextFloat() < percent) {
+          cell.floor = this.rng.choice(replacements);
         }
       }
     }
@@ -59,42 +60,43 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const percent = 0.2;
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
-        if (dungeon.wallMap[y][x]) {
-          switch (dungeon.wallMap[y][x].name) {
-            case 'wall_mid.png':
-              if (this.rng.nextFloat() < percent) {
-                const is_top = !!dungeon.floorMap[y + 1][x];
-                let replacements: string[];
-                if (is_top) {
-                  replacements = wall_mid_top_replaces;
-                } else {
-                  replacements = wall_mid_bottom_replaces;
-                }
-                const replacement = this.rng.choice(replacements);
-                switch (replacement) {
-                  case 'wall_goo.png':
-                    dungeon.setWall(x, y, 'wall_goo.png', DungeonZIndexes.wallBack);
-                    dungeon.setFloor(x, y + 1, 'wall_goo_base.png');
-                    break;
-                  case 'wall_fountain_mid_red':
-                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png', DungeonZIndexes.wallBack);
-                    dungeon.setWall(x, y, 'wall_fountain_mid_red', DungeonZIndexes.wallBack);
-                    dungeon.setFloor(x, y + 1, 'wall_fountain_basin_red');
-                    break;
-                  case 'wall_fountain_mid_blue':
-                    dungeon.setWall(x, y - 1, 'wall_fountain_top.png', DungeonZIndexes.wallBack);
-                    dungeon.setWall(x, y, 'wall_fountain_mid_blue', DungeonZIndexes.wallBack);
-                    dungeon.setFloor(x, y + 1, 'wall_fountain_basin_blue');
-                    break;
-                  default:
-                    dungeon.setWall(x, y, replacement, is_top ? DungeonZIndexes.wallBack : DungeonZIndexes.wallFront);
-                    break;
-                }
+        const cell = dungeon.cell(x, y);
+        if (cell.hasWall) {
+          if (cell.wall === 'wall_mid.png') {
+            if (this.rng.nextFloat() < percent) {
+              const is_top = !!dungeon.cell(x, y + 1).hasFloor;
+              let replacements: string[];
+              if (is_top) {
+                replacements = wall_mid_top_replaces;
+              } else {
+                replacements = wall_mid_bottom_replaces;
               }
-              break;
-            default:
-              // console.log('replace', dungeon.wallMap[y][x]);
-              break;
+              const replacement = this.rng.choice(replacements);
+              switch (replacement) {
+                case 'wall_goo.png':
+                  dungeon.cell(x, y).wallBack = 'wall_goo.png';
+                  dungeon.cell(x, y + 1).floor = 'wall_goo_base.png';
+                  break;
+                case 'wall_fountain_mid_red':
+                  dungeon.cell(x, y - 1).wallBack = 'wall_fountain_top.png';
+                  dungeon.cell(x, y).wallBack = 'wall_fountain_mid_red';
+                  dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_red';
+                  break;
+                case 'wall_fountain_mid_blue':
+                  dungeon.cell(x, y - 1).wallBack = 'wall_fountain_top.png';
+                  dungeon.cell(x, y).wallBack = 'wall_fountain_mid_blue';
+                  dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_blue';
+                  break;
+                default:
+                  if (is_top) {
+                    dungeon.cell(x, y).wallBack = replacement;
+                  } else {
+                    dungeon.cell(x, y).wallFront = replacement;
+                  }
+                  break;
+              }
+            }
+          } else {
           }
         }
       }
@@ -105,7 +107,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.floorMap[y][x] && !dungeon.monsterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.monsterMap[y][x]) {
           free.push([x, y]);
         }
       }
@@ -124,7 +126,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.floorMap[y][x] && !dungeon.monsterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.monsterMap[y][x]) {
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (distance > min_hero_distance) {
             free.push([x, y]);
@@ -150,7 +152,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.floorMap[y][x] &&
+        if (dungeon.cell(x, y).hasFloor &&
           !dungeon.monsterMap[y][x] && !dungeon.monsterMap[y][x + 1] &&
           !dungeon.monsterMap[y - 1][x] && !dungeon.monsterMap[y - 1][x + 1]
         ) {
@@ -173,49 +175,49 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected placeDrop(dungeon: DungeonLevel, count: number): void {
-    const free: [number, number][] = [];
+    const free: DungeonCellView[] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.floorMap[y][x] && !dungeon.hasDrop(x, y)) {
-          free.push([x, y]);
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor && !cell.hasDrop) {
+          free.push(cell);
         }
       }
     }
 
     for (let d = 0; d < count && free.length > 0; d++) {
       const i = this.rng.nextRange(0, free.length);
-      let [[x, y]] = free.splice(i, 1);
-
-      dungeon.randomDrop(x, y);
+      free.splice(i, 1)[0].randomDrop();
     }
   }
 
   protected placeLadder(dungeon: DungeonLevel) {
     const hero = dungeon.hero;
-    const free3: [number, number, number][] = [];
-    const free1: [number, number, number][] = [];
+    const free3: [DungeonCellView, number][] = [];
+    const free1: [DungeonCellView, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
     for (let y = 1; y < dungeon.height - 1; y++) {
       for (let x = 1; x < dungeon.height - 1; x++) {
-        if (dungeon.floorMap[y][x]) {
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor) {
           let c = 0;
           for (let [dx, dy] of directions) {
-            if (dungeon.floorMap[y + dy][x + dx]) {
+            if (dungeon.cell(x + dx, y + dy).hasFloor) {
               c++
             }
           }
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (c === directions.length) {
-            free3.push([x, y, distance]);
+            free3.push([cell, distance]);
           } else {
-            free1.push([x, y, distance]);
+            free1.push([cell, distance]);
           }
         }
       }
     }
 
-    free3.sort((a, b) => a[2] - b[2]);
-    free1.sort((a, b) => a[2] - b[2]);
+    free3.sort((a, b) => a[1] - b[1]);
+    free1.sort((a, b) => a[1] - b[1]);
 
     const free = [...free1, ...free3].reverse().splice(0, 10);
 
@@ -223,7 +225,6 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       throw "ladder not set";
     }
 
-    let [x, y] = this.rng.choice(free);
-    dungeon.setFloor(x, y, 'floor_ladder.png');
+    this.rng.choice(free)[0].floor = 'floor_ladder.png';
   }
 }

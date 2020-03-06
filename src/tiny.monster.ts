@@ -169,7 +169,7 @@ export class TinyMonster implements Monster, View {
             const m = level.monsterMap[y][x];
             if (m && m !== this && m !== this.wrapper && m !== level.hero) {
               pf.mark(x, y);
-            } else if (level.floorMap[y][x]) {
+            } else if (level.cell(x, y).hasFloor) {
               pf.clear(x, y);
             }
           }
@@ -197,9 +197,10 @@ export class TinyMonster implements Monster, View {
     if (this.state === MonsterState.Idle) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
+      const cell = this.level.cell(new_x, new_y);
 
       // check is floor exists
-      if (!this.level.floorMap[new_y][new_x]) return false;
+      if (!cell.hasFloor) return false;
 
       // check is no monster
       if (this.level.monsterMap[new_y][new_x]) return false;
@@ -236,7 +237,7 @@ export class TinyMonster implements Monster, View {
       this.level.log.push(`${this.name} killed by ${name}`);
       this.destroy();
       if (Math.random() < this.luck) {
-        this.level.randomDrop(this.x, this.y);
+        this.level.cell(this.x, this.y).randomDrop();
       }
     }
   };

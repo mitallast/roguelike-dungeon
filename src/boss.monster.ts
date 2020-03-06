@@ -189,7 +189,7 @@ export class BossMonster implements Monster, View {
             const m = level.monsterMap[y][x];
             if (m && m !== this && m !== this.wrapper && m !== level.hero) {
               pf.mark(x, y);
-            } else if (level.floorMap[y][x]) {
+            } else if (level.cell(x, y).hasFloor) {
               pf.clear(x, y);
             }
           }
@@ -223,7 +223,7 @@ export class BossMonster implements Monster, View {
       for (let test_x = new_x; test_x <= new_x + 1; test_x++) {
         for (let test_y = new_y - 1; test_y <= new_y; test_y++) {
           // check is floor exists
-          if (!this.level.floorMap[test_y][test_x]) {
+          if (!this.level.cell(test_x, test_y).hasFloor) {
             return false;
           }
           // check is no monster
@@ -249,7 +249,7 @@ export class BossMonster implements Monster, View {
       this.bossState.dead.set(true);
       this.destroy();
       if (Math.random() < this.bossState.luck) {
-        this.level.randomDrop(this.x, this.y);
+        this.level.cell(this.x, this.y).randomDrop();
       }
     }
   }

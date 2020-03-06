@@ -200,7 +200,7 @@ export class HeroView implements Monster, View {
       }
 
       if (this.joystick.hit.triggered || !this.joystick.hit.processed) {
-        if (this.level.floorMap[this.y][this.x].name === "floor_ladder.png") {
+        if (this.level.cell(this.x, this.y).isLadder) {
           this.joystick.hit.reset();
           this.level.exit();
         } else {
@@ -209,7 +209,6 @@ export class HeroView implements Monster, View {
         }
         return true;
       }
-
 
       let d_y = 0;
       if (this.joystick.moveUp.triggered || !this.joystick.moveUp.processed) {
@@ -268,10 +267,10 @@ export class HeroView implements Monster, View {
             for (let j = 0; j < 2; j++) {
               let s_y = scan_y[j];
               if (s_x >= 0 && s_y >= 0) {
-                if (!this.level.hasDrop(s_x, s_y) && this.level.floorMap[s_y][s_x]) {
-                  const drop = this.heroState.weapon.get();
+                const cell = this.level.cell(s_x, s_y);
+                if (!cell.hasDrop && cell.hasFloor) {
+                  cell.drop = this.heroState.weapon.get();
                   this.heroState.weapon.set(null);
-                  this.level.setDrop(s_x, s_y, drop);
                   this.weaponSprite?.destroy();
                   this.weaponSprite = null;
                   return;
@@ -297,10 +296,10 @@ export class HeroView implements Monster, View {
             for (let j = 0; j < 2; j++) {
               let s_y = scan_y[j];
               if (s_x >= 0 && s_y >= 0) {
-                if (!this.level.hasDrop(s_x, s_y) && this.level.floorMap[s_y][s_x]) {
-                  const drop = this.heroState.weapon.get();
+                const cell = this.level.cell(s_x, s_y);
+                if (!cell.hasDrop && cell.hasFloor) {
+                  cell.drop = this.heroState.weapon.get();
                   this.heroState.weapon.set(null);
-                  this.level.setDrop(s_x, s_y, drop);
                   this.weaponSprite?.destroy();
                   this.weaponSprite = null;
                   return;
@@ -314,7 +313,10 @@ export class HeroView implements Monster, View {
   }
 
   private scanDrop() {
-    this.level.getDrop(this.x, this.y)?.pickedUp(this);
+    const cell = this.level.cell(this.x, this.y);
+    if (cell.hasDrop) {
+      cell.pickedUp(this);
+    }
   }
 
   get damage(): number {
@@ -352,8 +354,10 @@ export class HeroView implements Monster, View {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
+      const cell = this.level.cell(new_x, new_y);
+
       // check is floor exists
-      if (!this.level.floorMap[new_y][new_x]) return false;
+      if (!cell.hasFloor) return false;
       // check is no monster
       if (this.level.monsterMap[new_y][new_x]) return false;
 

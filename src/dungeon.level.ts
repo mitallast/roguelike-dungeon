@@ -1,6 +1,6 @@
 import {TinyMonster} from "./tiny.monster";
 import {Coins, Drop, DropView, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
-import {HeroView, HeroState} from "./hero";
+import {HeroState, HeroView} from "./hero";
 import {Monster} from "./monster";
 import {BossMonster} from "./boss.monster";
 import {DungeonScene} from "./dungeon";
@@ -39,9 +39,7 @@ export class DungeonLevel {
   boss: BossMonster;
   monsters: TinyMonster[] = [];
 
-  readonly floorMap: FloorView[][];
-  readonly wallMap: WallView[][];
-  readonly dropMap: DropView[][];
+  private readonly cells: DungeonCellView[][];
   readonly monsterMap: Monster[][];
 
   log: string[] = [];
@@ -59,9 +57,13 @@ export class DungeonLevel {
     this.width = width;
     this.height = height;
 
-    this.floorMap = this.createBuffer();
-    this.wallMap = this.createBuffer();
-    this.dropMap = this.createBuffer();
+    this.cells = this.createBuffer();
+    for (let y = 0; y < this.width; y++) {
+      for (let x = 0; x < this.height; x++) {
+        this.cells[y][x] = new DungeonCellView(this, x, y);
+      }
+    }
+
     this.monsterMap = this.createBuffer();
 
     this.container = new PIXI.Container();
@@ -79,7 +81,7 @@ export class DungeonLevel {
     this.lighting.zIndex = 2;
   }
 
-  createBuffer<T>(): T[][] {
+  private createBuffer<T>(): T[][] {
     const rows: T[][] = [];
     for (let y = 0; y < this.height; y++) {
       const row: T[] = [];
@@ -91,111 +93,8 @@ export class DungeonLevel {
     return rows;
   };
 
-  randomDrop(x: number, y: number): boolean {
-    const weight_coins = 20;
-    const weight_health_flask = 10;
-    const weight_health_big_flask = 10;
-    const weight_weapon = 10;
-
-    // linear scan - weighted random selection
-    // def weighted_random(weights):
-    //     remaining_distance = random() * sum(weights)
-    //     for i, weight in enumerate(weights):
-    //         remaining_distance -= weight
-    //         if remaining_distance < 0:
-    //             return i
-
-    const sum = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
-
-    let remaining_distance = this.scene.rng.nextFloat() * sum;
-
-    remaining_distance -= weight_weapon;
-    if (remaining_distance <= 0) {
-      const available = WeaponConfig.configs.filter(c => c.level <= this.level);
-      const drop = this.scene.rng.choice(available).create(this.scene.registry);
-      this.setDrop(x, y, drop);
-      return true;
-    }
-    remaining_distance -= weight_health_big_flask;
-    if (remaining_distance <= 0) {
-      const drop = new HealthBigFlask(this.scene.registry);
-      this.setDrop(x, y, drop);
-      return true;
-    }
-    remaining_distance -= weight_health_flask;
-    if (remaining_distance <= 0) {
-      const drop = new HealthFlask(this.scene.registry);
-      this.setDrop(x, y, drop);
-      return true;
-    }
-    remaining_distance -= weight_coins;
-    if (remaining_distance <= 0) {
-      const drop = new Coins(this.scene.rng, this.scene.registry);
-      this.setDrop(x, y, drop);
-      return true;
-    }
-    return false;
-  };
-
-  hasDrop(x: number, y: number): boolean {
-    return !!this.dropMap[y][x];
-  }
-
-  getDrop(x: number, y: number): DropView {
-    return this.dropMap[y][x];
-  }
-
-  setDrop(x: number, y: number, drop: Drop) {
-    this.dropMap[y][x]?.destroy();
-    this.dropMap[y][x] = null;
-    if (drop) {
-      this.dropMap[y][x] = drop.dropView(this, x, y);
-    }
-  }
-
-  setFloor(x: number, y: number, name: string): void {
-    if (this.floorMap[y][x]) {
-      this.floorMap[y][x].destroy();
-    }
-
-    if (!name.endsWith('.png')) {
-      const sprite = this.scene.registry.animated(name);
-      sprite.animationSpeed = 0.2;
-      sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-      sprite.zIndex = DungeonZIndexes.floor;
-      this.container.addChild(sprite);
-      this.floorMap[y][x] = new FloorView(sprite);
-    } else {
-      const sprite = this.scene.registry.sprite(name);
-      sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-      sprite.zIndex = DungeonZIndexes.floor;
-      this.container.addChild(sprite);
-      this.floorMap[y][x] = new FloorView(sprite);
-    }
-  }
-
-  setWall(x: number, y: number, name: string, zIndex: number): void {
-    if (this.wallMap[y][x]) {
-      this.wallMap[y][x].destroy();
-      this.wallMap[y][x] = null;
-    }
-
-    if (name) { // maybe null
-      if (!name.endsWith('.png')) {
-        const sprite = this.scene.registry.animated(name);
-        sprite.animationSpeed = 0.2;
-        sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-        sprite.zIndex = zIndex;
-        this.container.addChild(sprite);
-        this.wallMap[y][x] = new WallView(sprite);
-      } else {
-        const sprite = this.scene.registry.sprite(name);
-        sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-        sprite.zIndex = zIndex;
-        this.container.addChild(sprite);
-        this.wallMap[y][x] = new WallView(sprite);
-      }
-    }
+  cell(x: number, y: number): DungeonCellView {
+    return this.cells[y][x];
   }
 
   exit() {
@@ -211,9 +110,7 @@ export class DungeonLevel {
   update(delta: number): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        this.floorMap[y][x]?.update(delta);
-        this.wallMap[y][x]?.update(delta);
-        this.dropMap[y][x]?.update(delta);
+        this.cells[y][x]?.update(delta);
       }
     }
 
@@ -250,55 +147,158 @@ export class DungeonLevel {
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        this.floorMap[y][x]?.destroy();
-        this.wallMap[y][x]?.destroy();
-        this.dropMap[y][x]?.destroy();
+        this.cells[y][x].destroy();
       }
     }
   }
 }
 
-export class FloorView implements View {
-  private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+export class DungeonCellView implements View {
+  private readonly dungeon: DungeonLevel;
+  readonly x: number;
+  readonly y: number;
+  private floorSprite: PIXI.Sprite | PIXI.AnimatedSprite = null;
+  private wallSprite: PIXI.Sprite | PIXI.AnimatedSprite = null;
+  private dropView: DropView = null;
 
-  constructor(sprite: PIXI.Sprite | PIXI.AnimatedSprite) {
-    this.sprite = sprite;
+  constructor(dungeon: DungeonLevel, x: number, y: number) {
+    this.dungeon = dungeon;
+    this.x = x;
+    this.y = y;
   }
 
-  get name(): string {
-    return this.sprite.name;
+  set floor(name: string) {
+    this.floorSprite?.destroy();
+    this.floorSprite = null;
+    if (name) {
+      this.floorSprite = this.sprite(name, DungeonZIndexes.floor);
+    }
+  }
+
+  get floor(): string {
+    return this.floorSprite?.name;
+  }
+
+  get hasFloor(): boolean {
+    return !!this.floorSprite;
+  }
+
+  set wallBack(name: string) {
+    this.wallSprite?.destroy();
+    this.wallSprite = null;
+    if (name) {
+      this.wallSprite = this.sprite(name, DungeonZIndexes.wallBack);
+    }
+  }
+
+  set wallFront(name: string) {
+    this.wallSprite?.destroy();
+    this.wallSprite = null;
+    if (name) {
+      this.wallSprite = this.sprite(name, DungeonZIndexes.wallFront);
+    }
+  }
+
+  get wall(): string {
+    return this.wallSprite?.name;
+  }
+
+  set wall(name: string) {
+    this.wallFront = name;
+  }
+
+  set zIndex(zIndex: number) {
+    if (this.wallSprite) {
+      this.wallSprite.zIndex = zIndex;
+    }
+  }
+
+  get hasWall(): boolean {
+    return !!this.wallSprite;
+  }
+
+  set drop(drop: Drop) {
+    this.dropView?.destroy();
+    this.dropView = null;
+    if (drop) {
+      this.dropView = drop.dropView(this.dungeon, this.x, this.y);
+    }
+  }
+
+  pickedUp(hero: HeroView): void {
+    if (this.dropView) {
+      this.dropView.pickedUp(hero);
+    }
+  }
+
+  get hasDrop(): boolean {
+    return !!this.dropView;
+  }
+
+  randomDrop(): boolean {
+    // linear scan - weighted random selection
+    // def weighted_random(weights):
+    //     remaining_distance = random() * sum(weights)
+    //     for i, weight in enumerate(weights):
+    //         remaining_distance -= weight
+    //         if remaining_distance < 0:
+    //             return i
+
+    const rng = this.dungeon.scene.rng;
+    const registry = this.dungeon.scene.registry;
+
+    const weight_coins = 20;
+    const weight_health_flask = 10;
+    const weight_health_big_flask = 10;
+    const weight_weapon = 10;
+    const sum = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
+
+    let remaining_distance = rng.nextFloat() * sum;
+    if ((remaining_distance -= weight_weapon) <= 0) {
+      const available = WeaponConfig.configs.filter(c => c.level <= this.dungeon.level);
+      this.drop = rng.choice(available).create(this.dungeon.scene.registry);
+    } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
+      this.drop = new HealthBigFlask(registry);
+    } else if ((remaining_distance -= weight_health_flask) <= 0) {
+      this.drop = new HealthFlask(registry);
+    } else if ((remaining_distance - weight_coins) <= 0) {
+      this.drop = new Coins(rng, registry);
+    }
+    return this.hasDrop;
+  };
+
+  private sprite(name: string, zIndex: number): PIXI.Sprite | PIXI.AnimatedSprite {
+    let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+    if (!name.endsWith('.png')) {
+      const anim = sprite = this.dungeon.scene.registry.animated(name);
+      anim.animationSpeed = 0.2;
+    } else {
+      sprite = this.dungeon.scene.registry.sprite(name);
+    }
+    sprite.position.set(this.x * TILE_SIZE, this.y * TILE_SIZE);
+    sprite.zIndex = zIndex;
+    this.dungeon.container.addChild(sprite);
+    return sprite;
   }
 
   destroy(): void {
-    this.sprite.destroy();
+    this.floorSprite?.destroy();
+    this.wallSprite?.destroy();
+    this.dropView?.destroy();
   }
 
   update(delta: number): void {
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.sprite.play();
+    if (this.floorSprite instanceof PIXI.AnimatedSprite) {
+      this.floorSprite.play();
     }
-  }
-}
-
-export class WallView implements View {
-  private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
-
-  constructor(sprite: PIXI.Sprite | PIXI.AnimatedSprite) {
-    this.sprite = sprite;
-  }
-
-  get name(): string {
-    return this.sprite.name;
-  }
-
-  destroy(): void {
-    this.sprite.destroy();
-  }
-
-  update(delta: number): void {
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.sprite.play();
+    if (this.wallSprite instanceof PIXI.AnimatedSprite) {
+      this.wallSprite.play();
     }
+    this.dropView?.update(delta);
+  }
+
+  get isLadder(): boolean {
+    return this.floor === 'floor_ladder.png';
   }
 }
 
