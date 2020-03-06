@@ -15,6 +15,7 @@ export class TileRegistry {
     return await new Promise<void>((resolve => {
       this.loader
         .add("tiles.json")
+        .add("sample.json")
         .load((loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           this.sheet = resources["tiles.json"].spritesheet;
           this.sheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
@@ -23,11 +24,15 @@ export class TileRegistry {
     }));
   }
 
+  get textures(): string[] {
+    return Object.keys(this.sheet.textures);
+  }
+
   sprite(name: string): PIXI.Sprite {
     if (!this.sheet.textures[name]) {
       throw `sprite not found: ${name}`;
     }
-    const sprite =  new PIXI.Sprite(this.sheet.textures[name]);
+    const sprite = new PIXI.Sprite(this.sheet.textures[name]);
     sprite.name = name;
     return sprite;
   }

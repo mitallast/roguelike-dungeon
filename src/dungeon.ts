@@ -9,14 +9,15 @@ import {RNG} from "./rng";
 import {Scene, SceneController} from "./scene";
 import {InventoryView} from "./inventory";
 import {BossHealthView} from "./boss.monster";
+import {WfcDungeonGenerator} from "./wfc.generator";
 
 export class DungeonScene implements Scene {
   readonly rng: RNG;
   readonly joystick: Joystick;
   readonly registry: TileRegistry;
   readonly controller: SceneController;
+  private readonly hero: HeroState;
 
-  private readonly generator: DungeonGenerator;
   private level = 1;
   private dungeon: DungeonLevel;
   private readonly titleView: DungeonTitleView;
@@ -29,7 +30,7 @@ export class DungeonScene implements Scene {
     this.joystick = controller.joystick;
     this.registry = controller.registry;
     this.controller = controller;
-    this.generator = new TunnelingDungeonGenerator(this, hero);
+    this.hero = hero;
 
     this.titleView = new DungeonTitleView();
     this.inventoryView = new InventoryView(hero.inventory);
@@ -76,7 +77,14 @@ export class DungeonScene implements Scene {
     this.bossHealthView = null;
     this.dungeon?.destroy();
 
-    this.dungeon = this.generator.generate(this.level);
+    let generator: DungeonGenerator;
+    if (this.level === 1) {
+      generator = new TunnelingDungeonGenerator(this, this.hero);
+    } else {
+      generator = new WfcDungeonGenerator(this, this.hero);
+    }
+
+    this.dungeon = generator.generate(this.level);
     this.titleView.setLevel(this.level);
     this.level++;
 
