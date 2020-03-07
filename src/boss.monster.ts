@@ -2,7 +2,7 @@ import {TileRegistry} from "./tilemap";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
-import {Observable} from "./observable";
+import {Observable, Subscription} from "./observable";
 import {Colors} from "./colors";
 import {PathFinding} from "./pathfinding";
 // @ts-ignore
@@ -309,6 +309,9 @@ export class BossHealthView implements View {
   private readonly height: number;
   private readonly point_width: number;
 
+  private readonly healthSub: Subscription;
+  private readonly deadSub: Subscription;
+
   private destroyed = false;
 
   constructor(boss: BossState) {
@@ -333,8 +336,8 @@ export class BossHealthView implements View {
     this.healthText.position.set(0, HEALTH_BORDER + (HEALTH_HEIGHT >> 1) - 2);
     this.container.addChild(this.healthText);
 
-    boss.health.subscribe(this.updateHealth.bind(this));
-    boss.dead.subscribe(this.updateDead.bind(this));
+    this.healthSub = boss.health.subscribe(this.updateHealth.bind(this));
+    this.deadSub = boss.dead.subscribe(this.updateDead.bind(this));
   }
 
   updateHealth(health: number) {
@@ -362,8 +365,8 @@ export class BossHealthView implements View {
   destroy(): void {
     if (!this.destroyed) {
       this.destroyed = true;
-      this.boss.health.unsubscribe(this.updateHealth);
-      this.boss.dead.unsubscribe(this.updateDead);
+      this.healthSub.unsubscribe();
+      this.deadSub.unsubscribe();
 
       this.healthText.destroy();
       this.healthRect.destroy();

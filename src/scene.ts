@@ -66,6 +66,6 @@ export class SceneController {
   }
 
   tick(delta: number): void {
-    this.sceneView.update(delta);
+    this.sceneView?.update(delta);
   }
 }

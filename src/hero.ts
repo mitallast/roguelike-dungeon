@@ -4,11 +4,11 @@ import {Joystick} from "./input";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {UsableDrop, Weapon} from "./drop";
-import {Observable} from "./observable";
+import {Observable, Subscription} from "./observable";
 import {View} from "./view";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
-import {Colors} from "./colors";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -448,6 +448,9 @@ export class HeroStateView implements View {
   private readonly healthText: PIXI.Text;
   private readonly coinsText: PIXI.Text;
 
+  private readonly healthSub: Subscription;
+  private readonly coinsSub: Subscription;
+
   constructor(heroState: HeroState) {
     this.container = new PIXI.Container();
     this.heroState = heroState;
@@ -475,8 +478,8 @@ export class HeroStateView implements View {
     this.coinsText.position.set(0, HEALTH_HEIGHT + (HEALTH_BORDER * 3));
     this.container.addChild(this.coinsText);
 
-    heroState.health.subscribe(this.updateHealth.bind(this));
-    heroState.coins.subscribe(this.updateCoins.bind(this));
+    this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
+    this.coinsSub = heroState.coins.subscribe(this.updateCoins.bind(this));
   }
 
   updateHealth(health: number) {
@@ -506,9 +509,12 @@ export class HeroStateView implements View {
   }
 
   destroy(): void {
-    this.heroState.health.unsubscribe(this.updateHealth);
-    this.heroState.coins.unsubscribe(this.updateCoins);
+    console.log("destroy");
+    this.healthSub.unsubscribe();
+    this.coinsSub.unsubscribe();
 
+    this.coinsText.destroy();
+    this.healthText.destroy();
     this.healthRect.destroy();
     this.container.destroy();
   }

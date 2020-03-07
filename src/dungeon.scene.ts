@@ -70,6 +70,7 @@ export class DungeonScene implements Scene {
   }
 
   destroy(): void {
+    console.log("destroy");
     this.bossHealthView?.destroy();
     this.titleView.destroy();
     this.healthView.destroy();

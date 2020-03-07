@@ -122,9 +122,10 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     dungeon.hero.resetPosition(x, y);
   }
 
-  protected placeMonsters(dungeon: DungeonLevel, count: number): void {
+  protected placeMonsters(dungeon: DungeonLevel): void {
     const min_hero_distance = 10;
     const hero = dungeon.hero;
+    const monster_percent = 3;
 
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
@@ -138,7 +139,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       }
     }
 
-    for (let m = 0; m < count && free.length > 0; m++) {
+    const monster_count = Math.floor(free.length * monster_percent / 100);
+    for (let m = 0; m < monster_count && free.length > 0; m++) {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
       const name = this.rng.choice(tinyMonsterNames);
@@ -177,7 +179,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeDrop(dungeon: DungeonLevel, count: number): void {
+  protected placeDrop(dungeon: DungeonLevel): void {
     const free: DungeonCellView[] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
@@ -188,7 +190,10 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       }
     }
 
-    for (let d = 0; d < count && free.length > 0; d++) {
+    const drop_percent = 3;
+    const drop_count = Math.floor(free.length * drop_percent / 100.0);
+
+    for (let d = 0; d < drop_count && free.length > 0; d++) {
       const i = this.rng.nextRange(0, free.length);
       free.splice(i, 1)[0].randomDrop();
     }

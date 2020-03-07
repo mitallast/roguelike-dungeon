@@ -1,4 +1,5 @@
 import {RNG} from "./rng";
+import {yields} from "./concurency";
 
 // origin: https://github.com/mxgmn/WaveFunctionCollapse/
 
@@ -201,12 +202,6 @@ export abstract class Model {
 
   debug: boolean = false;
 
-  private async yield(): Promise<void> {
-    return await new Promise<void>((resolve => {
-      setTimeout(() => resolve(), 0);
-    }));
-  }
-
   async run(seed: number = null, limit: number = 0): Promise<Resolution> {
     if (this.wave === null) this.init();
     this.clear();
@@ -214,7 +209,7 @@ export abstract class Model {
     this.debug = false;
     for (let i = 0; i < limit || limit === 0; i++) {
       if (i % 50 === 0) {
-        await this.yield();
+        await yields();
       }
 
       // this.debug = this.debug || i >= 57;

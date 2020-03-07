@@ -1,5 +1,6 @@
 import {ImmutableRect, MutableRect, Rect} from "./geometry";
 import {RNG} from "./rng";
+import {yields} from "./concurency";
 
 const room_min_w = 5;
 const room_min_h = 5;
@@ -30,6 +31,12 @@ export class TunnelingAlgorithm {
   private readonly width: number;
   private readonly height: number;
 
+  private percentValue: number;
+
+  get percent(): number {
+    return this.percentValue;
+  }
+
   constructor(rng: RNG, width: number, height: number) {
     this.rng = rng;
     this.width = width;
@@ -50,17 +57,29 @@ export class TunnelingAlgorithm {
       !this.isOverlap(rect);
   }
 
-  generate(total: number): boolean {
+  async generate(total: number): Promise<boolean> {
     console.log("generate rooms");
     // clear
+    this.percentValue = 0;
     this.rooms.splice(0, this.rooms.length);
     this.corridorsH.splice(0, this.corridorsH.length);
     this.corridorsV.splice(0, this.corridorsV.length);
 
+    let count = 0;
     if (this.generateFirstRoom()) {
-      if (this.generateNextRooms(total)) {
-        return true;
+      count++;
+      this.percentValue = count * 100.0 / total;
+      await yields(100);
+
+      while (this.rooms.length < total) {
+        if (!this.generateNextRoom()) {
+          return false;
+        }
+        count++;
+        this.percentValue = count * 100.0 / total;
+        await yields(100);
       }
+      return true;
     }
     return false;
   }
@@ -86,15 +105,6 @@ export class TunnelingAlgorithm {
       this.rooms.push(room);
       return true;
     }
-  }
-
-  private generateNextRooms(total: number): boolean {
-    while (this.rooms.length < total) {
-      if (!this.generateNextRoom()) {
-        return false;
-      }
-    }
-    return true;
   }
 
   private generateNextRoom(): boolean {

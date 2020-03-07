@@ -1,3 +1,7 @@
+export interface Subscription {
+  unsubscribe(): void;
+}
+
 export class Observable<T> {
   private value: T;
   private listeners: ((value: T) => void)[] = [];
@@ -20,12 +24,18 @@ export class Observable<T> {
     return this.value;
   }
 
-  subscribe(listener: (value: T) => void) {
-    this.listeners.push(listener);
-    listener(this.value);
+  subscribe(listener: (value: T) => void): Subscription {
+    const self = this;
+    self.listeners.push(listener);
+    listener(self.value);
+    return {
+      unsubscribe(): void {
+        self.unsubscribe(listener);
+      }
+    };
   }
 
-  unsubscribe(listener: (value: T) => void) {
+  unsubscribe(listener: (value: T) => void): void {
     this.listeners = this.listeners.filter(c => c !== listener);
   }
 }

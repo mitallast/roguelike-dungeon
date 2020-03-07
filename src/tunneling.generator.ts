@@ -5,8 +5,10 @@ import {BaseDungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {SceneController} from "./scene";
 
 export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
+  private gen: TunnelingAlgorithm;
+
   get percent(): number {
-    return 10.0;
+    return this.gen?.percent;
   }
 
   constructor(controller: SceneController) {
@@ -14,19 +16,17 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
   }
 
   async generate(options: GenerateOptions): Promise<DungeonLevel> {
-    const monsters_total = 3 + options.level;
-    const drop_total = 5 + options.level;
+    const rooms_total = 1 + options.level;
     const is_boss = options.level % 5 === 0;
     const level_size = 200;
 
-    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, level_size, level_size);
+    this.gen = new TunnelingAlgorithm(this.rng, level_size, level_size);
+    await this.gen.generate(rooms_total);
 
-    const rooms_total = 1 + dungeon.level;
-    const gen = new TunnelingAlgorithm(this.rng, dungeon.width, dungeon.height);
-    gen.generate(rooms_total);
-    gen.rooms.forEach(r => TunnelingDungeonGenerator.fillRoom(dungeon, r));
-    gen.corridorsH.forEach(r => TunnelingDungeonGenerator.fillCorridorH(dungeon, r));
-    gen.corridorsV.forEach(r => TunnelingDungeonGenerator.fillCorridorV(dungeon, r));
+    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, level_size, level_size);
+    this.gen.rooms.forEach(r => TunnelingDungeonGenerator.fillRoom(dungeon, r));
+    this.gen.corridorsH.forEach(r => TunnelingDungeonGenerator.fillCorridorH(dungeon, r));
+    this.gen.corridorsV.forEach(r => TunnelingDungeonGenerator.fillCorridorV(dungeon, r));
 
     this.replaceFloorRandomly(dungeon);
     this.replaceWallRandomly(dungeon);
@@ -34,12 +34,12 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     this.placeHero(dungeon);
     this.placeLadder(dungeon);
 
-    this.placeMonsters(dungeon, monsters_total);
+    this.placeMonsters(dungeon);
     if (is_boss) {
       this.placeBoss(dungeon);
     }
 
-    this.placeDrop(dungeon, drop_total);
+    this.placeDrop(dungeon);
 
     dungeon.container.sortChildren();
     dungeon.light.loadMap();

@@ -1,7 +1,7 @@
 import {UsableDrop} from "./drop";
 import {HeroView} from "./hero";
 import {View} from "./view";
-import {Observable} from "./observable";
+import {Observable, Subscription} from "./observable";
 import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
@@ -126,6 +126,9 @@ export class InventoryCellView implements View {
   private readonly counter: PIXI.Text;
   private sprite: PIXI.Sprite;
 
+  private readonly itemSub: Subscription;
+  private readonly countSub: Subscription;
+
   constructor(cell: InventoryCell) {
     this.cell = cell;
     this.container = new PIXI.Container();
@@ -146,13 +149,13 @@ export class InventoryCellView implements View {
     this.counter.position.set(CELL_SIZE - BORDER, 0);
     this.container.addChild(this.counter);
 
-    this.cell.item.subscribe(this.updateItem.bind(this));
-    this.cell.count.subscribe(this.updateCounter.bind(this));
+    this.itemSub = this.cell.item.subscribe(this.updateItem.bind(this));
+    this.countSub = this.cell.count.subscribe(this.updateCounter.bind(this));
   }
 
   destroy(): void {
-    this.cell.item.unsubscribe(this.updateItem);
-    this.cell.count.unsubscribe(this.updateCounter);
+    this.itemSub.unsubscribe();
+    this.countSub.unsubscribe();
     this.counter.destroy();
     this.container.destroy();
   }

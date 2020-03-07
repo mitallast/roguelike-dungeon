@@ -74,16 +74,14 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     this.placeHero(dungeon);
     this.placeLadder(dungeon);
 
-    const monsters_total = 3 + options.level;
-    const drop_total = 5 + options.level;
     const is_boss = options.level % 5 === 0;
 
-    this.placeMonsters(dungeon, monsters_total);
+    this.placeMonsters(dungeon);
     if (is_boss) {
       this.placeBoss(dungeon);
     }
 
-    this.placeDrop(dungeon, drop_total);
+    this.placeDrop(dungeon);
 
     dungeon.container.sortChildren();
     dungeon.light.loadMap();
