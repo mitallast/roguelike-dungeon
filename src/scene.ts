@@ -2,8 +2,8 @@ import {RNG} from "./rng";
 import {Joystick} from "./input";
 import {TileRegistry} from "./tilemap";
 import {YouDeadScene} from "./dead.scene";
+import {GenerateOptions} from "./dungeon.generator";
 import {GenerateDungeonScreen} from "./generate.scene";
-import {HeroState} from "./hero";
 import {DungeonScene} from "./dungeon.scene";
 import {DungeonLevel} from "./dungeon.level";
 import {KeyBindScene} from "./keybind.scene";
@@ -57,8 +57,8 @@ export class SceneController {
     this.scene = new YouDeadScene(this);
   }
 
-  generateDungeon(level: number, hero: HeroState): void {
-    this.scene = new GenerateDungeonScreen(this, hero, level);
+  generateDungeon(options: GenerateOptions): void {
+    this.scene = new GenerateDungeonScreen(this, options);
   }
 
   dungeon(dungeon: DungeonLevel): void {

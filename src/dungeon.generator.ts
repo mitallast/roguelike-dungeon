@@ -6,27 +6,30 @@ import {SceneController} from "./scene";
 import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {BossMonster, mossMonsterNames} from "./boss.monster";
 
+export interface GenerateOptions {
+  readonly level: number
+  readonly hero: HeroState
+}
+
 export interface DungeonGenerator {
   readonly percent: number;
-  generate(level: number): Promise<DungeonLevel>;
+  generate(options: GenerateOptions): Promise<DungeonLevel>;
 }
 
 export abstract class BaseDungeonGenerator implements DungeonGenerator {
   protected readonly rng: RNG;
   protected readonly registry: TileRegistry;
   protected readonly controller: SceneController;
-  protected readonly heroState: HeroState;
 
   abstract readonly percent: number;
 
-  protected constructor(controller: SceneController, heroState: HeroState) {
+  protected constructor(controller: SceneController) {
     this.rng = controller.rng;
     this.registry = controller.registry;
     this.controller = controller;
-    this.heroState = heroState;
   }
 
-  abstract generate(level: number): Promise<DungeonLevel>;
+  abstract generate(options: GenerateOptions): Promise<DungeonLevel>;
 
   protected replaceFloorRandomly(dungeon: DungeonLevel): void {
     const replacements = ['floor_2.png', 'floor_3.png', 'floor_4.png', 'floor_5.png', 'floor_6.png', 'floor_7.png', 'floor_8.png'];

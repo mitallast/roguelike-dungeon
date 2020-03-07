@@ -1,28 +1,25 @@
-import {HeroState} from "./hero";
 import {Rect} from "./geometry";
 import {DungeonLevel} from "./dungeon.level";
 import {TunnelingAlgorithm} from "./tunneling";
-import {BaseDungeonGenerator} from "./dungeon.generator";
+import {BaseDungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {SceneController} from "./scene";
 
 export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
-  private readonly level_size: number;
-
   get percent(): number {
     return 10.0;
   }
 
-  constructor(controller: SceneController, heroState: HeroState, level_size: number = 200) {
-    super(controller, heroState);
-    this.level_size = level_size;
+  constructor(controller: SceneController) {
+    super(controller);
   }
 
-  async generate(level: number): Promise<DungeonLevel> {
-    const monsters_total = 3 + level;
-    const drop_total = 5 + level;
-    const is_boss = level % 5 === 0;
+  async generate(options: GenerateOptions): Promise<DungeonLevel> {
+    const monsters_total = 3 + options.level;
+    const drop_total = 5 + options.level;
+    const is_boss = options.level % 5 === 0;
+    const level_size = 200;
 
-    const dungeon = new DungeonLevel(this.controller, this.heroState, level, this.level_size, this.level_size);
+    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, level_size, level_size);
 
     const rooms_total = 1 + dungeon.level;
     const gen = new TunnelingAlgorithm(this.rng, dungeon.width, dungeon.height);

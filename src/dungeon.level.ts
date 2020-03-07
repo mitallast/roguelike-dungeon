@@ -99,7 +99,10 @@ export class DungeonLevel {
 
   exit() {
     this.stop = true;
-    this.controller.generateDungeon(this.level + 1, this.hero.heroState);
+    this.controller.generateDungeon({
+      level: this.level + 1,
+      hero: this.hero.heroState,
+    });
   };
 
   dead() {

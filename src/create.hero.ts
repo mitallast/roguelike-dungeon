@@ -131,7 +131,10 @@ export class SelectHeroScene implements Scene {
       const name = heroMonsterNames[this.selected];
       const weapon = WeaponConfig.configs[0].create(this.controller.registry);
       const hero = new HeroState(name, weapon);
-      this.controller.generateDungeon(1, hero);
+      this.controller.generateDungeon({
+        level: 1,
+        hero: hero
+      });
     }
   }
 }

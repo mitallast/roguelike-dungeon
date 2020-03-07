@@ -1,35 +1,30 @@
 import {Scene, SceneController} from "./scene";
-import {HeroState} from "./hero";
-import {DungeonGenerator} from "./dungeon.generator";
+import {DungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {TunnelingDungeonGenerator} from "./tunneling.generator";
 import {WfcDungeonGenerator} from "./wfc.generator";
 import {DungeonLevel} from "./dungeon.level";
+import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
-import {Colors} from "./colors";
 
 export class GenerateDungeonScreen implements Scene {
   private readonly controller: SceneController;
-  private readonly hero: HeroState;
-  private readonly level: number;
   private readonly generator: DungeonGenerator;
   private promise: Promise<DungeonLevel>;
 
   private title: PIXI.Text;
   private progressBar: PIXI.Graphics;
 
-  constructor(controller: SceneController, hero: HeroState, level: number) {
+  constructor(controller: SceneController, options: GenerateOptions) {
     this.controller = controller;
-    this.hero = hero;
-    this.level = level;
 
-    if (this.level <= 5) {
-      this.generator = new TunnelingDungeonGenerator(this.controller, this.hero);
+    if (options.level <= 5) {
+      this.generator = new TunnelingDungeonGenerator(this.controller);
     } else {
-      this.generator = new WfcDungeonGenerator(this.controller, this.hero);
+      this.generator = new WfcDungeonGenerator(this.controller);
     }
 
-    this.promise = this.generator.generate(this.level);
+    this.promise = this.generator.generate(options);
     this.promise.then((dungeon) => this.controller.dungeon(dungeon));
     this.progressBar = new PIXI.Graphics();
   }

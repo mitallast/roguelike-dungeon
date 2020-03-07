@@ -1,25 +1,22 @@
-import {HeroState} from './hero';
 import {DungeonLevel} from './dungeon.level';
-import {BaseDungeonGenerator} from './dungeon.generator';
+import {BaseDungeonGenerator, GenerateOptions} from './dungeon.generator';
 import {BorderConstraint, Color, Constraint, OverlappingModel, PathConstraint, Resolution, Tile} from './wfc';
 import {SceneController} from "./scene";
 
 export class WfcDungeonGenerator extends BaseDungeonGenerator {
-  private readonly level_size: number;
   private model: OverlappingModel<TileSet>;
 
   get percent(): number {
     return this.model?.percent || 0;
   }
 
-  constructor(controller: SceneController, heroState: HeroState, level_size: number = 70) {
-    super(controller, heroState);
-    this.level_size = level_size;
+  constructor(controller: SceneController) {
+    super(controller);
   }
 
-  async generate(level: number): Promise<DungeonLevel> {
-    const options: TileSetOptions[][] = this.controller.app.loader.resources['sample.json'].data;
-    const input: Tile<TileSet>[][] = options.map(m => m.map(o => new TileSet(o).tile));
+  async generate(options: GenerateOptions): Promise<DungeonLevel> {
+    const sample: TileSetOptions[][] = this.controller.app.loader.resources['sample.json'].data;
+    const input: Tile<TileSet>[][] = sample.map(m => m.map(o => new TileSet(o).tile));
     const floorTiles: Tile<TileSet>[] = [];
     for (let row of input) {
       for (let tile of row) {
@@ -35,7 +32,8 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
       new BorderConstraint(new TileSet({color: 0x000000}).tile),
       new PathConstraint(floorTiles)
     ];
-    const model = this.model = new OverlappingModel<TileSet>(input, 2, this.level_size, this.level_size, true, false, 1, 0, constraints);
+    const level_size = 70;
+    const model = this.model = new OverlappingModel<TileSet>(input, 2, level_size, level_size, true, false, 1, 0, constraints);
 
     console.time("model loop run");
     let state;
@@ -52,7 +50,7 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    const dungeon = new DungeonLevel(this.controller, this.heroState, level, model.FMX, model.FMY);
+    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, model.FMX, model.FMY);
     for (let y = 0; y < model.FMY; y++) {
       let dy = y < model.FMY - model.N + 1 ? 0 : model.N - 1;
       for (let x = 0; x < model.FMX; x++) {
@@ -76,9 +74,9 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     this.placeHero(dungeon);
     this.placeLadder(dungeon);
 
-    const monsters_total = 3 + level;
-    const drop_total = 5 + level;
-    const is_boss = level % 5 === 0;
+    const monsters_total = 3 + options.level;
+    const drop_total = 5 + options.level;
+    const is_boss = options.level % 5 === 0;
 
     this.placeMonsters(dungeon, monsters_total);
     if (is_boss) {
