@@ -45,7 +45,7 @@ export class HeroView implements Monster, View {
   private readonly level: DungeonLevel;
   private readonly registry: TileRegistry;
   private readonly joystick: Joystick;
-  private readonly heroState: HeroState;
+  readonly heroState: HeroState;
   private readonly wrapper: MovingMonsterWrapper;
 
   x: number = -1;
@@ -65,8 +65,8 @@ export class HeroView implements Monster, View {
 
   constructor(level: DungeonLevel, heroState: HeroState) {
     this.level = level;
-    this.registry = level.scene.registry;
-    this.joystick = level.scene.joystick;
+    this.registry = level.controller.registry;
+    this.joystick = level.controller.joystick;
     this.wrapper = new MovingMonsterWrapper(this);
     this.heroState = heroState;
     this.container = new PIXI.Container();

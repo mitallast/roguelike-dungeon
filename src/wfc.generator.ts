@@ -1,19 +1,24 @@
 import {HeroState} from './hero';
-import {DungeonScene} from './dungeon';
 import {DungeonLevel} from './dungeon.level';
 import {BaseDungeonGenerator} from './dungeon.generator';
 import {BorderConstraint, Color, Constraint, OverlappingModel, PathConstraint, Resolution, Tile} from './wfc';
+import {SceneController} from "./scene";
 
 export class WfcDungeonGenerator extends BaseDungeonGenerator {
   private readonly level_size: number;
+  private model: OverlappingModel<TileSet>;
 
-  constructor(scene: DungeonScene, heroState: HeroState, level_size: number = 70) {
-    super(scene, heroState);
+  get percent(): number {
+    return this.model?.percent || 0;
+  }
+
+  constructor(controller: SceneController, heroState: HeroState, level_size: number = 70) {
+    super(controller, heroState);
     this.level_size = level_size;
   }
 
-  generate(level: number): DungeonLevel {
-    const options: TileSetOptions[][] = this.scene.controller.app.loader.resources['sample.json'].data;
+  async generate(level: number): Promise<DungeonLevel> {
+    const options: TileSetOptions[][] = this.controller.app.loader.resources['sample.json'].data;
     const input: Tile<TileSet>[][] = options.map(m => m.map(o => new TileSet(o).tile));
     const floorTiles: Tile<TileSet>[] = [];
     for (let row of input) {
@@ -30,13 +35,13 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
       new BorderConstraint(new TileSet({color: 0x000000}).tile),
       new PathConstraint(floorTiles)
     ];
-    const model = new OverlappingModel<TileSet>(input, 2, this.level_size, this.level_size, true, false, 1, 0, constraints);
+    const model = this.model = new OverlappingModel<TileSet>(input, 2, this.level_size, this.level_size, true, false, 1, 0, constraints);
 
     console.time("model loop run");
     let state;
     while (true) {
       console.time("model run");
-      state = model.run(null, 10000);
+      state = await model.run(null, 10000);
       console.timeEnd("model run");
       if (state !== Resolution.Decided) {
         console.error("failed run model");
@@ -47,7 +52,7 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    const dungeon = new DungeonLevel(this.scene, this.heroState, 1, model.FMX, model.FMY);
+    const dungeon = new DungeonLevel(this.controller, this.heroState, level, model.FMX, model.FMY);
     for (let y = 0; y < model.FMY; y++) {
       let dy = y < model.FMY - model.N + 1 ? 0 : model.N - 1;
       for (let x = 0; x < model.FMX; x++) {

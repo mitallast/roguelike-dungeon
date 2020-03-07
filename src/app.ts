@@ -2,7 +2,6 @@ import {Joystick} from "./input";
 import {TileRegistry} from "./tilemap";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
-import {KeyBindScene} from "./keybind.scene";
 import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
@@ -29,7 +28,7 @@ import "pixi-layers";
   const rng = new RNG();
   const joystick = new Joystick();
   const controller = new SceneController(rng, joystick, registry, app, stage);
-  controller.setScene(new KeyBindScene(controller));
+  controller.keyBind();
 
   app.renderer.backgroundColor = Colors.background;
   app.ticker.add((delta: number) => controller.tick(delta));

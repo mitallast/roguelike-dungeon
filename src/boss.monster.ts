@@ -56,7 +56,7 @@ export class BossMonster implements Monster, View {
 
   constructor(registry: TileRegistry, dungeon: DungeonLevel, x: number, y: number, name: string) {
     this.level = dungeon;
-    this.registry = dungeon.scene.registry;
+    this.registry = dungeon.controller.registry;
     this.wrapper = new MovingMonsterWrapper(this);
 
     this.bossState = new BossState(name, dungeon.level);

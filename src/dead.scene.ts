@@ -1,5 +1,4 @@
 import {Scene, SceneController} from "./scene";
-import {SelectHeroScene} from "./create.hero";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
@@ -15,7 +14,7 @@ export class YouDeadScene implements Scene {
     this.renderHelp();
   }
 
-  tick(delta: number): void {
+  update(delta: number): void {
     this.handleInput();
   }
 
@@ -56,7 +55,7 @@ export class YouDeadScene implements Scene {
   handleInput() {
     if (!this.controller.joystick.hit.processed) {
       this.controller.joystick.hit.reset();
-      this.controller.setScene(new SelectHeroScene(this.controller))
+      this.controller.selectHero();
     }
   }
 }

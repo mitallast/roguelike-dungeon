@@ -1,6 +1,5 @@
 import {DungeonCellView, DungeonLevel} from "./dungeon.level";
 import {RNG} from "./rng";
-import {DungeonScene} from "./dungeon";
 import {HeroState} from "./hero";
 import {TileRegistry} from "./tilemap";
 import {SceneController} from "./scene";
@@ -8,25 +7,26 @@ import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {BossMonster, mossMonsterNames} from "./boss.monster";
 
 export interface DungeonGenerator {
-  generate(level: number): DungeonLevel;
+  readonly percent: number;
+  generate(level: number): Promise<DungeonLevel>;
 }
 
 export abstract class BaseDungeonGenerator implements DungeonGenerator {
   protected readonly rng: RNG;
   protected readonly registry: TileRegistry;
   protected readonly controller: SceneController;
-  protected readonly scene: DungeonScene;
   protected readonly heroState: HeroState;
 
-  protected constructor(scene: DungeonScene, heroState: HeroState) {
-    this.rng = scene.controller.rng;
-    this.registry = scene.controller.registry;
-    this.controller = scene.controller;
-    this.scene = scene;
+  abstract readonly percent: number;
+
+  protected constructor(controller: SceneController, heroState: HeroState) {
+    this.rng = controller.rng;
+    this.registry = controller.registry;
+    this.controller = controller;
     this.heroState = heroState;
   }
 
-  abstract generate(level: number): DungeonLevel;
+  abstract generate(level: number): Promise<DungeonLevel>;
 
   protected replaceFloorRandomly(dungeon: DungeonLevel): void {
     const replacements = ['floor_2.png', 'floor_3.png', 'floor_4.png', 'floor_5.png', 'floor_6.png', 'floor_7.png', 'floor_8.png'];

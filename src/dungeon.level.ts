@@ -3,11 +3,11 @@ import {Coins, Drop, DropView, HealthBigFlask, HealthFlask, WeaponConfig} from "
 import {HeroState, HeroView} from "./hero";
 import {Monster} from "./monster";
 import {BossMonster} from "./boss.monster";
-import {DungeonScene} from "./dungeon";
 import {DungeonLightView} from "./dungeon.light";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
+import {SceneController} from "./scene";
 
 const TILE_SIZE = 16;
 
@@ -28,7 +28,7 @@ export const DungeonZIndexes: DungeonZIndexScheme = {
 };
 
 export class DungeonLevel {
-  readonly scene: DungeonScene;
+  readonly controller: SceneController;
 
   readonly level: number;
 
@@ -51,8 +51,8 @@ export class DungeonLevel {
 
   private stop: boolean = false;
 
-  constructor(scene: DungeonScene, heroState: HeroState, level: number, width: number, height: number) {
-    this.scene = scene;
+  constructor(controller: SceneController, heroState: HeroState, level: number, width: number, height: number) {
+    this.controller = controller;
     this.level = level;
     this.width = width;
     this.height = height;
@@ -99,12 +99,12 @@ export class DungeonLevel {
 
   exit() {
     this.stop = true;
-    this.scene.nextLevel();
+    this.controller.generateDungeon(this.level + 1, this.hero.heroState);
   };
 
   dead() {
     this.stop = true;
-    this.scene.dead();
+    this.controller.dead();
   }
 
   update(delta: number): void {
@@ -129,8 +129,8 @@ export class DungeonLevel {
 
     const t_x = this.hero.container.position.x;
     const t_y = this.hero.container.position.y;
-    const c_w = this.scene.controller.app.screen.width;
-    const c_h = this.scene.controller.app.screen.height;
+    const c_w = this.controller.app.screen.width;
+    const c_h = this.controller.app.screen.height;
     const p_x = (c_w >> 1) - t_x * this.scale;
     const p_y = (c_h >> 1) - t_y * this.scale;
 
@@ -244,8 +244,8 @@ export class DungeonCellView implements View {
     //         if remaining_distance < 0:
     //             return i
 
-    const rng = this.dungeon.scene.rng;
-    const registry = this.dungeon.scene.registry;
+    const rng = this.dungeon.controller.rng;
+    const registry = this.dungeon.controller.registry;
 
     const weight_coins = 20;
     const weight_health_flask = 10;
@@ -256,7 +256,7 @@ export class DungeonCellView implements View {
     let remaining_distance = rng.nextFloat() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
       const available = WeaponConfig.configs.filter(c => c.level <= this.dungeon.level);
-      this.drop = rng.choice(available).create(this.dungeon.scene.registry);
+      this.drop = rng.choice(available).create(this.dungeon.controller.registry);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
       this.drop = new HealthBigFlask(registry);
     } else if ((remaining_distance -= weight_health_flask) <= 0) {
@@ -270,10 +270,10 @@ export class DungeonCellView implements View {
   private sprite(name: string, zIndex: number): PIXI.Sprite | PIXI.AnimatedSprite {
     let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
     if (!name.endsWith('.png')) {
-      const anim = sprite = this.dungeon.scene.registry.animated(name);
+      const anim = sprite = this.dungeon.controller.registry.animated(name);
       anim.animationSpeed = 0.2;
     } else {
-      sprite = this.dungeon.scene.registry.sprite(name);
+      sprite = this.dungeon.controller.registry.sprite(name);
     }
     sprite.position.set(this.x * TILE_SIZE, this.y * TILE_SIZE);
     sprite.zIndex = zIndex;

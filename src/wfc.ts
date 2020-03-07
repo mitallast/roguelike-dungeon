@@ -124,9 +124,20 @@ export abstract class Model {
   status: Resolution;
   protected deferredConstraintsStep: boolean;
 
-  constructor(width: number, height: number) {
+  protected constructor(width: number, height: number) {
     this.FMX = width;
     this.FMY = height;
+  }
+
+  get percent(): number {
+    let count = 0;
+    for (let i = 0; i < this.wave.length; i++) {
+      if (this.sumsOfOnes[i] === 1) {
+        count++;
+      }
+    }
+
+    return count * 100.0 / this.wave.length;
   }
 
   init(): void {
@@ -190,12 +201,22 @@ export abstract class Model {
 
   debug: boolean = false;
 
-  run(seed: number = null, limit: number = 0): Resolution {
+  private async yield(): Promise<void> {
+    return await new Promise<void>((resolve => {
+      setTimeout(() => resolve(), 0);
+    }));
+  }
+
+  async run(seed: number = null, limit: number = 0): Promise<Resolution> {
     if (this.wave === null) this.init();
     this.clear();
     this.random = new RNG(seed);
     this.debug = false;
     for (let i = 0; i < limit || limit === 0; i++) {
+      if (i % 50 === 0) {
+        await this.yield();
+      }
+
       // this.debug = this.debug || i >= 57;
       if (this.debug) {
         console.log("step", i);
@@ -1480,7 +1501,7 @@ export class TestOverlappingModel {
     ];
 
     let model = new OverlappingModel(sample, N, width, height, periodicInput, periodicOutput, symmetry, ground, []);
-    if (model.run() !== Resolution.Decided) {
+    if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {
       console.log("success");
@@ -1539,7 +1560,7 @@ export class TestOverlappingModel {
     let border = new BorderConstraint(w);
     let path = new PathConstraint([r]);
     let model = new OverlappingModel(sample, N, width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
-    if (model.run() !== Resolution.Decided) {
+    if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {
       console.log("success");

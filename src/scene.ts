@@ -1,12 +1,19 @@
 import {RNG} from "./rng";
 import {Joystick} from "./input";
 import {TileRegistry} from "./tilemap";
+import {YouDeadScene} from "./dead.scene";
+import {GenerateDungeonScreen} from "./generate.scene";
+import {HeroState} from "./hero";
+import {DungeonScene} from "./dungeon.scene";
+import {DungeonLevel} from "./dungeon.level";
+import {KeyBindScene} from "./keybind.scene";
+import {SelectHeroScene} from "./create.hero";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
 export interface Scene {
   init(): void;
-  tick(delta: number): void;
+  update(delta: number): void;
   destroy(): void
 }
 
@@ -16,7 +23,7 @@ export class SceneController {
   readonly registry: TileRegistry;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
-  private scene: Scene;
+  private sceneView: Scene;
 
   constructor(
     rng: RNG,
@@ -32,15 +39,33 @@ export class SceneController {
     this.stage = stage;
   }
 
-  setScene(scene: Scene): void {
-    if (this.scene) {
-      this.scene.destroy();
-    }
-    this.scene = scene;
-    this.scene.init();
+  private set scene(scene: Scene) {
+    this.sceneView?.destroy();
+    this.sceneView = scene;
+    this.sceneView.init();
+  }
+
+  keyBind(): void {
+    this.scene = new KeyBindScene(this);
+  }
+
+  selectHero(): void {
+    this.scene = new SelectHeroScene(this);
+  }
+
+  dead(): void {
+    this.scene = new YouDeadScene(this);
+  }
+
+  generateDungeon(level: number, hero: HeroState): void {
+    this.scene = new GenerateDungeonScreen(this, hero, level);
+  }
+
+  dungeon(dungeon: DungeonLevel): void {
+    this.scene = new DungeonScene(this, dungeon);
   }
 
   tick(delta: number): void {
-    this.scene.tick(delta);
+    this.sceneView.update(delta);
   }
 }

@@ -1,40 +1,24 @@
-import {Joystick} from "./input";
-import {TileRegistry} from "./tilemap";
-import {HeroState, HeroStateView} from "./hero";
-import {DungeonGenerator} from "./dungeon.generator";
-import {TunnelingDungeonGenerator} from "./tunneling.generator";
+import {HeroStateView} from "./hero";
 import {DungeonLevel, DungeonTitleView} from "./dungeon.level";
-import {YouDeadScene} from "./dead.scene";
-import {RNG} from "./rng";
 import {Scene, SceneController} from "./scene";
 import {InventoryView} from "./inventory";
 import {BossHealthView} from "./boss.monster";
-import {WfcDungeonGenerator} from "./wfc.generator";
 
 export class DungeonScene implements Scene {
-  readonly rng: RNG;
-  readonly joystick: Joystick;
-  readonly registry: TileRegistry;
-  readonly controller: SceneController;
-  private readonly hero: HeroState;
-
-  private level = 1;
-  private dungeon: DungeonLevel;
+  private readonly controller: SceneController;
+  private readonly dungeon: DungeonLevel;
   private readonly titleView: DungeonTitleView;
   private readonly inventoryView: InventoryView;
   private readonly healthView: HeroStateView;
-  private bossHealthView: BossHealthView;
+  private bossHealthView?: BossHealthView;
 
-  constructor(controller: SceneController, hero: HeroState) {
-    this.rng = controller.rng;
-    this.joystick = controller.joystick;
-    this.registry = controller.registry;
+  constructor(controller: SceneController, dungeon: DungeonLevel) {
     this.controller = controller;
-    this.hero = hero;
+    this.dungeon = dungeon;
 
     this.titleView = new DungeonTitleView();
-    this.inventoryView = new InventoryView(hero.inventory);
-    this.healthView = new HeroStateView(hero);
+    this.inventoryView = new InventoryView(dungeon.hero.heroState.inventory);
+    this.healthView = new HeroStateView(dungeon.hero.heroState);
   }
 
   init(): void {
@@ -54,39 +38,7 @@ export class DungeonScene implements Scene {
     this.healthView.container.zIndex = 12;
     this.controller.stage.addChild(this.healthView.container);
 
-    this.nextLevel();
-  }
-
-  tick(delta: number): void {
-    this.dungeon.update(delta);
-    this.inventoryView.update(delta);
-    this.healthView.update(delta);
-  }
-
-  destroy(): void {
-    this.bossHealthView?.destroy();
-    this.titleView.destroy();
-    this.healthView.destroy();
-    this.inventoryView.destroy();
-    this.dungeon.destroy();
-    this.controller.stage.removeChildren();
-  }
-
-  nextLevel() {
-    this.bossHealthView?.destroy();
-    this.bossHealthView = null;
-    this.dungeon?.destroy();
-
-    let generator: DungeonGenerator;
-    if (this.level <= 5) {
-      generator = new TunnelingDungeonGenerator(this, this.hero);
-    } else {
-      generator = new WfcDungeonGenerator(this, this.hero);
-    }
-
-    this.dungeon = generator.generate(this.level);
-    this.titleView.setLevel(this.level);
-    this.level++;
+    this.titleView.setLevel(this.dungeon.level);
 
     this.dungeon.container.zIndex = 0;
     this.controller.stage.addChild(this.dungeon.container);
@@ -109,7 +61,20 @@ export class DungeonScene implements Scene {
     this.controller.stage.sortChildren();
   }
 
-  dead() {
-    this.controller.setScene(new YouDeadScene(this.controller));
+  update(delta: number): void {
+    this.dungeon.update(delta);
+    this.inventoryView.update(delta);
+    this.healthView.update(delta);
+    this.titleView.update(delta);
+    this.bossHealthView?.update(delta);
+  }
+
+  destroy(): void {
+    this.bossHealthView?.destroy();
+    this.titleView.destroy();
+    this.healthView.destroy();
+    this.inventoryView.destroy();
+    this.dungeon.destroy();
+    this.controller.stage.removeChildren();
   }
 }

@@ -44,7 +44,7 @@ export class TinyMonster implements Monster, View {
 
   constructor(level: DungeonLevel, x: number, y: number, name: string) {
     this.level = level;
-    this.registry = level.scene.registry;
+    this.registry = level.controller.registry;
     this.wrapper = new MovingMonsterWrapper(this);
     this.name = name;
     this.container = new PIXI.Container();

@@ -1,7 +1,6 @@
 import {Scene, SceneController} from "./scene";
 import {heroMonsterNames, HeroState} from "./hero";
 import {WeaponConfig} from "./drop";
-import {DungeonScene} from "./dungeon";
 import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
@@ -21,7 +20,7 @@ export class SelectHeroScene implements Scene {
     this.renderHeroes();
   }
 
-  tick(delta: number): void {
+  update(delta: number): void {
     this.handleInput();
     this.updateHeroes();
   }
@@ -132,8 +131,7 @@ export class SelectHeroScene implements Scene {
       const name = heroMonsterNames[this.selected];
       const weapon = WeaponConfig.configs[0].create(this.controller.registry);
       const hero = new HeroState(name, weapon);
-      const scene = new DungeonScene(this.controller, hero);
-      this.controller.setScene(scene);
+      this.controller.generateDungeon(1, hero);
     }
   }
 }
