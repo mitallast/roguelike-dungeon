@@ -7,7 +7,7 @@ import {GenerateDungeonScreen} from "./generate.scene";
 import {DungeonScene} from "./dungeon.scene";
 import {DungeonLevel} from "./dungeon.level";
 import {KeyBindScene} from "./keybind.scene";
-import {SelectHeroScene} from "./create.hero";
+import {SelectHeroScene} from "./select.hero.scene";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 import {View} from "./view";
