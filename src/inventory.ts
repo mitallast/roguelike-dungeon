@@ -123,7 +123,7 @@ export class InventoryCellView implements View {
   private readonly cell: InventoryCell;
   readonly container: PIXI.Container;
   private readonly background: PIXI.Graphics;
-  private readonly counter: PIXI.Text;
+  private readonly counter: PIXI.BitmapText;
   private sprite: PIXI.Sprite;
 
   private readonly itemSub: Subscription;
@@ -139,13 +139,8 @@ export class InventoryCellView implements View {
     this.background.endFill();
     this.container.addChild(this.background);
 
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 10,
-      fill: "white"
-    });
-    this.counter = new PIXI.Text("0", style);
-    this.counter.anchor.set(1, 0);
+    this.counter = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
+    this.counter.anchor = new PIXI.Point(1, 0);
     this.counter.position.set(CELL_SIZE - BORDER, 0);
     this.container.addChild(this.counter);
 
