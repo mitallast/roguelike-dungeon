@@ -23,24 +23,13 @@ export class KeyBindScene implements Scene {
   }
 
   renderTitle() {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 100,
-      fill: "white"
-    });
-    let title = new PIXI.Text("ROGUELIKE DUNGEON", style);
-    title.anchor.set(0.5, 0);
+    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+    title.anchor = 0.5;
     title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
   }
 
   renderHelp() {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 20,
-      fill: "white"
-    });
-
     const bindings = [
       "WASD - top, left, bottom, right",
       "F - action",
@@ -52,7 +41,7 @@ export class KeyBindScene implements Scene {
     for (let i = 0; i < bindings.length; i++) {
       const text = bindings[i];
       if (text.length > 0) {
-        const line = new PIXI.Text(text, style);
+        const line = new PIXI.BitmapText(text, {font: {name: 'alagard', size: 32}});
         line.position.set(40, 200 + i * 30);
         this.controller.stage.addChild(line);
       }

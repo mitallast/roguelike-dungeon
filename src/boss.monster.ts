@@ -1,4 +1,4 @@
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
@@ -37,7 +37,7 @@ export class BossState {
 }
 
 export class BossMonster implements Monster, View {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly level: DungeonLevel;
   private readonly wrapper: MovingMonsterWrapper;
 
@@ -54,9 +54,9 @@ export class BossMonster implements Monster, View {
   private sprite: PIXI.AnimatedSprite;
   readonly container: PIXI.Container;
 
-  constructor(registry: TileRegistry, dungeon: DungeonLevel, x: number, y: number, name: string) {
+  constructor(resources: Resources, dungeon: DungeonLevel, x: number, y: number, name: string) {
     this.level = dungeon;
-    this.registry = dungeon.controller.registry;
+    this.resources = dungeon.controller.resources;
     this.wrapper = new MovingMonsterWrapper(this);
 
     this.bossState = new BossState(name, dungeon.level);
@@ -83,7 +83,7 @@ export class BossMonster implements Monster, View {
 
   private setSprite(postfix: string): void {
     this.sprite?.destroy();
-    this.sprite = this.registry.animated(this.bossState.name + postfix);
+    this.sprite = this.resources.animated(this.bossState.name + postfix);
     this.sprite.loop = false;
     this.sprite.animationSpeed = this.bossState.speed;
     this.sprite.anchor.set(0, 1);
@@ -303,7 +303,7 @@ export class BossHealthView implements View {
   readonly container: PIXI.Container;
   private readonly boss: BossState;
   private readonly healthRect: PIXI.Graphics;
-  private readonly healthText: PIXI.Text;
+  private readonly healthText: PIXI.BitmapText;
 
   private readonly width: number;
   private readonly height: number;
@@ -326,14 +326,9 @@ export class BossHealthView implements View {
     this.healthRect = new PIXI.Graphics();
     this.container.addChild(this.healthRect);
 
-    const style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 16,
-      fill: "white"
-    });
-    this.healthText = new PIXI.Text("0", style);
-    this.healthText.anchor.set(0.5, 0.5);
-    this.healthText.position.set(0, HEALTH_BORDER + (HEALTH_HEIGHT >> 1) - 2);
+    this.healthText = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
+    this.healthText.anchor = new PIXI.Point(0.5, 0.5);
+    this.healthText.position.set(0, HEALTH_BORDER + (HEALTH_HEIGHT >> 1));
     this.container.addChild(this.healthText);
 
     this.healthSub = boss.health.subscribe(this.updateHealth.bind(this));

@@ -248,7 +248,7 @@ export class DungeonCellView implements View {
     //             return i
 
     const rng = this.dungeon.controller.rng;
-    const registry = this.dungeon.controller.registry;
+    const resources = this.dungeon.controller.resources;
 
     const weight_coins = 20;
     const weight_health_flask = 10;
@@ -259,13 +259,13 @@ export class DungeonCellView implements View {
     let remaining_distance = rng.nextFloat() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
       const available = WeaponConfig.configs.filter(c => c.level <= this.dungeon.level);
-      this.drop = rng.choice(available).create(this.dungeon.controller.registry);
+      this.drop = rng.choice(available).create(this.dungeon.controller.resources);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
-      this.drop = new HealthBigFlask(registry);
+      this.drop = new HealthBigFlask(resources);
     } else if ((remaining_distance -= weight_health_flask) <= 0) {
-      this.drop = new HealthFlask(registry);
+      this.drop = new HealthFlask(resources);
     } else if ((remaining_distance - weight_coins) <= 0) {
-      this.drop = new Coins(rng, registry);
+      this.drop = new Coins(rng, resources);
     }
     return this.hasDrop;
   };
@@ -273,10 +273,10 @@ export class DungeonCellView implements View {
   private sprite(name: string, zIndex: number): PIXI.Sprite | PIXI.AnimatedSprite {
     let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
     if (!name.endsWith('.png')) {
-      const anim = sprite = this.dungeon.controller.registry.animated(name);
+      const anim = sprite = this.dungeon.controller.resources.animated(name);
       anim.animationSpeed = 0.2;
     } else {
-      sprite = this.dungeon.controller.registry.sprite(name);
+      sprite = this.dungeon.controller.resources.sprite(name);
     }
     sprite.position.set(this.x * TILE_SIZE, this.y * TILE_SIZE);
     sprite.zIndex = zIndex;
@@ -307,17 +307,13 @@ export class DungeonCellView implements View {
 
 export class DungeonTitleView implements View {
   readonly container: PIXI.Container;
-  private readonly title: PIXI.Text;
+  private readonly title: PIXI.BitmapText;
 
   constructor() {
     this.container = new PIXI.Container();
-    const style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 20,
-      fill: "white"
-    });
-    this.title = new PIXI.Text("", style);
-    this.title.anchor.set(0.5, 0);
+    this.title = new PIXI.BitmapText("", {font: {name: 'alagard', size: 32}});
+    this.title.anchor = 0.5;
+    this.title.position.set(0, 16);
     this.container.addChild(this.title);
   }
 

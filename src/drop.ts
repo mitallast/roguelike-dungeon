@@ -1,6 +1,6 @@
 import {RNG} from "./rng";
 import {HeroView} from "./hero";
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {View} from "./view";
@@ -64,11 +64,11 @@ export interface UsableDrop extends Drop {
 }
 
 export class Coins implements Drop {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly coins: number;
 
-  constructor(rng: RNG, registry: TileRegistry) {
-    this.registry = registry;
+  constructor(rng: RNG, resources: Resources) {
+    this.resources = resources;
     this.coins = rng.nextRange(1, 30)
   }
 
@@ -78,7 +78,7 @@ export class Coins implements Drop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.registry.animated("coin");
+    return this.resources.animated("coin");
   }
 
   dropView(level: DungeonLevel, x: number, y: number): DropView {
@@ -87,11 +87,11 @@ export class Coins implements Drop {
 }
 
 export class HealthFlask implements UsableDrop {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly health: number;
 
-  constructor(registry: TileRegistry) {
-    this.registry = registry;
+  constructor(resources: Resources) {
+    this.resources = resources;
     this.health = 2;
   }
 
@@ -109,7 +109,7 @@ export class HealthFlask implements UsableDrop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.registry.sprite("flask_red.png");
+    return this.resources.sprite("flask_red.png");
   }
 
   dropView(level: DungeonLevel, x: number, y: number): DropView {
@@ -118,11 +118,11 @@ export class HealthFlask implements UsableDrop {
 }
 
 export class HealthBigFlask implements UsableDrop {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly health: number;
 
-  constructor(registry: TileRegistry) {
-    this.registry = registry;
+  constructor(resources: Resources) {
+    this.resources = resources;
     this.health = 5;
   }
 
@@ -131,7 +131,7 @@ export class HealthBigFlask implements UsableDrop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.registry.sprite("flask_big_red.png");
+    return this.resources.sprite("flask_big_red.png");
   }
 
   same(item: UsableDrop): boolean {
@@ -163,8 +163,8 @@ export class WeaponConfig {
     this.level = level;
   }
 
-  create(registry: TileRegistry): Weapon {
-    return new Weapon(registry, this.name, this.speed, this.distance, this.damage);
+  create(resources: Resources): Weapon {
+    return new Weapon(resources, this.name, this.speed, this.distance, this.damage);
   }
 
   static configs: WeaponConfig[] = [
@@ -194,14 +194,14 @@ export class WeaponConfig {
 }
 
 export class Weapon implements UsableDrop {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly name: string;
   readonly speed: number;
   readonly distance: number;
   readonly damage: number;
 
-  constructor(registry: TileRegistry, name: string, speed: number, distance: number, damage: number) {
-    this.registry = registry;
+  constructor(resources: Resources, name: string, speed: number, distance: number, damage: number) {
+    this.resources = resources;
     this.name = name;
     this.speed = speed;
     this.distance = distance;
@@ -209,7 +209,7 @@ export class Weapon implements UsableDrop {
   }
 
   sprite(): PIXI.Sprite {
-    return this.registry.sprite(this.name + ".png");
+    return this.resources.sprite(this.name + ".png");
   }
 
   pickedUp(hero: HeroView): boolean {

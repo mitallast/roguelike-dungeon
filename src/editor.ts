@@ -1,4 +1,4 @@
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {Color} from "./wfc";
 
 // @ts-ignore
@@ -18,7 +18,7 @@ export class Editor {
   private readonly floorNames: string[];
   private readonly wallNames: string[];
 
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly app: PIXI.Application;
 
   private readonly cells: EditorMapCell[][] = [];
@@ -26,12 +26,12 @@ export class Editor {
 
   private title: PIXI.Text;
 
-  constructor(width: number, height: number, registry: TileRegistry) {
+  constructor(width: number, height: number, resources: Resources) {
     this.width = width;
     this.height = height;
-    this.registry = registry;
+    this.resources = resources;
 
-    const textures = registry.textures
+    const textures = resources.textures
       .filter(s => s.startsWith("floor_") || !s.match(/_\d\.png$/))
       .filter(s => s.indexOf("_banner_") < 0)
       .filter(s => s.indexOf("_column_") < 0)
@@ -77,13 +77,13 @@ export class Editor {
     let offset = 0;
     for (let i = 0; i < this.floorNames.length; i++, offset++) {
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new FloorPaletteCell(this.floorNames[i], x, y, this.registry, this);
+      const cell = new FloorPaletteCell(this.floorNames[i], x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
     }
     {// clear floor
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new ClearFloorPaletteCell(x, y, this.registry, this);
+      const cell = new ClearFloorPaletteCell(x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
       offset++;
@@ -91,14 +91,14 @@ export class Editor {
 
     for (let i = 0; i < this.wallNames.length; i++, offset++) {
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new WallPaletteCell(this.wallNames[i], x, y, this.registry, this);
+      const cell = new WallPaletteCell(this.wallNames[i], x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
     }
 
     {// clear wall
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new ClearWallPaletteCell(x, y, this.registry, this);
+      const cell = new ClearWallPaletteCell(x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
       offset++;
@@ -106,7 +106,7 @@ export class Editor {
 
     {// clear wall
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new ToggleZIndexPaletteCell(x, y, this.registry, this);
+      const cell = new ToggleZIndexPaletteCell(x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
       offset++;
@@ -114,7 +114,7 @@ export class Editor {
 
     {// dump
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new DumpPaletteCell(x, y, this.registry, this);
+      const cell = new DumpPaletteCell(x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
       offset++;
@@ -122,7 +122,7 @@ export class Editor {
 
     {// load
       const x = offset % palette_width, y = Math.floor(offset / palette_width);
-      const cell = new LoadPaletteCell(x, y, this.registry, this);
+      const cell = new LoadPaletteCell(x, y, this.resources, this);
       cell.init();
       container.addChild(cell.container);
       offset++;
@@ -154,7 +154,7 @@ export class Editor {
     for (let y = 0; y < this.height; y++) {
       this.cells.push([]);
       for (let x = 0; x < this.width; x++) {
-        const cell = new EditorMapCell(x, y, this.registry, this);
+        const cell = new EditorMapCell(x, y, this.resources, this);
         this.cells[y][x] = cell;
         container.addChild(cell.container);
       }
@@ -210,7 +210,7 @@ export class Editor {
 }
 
 class EditorMapCell {
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly editor: Editor;
   readonly x: number;
   readonly y: number;
@@ -220,8 +220,8 @@ class EditorMapCell {
   wallSprite: PIXI.Sprite = null;
   private readonly zIndexText: PIXI.Text;
 
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    this.registry = registry;
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    this.resources = resources;
     this.editor = editor;
     this.x = x;
     this.y = y;
@@ -267,7 +267,7 @@ class EditorMapCell {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
-      this.floorSprite = this.registry.sprite(name);
+      this.floorSprite = this.resources.sprite(name);
       this.floorSprite.zIndex = DungeonZIndexes.floor;
       this.container.addChild(this.floorSprite);
       this.container.sortChildren();
@@ -278,7 +278,7 @@ class EditorMapCell {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
-      this.wallSprite = this.registry.sprite(name);
+      this.wallSprite = this.resources.sprite(name);
       this.container.addChild(this.wallSprite);
       this.container.sortChildren();
       this.setWallZIndex(DungeonZIndexes.wallFront);
@@ -330,13 +330,13 @@ class EditorMapCell {
 }
 
 abstract class EditorPaletteCell {
-  protected readonly registry: TileRegistry;
+  protected readonly resources: Resources;
   protected readonly editor: Editor;
   readonly title: string;
   readonly container: PIXI.Container;
 
-  protected constructor(x: number, y: number, title: string, registry: TileRegistry, editor: Editor) {
-    this.registry = registry;
+  protected constructor(x: number, y: number, title: string, resources: Resources, editor: Editor) {
+    this.resources = resources;
     this.editor = editor;
     this.title = title;
 
@@ -352,13 +352,13 @@ abstract class EditorPaletteCell {
 abstract class SpritePaletteCell extends EditorPaletteCell {
   protected readonly name: string;
 
-  protected constructor(name: string, title: string, x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super(x, y, title, registry, editor);
+  protected constructor(name: string, title: string, x: number, y: number, resources: Resources, editor: Editor) {
+    super(x, y, title, resources, editor);
     this.name = name;
   }
 
   init(): void {
-    const sprite = this.registry.sprite(this.name);
+    const sprite = this.resources.sprite(this.name);
     sprite.interactive = true;
     sprite.buttonMode = true;
     sprite.on("click", () => this.editor.selectPalette(this));
@@ -369,8 +369,8 @@ abstract class SpritePaletteCell extends EditorPaletteCell {
 }
 
 class FloorPaletteCell extends SpritePaletteCell {
-  constructor(name: string, x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super(name, `floor: ${name}`, x, y, registry, editor);
+  constructor(name: string, x: number, y: number, resources: Resources, editor: Editor) {
+    super(name, `floor: ${name}`, x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -379,8 +379,8 @@ class FloorPaletteCell extends SpritePaletteCell {
 }
 
 class WallPaletteCell extends SpritePaletteCell {
-  constructor(name: string, x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super(name, `wall: ${name}`, x, y, registry, editor);
+  constructor(name: string, x: number, y: number, resources: Resources, editor: Editor) {
+    super(name, `wall: ${name}`, x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -391,8 +391,8 @@ class WallPaletteCell extends SpritePaletteCell {
 abstract class NamedPaletteCell extends EditorPaletteCell {
   protected readonly name: string;
 
-  protected constructor(name: string, title: string, x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super(x, y, title, registry, editor);
+  protected constructor(name: string, title: string, x: number, y: number, resources: Resources, editor: Editor) {
+    super(x, y, title, resources, editor);
     this.name = name;
   }
 
@@ -431,8 +431,8 @@ abstract class NamedPaletteCell extends EditorPaletteCell {
 }
 
 class ClearFloorPaletteCell extends NamedPaletteCell {
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super("CL FL", "Clear floor", x, y, registry, editor);
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("CL FL", "Clear floor", x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -445,8 +445,8 @@ class ClearFloorPaletteCell extends NamedPaletteCell {
 }
 
 class ClearWallPaletteCell extends NamedPaletteCell {
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super("CL WL", "Clear wall", x, y, registry, editor);
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("CL WL", "Clear wall", x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -459,8 +459,8 @@ class ClearWallPaletteCell extends NamedPaletteCell {
 }
 
 class ToggleZIndexPaletteCell extends NamedPaletteCell {
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super("TG ZI", "ZIndex", x, y, registry, editor);
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("TG ZI", "ZIndex", x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -481,8 +481,8 @@ class DumpPaletteCell extends NamedPaletteCell {
   private min_x: number;
   private min_y: number;
 
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super("DUMP", "Dump", x, y, registry, editor);
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("DUMP", "Dump", x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {
@@ -507,8 +507,8 @@ class DumpPaletteCell extends NamedPaletteCell {
 class LoadPaletteCell extends NamedPaletteCell {
   private options: TileSetOptions[][];
 
-  constructor(x: number, y: number, registry: TileRegistry, editor: Editor) {
-    super("LOAD", "Load", x, y, registry, editor);
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("LOAD", "Load", x, y, resources, editor);
   }
 
   action(cell: EditorMapCell): void {

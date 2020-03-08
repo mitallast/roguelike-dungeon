@@ -1,5 +1,5 @@
 import {Joystick} from "./input";
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
 import {Colors} from "./colors";
@@ -14,20 +14,22 @@ import "pixi-layers";
   const app = new PIXI.Application({
     width: 1200,
     height: 700,
+    resolution: 1,
+    antialias: false,
   });
 
   // create the stage instead of container
   const stage = new PIXI.display.Stage();
   app.stage = stage;
 
-  const registry = new TileRegistry(app.loader);
-  await registry.load();
+  const resources = new Resources(app.loader);
+  await resources.load();
 
   document.getElementById("container").appendChild(app.view);
 
   const rng = new RNG();
   const joystick = new Joystick();
-  const controller = new SceneController(rng, joystick, registry, app, stage);
+  const controller = new SceneController(rng, joystick, resources, app, stage);
   controller.keyBind();
 
   app.renderer.backgroundColor = Colors.background;

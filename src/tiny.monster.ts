@@ -1,4 +1,4 @@
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {View} from "./view";
@@ -21,7 +21,7 @@ export const tinyMonsterNames = [
 
 export class TinyMonster implements Monster, View {
   private readonly level: DungeonLevel;
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly wrapper: MovingMonsterWrapper;
 
   x: number;
@@ -44,7 +44,7 @@ export class TinyMonster implements Monster, View {
 
   constructor(level: DungeonLevel, x: number, y: number, name: string) {
     this.level = level;
-    this.registry = level.controller.registry;
+    this.resources = level.controller.resources;
     this.wrapper = new MovingMonsterWrapper(this);
     this.name = name;
     this.container = new PIXI.Container();
@@ -70,7 +70,7 @@ export class TinyMonster implements Monster, View {
 
   private setSprite(postfix: string): void {
     this.sprite?.destroy();
-    this.sprite = this.registry.animated(this.name + postfix);
+    this.sprite = this.resources.animated(this.name + postfix);
     this.sprite.loop = false;
     this.sprite.animationSpeed = this.speed;
     this.sprite.anchor.set(0, 1);

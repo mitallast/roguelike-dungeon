@@ -3,7 +3,7 @@
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 
-export class TileRegistry {
+export class Resources {
   private readonly loader: PIXI.Loader;
   private sheet: PIXI.Spritesheet;
 
@@ -14,11 +14,14 @@ export class TileRegistry {
   async load(): Promise<void> {
     return await new Promise<void>((resolve => {
       this.loader
-        .add("tiles.json")
-        .add("sample.json")
+        .add('tiles.json')
+        .add('sample.json')
+        .add('alagard', 'fonts/alagard.fnt')
         .load((loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
-          this.sheet = resources["tiles.json"].spritesheet;
+          console.log(resources);
+          this.sheet = resources['tiles.json'].spritesheet;
           this.sheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+          resources['fonts/alagard.png'].texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           resolve();
         });
     }));

@@ -31,13 +31,8 @@ export class SelectHeroScene implements Scene {
   }
 
   renderTitle() {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 100,
-      fill: "white"
-    });
-    let title = new PIXI.Text("ROGUELIKE DUNGEON", style);
-    title.anchor.set(0.5, 0);
+    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+    title.anchor = 0.5;
     title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
   }
@@ -53,7 +48,7 @@ export class SelectHeroScene implements Scene {
     const tile_w = 16;
     const tile_h = 28;
 
-    const title_h = 20;
+    const title_h = 32;
 
     const sprite_w = rect_w - (margin << 1);
     const scale = sprite_w / tile_w;
@@ -86,17 +81,13 @@ export class SelectHeroScene implements Scene {
       notSelected.endFill();
       container.addChild(notSelected);
 
-      let style = new PIXI.TextStyle({
-        fontFamily: "silkscreennormal",
-        fontSize: title_h,
-        fill: "white"
-      });
-      let title = new PIXI.Text(heroName, style);
-      title.position.set((container.width >> 1) - (title.width >> 1), margin);
+      let title = new PIXI.BitmapText(heroName, {font: {name: 'alagard', size: title_h}});
+      title.anchor = 0.5;
+      title.position.set(container.width >> 1, margin);
       title.visible = this.selected === i;
       container.addChild(title);
 
-      const sprite = this.controller.registry.animated(heroName + "_idle");
+      const sprite = this.controller.resources.animated(heroName + "_idle");
       sprite.animationSpeed = 0.2;
       sprite.width = sprite_w;
       sprite.height = sprite_h;
@@ -129,7 +120,7 @@ export class SelectHeroScene implements Scene {
     if (!joystick.hit.processed) {
       joystick.hit.reset();
       const name = heroMonsterNames[this.selected];
-      const weapon = WeaponConfig.configs[0].create(this.controller.registry);
+      const weapon = WeaponConfig.configs[0].create(this.controller.resources);
       const hero = new HeroState(name, weapon);
       this.controller.generateDungeon({
         level: 1,
@@ -142,14 +133,14 @@ export class SelectHeroScene implements Scene {
 class SelectHeroView {
   private readonly selected: PIXI.Graphics;
   private readonly notSelected: PIXI.Graphics;
-  private readonly title: PIXI.Text;
+  private readonly title: PIXI.BitmapText;
   private readonly sprite: PIXI.AnimatedSprite;
   private isSelected = false;
 
   constructor(
     selected: PIXI.Graphics,
     notSelected: PIXI.Graphics,
-    title: PIXI.Text,
+    title: PIXI.BitmapText,
     sprite: PIXI.AnimatedSprite
   ) {
     this.selected = selected;

@@ -12,7 +12,7 @@ export class GenerateDungeonScreen implements Scene {
   private readonly generator: DungeonGenerator;
   private promise: Promise<DungeonLevel>;
 
-  private title: PIXI.Text;
+  private title: PIXI.BitmapText;
   private progressBar: PIXI.Graphics;
 
   constructor(controller: SceneController, options: GenerateOptions) {
@@ -40,13 +40,8 @@ export class GenerateDungeonScreen implements Scene {
   }
 
   renderTitle(): void {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 100,
-      fill: "white"
-    });
-    this.title = new PIXI.Text("ROGUELIKE DUNGEON", style);
-    this.title.anchor.set(0.5, 0);
+    this.title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+    this.title.anchor = 0.5;
     this.title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(this.title);
   }

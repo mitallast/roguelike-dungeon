@@ -1,5 +1,5 @@
 import {Inventory} from "./inventory";
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {Joystick} from "./input";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
@@ -43,7 +43,7 @@ const TILE_SIZE = 16;
 
 export class HeroView implements Monster, View {
   private readonly level: DungeonLevel;
-  private readonly registry: TileRegistry;
+  private readonly resources: Resources;
   private readonly joystick: Joystick;
   readonly heroState: HeroState;
   private readonly wrapper: MovingMonsterWrapper;
@@ -65,7 +65,7 @@ export class HeroView implements Monster, View {
 
   constructor(level: DungeonLevel, heroState: HeroState) {
     this.level = level;
-    this.registry = level.controller.registry;
+    this.resources = level.controller.resources;
     this.joystick = level.controller.joystick;
     this.wrapper = new MovingMonsterWrapper(this);
     this.heroState = heroState;
@@ -89,7 +89,7 @@ export class HeroView implements Monster, View {
 
   private setSprite(postfix: string): void {
     this.sprite?.destroy();
-    this.sprite = this.registry.animated(this.heroState.name + postfix);
+    this.sprite = this.resources.animated(this.heroState.name + postfix);
     this.sprite.loop = false;
     this.sprite.animationSpeed = this.speed;
     this.sprite.anchor.set(0, 1);
@@ -438,15 +438,15 @@ export class HeroView implements Monster, View {
 }
 
 const HEALTH_WIDTH = 8;
-const HEALTH_HEIGHT = 16;
+const HEALTH_HEIGHT = 18;
 const HEALTH_BORDER = 4;
 
 export class HeroStateView implements View {
   readonly container: PIXI.Container;
   private readonly heroState: HeroState;
   private readonly healthRect: PIXI.Graphics;
-  private readonly healthText: PIXI.Text;
-  private readonly coinsText: PIXI.Text;
+  private readonly healthText: PIXI.BitmapText;
+  private readonly coinsText: PIXI.BitmapText;
 
   private readonly healthSub: Subscription;
   private readonly coinsSub: Subscription;
@@ -458,23 +458,15 @@ export class HeroStateView implements View {
     this.healthRect = new PIXI.Graphics();
     this.container.addChild(this.healthRect);
 
-    this.healthText = new PIXI.Text("0", new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 16,
-      fill: "white"
-    }));
-    this.healthText.anchor.set(0, 0.5);
+    this.healthText = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
+    this.healthText.anchor = new PIXI.Point(0, 0.5);
     this.healthText.position.set(
       HEALTH_BORDER << 1,
-      HEALTH_BORDER + (HEALTH_HEIGHT >> 1) - 2
+      HEALTH_BORDER + (HEALTH_HEIGHT >> 1)
     );
     this.container.addChild(this.healthText);
 
-    this.coinsText = new PIXI.Text("$ 0", new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 16,
-      fill: "white"
-    }));
+    this.coinsText = new PIXI.BitmapText("$ 0", {font: {name: "alagard", size: 16}});
     this.coinsText.position.set(0, HEALTH_HEIGHT + (HEALTH_BORDER * 3));
     this.container.addChild(this.coinsText);
 

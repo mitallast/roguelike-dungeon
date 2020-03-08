@@ -23,28 +23,20 @@ export class YouDeadScene implements Scene {
   }
 
   renderTitle() {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 200,
-      fill: "red"
-    });
-    let title = new PIXI.Text("YOU DEAD", style);
-    title.anchor.set(0.5, 0.5);
-    title.position.set(
-      this.controller.app.screen.width >> 1,
-      this.controller.app.screen.height >> 1
-    );
+    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+    title.anchor = 0.5;
+    title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
+
+    let youDead = new PIXI.BitmapText("YOU DEAD", {font: {name: "alagard", size: 128}, tint: 0xFF0000});
+    youDead.anchor = 0.5;
+    youDead.position.set(this.controller.app.screen.width >> 1, 256);
+    this.controller.stage.addChild(youDead);
   }
 
   renderHelp() {
-    let style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 20,
-      fill: "white"
-    });
-    const line = new PIXI.Text("PRESS F TO RESTART", style);
-    line.anchor.set(0.5, 1);
+    const line = new PIXI.BitmapText("PRESS F TO RESTART", {font: {name: "alagard", size: 32}});
+    line.anchor = 0.5;
     line.position.set(
       this.controller.app.screen.width >> 1,
       this.controller.app.screen.height - 64

@@ -1,7 +1,7 @@
 import {DungeonCellView, DungeonLevel} from "./dungeon.level";
 import {RNG} from "./rng";
 import {HeroState} from "./hero";
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
 import {BossMonster, mossMonsterNames} from "./boss.monster";
@@ -18,14 +18,14 @@ export interface DungeonGenerator {
 
 export abstract class BaseDungeonGenerator implements DungeonGenerator {
   protected readonly rng: RNG;
-  protected readonly registry: TileRegistry;
+  protected readonly resources: Resources;
   protected readonly controller: SceneController;
 
   abstract readonly percent: number;
 
   protected constructor(controller: SceneController) {
     this.rng = controller.rng;
-    this.registry = controller.registry;
+    this.resources = controller.resources;
     this.controller = controller;
   }
 
@@ -173,7 +173,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       let [[x, y]] = free.splice(i, 1);
 
       const name = mossMonsterNames[Math.floor(dungeon.level / 5) % mossMonsterNames.length];
-      dungeon.boss = new BossMonster(this.registry, dungeon, x, y, name);
+      dungeon.boss = new BossMonster(this.resources, dungeon, x, y, name);
     } else {
       console.error("boss not placed");
     }

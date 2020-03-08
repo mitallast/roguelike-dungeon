@@ -1,6 +1,6 @@
 import {RNG} from "./rng";
 import {Joystick} from "./input";
-import {TileRegistry} from "./tilemap";
+import {Resources} from "./resources";
 import {YouDeadScene} from "./dead.scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {GenerateDungeonScreen} from "./generate.scene";
@@ -20,7 +20,7 @@ export interface Scene {
 export class SceneController {
   readonly rng: RNG;
   readonly joystick: Joystick;
-  readonly registry: TileRegistry;
+  readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
   private sceneView: Scene;
@@ -28,13 +28,13 @@ export class SceneController {
   constructor(
     rng: RNG,
     joystick: Joystick,
-    registry: TileRegistry,
+    resources: Resources,
     app: PIXI.Application,
     stage: PIXI.display.Stage,
   ) {
     this.rng = rng;
     this.joystick = joystick;
-    this.registry = registry;
+    this.resources = resources;
     this.app = app;
     this.stage = stage;
   }
