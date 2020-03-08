@@ -11,6 +11,8 @@ import "pixi-layers";
 
 (async function () {
 
+  PIXI.settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
+
   const app = new PIXI.Application({
     width: 1200,
     height: 700,
