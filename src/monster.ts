@@ -3,13 +3,14 @@ export enum MonsterState {
 }
 
 export interface Monster {
+  name: string
   x: number
   y: number
   new_x: number
   new_y: number
   is_left: boolean
   state: MonsterState
-  hitDamage(damage: number, name: string): void;
+  hitDamage(monster: Monster, damage: number): void;
 }
 
 export class MovingMonsterWrapper implements Monster {
@@ -19,8 +20,8 @@ export class MovingMonsterWrapper implements Monster {
     this.monster = monster;
   }
 
-  hitDamage(damage: number, name: string) {
-    this.monster.hitDamage(damage, name);
+  get name(): string {
+    return this.monster.name;
   }
 
   get x(): number {
@@ -45,5 +46,9 @@ export class MovingMonsterWrapper implements Monster {
 
   get state(): MonsterState {
     return this.monster.state;
+  }
+
+  hitDamage(monster: Monster, damage: number) {
+    this.monster.hitDamage(monster, damage);
   }
 }

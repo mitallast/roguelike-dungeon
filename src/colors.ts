@@ -3,8 +3,8 @@ export interface ColorScheme {
   readonly uiBackground: number
   readonly uiSelected: number
   readonly uiNotSelected: number
-  readonly healthBackground: number
-  readonly healthRed: number
+  readonly uiRed: number
+  readonly uiYellow: number
 }
 
 export const Colors: ColorScheme = {
@@ -12,6 +12,6 @@ export const Colors: ColorScheme = {
   uiBackground: 0x505050,
   uiSelected: 0x909090,
   uiNotSelected: 0x505050,
-  healthBackground: 0x505050,
-  healthRed: 0xFF0000,
+  uiRed: 0xFF0000,
+  uiYellow: 0xFFD300,
 };

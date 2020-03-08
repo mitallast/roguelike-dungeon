@@ -2,7 +2,13 @@ export interface Subscription {
   unsubscribe(): void;
 }
 
-export class Observable<T> {
+export interface Publisher<T> {
+  get(): T;
+  subscribe(listener: (value: T) => void): Subscription;
+  unsubscribe(listener: (value: T) => void): void;
+}
+
+export class Observable<T> implements Publisher<T> {
   private value: T;
   private listeners: ((value: T) => void)[] = [];
 

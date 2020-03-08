@@ -5,6 +5,7 @@ import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 import {PathFinding} from "./pathfinding";
+import {HeroView} from "./hero";
 
 const TILE_SIZE = 16;
 
@@ -31,12 +32,13 @@ export class TinyMonster implements Monster, View {
   is_left: boolean = false;
   state: MonsterState;
 
-  private readonly name: string;
+  readonly name: string;
   private readonly healthMax: number = 10;
   private health: number = this.healthMax;
   private readonly damage: number = 1.5;
   private readonly luck: number = 0.3;
   private readonly speed: number = 0.2;
+  private readonly xp: number = 35;
 
   private duration: number;
   sprite: PIXI.AnimatedSprite;
@@ -185,7 +187,7 @@ export class TinyMonster implements Monster, View {
           return this.move(d_x, d_y);
         }
       } else if (Math.random() < this.luck) {
-        this.level.hero.hitDamage(this.damage, this.name);
+        this.level.hero.hitDamage(this, this.damage);
         return true;
       }
     }
@@ -230,12 +232,15 @@ export class TinyMonster implements Monster, View {
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   };
 
-  hitDamage(damage: number, name: string) {
+  hitDamage(monster: Monster, damage: number) {
     this.level.log.push(`${this.name} damaged ${damage} by ${name}`);
     this.health = Math.max(0, this.health - damage);
     if (this.health <= 0) {
       this.level.log.push(`${this.name} killed by ${name}`);
       this.destroy();
+      if (monster instanceof HeroView) {
+        monster.heroState.addXp(this.xp);
+      }
       if (Math.random() < this.luck) {
         this.level.cell(this.x, this.y).randomDrop();
       }

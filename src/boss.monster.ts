@@ -24,6 +24,7 @@ export class BossState {
   readonly luck: number;
   readonly speed: number;
   readonly dead: Observable<boolean>;
+  readonly xp: number;
 
   constructor(name: string, level: number) {
     this.name = name;
@@ -33,6 +34,7 @@ export class BossState {
     this.luck = 0.3;
     this.speed = 0.2;
     this.dead = new Observable<boolean>(false);
+    this.xp = 100 + 50 * level;
   }
 }
 
@@ -49,6 +51,10 @@ export class BossMonster implements Monster, View {
   new_y: number;
   is_left: boolean;
   state: MonsterState;
+
+  get name(): string {
+    return this.bossState.name;
+  }
 
   private duration: number;
   private sprite: PIXI.AnimatedSprite;
@@ -205,7 +211,7 @@ export class BossMonster implements Monster, View {
           return this.move(d_x, d_y);
         }
       } else if (Math.random() < this.bossState.luck) {
-        this.level.hero.hitDamage(this.bossState.damage, this.bossState.name);
+        this.level.hero.hitDamage(this, this.bossState.damage);
         return true;
       }
     }
@@ -241,7 +247,7 @@ export class BossMonster implements Monster, View {
     return false;
   }
 
-  hitDamage(damage: number, name: string) {
+  hitDamage(monster: Monster, damage: number) {
     this.level.log.push(`${this.bossState.name} damaged ${damage} by ${name}`);
     this.bossState.health.update(h => Math.max(0, h - damage));
     if (this.bossState.health.get() <= 0) {
@@ -337,14 +343,14 @@ export class BossHealthView implements View {
 
   updateHealth(health: number) {
     this.healthRect.clear();
-    this.healthRect.beginFill(Colors.healthBackground, 0.3);
+    this.healthRect.beginFill(Colors.uiBackground, 0.3);
     this.healthRect.drawRect(
       -(this.width >> 1), 0,
       this.width, this.height);
     this.healthRect.endFill();
 
     const width = this.point_width * health;
-    this.healthRect.beginFill(Colors.healthRed, 0.3);
+    this.healthRect.beginFill(Colors.uiRed, 0.3);
     this.healthRect.drawRect(-(width >> 1), HEALTH_BORDER, width, HEALTH_HEIGHT);
     this.healthRect.endFill();
 

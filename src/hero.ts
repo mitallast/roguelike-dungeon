@@ -4,7 +4,7 @@ import {Joystick} from "./input";
 import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {UsableDrop, Weapon} from "./drop";
-import {Observable, Subscription} from "./observable";
+import {Observable, Publisher, Subscription} from "./observable";
 import {View} from "./view";
 import {Colors} from "./colors";
 // @ts-ignore
@@ -22,20 +22,60 @@ export const heroMonsterNames = [
 export class HeroState {
   readonly name: string;
   readonly healthMax: number = 30;
-  readonly health: Observable<number>;
-  readonly coins: Observable<number>;
+  readonly health: Observable<number> = new Observable(this.healthMax);
+  readonly coins: Observable<number> = new Observable(0);
   readonly baseDamage: number = 0;
-  readonly dead: Observable<boolean>;
+  readonly dead: Observable<boolean> = new Observable(false);
   readonly weapon: Observable<Weapon>;
-  readonly inventory: Inventory;
+  readonly inventory: Inventory = new Inventory();
+
+  private readonly _level: Observable<number> = new Observable(0);
+  private readonly _levelXp: Observable<number> = new Observable(1000);
+  private readonly _skillPoints: Observable<number> = new Observable(0);
+  private readonly _xp: Observable<number> = new Observable(0);
+
+  get level(): Publisher<number> {
+    return this._level;
+  }
+
+  get levelXp(): Publisher<number> {
+    return this._levelXp;
+  }
+
+  get skillPoints(): Publisher<number> {
+    return this._skillPoints;
+  }
+
+  get xp(): Publisher<number> {
+    return this._xp;
+  }
+
+  addXp(value: number): void {
+    console.log("add xp", value);
+    this._xp.update((v) => {
+      let newXp = v + value;
+      console.log("newXp", newXp);
+      while (true) {
+        const levelXp = this._levelXp.get();
+        if (newXp >= levelXp) {
+          console.log("add level");
+          newXp = newXp - levelXp;
+          this._level.update((v) => v + 1);
+          this._levelXp.update((v) => v + 1000);
+          this._skillPoints.update((v) => v + 1);
+        } else {
+          console.log("no new level");
+          break;
+        }
+      }
+      console.log("newXp", newXp);
+      return newXp;
+    });
+  }
 
   constructor(name: string, weapon: Weapon) {
     this.name = name;
-    this.health = new Observable(this.healthMax);
-    this.coins = new Observable(0);
-    this.dead = new Observable(false);
     this.weapon = new Observable(weapon);
-    this.inventory = new Inventory();
   }
 }
 
@@ -54,6 +94,10 @@ export class HeroView implements Monster, View {
   new_y: number = -1;
   is_left: boolean = false;
   state: MonsterState;
+
+  get name(): string {
+    return this.heroState.name;
+  }
 
   private readonly speed: number = 0.2;
   private duration: number;
@@ -342,7 +386,7 @@ export class HeroView implements Monster, View {
         if (!(s_x === this.x && s_y === this.y)) {
           const monster = this.level.monsterMap[s_y][s_x];
           if (monster) {
-            monster.hitDamage(this.damage, this.heroState.name);
+            monster.hitDamage(this, this.damage);
           }
         }
       }
@@ -386,9 +430,9 @@ export class HeroView implements Monster, View {
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   }
 
-  hitDamage(damage: number, name: string) {
+  hitDamage(monster: Monster, damage: number) {
     if (!this.heroState.dead.get()) {
-      this.level.log.push(`${this.heroState.name} damaged ${damage} by ${name}`);
+      this.level.log.push(`${this.heroState.name} damaged ${damage} by ${monster.name}`);
       this.heroState.health.update(h => Math.max(0, h - damage));
       if (this.heroState.health.get() <= 0) {
         this.level.log.push(`${this.heroState.name} killed by ${name}`);
@@ -437,63 +481,118 @@ export class HeroView implements Monster, View {
   }
 }
 
-const HEALTH_WIDTH = 8;
-const HEALTH_HEIGHT = 18;
-const HEALTH_BORDER = 4;
+const BAR_WIDTH = 8;
+const BAR_BORDER = 4;
+const BAR_HEIGHT = 18;
+
+const BAR_OFFSET_Y = BAR_HEIGHT + (BAR_BORDER * 3);
+const BAR_TEXT_OFFSET_X = BAR_BORDER << 1;
+const BAR_TEXT_OFFSET_Y = BAR_BORDER + (BAR_HEIGHT >> 1);
 
 export class HeroStateView implements View {
   readonly container: PIXI.Container;
   private readonly heroState: HeroState;
   private readonly healthRect: PIXI.Graphics;
   private readonly healthText: PIXI.BitmapText;
+  private readonly xpRect: PIXI.Graphics;
+  private readonly xpText: PIXI.BitmapText;
   private readonly coinsText: PIXI.BitmapText;
 
   private readonly healthSub: Subscription;
+  private readonly levelSub: Subscription;
+  private readonly levelXpSub: Subscription;
+  private readonly skillPointsSub: Subscription;
+  private readonly xpSub: Subscription;
   private readonly coinsSub: Subscription;
 
   constructor(heroState: HeroState) {
-    this.container = new PIXI.Container();
     this.heroState = heroState;
 
     this.healthRect = new PIXI.Graphics();
-    this.container.addChild(this.healthRect);
-
-    this.healthText = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
+    this.healthText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
     this.healthText.anchor = new PIXI.Point(0, 0.5);
     this.healthText.position.set(
-      HEALTH_BORDER << 1,
-      HEALTH_BORDER + (HEALTH_HEIGHT >> 1)
+      BAR_TEXT_OFFSET_X,
+      BAR_TEXT_OFFSET_Y
     );
-    this.container.addChild(this.healthText);
 
-    this.coinsText = new PIXI.BitmapText("$ 0", {font: {name: "alagard", size: 16}});
-    this.coinsText.position.set(0, HEALTH_HEIGHT + (HEALTH_BORDER * 3));
+    this.xpRect = new PIXI.Graphics();
+    this.xpRect.position.set(0, BAR_HEIGHT + (BAR_BORDER * 3));
+    this.xpText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this.xpText.anchor = new PIXI.Point(0, 0.5);
+    this.xpText.position.set(
+      BAR_TEXT_OFFSET_X,
+      BAR_OFFSET_Y + BAR_TEXT_OFFSET_Y
+    );
+
+    this.coinsText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this.coinsText.position.set(0, BAR_OFFSET_Y * 2);
+
+    this.container = new PIXI.Container();
+    this.container.addChild(this.healthRect);
+    this.container.addChild(this.healthText);
+    this.container.addChild(this.xpRect);
+    this.container.addChild(this.xpText);
     this.container.addChild(this.coinsText);
 
     this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
+    this.levelSub = heroState.level.subscribe(this.updateXp.bind(this));
+    this.levelXpSub = heroState.levelXp.subscribe(this.updateXp.bind(this));
+    this.skillPointsSub = heroState.skillPoints.subscribe(this.updateXp.bind(this));
+    this.xpSub = heroState.xp.subscribe(this.updateXp.bind(this));
     this.coinsSub = heroState.coins.subscribe(this.updateCoins.bind(this));
   }
 
   updateHealth(health: number) {
     this.healthRect.clear();
-    this.healthRect.beginFill(Colors.healthBackground, 0.3);
+    this.healthRect.beginFill(Colors.uiBackground, 0.3);
     this.healthRect.drawRect(
       0, 0,
-      HEALTH_WIDTH * this.heroState.healthMax + (HEALTH_BORDER << 1),
-      HEALTH_HEIGHT + (HEALTH_BORDER << 1)
+      BAR_WIDTH * this.heroState.healthMax + (BAR_BORDER << 1),
+      BAR_HEIGHT + (BAR_BORDER << 1)
     );
     this.healthRect.endFill();
 
-    this.healthRect.beginFill(Colors.healthRed, 0.3);
+    this.healthRect.beginFill(Colors.uiRed, 0.3);
     this.healthRect.drawRect(
-      HEALTH_BORDER,
-      HEALTH_BORDER,
-      HEALTH_WIDTH * health,
-      HEALTH_HEIGHT
+      BAR_BORDER,
+      BAR_BORDER,
+      BAR_WIDTH * health,
+      BAR_HEIGHT
     );
     this.healthRect.endFill();
 
     this.healthText.text = health.toString();
+  }
+
+  updateXp() {
+    const level = this.heroState.level.get();
+    const levelXp = this.heroState.levelXp.get();
+    const skillPoints = this.heroState.skillPoints.get();
+    const xp = this.heroState.xp.get();
+
+    const maxWidth = 200;
+    const width = Math.floor(maxWidth * xp / levelXp);
+
+    this.xpRect.clear();
+    this.xpRect.beginFill(Colors.uiBackground, 0.3);
+    this.xpRect.drawRect(
+      0, 0,
+      maxWidth + (BAR_BORDER << 1),
+      BAR_HEIGHT + (BAR_BORDER << 1)
+    );
+    this.xpRect.endFill();
+
+    this.xpRect.beginFill(Colors.uiYellow, 0.3);
+    this.xpRect.drawRect(
+      BAR_BORDER,
+      BAR_BORDER,
+      width,
+      BAR_HEIGHT
+    );
+    this.xpRect.endFill();
+
+    this.xpText.text = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 
   updateCoins(coins: number) {
