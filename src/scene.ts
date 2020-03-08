@@ -11,6 +11,8 @@ import {SelectHeroScene} from "./select.hero.scene";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 import {View} from "./view";
+import {UpdateHeroScene} from "./update.hero.scene";
+import {HeroState} from "./hero";
 
 export interface Scene extends View {
   init(): void;
@@ -52,6 +54,10 @@ export class SceneController {
 
   selectHero(): void {
     this.scene = new SelectHeroScene(this);
+  }
+
+  updateHero(options: GenerateOptions): void {
+    this.scene = new UpdateHeroScene(this, options);
   }
 
   dead(): void {

@@ -6,10 +6,10 @@ import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {UsableDrop, Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
 import {View} from "./view";
+import {BarView} from "./bar.view";
 import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
-import {BarView} from "./bar.view";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -22,8 +22,8 @@ export const heroMonsterNames = [
 
 export class HeroState {
   readonly name: string;
-  readonly healthMax: number = 30;
-  readonly health: Observable<number> = new Observable(this.healthMax);
+  readonly healthMax: Observable<number> = new Observable(30);
+  readonly health: Observable<number> = new Observable(this.healthMax.get());
   readonly coins: Observable<number> = new Observable(0);
   readonly baseDamage: number = 0;
   readonly dead: Observable<boolean> = new Observable(false);
@@ -71,6 +71,17 @@ export class HeroState {
       }
       console.log("newXp", newXp);
       return newXp;
+    });
+  }
+
+  increaseHealth(): void {
+    this._skillPoints.update((points) => {
+      if (points > 0) {
+        points--;
+        this.healthMax.update((h) => h + 1);
+        this.health.update((h) => h + 1);
+      }
+      return points;
     });
   }
 
@@ -445,7 +456,7 @@ export class HeroView implements Monster, View {
   }
 
   hill(health: number) {
-    this.heroState.health.update(h => Math.min(this.heroState.healthMax, h + health));
+    this.heroState.health.update(h => Math.min(this.heroState.healthMax.get(), h + health));
   }
 
   addCoins(coins: number) {
@@ -489,6 +500,7 @@ export class HeroStateView extends PIXI.Container {
   private readonly coins: PIXI.BitmapText;
 
   private readonly healthSub: Subscription;
+  private readonly healthMaxSub: Subscription;
   private readonly levelSub: Subscription;
   private readonly levelXpSub: Subscription;
   private readonly skillPointsSub: Subscription;
@@ -518,6 +530,7 @@ export class HeroStateView extends PIXI.Container {
     super.addChild(this.health, this.xp, this.coins);
 
     this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
+    this.healthMaxSub = heroState.healthMax.subscribe(this.updateHealth.bind(this));
     this.levelSub = heroState.level.subscribe(this.updateXp.bind(this));
     this.levelXpSub = heroState.levelXp.subscribe(this.updateXp.bind(this));
     this.skillPointsSub = heroState.skillPoints.subscribe(this.updateXp.bind(this));
@@ -527,7 +540,7 @@ export class HeroStateView extends PIXI.Container {
 
   private updateHealth(health: number) {
     const BAR_WIDTH = 8;
-    const healthMax = this.heroState.healthMax;
+    const healthMax = this.heroState.healthMax.get();
     this.health.widthMax = BAR_WIDTH * healthMax;
     this.health.width = BAR_WIDTH * health;
     this.health.label = `${health}/${healthMax}`;

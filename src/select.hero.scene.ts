@@ -61,7 +61,6 @@ export class SelectHeroScene implements Scene {
 
     for (let i = 0; i < total; i++) {
       const heroName = heroMonsterNames[i];
-      console.log(heroName);
 
       const d_x = margin * (i + 1) + rect_w * i;
       const d_y = (c_h >> 1) - (rect_h >> 1);
@@ -123,7 +122,7 @@ export class SelectHeroScene implements Scene {
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);
       const hero = new HeroState(name, weapon);
       this.controller.generateDungeon({
-        level: 5,
+        level: 1,
         hero: hero
       });
     }
