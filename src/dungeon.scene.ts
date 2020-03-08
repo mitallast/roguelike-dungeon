@@ -3,6 +3,8 @@ import {DungeonLevel, DungeonTitleView} from "./dungeon.level";
 import {Scene, SceneController} from "./scene";
 import {InventoryView} from "./inventory";
 import {BossHealthView} from "./boss.monster";
+// @ts-ignore
+import * as PIXI from 'pixi.js';
 
 export class DungeonScene implements Scene {
   private readonly controller: SceneController;
@@ -34,9 +36,9 @@ export class DungeonScene implements Scene {
     this.inventoryView.container.zIndex = 11;
     this.controller.stage.addChild(this.inventoryView.container);
 
-    this.healthView.container.position.set(16, 16);
-    this.healthView.container.zIndex = 12;
-    this.controller.stage.addChild(this.healthView.container);
+    (this.healthView as PIXI.Container).position.set(16, 16);
+    (this.healthView as PIXI.Container).zIndex = 12;
+    this.controller.stage.addChild(this.healthView);
 
     this.titleView.setLevel(this.dungeon.level);
 
@@ -64,7 +66,6 @@ export class DungeonScene implements Scene {
   update(delta: number): void {
     this.dungeon.update(delta);
     this.inventoryView.update(delta);
-    this.healthView.update(delta);
     this.titleView.update(delta);
     this.bossHealthView?.update(delta);
   }

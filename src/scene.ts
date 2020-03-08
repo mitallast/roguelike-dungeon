@@ -10,8 +10,9 @@ import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./create.hero";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {View} from "./view";
 
-export interface Scene {
+export interface Scene extends View {
   init(): void;
   update(delta: number): void;
   destroy(): void

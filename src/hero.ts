@@ -9,6 +9,7 @@ import {View} from "./view";
 import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {BarView} from "./bar.view";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -481,22 +482,11 @@ export class HeroView implements Monster, View {
   }
 }
 
-const BAR_WIDTH = 8;
-const BAR_BORDER = 4;
-const BAR_HEIGHT = 18;
-
-const BAR_OFFSET_Y = BAR_HEIGHT + (BAR_BORDER * 3);
-const BAR_TEXT_OFFSET_X = BAR_BORDER << 1;
-const BAR_TEXT_OFFSET_Y = BAR_BORDER + (BAR_HEIGHT >> 1);
-
-export class HeroStateView implements View {
-  readonly container: PIXI.Container;
+export class HeroStateView extends PIXI.Container {
   private readonly heroState: HeroState;
-  private readonly healthRect: PIXI.Graphics;
-  private readonly healthText: PIXI.BitmapText;
-  private readonly xpRect: PIXI.Graphics;
-  private readonly xpText: PIXI.BitmapText;
-  private readonly coinsText: PIXI.BitmapText;
+  private readonly health: BarView;
+  private readonly xp: BarView;
+  private readonly coins: PIXI.BitmapText;
 
   private readonly healthSub: Subscription;
   private readonly levelSub: Subscription;
@@ -506,34 +496,26 @@ export class HeroStateView implements View {
   private readonly coinsSub: Subscription;
 
   constructor(heroState: HeroState) {
+    super();
+    const offsetY = 30;
+
     this.heroState = heroState;
+    this.health = new BarView({
+      color: Colors.uiRed,
+      width: 0,
+      widthMax: 300
+    });
+    this.xp = new BarView({
+      color: Colors.uiYellow,
+      width: 0,
+      widthMax: 300
+    });
+    (this.xp as PIXI.Container).position.set(0, offsetY);
 
-    this.healthRect = new PIXI.Graphics();
-    this.healthText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this.healthText.anchor = new PIXI.Point(0, 0.5);
-    this.healthText.position.set(
-      BAR_TEXT_OFFSET_X,
-      BAR_TEXT_OFFSET_Y
-    );
+    this.coins = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this.coins.position.set(0, offsetY * 2);
 
-    this.xpRect = new PIXI.Graphics();
-    this.xpRect.position.set(0, BAR_HEIGHT + (BAR_BORDER * 3));
-    this.xpText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this.xpText.anchor = new PIXI.Point(0, 0.5);
-    this.xpText.position.set(
-      BAR_TEXT_OFFSET_X,
-      BAR_OFFSET_Y + BAR_TEXT_OFFSET_Y
-    );
-
-    this.coinsText = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this.coinsText.position.set(0, BAR_OFFSET_Y * 2);
-
-    this.container = new PIXI.Container();
-    this.container.addChild(this.healthRect);
-    this.container.addChild(this.healthText);
-    this.container.addChild(this.xpRect);
-    this.container.addChild(this.xpText);
-    this.container.addChild(this.coinsText);
+    super.addChild(this.health, this.xp, this.coins);
 
     this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
     this.levelSub = heroState.level.subscribe(this.updateXp.bind(this));
@@ -543,74 +525,38 @@ export class HeroStateView implements View {
     this.coinsSub = heroState.coins.subscribe(this.updateCoins.bind(this));
   }
 
-  updateHealth(health: number) {
-    this.healthRect.clear();
-    this.healthRect.beginFill(Colors.uiBackground, 0.3);
-    this.healthRect.drawRect(
-      0, 0,
-      BAR_WIDTH * this.heroState.healthMax + (BAR_BORDER << 1),
-      BAR_HEIGHT + (BAR_BORDER << 1)
-    );
-    this.healthRect.endFill();
-
-    this.healthRect.beginFill(Colors.uiRed, 0.3);
-    this.healthRect.drawRect(
-      BAR_BORDER,
-      BAR_BORDER,
-      BAR_WIDTH * health,
-      BAR_HEIGHT
-    );
-    this.healthRect.endFill();
-
-    this.healthText.text = health.toString();
+  private updateHealth(health: number) {
+    const BAR_WIDTH = 8;
+    const healthMax = this.heroState.healthMax;
+    this.health.widthMax = BAR_WIDTH * healthMax;
+    this.health.width = BAR_WIDTH * health;
+    this.health.label = `${health}/${healthMax}`;
   }
 
-  updateXp() {
+  private updateXp() {
     const level = this.heroState.level.get();
     const levelXp = this.heroState.levelXp.get();
     const skillPoints = this.heroState.skillPoints.get();
     const xp = this.heroState.xp.get();
-
     const maxWidth = 200;
-    const width = Math.floor(maxWidth * xp / levelXp);
 
-    this.xpRect.clear();
-    this.xpRect.beginFill(Colors.uiBackground, 0.3);
-    this.xpRect.drawRect(
-      0, 0,
-      maxWidth + (BAR_BORDER << 1),
-      BAR_HEIGHT + (BAR_BORDER << 1)
-    );
-    this.xpRect.endFill();
-
-    this.xpRect.beginFill(Colors.uiYellow, 0.3);
-    this.xpRect.drawRect(
-      BAR_BORDER,
-      BAR_BORDER,
-      width,
-      BAR_HEIGHT
-    );
-    this.xpRect.endFill();
-
-    this.xpText.text = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
+    this.xp.widthMax = maxWidth;
+    this.xp.width = Math.floor(maxWidth * xp / levelXp);
+    this.xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 
-  updateCoins(coins: number) {
-    this.coinsText.text = `$${coins}`;
+  private updateCoins(coins: number) {
+    this.coins.text = `$${coins}`;
   }
 
   destroy(): void {
-    console.log("destroy");
+    super.destroy();
     this.healthSub.unsubscribe();
+    this.levelSub.unsubscribe();
+    this.levelXpSub.unsubscribe();
+    this.skillPointsSub.unsubscribe();
+    this.xpSub.unsubscribe();
     this.coinsSub.unsubscribe();
-
-    this.coinsText.destroy();
-    this.healthText.destroy();
-    this.healthRect.destroy();
-    this.container.destroy();
-  }
-
-  update(delta: number): void {
   }
 }
 

@@ -7,6 +7,7 @@ import {Colors} from "./colors";
 import {PathFinding} from "./pathfinding";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
+import {BarView} from "./bar.view";
 
 const TILE_SIZE = 16;
 
@@ -300,20 +301,13 @@ export class BossMonster implements Monster, View {
   }
 }
 
-const HEALTH_MAX_WIDTH = 500;
-const HEALTH_WIDTH = 4;
-const HEALTH_HEIGHT = 18;
-const HEALTH_BORDER = 4;
-
 export class BossHealthView implements View {
   readonly container: PIXI.Container;
   private readonly boss: BossState;
-  private readonly healthRect: PIXI.Graphics;
-  private readonly healthText: PIXI.BitmapText;
+  private readonly health: BarView;
 
-  private readonly width: number;
-  private readonly height: number;
-  private readonly point_width: number;
+  private readonly widthMax: number;
+  private readonly pointWidth: number;
 
   private readonly healthSub: Subscription;
   private readonly deadSub: Subscription;
@@ -324,37 +318,27 @@ export class BossHealthView implements View {
     this.container = new PIXI.Container();
     this.boss = boss;
 
-    this.point_width = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / boss.healthMax));
+    const HEALTH_MAX_WIDTH = 500;
+    const HEALTH_WIDTH = 4;
+    this.pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / boss.healthMax));
 
-    this.width = this.point_width * boss.healthMax + (HEALTH_BORDER << 1);
-    this.height = HEALTH_HEIGHT + (HEALTH_BORDER << 1);
+    this.widthMax = this.pointWidth * boss.healthMax;
 
-    this.healthRect = new PIXI.Graphics();
-    this.container.addChild(this.healthRect);
-
-    this.healthText = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
-    this.healthText.anchor = new PIXI.Point(0.5, 0.5);
-    this.healthText.position.set(0, HEALTH_BORDER + (HEALTH_HEIGHT >> 1));
-    this.container.addChild(this.healthText);
+    this.health = new BarView({
+      color: Colors.uiRed,
+      widthMax: this.widthMax,
+      labelCenter: true
+    });
+    (this.health as PIXI.Container).position.set(-(this.widthMax >> 1), 0);
+    this.container.addChild(this.health);
 
     this.healthSub = boss.health.subscribe(this.updateHealth.bind(this));
     this.deadSub = boss.dead.subscribe(this.updateDead.bind(this));
   }
 
   updateHealth(health: number) {
-    this.healthRect.clear();
-    this.healthRect.beginFill(Colors.uiBackground, 0.3);
-    this.healthRect.drawRect(
-      -(this.width >> 1), 0,
-      this.width, this.height);
-    this.healthRect.endFill();
-
-    const width = this.point_width * health;
-    this.healthRect.beginFill(Colors.uiRed, 0.3);
-    this.healthRect.drawRect(-(width >> 1), HEALTH_BORDER, width, HEALTH_HEIGHT);
-    this.healthRect.endFill();
-
-    this.healthText.text = `${this.boss.name} - ${health}`;
+    this.health.width = this.pointWidth * health;
+    this.health.label = `${this.boss.name} - ${health}`;
   }
 
   updateDead(dead: boolean) {
@@ -368,9 +352,6 @@ export class BossHealthView implements View {
       this.destroyed = true;
       this.healthSub.unsubscribe();
       this.deadSub.unsubscribe();
-
-      this.healthText.destroy();
-      this.healthRect.destroy();
       this.container.destroy();
     }
   }
