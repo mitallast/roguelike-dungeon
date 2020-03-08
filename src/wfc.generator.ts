@@ -33,13 +33,13 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
       new PathConstraint(floorTiles)
     ];
     const level_size = 70;
-    const model = this.model = new OverlappingModel<TileSet>(input, 2, level_size, level_size, true, false, 1, 0, constraints);
+    const model = this.model = new OverlappingModel<TileSet>(input, 2, this.controller.rng, level_size, level_size, true, false, 1, 0, constraints);
 
     console.time("model loop run");
     let state;
     while (true) {
       console.time("model run");
-      state = await model.run(null, 10000);
+      state = await model.run(10000);
       console.timeEnd("model run");
       if (state !== Resolution.Decided) {
         console.error("failed run model");

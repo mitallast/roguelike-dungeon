@@ -103,7 +103,7 @@ export abstract class Model {
   private droppedBacktrackItemsCount: number;
   private backtrackCount: number; // Purely informational
 
-  random: RNG;
+  readonly rng: RNG;
   FMX: number;
   FMY: number;
   T: number;
@@ -125,7 +125,8 @@ export abstract class Model {
   status: Resolution;
   protected deferredConstraintsStep: boolean;
 
-  protected constructor(width: number, height: number) {
+  protected constructor(rng: RNG, width: number, height: number) {
+    this.rng = rng;
     this.FMX = width;
     this.FMY = height;
   }
@@ -202,10 +203,9 @@ export abstract class Model {
 
   debug: boolean = false;
 
-  async run(seed: number = null, limit: number = 0): Promise<Resolution> {
+  async run(limit: number = 0): Promise<Resolution> {
     if (this.wave === null) this.init();
     this.clear();
-    this.random = new RNG(seed);
     this.debug = false;
     for (let i = 0; i < limit || limit === 0; i++) {
       if (i % 50 === 0) {
@@ -350,7 +350,7 @@ export abstract class Model {
 
       let entropy = this.entropies[i];
       if (amount > 1 && entropy <= min) {
-        let noise = 1E-6 * this.random.nextFloat();
+        let noise = 1E-6 * this.rng.nextFloat();
         if (entropy + noise < min) {
           min = entropy + noise;
           argmin = i;
@@ -386,7 +386,7 @@ export abstract class Model {
       distribution_sum += distribution[t];
     }
 
-    let rnd = this.random.nextFloat() * distribution_sum;
+    let rnd = this.rng.nextFloat() * distribution_sum;
     let r = 0;
     for (let weight of distribution) {
       rnd -= weight;
@@ -593,6 +593,7 @@ export class OverlappingModel<T> extends Model {
   constructor(
     input: Tile<T>[][], // y >> x
     N: number,
+    rng: RNG,
     width: number,
     height: number,
     periodicInput: boolean,
@@ -601,7 +602,7 @@ export class OverlappingModel<T> extends Model {
     ground: number,
     constraints: Constraint<T>[]
   ) {
-    super(width, height);
+    super(rng, width, height);
 
     this.N = N;
     this.periodic = periodicOutput;
@@ -1495,7 +1496,7 @@ export class TestOverlappingModel {
       [w, w, r, w, w],
     ];
 
-    let model = new OverlappingModel(sample, N, width, height, periodicInput, periodicOutput, symmetry, ground, []);
+    let model = new OverlappingModel(sample, N, new RNG(), width, height, periodicInput, periodicOutput, symmetry, ground, []);
     if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {
@@ -1554,7 +1555,7 @@ export class TestOverlappingModel {
 
     let border = new BorderConstraint(w);
     let path = new PathConstraint([r]);
-    let model = new OverlappingModel(sample, N, width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
+    let model = new OverlappingModel(sample, N, new RNG(), width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
     if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {
