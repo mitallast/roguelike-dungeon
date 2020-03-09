@@ -20,7 +20,7 @@ export class DungeonScene implements Scene {
 
     this.titleView = new DungeonTitleView();
     this.inventoryView = new BeltInventoryView(dungeon.hero.heroState.inventory.belt);
-    this.healthView = new HeroStateView(dungeon.hero.heroState);
+    this.healthView = new HeroStateView(dungeon.hero.heroState, {fixedHPSize: false});
   }
 
   init(): void {

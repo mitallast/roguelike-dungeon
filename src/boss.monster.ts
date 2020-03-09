@@ -3,7 +3,7 @@ import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Character, CharacterState, CharacterWrapper} from "./character";
 import {View} from "./view";
 import {Observable, Subscription} from "./observable";
-import {Colors} from "./colors";
+import {Colors} from "./ui";
 import {PathFinding} from "./pathfinding";
 // @ts-ignore
 import * as PIXI from 'pixi.js';

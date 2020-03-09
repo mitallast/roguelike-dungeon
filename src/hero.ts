@@ -7,7 +7,7 @@ import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
 import {View} from "./view";
 import {BarView} from "./bar.view";
-import {Colors} from "./colors";
+import {Colors, Sizes} from "./ui";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -510,6 +510,11 @@ export class HeroStateView extends PIXI.Container {
   private readonly xp: BarView;
   private readonly coins: PIXI.BitmapText;
 
+  private readonly fixedHPSize: boolean;
+  private readonly hpBarSize: number;
+  private readonly maxBarSize: number;
+  private readonly maxBarInnerSize: number;
+
   private readonly healthSub: Subscription;
   private readonly healthMaxSub: Subscription;
   private readonly levelSub: Subscription;
@@ -518,20 +523,30 @@ export class HeroStateView extends PIXI.Container {
   private readonly xpSub: Subscription;
   private readonly coinsSub: Subscription;
 
-  constructor(heroState: HeroState) {
+  constructor(heroState: HeroState, options: {
+    fixedHPSize: boolean
+    hpBarSize?: number
+    maxBarSize?: number
+  }) {
     super();
-    const offsetY = 34;
+    this.fixedHPSize = options.fixedHPSize;
+    this.hpBarSize = options.hpBarSize || 8;
+    this.maxBarSize = options.maxBarSize || 256;
+    this.maxBarInnerSize = this.maxBarSize - (Sizes.uiBorder << 1);
+
+    const barHeight = 18 + (Sizes.uiBorder << 1);
+    const offsetY = barHeight + Sizes.uiMargin;
 
     this.heroState = heroState;
     this.health = new BarView({
       color: Colors.uiRed,
       width: 0,
-      widthMax: 300
+      widthMax: this.maxBarInnerSize
     });
     this.xp = new BarView({
       color: Colors.uiYellow,
       width: 0,
-      widthMax: 300
+      widthMax: this.maxBarInnerSize
     });
     (this.xp as PIXI.Container).position.set(0, offsetY);
 
@@ -541,7 +556,7 @@ export class HeroStateView extends PIXI.Container {
     super.addChild(this.health, this.xp, this.coins);
 
     this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
-    this.healthMaxSub = heroState.healthMax.subscribe(this.updateHealth.bind(this));
+    this.healthMaxSub = heroState.healthMax.subscribe(this.updateHealthMax.bind(this));
     this.levelSub = heroState.level.subscribe(this.updateXp.bind(this));
     this.levelXpSub = heroState.levelXp.subscribe(this.updateXp.bind(this));
     this.skillPointsSub = heroState.skillPoints.subscribe(this.updateXp.bind(this));
@@ -549,11 +564,21 @@ export class HeroStateView extends PIXI.Container {
     this.coinsSub = heroState.coins.subscribe(this.updateCoins.bind(this));
   }
 
+  private updateHealthMax(healthMax: number) {
+    const health = this.heroState.health.get();
+    if (!this.fixedHPSize) {
+      this.health.widthMax = this.hpBarSize * healthMax;
+    }
+    this.health.label = `${health}/${healthMax}`;
+  }
+
   private updateHealth(health: number) {
-    const BAR_WIDTH = 8;
     const healthMax = this.heroState.healthMax.get();
-    this.health.widthMax = BAR_WIDTH * healthMax;
-    this.health.width = BAR_WIDTH * health;
+    if (this.fixedHPSize) {
+      this.health.width = Math.floor(this.maxBarInnerSize * health / healthMax);
+    } else {
+      this.health.width = this.hpBarSize * health;
+    }
     this.health.label = `${health}/${healthMax}`;
   }
 
@@ -562,10 +587,9 @@ export class HeroStateView extends PIXI.Container {
     const levelXp = this.heroState.levelXp.get();
     const skillPoints = this.heroState.skillPoints.get();
     const xp = this.heroState.xp.get();
-    const maxWidth = 200;
 
-    this.xp.widthMax = maxWidth;
-    this.xp.width = Math.floor(maxWidth * xp / levelXp);
+    this.xp.widthMax = this.maxBarInnerSize;
+    this.xp.width = Math.floor(this.maxBarInnerSize * xp / levelXp);
     this.xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 

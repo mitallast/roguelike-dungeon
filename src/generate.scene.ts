@@ -3,7 +3,7 @@ import {DungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {TunnelingDungeonGenerator} from "./tunneling.generator";
 import {WfcDungeonGenerator} from "./wfc.generator";
 import {DungeonLevel} from "./dungeon.level";
-import {Colors} from "./colors";
+import {Colors} from "./ui";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -41,7 +41,7 @@ export class GenerateDungeonScreen implements Scene {
 
   renderTitle(): void {
     this.title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
-    this.title.anchor = 0.5;
+    this.title.anchor = new PIXI.Point(0.5, 0);
     this.title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(this.title);
   }

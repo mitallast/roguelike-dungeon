@@ -1,8 +1,7 @@
 // @ts-ignore
 import * as PIXI from "pixi.js";
-import {Colors} from "./colors";
+import {Colors, Sizes} from "./ui";
 
-const BAR_BORDER = 4;
 const BAR_HEIGHT = 18;
 
 export class BarView extends PIXI.Container {
@@ -28,7 +27,7 @@ export class BarView extends PIXI.Container {
     this._labelCenter = options.labelCenter || false;
     this._label = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
     this._label.anchor = new PIXI.Point(this._labelCenter ? 0.5 : 0, 0.5);
-    this._label.position.set((BAR_BORDER << 1) + (this._labelCenter ? this._widthMax >> 1 : 0), BAR_BORDER + (BAR_HEIGHT >> 1));
+    this._label.position.set((Sizes.uiBorder << 1) + (this._labelCenter ? this._widthMax >> 1 : 0), Sizes.uiBorder + (BAR_HEIGHT >> 1));
     super.addChild(this._rect, this._label);
   }
 
@@ -48,7 +47,7 @@ export class BarView extends PIXI.Container {
 
   set widthMax(widthMax: number) {
     this._widthMax = widthMax;
-    this._label.position.set((BAR_BORDER << 1) + (this._labelCenter ? this._widthMax >> 1 : 0), BAR_BORDER + (BAR_HEIGHT >> 1));
+    this._label.position.set((Sizes.uiBorder << 1) + (this._labelCenter ? this._widthMax >> 1 : 0), Sizes.uiBorder + (BAR_HEIGHT >> 1));
     this.updateRect();
   }
 
@@ -57,14 +56,14 @@ export class BarView extends PIXI.Container {
       .beginFill(Colors.uiBackground, 0.3)
       .drawRect(
         0, 0,
-        this._widthMax + (BAR_BORDER << 1),
-        BAR_HEIGHT + (BAR_BORDER << 1)
+        this._widthMax + (Sizes.uiBorder << 1),
+        BAR_HEIGHT + (Sizes.uiBorder << 1)
       )
       .endFill()
       .beginFill(this._color, 0.3)
       .drawRect(
-        BAR_BORDER,
-        BAR_BORDER,
+        Sizes.uiBorder,
+        Sizes.uiBorder,
         this._width,
         BAR_HEIGHT
       )

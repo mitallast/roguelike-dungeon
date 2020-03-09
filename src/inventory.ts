@@ -1,13 +1,12 @@
 import {UsableDrop, Weapon} from "./drop";
 import {HeroState} from "./hero";
 import {Observable, Publisher, Subscription} from "./observable";
-import {Colors} from "./colors";
+import {Colors, Sizes} from "./ui";
 import {Selectable} from "./selectable";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
 const CELL_SIZE = 32;
-const BORDER = 4;
 
 export class Inventory {
   readonly equipment: EquipmentInventory;
@@ -184,8 +183,8 @@ export class EquipmentInventoryView extends PIXI.Container {
       .beginFill(Colors.uiBackground, 0.3)
       .drawRect(
         0, 0,
-        CELL_SIZE + (BORDER << 1),
-        CELL_SIZE + (BORDER << 1)
+        CELL_SIZE + (Sizes.uiBorder << 1),
+        CELL_SIZE + (Sizes.uiBorder << 1)
       )
       .endFill();
     super.addChild(background);
@@ -194,7 +193,7 @@ export class EquipmentInventoryView extends PIXI.Container {
       item: this.equipment.weapon,
       count: new Observable(null)
     });
-    (this.weapon as PIXI.Container).position.set(BORDER, BORDER);
+    (this.weapon as PIXI.Container).position.set(Sizes.uiBorder, Sizes.uiBorder);
     super.addChild(this.weapon);
   }
 }
@@ -211,8 +210,8 @@ export class BeltInventoryView extends PIXI.Container {
       .beginFill(Colors.uiBackground, 0.3)
       .drawRect(
         0, 0,
-        BORDER + (CELL_SIZE + BORDER) * inventory.length,
-        CELL_SIZE + (BORDER << 1)
+        Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.length,
+        CELL_SIZE + (Sizes.uiBorder << 1)
       )
       .endFill();
     super.addChild(background);
@@ -225,8 +224,8 @@ export class BeltInventoryView extends PIXI.Container {
         count: cell.count,
       });
       (view as PIXI.Container).position.set(
-        BORDER + (CELL_SIZE + BORDER) * i,
-        BORDER
+        Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * i,
+        Sizes.uiBorder
       );
       this.cells.push(view);
       super.addChild(view);
@@ -255,8 +254,8 @@ export class BagpackInventoryView extends PIXI.Container {
       .beginFill(Colors.uiBackground, 0.3)
       .drawRect(
         0, 0,
-        BORDER + (CELL_SIZE + BORDER) * inventory.width,
-        BORDER + (CELL_SIZE + BORDER) * inventory.height,
+        Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.width,
+        Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.height,
       )
       .endFill();
     super.addChild(background);
@@ -271,8 +270,8 @@ export class BagpackInventoryView extends PIXI.Container {
           count: cell.count,
         });
         (view as PIXI.Container).position.set(
-          BORDER + (CELL_SIZE + BORDER) * x,
-          BORDER + (CELL_SIZE + BORDER) * y
+          Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * x,
+          Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * y
         );
         this.cells[y][x] = view;
         super.addChild(view);
@@ -316,7 +315,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
 
     this.counter = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
     this.counter.anchor = new PIXI.Point(1, 0);
-    this.counter.position.set(CELL_SIZE - BORDER, 0);
+    this.counter.position.set(CELL_SIZE - Sizes.uiBorder, 0);
 
     super.addChild(this.background, this.counter);
 
@@ -356,11 +355,11 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     this.sprite = null;
     if (item) {
       this.sprite = item.sprite();
-      const max = CELL_SIZE - (BORDER << 1);
+      const max = CELL_SIZE - (Sizes.uiBorder << 1);
       const scale = max / Math.max(this.sprite.width, this.sprite.height);
       this.sprite.scale.set(scale, scale);
       this.sprite.anchor.set(0.5, 0);
-      this.sprite.position.set(CELL_SIZE >> 1, BORDER);
+      this.sprite.position.set(CELL_SIZE >> 1, Sizes.uiBorder);
       super.addChild(this.sprite);
     }
   }

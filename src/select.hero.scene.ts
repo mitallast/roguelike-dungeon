@@ -1,7 +1,7 @@
 import {Scene, SceneController} from "./scene";
 import {heroMonsterNames, HeroState} from "./hero";
 import {WeaponConfig} from "./drop";
-import {Colors} from "./colors";
+import {Colors} from "./ui";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -32,7 +32,7 @@ export class SelectHeroScene implements Scene {
 
   renderTitle() {
     let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
-    title.anchor = 0.5;
+    title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
   }

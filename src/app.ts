@@ -2,7 +2,7 @@ import {Joystick} from "./input";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
-import {Colors} from "./colors";
+import {Colors} from "./ui";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
 // @ts-ignore

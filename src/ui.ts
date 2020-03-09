@@ -1,7 +1,34 @@
 import {Selectable} from "./selectable";
-import {Colors} from "./colors";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+
+export interface ColorScheme {
+  readonly background: number
+  readonly uiBackground: number
+  readonly uiSelected: number
+  readonly uiNotSelected: number
+  readonly uiRed: number
+  readonly uiYellow: number
+}
+
+export const Colors: ColorScheme = {
+  background: 0x202020,
+  uiBackground: 0x505050,
+  uiSelected: 0x909090,
+  uiNotSelected: 0x505050,
+  uiRed: 0xFF0000,
+  uiYellow: 0xFFD300,
+};
+
+export interface SizeScheme {
+  readonly uiBorder: number;
+  readonly uiMargin: number;
+}
+
+export const Sizes: SizeScheme = {
+  uiBorder: 4,
+  uiMargin: 16,
+};
 
 export class Button extends PIXI.Container implements Selectable {
   private readonly _width: number;
