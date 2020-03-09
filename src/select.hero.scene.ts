@@ -122,7 +122,7 @@ export class SelectHeroScene implements Scene {
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);
       const hero = new HeroState(name);
       hero.inventory.equipment.weapon.set(weapon);
-      this.controller.updateHero({
+      this.controller.generateDungeon({
         level: 1,
         hero: hero
       });
