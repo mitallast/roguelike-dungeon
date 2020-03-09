@@ -73,6 +73,10 @@ export class BeltInventory {
     }
     return false;
   }
+
+  add(item: UsableDrop): boolean {
+    return this.stack(item) || this.set(item);
+  }
 }
 
 export class BagpackInventory {
@@ -114,6 +118,10 @@ export class BagpackInventory {
       }
     }
     return false;
+  }
+
+  add(item: UsableDrop): boolean {
+    return this.stack(item) || this.set(item);
   }
 }
 
@@ -166,6 +174,10 @@ export class InventoryCell {
       this.item.set(null);
       this.count.set(0);
     }
+  }
+
+  get isEmpty(): boolean {
+    return this.item.get() == null;
   }
 }
 

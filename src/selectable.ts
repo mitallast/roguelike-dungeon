@@ -81,6 +81,27 @@ export class SelectableMap {
     this.maxX = this.maxX === null ? x : Math.max(this.maxX, x);
     this.columns[x].set(y, selectable, action);
   }
+
+  remove(x: number, y: number): void {
+    while (x > this.columns.length - 1) {
+      this.columns.push(new SelectableColumn());
+    }
+    this.columns[x].remove(y);
+    this.minX = null;
+    for (let i = 0; i < this.columns.length; i++) {
+      if (!this.columns[i].isEmpty) {
+        this.minX = i;
+        break;
+      }
+    }
+    this.maxX = null;
+    for (let i = this.columns.length - 1; i >= 0; i--) {
+      if (!this.columns[i].isEmpty) {
+        this.maxX = i;
+        break;
+      }
+    }
+  }
 }
 
 class SelectableColumn {
@@ -136,6 +157,27 @@ class SelectableColumn {
       const [selectable] = this.cells[selectedY];
       if (!selectable.selected) {
         selectable.selected = true;
+      }
+    }
+  }
+
+  remove(y: number): void {
+    while (y > this.cells.length - 1) {
+      this.cells.push(null);
+    }
+    this.cells[y] = null;
+    this.minY = null;
+    for (let i = 0; i < this.cells.length; i++) {
+      if (this.cells[i]) {
+        this.minY = i;
+        break;
+      }
+    }
+    this.maxY = null;
+    for (let i = this.cells.length - 1; i >= 0; i--) {
+      if (this.cells[i]) {
+        this.maxY = i;
+        break;
       }
     }
   }
