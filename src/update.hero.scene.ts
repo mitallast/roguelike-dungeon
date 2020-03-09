@@ -344,10 +344,9 @@ export class UpdateHeroScene implements Scene {
     if (drop && drop instanceof Weapon) {
       const prev = this.hero.inventory.equipment.weapon.get();
       this.hero.inventory.equipment.weapon.set(drop);
+      cell.clear();
       if (prev) {
         cell.set(prev);
-      } else {
-        cell.clear();
       }
       this.dropCard.drop = null;
       this.removeActions();
@@ -455,10 +454,9 @@ export class UpdateHeroScene implements Scene {
     if (drop && drop instanceof Weapon) {
       const prev = this.hero.inventory.equipment.weapon.get();
       this.hero.inventory.equipment.weapon.set(drop);
+      cell.clear();
       if (prev) {
         cell.set(prev);
-      } else {
-        cell.clear();
       }
       this.dropCard.drop = null;
       this.removeActions();
