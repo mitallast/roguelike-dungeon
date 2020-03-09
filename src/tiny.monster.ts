@@ -1,6 +1,6 @@
 import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Character, CharacterState, CharacterWrapper} from "./character";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
@@ -20,17 +20,17 @@ export const tinyMonsterNames = [
   "ice_zombie",
 ];
 
-export class TinyMonster implements Monster, View {
+export class TinyMonster implements Character, View {
   private readonly level: DungeonLevel;
   private readonly resources: Resources;
-  private readonly wrapper: MovingMonsterWrapper;
+  private readonly wrapper: CharacterWrapper;
 
   x: number;
   y: number;
   new_x: number;
   new_y: number;
   is_left: boolean = false;
-  state: MonsterState;
+  state: CharacterState;
 
   readonly name: string;
   private readonly healthMax: number = 10;
@@ -47,12 +47,12 @@ export class TinyMonster implements Monster, View {
   constructor(level: DungeonLevel, x: number, y: number, name: string) {
     this.level = level;
     this.resources = level.controller.resources;
-    this.wrapper = new MovingMonsterWrapper(this);
+    this.wrapper = new CharacterWrapper(this);
     this.name = name;
     this.container = new PIXI.Container();
-    this.container.zIndex = DungeonZIndexes.monster;
+    this.container.zIndex = DungeonZIndexes.character;
     this.level.container.addChild(this.container);
-    this.setAnimation(MonsterState.Idle);
+    this.setAnimation(CharacterState.Idle);
     this.resetPosition(x, y);
   }
 
@@ -62,8 +62,8 @@ export class TinyMonster implements Monster, View {
   }
 
   destroy(): void {
-    this.level.monsterMap[this.y][this.x] = null;
-    this.level.monsterMap[this.new_y][this.new_x] = null;
+    this.level.characterMap[this.y][this.x] = null;
+    this.level.characterMap[this.new_y][this.new_x] = null;
     this.level.monsters = this.level.monsters.filter(s => s !== this);
 
     this.sprite?.destroy();
@@ -91,13 +91,13 @@ export class TinyMonster implements Monster, View {
     }
   }
 
-  private setAnimation(state: MonsterState) {
+  private setAnimation(state: CharacterState) {
     switch (state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         this.state = state;
         this.setSprite('_idle');
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         this.state = state;
         this.setSprite('_run');
         break;
@@ -106,14 +106,14 @@ export class TinyMonster implements Monster, View {
 
   private animate() {
     switch (this.state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         if (!this.sprite.playing) {
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         const delta = this.duration / (this.sprite.totalFrames / this.speed);
         const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
         const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
@@ -122,7 +122,7 @@ export class TinyMonster implements Monster, View {
         if (!this.sprite.playing) {
           this.resetPosition(this.new_x, this.new_y);
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
@@ -155,7 +155,7 @@ export class TinyMonster implements Monster, View {
     const scan_x_max = Math.min(this.level.width, this.x + max_distance);
     const scan_y_max = Math.min(this.level.height, this.y + max_distance);
 
-    const is_hero_near = !this.level.hero.dead
+    const is_hero_near = !this.level.hero.heroState.dead.get()
       && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
       && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
 
@@ -168,7 +168,7 @@ export class TinyMonster implements Monster, View {
         const pf = new PathFinding(level.width, level.height);
         for (let y = 0; y < level.height; y++) {
           for (let x = 0; x < level.width; x++) {
-            const m = level.monsterMap[y][x];
+            const m = level.characterMap[y][x];
             if (m && m !== this && m !== this.wrapper && m !== level.hero) {
               pf.mark(x, y);
             } else if (level.cell(x, y).hasFloor) {
@@ -196,7 +196,7 @@ export class TinyMonster implements Monster, View {
 
   private move(d_x: number, d_y: number) {
     this.is_left = d_x < 0;
-    if (this.state === MonsterState.Idle) {
+    if (this.state === CharacterState.Idle) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
       const cell = this.level.cell(new_x, new_y);
@@ -205,41 +205,41 @@ export class TinyMonster implements Monster, View {
       if (!cell.hasFloor) return false;
 
       // check is no monster
-      if (this.level.monsterMap[new_y][new_x]) return false;
+      if (this.level.characterMap[new_y][new_x]) return false;
 
       this.markNewPosition(new_x, new_y);
-      this.setAnimation(MonsterState.Run);
+      this.setAnimation(CharacterState.Run);
       return true;
     }
     return false;
   };
 
   private markNewPosition(x: number, y: number) {
-    this.level.monsterMap[y][x] = this.wrapper;
+    this.level.characterMap[y][x] = this.wrapper;
     this.new_x = x;
     this.new_y = y;
   }
 
   private resetPosition(x: number, y: number) {
     if (this.x >= 0 && this.y >= 0) {
-      this.level.monsterMap[this.y][this.x] = null;
+      this.level.characterMap[this.y][this.x] = null;
     }
     this.x = x;
     this.y = y;
     this.new_x = x;
     this.new_y = y;
-    this.level.monsterMap[y][x] = this;
+    this.level.characterMap[y][x] = this;
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   };
 
-  hitDamage(monster: Monster, damage: number) {
+  hitDamage(character: Character, damage: number) {
     this.level.log.push(`${this.name} damaged ${damage} by ${name}`);
     this.health = Math.max(0, this.health - damage);
     if (this.health <= 0) {
       this.level.log.push(`${this.name} killed by ${name}`);
       this.destroy();
-      if (monster instanceof HeroView) {
-        monster.heroState.addXp(this.xp);
+      if (character instanceof HeroView) {
+        character.heroState.addXp(this.xp);
       }
       if (Math.random() < this.luck) {
         this.level.cell(this.x, this.y).randomDrop();

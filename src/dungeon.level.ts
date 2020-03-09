@@ -1,7 +1,7 @@
 import {TinyMonster} from "./tiny.monster";
 import {Coins, Drop, DropView, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
 import {HeroState, HeroView} from "./hero";
-import {Monster} from "./monster";
+import {Character} from "./character";
 import {BossMonster} from "./boss.monster";
 import {DungeonLightView} from "./dungeon.light";
 import {View} from "./view";
@@ -12,7 +12,7 @@ import {SceneController} from "./scene";
 const TILE_SIZE = 16;
 
 export interface DungeonZIndexScheme {
-  readonly monster: number
+  readonly character: number
   readonly drop: number
   readonly floor: number
   readonly wallBack: number
@@ -20,7 +20,7 @@ export interface DungeonZIndexScheme {
 }
 
 export const DungeonZIndexes: DungeonZIndexScheme = {
-  monster: 60,
+  character: 60,
   drop: 50,
   floor: 1,
   wallBack: 2,
@@ -40,7 +40,7 @@ export class DungeonLevel {
   monsters: TinyMonster[] = [];
 
   private readonly cells: DungeonCellView[][];
-  readonly monsterMap: Monster[][];
+  readonly characterMap: Character[][];
 
   log: string[] = [];
 
@@ -64,7 +64,7 @@ export class DungeonLevel {
       }
     }
 
-    this.monsterMap = this.createBuffer();
+    this.characterMap = this.createBuffer();
 
     this.container = new PIXI.Container();
     this.container.zIndex = 0;
@@ -228,7 +228,7 @@ export class DungeonCellView implements View {
     }
   }
 
-  pickedUp(hero: HeroView): void {
+  pickedUp(hero: HeroState): void {
     if (this.dropView) {
       this.dropView.pickedUp(hero);
     }

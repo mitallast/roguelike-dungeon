@@ -1,16 +1,18 @@
 import {RNG} from "./rng";
-import {HeroView} from "./hero";
+import {HeroState} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {View} from "./view";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {Colors} from "./colors";
 
 const TILE_SIZE = 16;
+const MARGIN = 40;
 
 export interface Drop {
-  pickedUp(hero: HeroView): boolean;
+  pickedUp(hero: HeroState): boolean;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
   dropView(dungeon: DungeonLevel, x: number, y: number): DropView;
 }
@@ -41,7 +43,7 @@ export class DropView implements View {
     level.container.sortChildren();
   }
 
-  pickedUp(hero: HeroView): void {
+  pickedUp(hero: HeroState): void {
     if (this.drop.pickedUp(hero)) {
       this.level.cell(this.x, this.y).drop = null;
     }
@@ -59,8 +61,16 @@ export class DropView implements View {
 }
 
 export interface UsableDrop extends Drop {
+  info(): DropInfo;
   same(item: UsableDrop): boolean;
-  use(cell: InventoryCell, hero: HeroView): void;
+  use(cell: InventoryCell, hero: HeroState): void;
+}
+
+export interface DropInfo {
+  health?: number
+  speed?: number
+  distance?: number
+  damage?: number
 }
 
 export class Coins implements Drop {
@@ -72,7 +82,7 @@ export class Coins implements Drop {
     this.coins = rng.nextRange(1, 30)
   }
 
-  pickedUp(hero: HeroView): boolean {
+  pickedUp(hero: HeroState): boolean {
     hero.addCoins(this.coins);
     return true;
   };
@@ -95,15 +105,21 @@ export class HealthFlask implements UsableDrop {
     this.health = 2;
   }
 
-  pickedUp(hero: HeroView): boolean {
-    return hero.addInventory(this);
+  info(): DropInfo {
+    return {
+      health: this.health
+    };
+  }
+
+  pickedUp(hero: HeroState): boolean {
+    return hero.inventory.add(this);
   };
 
   same(item: UsableDrop): boolean {
     return item instanceof HealthFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroView) {
+  use(cell: InventoryCell, hero: HeroState) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -126,8 +142,14 @@ export class HealthBigFlask implements UsableDrop {
     this.health = 5;
   }
 
-  pickedUp(hero: HeroView): boolean {
-    return hero.addInventory(this);
+  info(): DropInfo {
+    return {
+      health: this.health
+    };
+  }
+
+  pickedUp(hero: HeroState): boolean {
+    return hero.inventory.add(this);
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
@@ -138,7 +160,7 @@ export class HealthBigFlask implements UsableDrop {
     return item instanceof HealthBigFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroView) {
+  use(cell: InventoryCell, hero: HeroState) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -208,20 +230,29 @@ export class Weapon implements UsableDrop {
     this.damage = damage;
   }
 
+  info(): DropInfo {
+    return {
+      speed: this.speed,
+      distance: this.distance,
+      damage: this.damage,
+    };
+  }
+
   sprite(): PIXI.Sprite {
     return this.resources.sprite(this.name + ".png");
   }
 
-  pickedUp(hero: HeroView): boolean {
-    return hero.addInventory(this);
+  pickedUp(hero: HeroState): boolean {
+    return hero.inventory.add(this);
   }
 
   same(item: UsableDrop): boolean {
     return false;
   }
 
-  use(cell: InventoryCell, hero: HeroView): void {
-    const prev = hero.setWeapon(this);
+  use(cell: InventoryCell, hero: HeroState): void {
+    const prev = hero.inventory.equipment.weapon.get();
+    hero.inventory.equipment.weapon.set(this);
     cell.clear();
     if (prev) {
       cell.set(prev);
@@ -230,5 +261,68 @@ export class Weapon implements UsableDrop {
 
   dropView(level: DungeonLevel, x: number, y: number): DropView {
     return new DropView(this, level, x, y);
+  }
+}
+
+export class DropCardView extends PIXI.Container {
+  private readonly _width: number;
+  private readonly _height: number;
+  private _drop: UsableDrop;
+  private _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+  private _description: PIXI.BitmapText;
+
+  constructor(options: {
+    width?: number,
+    height?: number,
+  }) {
+    super();
+
+    this._width = options.width || 200;
+    this._height = options.height || 400;
+
+    const background = new PIXI.Graphics()
+      .beginFill(Colors.uiBackground, 0.3)
+      .drawRect(0, 0, this._width, this._height)
+      .endFill();
+
+    this._description = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this._description.position.set(MARGIN, this._width + MARGIN);
+
+    super.addChild(background, this._description);
+  }
+
+  set drop(drop: UsableDrop) {
+    this._drop = null;
+    this._sprite?.destroy();
+    this._sprite = null;
+    this._description.text = null;
+
+    if (drop) {
+      this._drop = drop;
+      const sprite = this._sprite = drop.sprite();
+      super.addChild(sprite);
+      sprite.anchor.set(0.5, 0.5);
+      sprite.position.set(this._width >> 1, this._width >> 1);
+      const s_w = sprite.width;
+      const s_h = sprite.height;
+      const max_size = this._width - (MARGIN << 1);
+      if (s_w > s_h) {
+        this._sprite.width = max_size;
+        this._sprite.height = (max_size / s_w) * s_h;
+      } else {
+        this._sprite.height = max_size;
+        this._sprite.width = (max_size / s_h) * s_w;
+      }
+
+      const info = drop.info();
+      const text: string[] = [];
+
+      if (info.health) text.push(`health: ${info.health}`);
+      if (info.speed) text.push(`speed: ${info.speed}`);
+      if (info.distance) text.push(`distance: ${info.distance}`);
+      if (info.damage) text.push(`damage: ${info.damage}`);
+
+      this._description.text = text.join("\n");
+    }
   }
 }

@@ -110,7 +110,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.monsterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.characterMap[y][x]) {
           free.push([x, y]);
         }
       }
@@ -130,7 +130,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.monsterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.characterMap[y][x]) {
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (distance > min_hero_distance) {
             free.push([x, y]);
@@ -146,7 +146,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const name = this.rng.choice(tinyMonsterNames);
       const monster = new TinyMonster(dungeon, x, y, name);
       dungeon.monsters.push(monster);
-      dungeon.monsterMap[y][x] = monster;
+      dungeon.characterMap[y][x] = monster;
     }
   }
 
@@ -158,8 +158,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         if (dungeon.cell(x, y).hasFloor &&
-          !dungeon.monsterMap[y][x] && !dungeon.monsterMap[y][x + 1] &&
-          !dungeon.monsterMap[y - 1][x] && !dungeon.monsterMap[y - 1][x + 1]
+          !dungeon.characterMap[y][x] && !dungeon.characterMap[y][x + 1] &&
+          !dungeon.characterMap[y - 1][x] && !dungeon.characterMap[y - 1][x + 1]
         ) {
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (distance > min_hero_distance) {

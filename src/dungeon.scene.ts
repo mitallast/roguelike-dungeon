@@ -1,7 +1,7 @@
 import {HeroStateView} from "./hero";
 import {DungeonLevel, DungeonTitleView} from "./dungeon.level";
 import {Scene, SceneController} from "./scene";
-import {InventoryView} from "./inventory";
+import {BeltInventoryView} from "./inventory";
 import {BossHealthView} from "./boss.monster";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
@@ -10,7 +10,7 @@ export class DungeonScene implements Scene {
   private readonly controller: SceneController;
   private readonly dungeon: DungeonLevel;
   private readonly titleView: DungeonTitleView;
-  private readonly inventoryView: InventoryView;
+  private readonly inventoryView: BeltInventoryView;
   private readonly healthView: HeroStateView;
   private bossHealthView?: BossHealthView;
 
@@ -19,7 +19,7 @@ export class DungeonScene implements Scene {
     this.dungeon = dungeon;
 
     this.titleView = new DungeonTitleView();
-    this.inventoryView = new InventoryView(dungeon.hero.heroState.inventory);
+    this.inventoryView = new BeltInventoryView(dungeon.hero.heroState.inventory.belt);
     this.healthView = new HeroStateView(dungeon.hero.heroState);
   }
 
@@ -31,10 +31,10 @@ export class DungeonScene implements Scene {
     this.titleView.container.zIndex = 10;
     this.controller.stage.addChild(this.titleView.container);
 
-    const i_w = this.inventoryView.container.width;
-    this.inventoryView.container.position.set((c_w >> 1) - (i_w >> 1), c_h - (32 + 4 + 16));
-    this.inventoryView.container.zIndex = 11;
-    this.controller.stage.addChild(this.inventoryView.container);
+    const i_w = (this.inventoryView as PIXI.Container).width;
+    (this.inventoryView as PIXI.Container).position.set((c_w >> 1) - (i_w >> 1), c_h - (32 + 4 + 16));
+    (this.inventoryView as PIXI.Container).zIndex = 11;
+    this.controller.stage.addChild(this.inventoryView);
 
     (this.healthView as PIXI.Container).position.set(16, 16);
     (this.healthView as PIXI.Container).zIndex = 12;
@@ -65,7 +65,6 @@ export class DungeonScene implements Scene {
 
   update(delta: number): void {
     this.dungeon.update(delta);
-    this.inventoryView.update(delta);
     this.titleView.update(delta);
     this.bossHealthView?.update(delta);
   }
@@ -75,7 +74,7 @@ export class DungeonScene implements Scene {
     this.bossHealthView?.destroy();
     this.titleView.destroy();
     this.healthView.destroy();
-    this.inventoryView.destroy();
+    (this.inventoryView as PIXI.Container).destroy();
     this.dungeon.destroy();
     this.controller.stage.removeChildren();
   }

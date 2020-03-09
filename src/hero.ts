@@ -1,9 +1,9 @@
 import {Inventory} from "./inventory";
 import {Resources} from "./resources";
 import {Joystick} from "./input";
-import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Character, CharacterState, CharacterWrapper} from "./character";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {UsableDrop, Weapon} from "./drop";
+import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
 import {View} from "./view";
 import {BarView} from "./bar.view";
@@ -22,17 +22,52 @@ export const heroMonsterNames = [
 
 export class HeroState {
   readonly name: string;
-  readonly healthMax: Observable<number> = new Observable(30);
-  readonly health: Observable<number> = new Observable(this.healthMax.get());
-  readonly coins: Observable<number> = new Observable(0);
+
+  private readonly _healthMax: Observable<number> = new Observable(30);
+  private readonly _health: Observable<number> = new Observable(this._healthMax.get());
+  private readonly _dead: Observable<boolean> = new Observable(false);
+
+  get healthMax(): Publisher<number> {
+    return this._healthMax;
+  }
+
+  get health(): Publisher<number> {
+    return this._health;
+  }
+
+  get dead(): Publisher<boolean> {
+    return this._dead;
+  }
+
+  hill(health: number): void {
+    this._health.update(h => Math.min(this._healthMax.get(), h + health));
+  }
+
+  damage(damage: number): void {
+    this._health.update((h) => Math.max(0, h - damage));
+    if (this._health.get() === 0) {
+      this._dead.set(true);
+    }
+  }
+
+  private readonly _coins: Observable<number> = new Observable(0);
+
+  get coins(): Publisher<number> {
+    return this._coins;
+  }
+
+  addCoins(coins: number): void {
+    this._coins.update(c => c + coins);
+  }
+
   readonly baseDamage: number = 0;
-  readonly dead: Observable<boolean> = new Observable(false);
-  readonly weapon: Observable<Weapon>;
-  readonly inventory: Inventory = new Inventory();
+
+  readonly inventory: Inventory = new Inventory(this);
 
   private readonly _level: Observable<number> = new Observable(0);
   private readonly _levelXp: Observable<number> = new Observable(1000);
   private readonly _skillPoints: Observable<number> = new Observable(0);
+
   private readonly _xp: Observable<number> = new Observable(0);
 
   get level(): Publisher<number> {
@@ -78,34 +113,33 @@ export class HeroState {
     this._skillPoints.update((points) => {
       if (points > 0) {
         points--;
-        this.healthMax.update((h) => h + 1);
-        this.health.update((h) => h + 1);
+        this._healthMax.update((h) => h + 1);
+        this._health.update((h) => h + 1);
       }
       return points;
     });
   }
 
-  constructor(name: string, weapon: Weapon) {
+  constructor(name: string) {
     this.name = name;
-    this.weapon = new Observable(weapon);
   }
 }
 
 const TILE_SIZE = 16;
 
-export class HeroView implements Monster, View {
+export class HeroView implements Character, View {
   private readonly level: DungeonLevel;
   private readonly resources: Resources;
   private readonly joystick: Joystick;
   readonly heroState: HeroState;
-  private readonly wrapper: MovingMonsterWrapper;
+  private readonly wrapper: CharacterWrapper;
 
   x: number = -1;
   y: number = -1;
   new_x: number = -1;
   new_y: number = -1;
   is_left: boolean = false;
-  state: MonsterState;
+  state: CharacterState;
 
   get name(): string {
     return this.heroState.name;
@@ -116,20 +150,24 @@ export class HeroView implements Monster, View {
 
   // view
   private sprite: PIXI.AnimatedSprite;
-  private weaponSprite: PIXI.Sprite;
+
+  private weaponSprite: PIXI.Sprite = null;
+  private readonly weaponSub: Subscription;
+
   readonly container: PIXI.Container;
 
   constructor(level: DungeonLevel, heroState: HeroState) {
     this.level = level;
     this.resources = level.controller.resources;
     this.joystick = level.controller.joystick;
-    this.wrapper = new MovingMonsterWrapper(this);
+    this.wrapper = new CharacterWrapper(this);
     this.heroState = heroState;
     this.container = new PIXI.Container();
-    this.container.zIndex = DungeonZIndexes.monster;
+    this.container.zIndex = DungeonZIndexes.character;
     this.level.container.addChild(this.container);
-    this.setAnimation(MonsterState.Idle);
-    this.initWeapon();
+    this.setAnimation(CharacterState.Idle);
+
+    this.weaponSub = this.heroState.inventory.equipment.weapon.subscribe(this.onWeaponUpdate.bind(this));
   }
 
   update(delta: number): void {
@@ -138,6 +176,7 @@ export class HeroView implements Monster, View {
   }
 
   destroy(): void {
+    this.weaponSub.unsubscribe();
     this.sprite?.destroy();
     this.weaponSprite?.destroy();
     this.container.destroy();
@@ -173,24 +212,24 @@ export class HeroView implements Monster, View {
     }
   }
 
-  private setAnimation(state: MonsterState) {
+  private setAnimation(state: CharacterState) {
     switch (state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         this.state = state;
         this.setSprite('_idle');
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         if (!this.heroState.dead.get()) {
           this.state = state;
           this.setSprite('_run');
         }
         break;
-      case MonsterState.Hit:
+      case CharacterState.Hit:
         if (!this.heroState.dead.get()) {
           this.state = state;
           this.setSprite('_idle');
-          if (this.heroState.weapon.get()) {
-            this.sprite.animationSpeed = this.heroState.weapon.get().speed;
+          if (this.heroState.inventory.equipment.weapon.get()) {
+            this.sprite.animationSpeed = this.heroState.inventory.equipment.weapon.get().speed;
           }
         }
         break;
@@ -199,14 +238,14 @@ export class HeroView implements Monster, View {
 
   private animate() {
     switch (this.state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         if (!this.action()) {
           if (!this.sprite.playing) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
         const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
         const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
@@ -215,11 +254,11 @@ export class HeroView implements Monster, View {
         if (!this.sprite.playing) {
           this.resetPosition(this.new_x, this.new_y);
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
-      case MonsterState.Hit:
+      case CharacterState.Hit:
         if (this.weaponSprite) {
           const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
           this.weaponSprite.angle = (this.is_left ? -90 : 90) * delta;
@@ -233,7 +272,7 @@ export class HeroView implements Monster, View {
           this.scanHit();
           this.scanDrop();
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
@@ -247,7 +286,7 @@ export class HeroView implements Monster, View {
         const digit = (d + 1) % 10;
         if (!this.joystick.digit(digit).processed) {
           this.joystick.digit(digit).processed = true;
-          this.heroState.inventory.cells[d].use(this);
+          this.heroState.inventory.belt.cell(d).use();
         }
       }
       if (!this.joystick.drop.processed) {
@@ -261,7 +300,7 @@ export class HeroView implements Monster, View {
           this.level.exit();
         } else {
           this.joystick.hit.processed = true;
-          this.setAnimation(MonsterState.Hit);
+          this.setAnimation(CharacterState.Hit);
         }
         return true;
       }
@@ -296,7 +335,7 @@ export class HeroView implements Monster, View {
   }
 
   private dropWeapon() {
-    if (this.heroState.weapon.get()) {
+    if (this.heroState.inventory.equipment.weapon.get()) {
       const max_distance = 5;
       let left_x = this.x;
       let right_x = this.x;
@@ -325,10 +364,8 @@ export class HeroView implements Monster, View {
               if (s_x >= 0 && s_y >= 0) {
                 const cell = this.level.cell(s_x, s_y);
                 if (!cell.hasDrop && cell.hasFloor) {
-                  cell.drop = this.heroState.weapon.get();
-                  this.heroState.weapon.set(null);
-                  this.weaponSprite?.destroy();
-                  this.weaponSprite = null;
+                  cell.drop = this.heroState.inventory.equipment.weapon.get();
+                  this.heroState.inventory.equipment.weapon.set(null);
                   return;
                 }
               }
@@ -354,10 +391,8 @@ export class HeroView implements Monster, View {
               if (s_x >= 0 && s_y >= 0) {
                 const cell = this.level.cell(s_x, s_y);
                 if (!cell.hasDrop && cell.hasFloor) {
-                  cell.drop = this.heroState.weapon.get();
-                  this.heroState.weapon.set(null);
-                  this.weaponSprite?.destroy();
-                  this.weaponSprite = null;
+                  cell.drop = this.heroState.inventory.equipment.weapon.get();
+                  this.heroState.inventory.equipment.weapon.set(null);
                   return;
                 }
               }
@@ -371,20 +406,16 @@ export class HeroView implements Monster, View {
   private scanDrop() {
     const cell = this.level.cell(this.x, this.y);
     if (cell.hasDrop) {
-      cell.pickedUp(this);
+      cell.pickedUp(this.heroState);
     }
   }
 
   get damage(): number {
-    return this.heroState.baseDamage + (this.heroState.weapon.get()?.damage || 0);
-  }
-
-  get dead(): boolean {
-    return this.heroState.dead.get();
+    return this.heroState.baseDamage + (this.heroState.inventory.equipment.weapon.get()?.damage || 0);
   }
 
   private scanHit() {
-    const max_distance = this.heroState.weapon.get()?.distance || 1;
+    const max_distance = this.heroState.inventory.equipment.weapon.get()?.distance || 1;
     // search only left or right path
     const scan_x_min = this.is_left ? Math.max(0, this.x - max_distance) : this.x;
     const scan_x_max = this.is_left ? this.x : Math.min(this.level.width, this.x + max_distance);
@@ -396,7 +427,7 @@ export class HeroView implements Monster, View {
       for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
         // not self
         if (!(s_x === this.x && s_y === this.y)) {
-          const monster = this.level.monsterMap[s_y][s_x];
+          const monster = this.level.characterMap[s_y][s_x];
           if (monster) {
             monster.hitDamage(this, this.damage);
           }
@@ -406,7 +437,7 @@ export class HeroView implements Monster, View {
   }
 
   private move(d_x: number, d_y: number) {
-    if (!this.heroState.dead.get() && this.state === MonsterState.Idle || this.state === MonsterState.Run) {
+    if (!this.heroState.dead.get() && this.state === CharacterState.Idle || this.state === CharacterState.Run) {
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
 
@@ -415,63 +446,50 @@ export class HeroView implements Monster, View {
       // check is floor exists
       if (!cell.hasFloor) return false;
       // check is no monster
-      if (this.level.monsterMap[new_y][new_x]) return false;
+      if (this.level.characterMap[new_y][new_x]) return false;
 
       this.markNewPosition(new_x, new_y);
-      this.setAnimation(MonsterState.Run);
+      this.setAnimation(CharacterState.Run);
       return true;
     }
     return false;
   }
 
   private markNewPosition(x: number, y: number) {
-    this.level.monsterMap[y][x] = this.wrapper;
+    this.level.characterMap[y][x] = this.wrapper;
     this.new_x = x;
     this.new_y = y;
   }
 
   resetPosition(x: number, y: number) {
     if (this.x >= 0 && this.y >= 0) {
-      this.level.monsterMap[this.y][this.x] = null;
+      this.level.characterMap[this.y][this.x] = null;
     }
     this.x = x;
     this.y = y;
     this.new_x = x;
     this.new_y = y;
-    this.level.monsterMap[y][x] = this;
+    this.level.characterMap[y][x] = this;
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   }
 
-  hitDamage(monster: Monster, damage: number) {
+  hitDamage(monster: Character, damage: number) {
     if (!this.heroState.dead.get()) {
       this.level.log.push(`${this.heroState.name} damaged ${damage} by ${monster.name}`);
-      this.heroState.health.update(h => Math.max(0, h - damage));
-      if (this.heroState.health.get() <= 0) {
+      this.heroState.damage(damage);
+      if (this.heroState.dead.get()) {
         this.level.log.push(`${this.heroState.name} killed by ${name}`);
-        this.setAnimation(MonsterState.Idle);
-        this.heroState.dead.set(true);
+        this.setAnimation(CharacterState.Idle);
         this.level.dead();
       }
     }
   }
 
-  hill(health: number) {
-    this.heroState.health.update(h => Math.min(this.heroState.healthMax.get(), h + health));
-  }
-
-  addCoins(coins: number) {
-    this.heroState.coins.update(c => c + coins);
-  }
-
-  addInventory(item: UsableDrop): boolean {
-    return this.heroState.inventory.add(item);
-  }
-
-  initWeapon(): void {
+  private onWeaponUpdate(weapon: Weapon): void {
     this.weaponSprite?.destroy();
     this.weaponSprite = null;
-    if (this.heroState.weapon.get()) {
-      this.weaponSprite = this.heroState.weapon.get().sprite();
+    if (weapon) {
+      this.weaponSprite = weapon.sprite();
       this.weaponSprite.zIndex = 2;
       this.weaponSprite.position.x = TILE_SIZE;
       this.weaponSprite.position.y = TILE_SIZE - 4;
@@ -483,13 +501,6 @@ export class HeroView implements Monster, View {
       this.container.addChild(this.weaponSprite);
       this.container.sortChildren();
     }
-  }
-
-  setWeapon(weapon: Weapon): Weapon {
-    const prev = this.heroState.weapon.get();
-    this.heroState.weapon.set(weapon);
-    this.initWeapon();
-    return prev;
   }
 }
 
@@ -509,7 +520,7 @@ export class HeroStateView extends PIXI.Container {
 
   constructor(heroState: HeroState) {
     super();
-    const offsetY = 30;
+    const offsetY = 34;
 
     this.heroState = heroState;
     this.health = new BarView({

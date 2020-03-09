@@ -1,8 +1,8 @@
-import {UsableDrop} from "./drop";
-import {HeroView} from "./hero";
-import {View} from "./view";
-import {Observable, Subscription} from "./observable";
+import {UsableDrop, Weapon} from "./drop";
+import {HeroState} from "./hero";
+import {Observable, Publisher, Subscription} from "./observable";
 import {Colors} from "./colors";
+import {Selectable} from "./selectable";
 // @ts-ignore
 import * as PIXI from "pixi.js";
 
@@ -10,34 +10,124 @@ const CELL_SIZE = 32;
 const BORDER = 4;
 
 export class Inventory {
-  readonly cells: InventoryCell[];
+  readonly equipment: EquipmentInventory;
+  readonly belt: BeltInventory;
+  readonly bagpack: BagpackInventory;
 
-  constructor() {
-    this.cells = [];
-    for (let i = 0; i < 10; i++) {
-      this.cells[i] = new InventoryCell();
-    }
+  constructor(hero: HeroState) {
+    this.equipment = new EquipmentInventory(hero);
+    this.belt = new BeltInventory(hero);
+    this.bagpack = new BagpackInventory(hero);
+  }
+
+  stack(item: UsableDrop): boolean {
+    return this.belt.stack(item) || this.bagpack.stack(item);
+  }
+
+  set(item: UsableDrop): boolean {
+    return this.belt.set(item) || this.bagpack.set(item);
   }
 
   add(item: UsableDrop) {
+    return this.stack(item) || this.set(item);
+  }
+}
+
+export class EquipmentInventory {
+  private readonly hero: HeroState;
+  readonly weapon: Observable<Weapon> = new Observable<Weapon>(null);
+
+  constructor(hero: HeroState) {
+    this.hero = hero;
+  }
+}
+
+export class BeltInventory {
+  readonly length: number = 10;
+  private readonly cells: InventoryCell[];
+
+  constructor(hero: HeroState) {
+    this.cells = [];
+    for (let i = 0; i < 10; i++) {
+      this.cells[i] = new InventoryCell(hero);
+    }
+  }
+
+  cell(index: number): InventoryCell {
+    return this.cells[index];
+  }
+
+  stack(item: UsableDrop): boolean {
     for (let i = 0; i < this.cells.length; i++) {
       if (this.cells[i].stack(item)) {
         return true;
       }
     }
+    return false;
+  }
+
+  set(item: UsableDrop): boolean {
     for (let i = 0; i < this.cells.length; i++) {
       if (this.cells[i].set(item)) {
         return true;
       }
     }
     return false;
-  };
+  }
+}
+
+export class BagpackInventory {
+  readonly width: number = 10;
+  readonly height: number = 5;
+  private readonly cells: InventoryCell[][];
+
+  constructor(hero: HeroState) {
+    this.cells = [];
+    for (let y = 0; y < this.height; y++) {
+      this.cells.push([]);
+      for (let x = 0; x < this.width; x++) {
+        this.cells[y][x] = new InventoryCell(hero);
+      }
+    }
+  }
+
+  cell(x: number, y: number): InventoryCell {
+    return this.cells[y][x];
+  }
+
+  stack(item: UsableDrop): boolean {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.cells[y][x].stack(item)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  set(item: UsableDrop): boolean {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.cells[y][x].set(item)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }
 
 export class InventoryCell {
-  private readonly maxInStack: number = 3;
+  private readonly hero: HeroState;
+  private readonly maxInStack: number;
   readonly item = new Observable<UsableDrop>(null);
   readonly count = new Observable<number>(0);
+
+  constructor(hero: HeroState, maxInStack: number = 3) {
+    this.maxInStack = maxInStack;
+    this.hero = hero;
+  }
 
   stack(item: UsableDrop): boolean {
     if (this.item.get()?.same(item) && this.count.get() < this.maxInStack) {
@@ -63,9 +153,9 @@ export class InventoryCell {
     return false;
   };
 
-  use(hero: HeroView): boolean {
+  use(): boolean {
     if (this.item.get() && this.count.get() > 0) {
-      this.item.get().use(this, hero);
+      this.item.get().use(this, this.hero);
       return true;
     }
     return false;
@@ -80,48 +170,130 @@ export class InventoryCell {
   }
 }
 
-export class InventoryView implements View {
-  readonly container: PIXI.Container;
-  private readonly background: PIXI.Graphics;
-  private readonly cells: InventoryCellView[] = [];
+export class EquipmentInventoryView extends PIXI.Container {
+  private readonly equipment: EquipmentInventory;
 
-  constructor(inventory: Inventory) {
-    this.container = new PIXI.Container();
+  readonly weapon: InventoryCellView;
 
-    this.background = new PIXI.Graphics();
-    this.background.beginFill(Colors.uiBackground, 0.3);
-    this.background.drawRect(
-      0, 0,
-      BORDER + (CELL_SIZE + BORDER) * inventory.cells.length,
-      CELL_SIZE + (BORDER << 1)
-    );
-    this.background.endFill();
-    this.container.addChild(this.background);
+  constructor(equipment: EquipmentInventory) {
+    super();
 
-    inventory.cells.forEach((c, i) => {
-      const view = new InventoryCellView(c);
-      view.container.position.set(
-        BORDER + (CELL_SIZE + BORDER) * i,
-        BORDER
-      );
-      this.container.addChild(view.container);
-      this.cells.push(view);
+    this.equipment = equipment;
+
+    const background = new PIXI.Graphics()
+      .beginFill(Colors.uiBackground, 0.3)
+      .drawRect(
+        0, 0,
+        CELL_SIZE + (BORDER << 1),
+        CELL_SIZE + (BORDER << 1)
+      )
+      .endFill();
+    super.addChild(background);
+
+    this.weapon = new InventoryCellView({
+      item: this.equipment.weapon,
+      count: new Observable(null)
     });
-  }
-
-  destroy(): void {
-    this.cells.forEach(c => c.destroy());
-    this.container.destroy();
-  }
-
-  update(delta: number): void {
-    this.cells.forEach(c => c.update(delta));
+    (this.weapon as PIXI.Container).position.set(BORDER, BORDER);
+    super.addChild(this.weapon);
   }
 }
 
-export class InventoryCellView implements View {
-  private readonly cell: InventoryCell;
-  readonly container: PIXI.Container;
+export class BeltInventoryView extends PIXI.Container {
+  private readonly inventory: BeltInventory;
+  private readonly cells: InventoryCellView[];
+
+  constructor(inventory: BeltInventory) {
+    super();
+    this.inventory = inventory;
+
+    const background = new PIXI.Graphics()
+      .beginFill(Colors.uiBackground, 0.3)
+      .drawRect(
+        0, 0,
+        BORDER + (CELL_SIZE + BORDER) * inventory.length,
+        CELL_SIZE + (BORDER << 1)
+      )
+      .endFill();
+    super.addChild(background);
+
+    this.cells = [];
+    for (let i = 0; i < inventory.length; i++) {
+      const cell = inventory.cell(i);
+      const view = new InventoryCellView({
+        item: cell.item,
+        count: cell.count,
+      });
+      (view as PIXI.Container).position.set(
+        BORDER + (CELL_SIZE + BORDER) * i,
+        BORDER
+      );
+      this.cells.push(view);
+      super.addChild(view);
+    }
+  }
+
+  get length(): number {
+    return this.inventory.length;
+  }
+
+  cell(index: number) {
+    return this.cells[index];
+  }
+}
+
+export class BagpackInventoryView extends PIXI.Container {
+  private readonly inventory: BagpackInventory;
+  private readonly cells: InventoryCellView[][];
+
+  constructor(inventory: BagpackInventory) {
+    super();
+
+    this.inventory = inventory;
+
+    const background = new PIXI.Graphics()
+      .beginFill(Colors.uiBackground, 0.3)
+      .drawRect(
+        0, 0,
+        BORDER + (CELL_SIZE + BORDER) * inventory.width,
+        BORDER + (CELL_SIZE + BORDER) * inventory.height,
+      )
+      .endFill();
+    super.addChild(background);
+
+    this.cells = [];
+    for (let y = 0; y < inventory.height; y++) {
+      this.cells.push([]);
+      for (let x = 0; x < inventory.width; x++) {
+        const cell = inventory.cell(x, y);
+        const view = new InventoryCellView({
+          item: cell.item,
+          count: cell.count,
+        });
+        (view as PIXI.Container).position.set(
+          BORDER + (CELL_SIZE + BORDER) * x,
+          BORDER + (CELL_SIZE + BORDER) * y
+        );
+        this.cells[y][x] = view;
+        super.addChild(view);
+      }
+    }
+  }
+
+  get width(): number {
+    return this.inventory.width;
+  }
+
+  get height(): number {
+    return this.inventory.height;
+  }
+
+  cell(x: number, y: number): InventoryCellView {
+    return this.cells[y][x];
+  }
+}
+
+export class InventoryCellView extends PIXI.Container implements Selectable {
   private readonly background: PIXI.Graphics;
   private readonly counter: PIXI.BitmapText;
   private sprite: PIXI.Sprite;
@@ -129,37 +301,57 @@ export class InventoryCellView implements View {
   private readonly itemSub: Subscription;
   private readonly countSub: Subscription;
 
-  constructor(cell: InventoryCell) {
-    this.cell = cell;
-    this.container = new PIXI.Container();
+  private readonly _alpha: number;
+  private _selected: boolean;
 
+  constructor(options: {
+    item: Publisher<UsableDrop>,
+    count: Publisher<number>,
+    alpha?: number
+  }) {
+    super();
+    this._alpha = options.alpha || 0.3;
     this.background = new PIXI.Graphics();
-    this.background.beginFill(Colors.uiSelected, 0.3);
-    this.background.drawRect(0, 0, CELL_SIZE, CELL_SIZE);
-    this.background.endFill();
-    this.container.addChild(this.background);
+    this.selected = false;
 
     this.counter = new PIXI.BitmapText("0", {font: {name: "alagard", size: 16}});
     this.counter.anchor = new PIXI.Point(1, 0);
     this.counter.position.set(CELL_SIZE - BORDER, 0);
-    this.container.addChild(this.counter);
 
-    this.itemSub = this.cell.item.subscribe(this.updateItem.bind(this));
-    this.countSub = this.cell.count.subscribe(this.updateCounter.bind(this));
+    super.addChild(this.background, this.counter);
+
+    this.itemSub = options.item.subscribe(this.updateItem.bind(this));
+    this.countSub = options.count.subscribe(this.updateCounter.bind(this));
   }
 
   destroy(): void {
+    super.destroy();
     this.itemSub.unsubscribe();
     this.countSub.unsubscribe();
-    this.counter.destroy();
-    this.container.destroy();
   }
 
-  updateCounter(counter: number): void {
-    this.counter.text = counter.toString();
+  get selected(): boolean {
+    return this._selected;
   }
 
-  updateItem(item: UsableDrop): void {
+  set selected(selected: boolean) {
+    this._selected = selected;
+    this.background
+      .clear()
+      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected, this._alpha)
+      .drawRect(0, 0, CELL_SIZE, CELL_SIZE)
+      .endFill();
+  }
+
+  private updateCounter(counter: number): void {
+    if (counter === null || counter === 0) {
+      this.counter.text = "";
+    } else {
+      this.counter.text = counter.toString();
+    }
+  }
+
+  private updateItem(item: UsableDrop): void {
     this.sprite?.destroy();
     this.sprite = null;
     if (item) {
@@ -169,10 +361,7 @@ export class InventoryCellView implements View {
       this.sprite.scale.set(scale, scale);
       this.sprite.anchor.set(0.5, 0);
       this.sprite.position.set(CELL_SIZE >> 1, BORDER);
-      this.container.addChild(this.sprite);
+      super.addChild(this.sprite);
     }
-  }
-
-  update(delta: number): void {
   }
 }

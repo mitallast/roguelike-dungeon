@@ -1,6 +1,6 @@
 import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {Monster, MonsterState, MovingMonsterWrapper} from "./monster";
+import {Character, CharacterState, CharacterWrapper} from "./character";
 import {View} from "./view";
 import {Observable, Subscription} from "./observable";
 import {Colors} from "./colors";
@@ -39,10 +39,10 @@ export class BossState {
   }
 }
 
-export class BossMonster implements Monster, View {
+export class BossMonster implements Character, View {
   private readonly resources: Resources;
   private readonly level: DungeonLevel;
-  private readonly wrapper: MovingMonsterWrapper;
+  private readonly wrapper: CharacterWrapper;
 
   readonly bossState: BossState;
 
@@ -51,7 +51,7 @@ export class BossMonster implements Monster, View {
   new_x: number;
   new_y: number;
   is_left: boolean;
-  state: MonsterState;
+  state: CharacterState;
 
   get name(): string {
     return this.bossState.name;
@@ -64,14 +64,14 @@ export class BossMonster implements Monster, View {
   constructor(resources: Resources, dungeon: DungeonLevel, x: number, y: number, name: string) {
     this.level = dungeon;
     this.resources = dungeon.controller.resources;
-    this.wrapper = new MovingMonsterWrapper(this);
+    this.wrapper = new CharacterWrapper(this);
 
     this.bossState = new BossState(name, dungeon.level);
 
     this.container = new PIXI.Container();
-    this.container.zIndex = DungeonZIndexes.monster;
+    this.container.zIndex = DungeonZIndexes.character;
     this.level.container.addChild(this.container);
-    this.setAnimation(MonsterState.Idle);
+    this.setAnimation(CharacterState.Idle);
     this.resetPosition(x, y);
   }
 
@@ -109,13 +109,13 @@ export class BossMonster implements Monster, View {
     }
   }
 
-  private setAnimation(state: MonsterState) {
+  private setAnimation(state: CharacterState) {
     switch (state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         this.state = state;
         this.setSprite('_idle');
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         this.state = state;
         this.setSprite('_run');
         break;
@@ -124,14 +124,14 @@ export class BossMonster implements Monster, View {
 
   private animate() {
     switch (this.state) {
-      case MonsterState.Idle:
+      case CharacterState.Idle:
         if (!this.sprite.playing) {
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
-      case MonsterState.Run:
+      case CharacterState.Run:
         const delta = this.duration / (this.sprite.totalFrames / this.bossState.speed);
         const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
         const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
@@ -140,7 +140,7 @@ export class BossMonster implements Monster, View {
         if (!this.sprite.playing) {
           this.resetPosition(this.new_x, this.new_y);
           if (!this.action()) {
-            this.setAnimation(MonsterState.Idle);
+            this.setAnimation(CharacterState.Idle);
           }
         }
         break;
@@ -172,7 +172,7 @@ export class BossMonster implements Monster, View {
     const scan_x_max = Math.min(this.level.width, this.x + max_distance + 1);
     const scan_y_max = Math.min(this.level.height, this.y + max_distance);
 
-    const is_hero_near = !this.level.hero.dead
+    const is_hero_near = !this.level.hero.heroState.dead.get()
       && this.level.hero.x >= scan_x_min && this.level.hero.x <= scan_x_max
       && this.level.hero.y >= scan_y_min && this.level.hero.y <= scan_y_max;
 
@@ -193,7 +193,7 @@ export class BossMonster implements Monster, View {
 
         for (let y = 0; y < level.height; y++) {
           for (let x = 0; x < level.width; x++) {
-            const m = level.monsterMap[y][x];
+            const m = level.characterMap[y][x];
             if (m && m !== this && m !== this.wrapper && m !== level.hero) {
               pf.mark(x, y);
             } else if (level.cell(x, y).hasFloor) {
@@ -222,7 +222,7 @@ export class BossMonster implements Monster, View {
 
   private move(d_x: number, d_y: number) {
     this.is_left = d_x < 0;
-    if (this.state === MonsterState.Idle) {
+    if (this.state === CharacterState.Idle) {
 
       const new_x = this.x + d_x;
       const new_y = this.y + d_y;
@@ -234,7 +234,7 @@ export class BossMonster implements Monster, View {
             return false;
           }
           // check is no monster
-          const m = this.level.monsterMap[test_y][test_x];
+          const m = this.level.characterMap[test_y][test_x];
           if (m && m !== this && m !== this.wrapper) {
             return false;
           }
@@ -242,13 +242,13 @@ export class BossMonster implements Monster, View {
       }
 
       this.markNewPosition(new_x, new_y);
-      this.setAnimation(MonsterState.Run);
+      this.setAnimation(CharacterState.Run);
       return true;
     }
     return false;
   }
 
-  hitDamage(monster: Monster, damage: number) {
+  hitDamage(character: Character, damage: number) {
     this.level.log.push(`${this.bossState.name} damaged ${damage} by ${name}`);
     this.bossState.health.update(h => Math.max(0, h - damage));
     if (this.bossState.health.get() <= 0) {
@@ -262,12 +262,12 @@ export class BossMonster implements Monster, View {
   }
 
   private markNewPosition(x: number, y: number) {
-    this.level.monsterMap[y][x] = this.wrapper;
-    this.level.monsterMap[y][x + 1] = this.wrapper;
-    this.level.monsterMap[y - 1][x] = this.wrapper;
-    this.level.monsterMap[y - 1][x + 1] = this.wrapper;
+    this.level.characterMap[y][x] = this.wrapper;
+    this.level.characterMap[y][x + 1] = this.wrapper;
+    this.level.characterMap[y - 1][x] = this.wrapper;
+    this.level.characterMap[y - 1][x + 1] = this.wrapper;
     // reuse current level, because prev mark can override it
-    this.level.monsterMap[this.y][this.x] = this;
+    this.level.characterMap[this.y][this.x] = this;
     this.new_x = x;
     this.new_y = y;
   }
@@ -279,10 +279,10 @@ export class BossMonster implements Monster, View {
     this.y = y;
     this.new_x = x;
     this.new_y = y;
-    this.level.monsterMap[y][x] = this;
-    this.level.monsterMap[y][x + 1] = this.wrapper;
-    this.level.monsterMap[y - 1][x] = this.wrapper;
-    this.level.monsterMap[y - 1][x + 1] = this.wrapper;
+    this.level.characterMap[y][x] = this;
+    this.level.characterMap[y][x + 1] = this.wrapper;
+    this.level.characterMap[y - 1][x] = this.wrapper;
+    this.level.characterMap[y - 1][x + 1] = this.wrapper;
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   };
 
@@ -291,9 +291,9 @@ export class BossMonster implements Monster, View {
       for (let test_x = x; test_x <= x + 1; test_x++) {
         for (let test_y = y - 1; test_y <= y; test_y++) {
           // check is no monster
-          const m = this.level.monsterMap[test_y][test_x];
+          const m = this.level.characterMap[test_y][test_x];
           if (m && (m === this || m === this.wrapper)) {
-            this.level.monsterMap[test_y][test_x] = null;
+            this.level.characterMap[test_y][test_x] = null;
           }
         }
       }
