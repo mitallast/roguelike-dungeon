@@ -1,7 +1,7 @@
 import {Inventory} from "./inventory";
 import {Resources} from "./resources";
 import {Joystick} from "./input";
-import {Character, CharacterState, CharacterWrapper} from "./character";
+import {Character, CharacterState} from "./character";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
@@ -43,7 +43,7 @@ export class HeroState {
     this._health.update(h => Math.min(this._healthMax.get(), h + health));
   }
 
-  damage(damage: number): void {
+  hitDamage(damage: number): void {
     this._health.update((h) => Math.max(0, h - damage));
     if (this._health.get() === 0) {
       this._dead.set(true);
@@ -61,6 +61,10 @@ export class HeroState {
   }
 
   readonly baseDamage: number = 0;
+
+  get damage(): number {
+    return this.baseDamage + (this.inventory.equipment.weapon.get()?.damage || 0);
+  }
 
   readonly inventory: Inventory = new Inventory(this);
 
@@ -132,7 +136,6 @@ export class HeroView implements Character, View {
   private readonly resources: Resources;
   private readonly joystick: Joystick;
   readonly heroState: HeroState;
-  private readonly wrapper: CharacterWrapper;
 
   x: number = -1;
   y: number = -1;
@@ -160,7 +163,6 @@ export class HeroView implements Character, View {
     this.level = level;
     this.resources = level.controller.resources;
     this.joystick = level.controller.joystick;
-    this.wrapper = new CharacterWrapper(this);
     this.heroState = heroState;
     this.container = new PIXI.Container();
     this.container.zIndex = DungeonZIndexes.character;
@@ -410,10 +412,6 @@ export class HeroView implements Character, View {
     }
   }
 
-  get damage(): number {
-    return this.heroState.baseDamage + (this.heroState.inventory.equipment.weapon.get()?.damage || 0);
-  }
-
   private scanHit() {
     const max_distance = this.heroState.inventory.equipment.weapon.get()?.distance || 1;
     // search only left or right path
@@ -423,16 +421,22 @@ export class HeroView implements Character, View {
     const scan_y_min = Math.max(0, this.y - max_distance);
     const scan_y_max = Math.min(this.level.height - 1, this.y + max_distance);
 
+    const hitSet = new Set<Character>();
+
     for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
       for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
         // not self
         if (!(s_x === this.x && s_y === this.y)) {
           const monster = this.level.characterMap[s_y][s_x];
           if (monster) {
-            monster.hitDamage(this, this.damage);
+            hitSet.add(monster);
           }
         }
       }
+    }
+    console.log(hitSet);
+    for (let monster of hitSet) {
+      monster.hitDamage(this, this.heroState.damage);
     }
   }
 
@@ -456,7 +460,7 @@ export class HeroView implements Character, View {
   }
 
   private markNewPosition(x: number, y: number) {
-    this.level.characterMap[y][x] = this.wrapper;
+    this.level.characterMap[y][x] = this;
     this.new_x = x;
     this.new_y = y;
   }
@@ -476,7 +480,7 @@ export class HeroView implements Character, View {
   hitDamage(monster: Character, damage: number) {
     if (!this.heroState.dead.get()) {
       this.level.log.push(`${this.heroState.name} damaged ${damage} by ${monster.name}`);
-      this.heroState.damage(damage);
+      this.heroState.hitDamage(damage);
       if (this.heroState.dead.get()) {
         this.level.log.push(`${this.heroState.name} killed by ${name}`);
         this.setAnimation(CharacterState.Idle);

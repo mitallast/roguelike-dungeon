@@ -1,6 +1,6 @@
 import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {Character, CharacterState, CharacterWrapper} from "./character";
+import {Character, CharacterState} from "./character";
 import {View} from "./view";
 import {Observable, Subscription} from "./observable";
 import {Colors} from "./ui";
@@ -42,7 +42,6 @@ export class BossState {
 export class BossMonster implements Character, View {
   private readonly resources: Resources;
   private readonly level: DungeonLevel;
-  private readonly wrapper: CharacterWrapper;
 
   readonly bossState: BossState;
 
@@ -64,7 +63,6 @@ export class BossMonster implements Character, View {
   constructor(resources: Resources, dungeon: DungeonLevel, x: number, y: number, name: string) {
     this.level = dungeon;
     this.resources = dungeon.controller.resources;
-    this.wrapper = new CharacterWrapper(this);
 
     this.bossState = new BossState(name, dungeon.level);
 
@@ -194,7 +192,7 @@ export class BossMonster implements Character, View {
         for (let y = 0; y < level.height; y++) {
           for (let x = 0; x < level.width; x++) {
             const m = level.characterMap[y][x];
-            if (m && m !== this && m !== this.wrapper && m !== level.hero) {
+            if (m && m !== this && m !== level.hero) {
               pf.mark(x, y);
             } else if (level.cell(x, y).hasFloor) {
               pf.clear(x, y);
@@ -235,7 +233,7 @@ export class BossMonster implements Character, View {
           }
           // check is no monster
           const m = this.level.characterMap[test_y][test_x];
-          if (m && m !== this && m !== this.wrapper) {
+          if (m && m !== this) {
             return false;
           }
         }
@@ -262,12 +260,10 @@ export class BossMonster implements Character, View {
   }
 
   private markNewPosition(x: number, y: number) {
-    this.level.characterMap[y][x] = this.wrapper;
-    this.level.characterMap[y][x + 1] = this.wrapper;
-    this.level.characterMap[y - 1][x] = this.wrapper;
-    this.level.characterMap[y - 1][x + 1] = this.wrapper;
-    // reuse current level, because prev mark can override it
-    this.level.characterMap[this.y][this.x] = this;
+    this.level.characterMap[y][x] = this;
+    this.level.characterMap[y][x + 1] = this;
+    this.level.characterMap[y - 1][x] = this;
+    this.level.characterMap[y - 1][x + 1] = this;
     this.new_x = x;
     this.new_y = y;
   }
@@ -277,12 +273,7 @@ export class BossMonster implements Character, View {
     this.clearMap(this.new_x, this.new_y);
     this.x = x;
     this.y = y;
-    this.new_x = x;
-    this.new_y = y;
-    this.level.characterMap[y][x] = this;
-    this.level.characterMap[y][x + 1] = this.wrapper;
-    this.level.characterMap[y - 1][x] = this.wrapper;
-    this.level.characterMap[y - 1][x + 1] = this.wrapper;
+    this.markNewPosition(this.x, this.y);
     this.container.position.set(x * TILE_SIZE, y * TILE_SIZE);
   };
 
@@ -292,7 +283,7 @@ export class BossMonster implements Character, View {
         for (let test_y = y - 1; test_y <= y; test_y++) {
           // check is no monster
           const m = this.level.characterMap[test_y][test_x];
-          if (m && (m === this || m === this.wrapper)) {
+          if (m && (m === this)) {
             this.level.characterMap[test_y][test_x] = null;
           }
         }

@@ -1,11 +1,11 @@
 import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {Character, CharacterState, CharacterWrapper} from "./character";
+import {Character, CharacterState} from "./character";
 import {View} from "./view";
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {PathFinding} from "./pathfinding";
 import {HeroView} from "./hero";
+// @ts-ignore
+import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
 
@@ -23,7 +23,6 @@ export const tinyMonsterNames = [
 export class TinyMonster implements Character, View {
   private readonly level: DungeonLevel;
   private readonly resources: Resources;
-  private readonly wrapper: CharacterWrapper;
 
   x: number;
   y: number;
@@ -47,7 +46,6 @@ export class TinyMonster implements Character, View {
   constructor(level: DungeonLevel, x: number, y: number, name: string) {
     this.level = level;
     this.resources = level.controller.resources;
-    this.wrapper = new CharacterWrapper(this);
     this.name = name;
     this.container = new PIXI.Container();
     this.container.zIndex = DungeonZIndexes.character;
@@ -169,7 +167,7 @@ export class TinyMonster implements Character, View {
         for (let y = 0; y < level.height; y++) {
           for (let x = 0; x < level.width; x++) {
             const m = level.characterMap[y][x];
-            if (m && m !== this && m !== this.wrapper && m !== level.hero) {
+            if (m && m !== this && m !== level.hero) {
               pf.mark(x, y);
             } else if (level.cell(x, y).hasFloor) {
               pf.clear(x, y);
@@ -215,7 +213,7 @@ export class TinyMonster implements Character, View {
   };
 
   private markNewPosition(x: number, y: number) {
-    this.level.characterMap[y][x] = this.wrapper;
+    this.level.characterMap[y][x] = this;
     this.new_x = x;
     this.new_y = y;
   }
