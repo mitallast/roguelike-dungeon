@@ -123,7 +123,18 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected pos_y: number; // grid pos
   private new_x: number;
   private new_y: number;
-  protected is_left: boolean;
+  private _is_left: boolean;
+
+  protected get is_left(): boolean {
+    return this._is_left;
+  }
+
+  protected set is_left(is_left: boolean) {
+    this._is_left = is_left;
+    this.updateSpriteOrientation();
+    this.onSetOrientation();
+  }
+
   private animationState: AnimationState;
 
   protected duration: number;
@@ -184,16 +195,20 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     this.sprite.play();
     super.addChild(this.sprite);
     this.duration = 0;
+    this.updateSpriteOrientation();
+    this.onSetSprite();
+  }
 
-    if (this.is_left) {
+  protected abstract onSetOrientation(): void;
+
+  private updateSpriteOrientation(): void {
+    if (this._is_left) {
       this.sprite.position.x = this.sprite.width;
       this.sprite.scale.x = -1;
     } else {
       this.sprite.position.x = 0;
       this.sprite.scale.x = 1;
     }
-
-    this.onSetSprite();
   }
 
   protected abstract onSetSprite(): void;
@@ -401,6 +416,9 @@ export abstract class BaseMonsterView extends BaseCharacterView {
     } else {
       return false;
     }
+  }
+
+  protected onSetOrientation(): void {
   }
 
   protected onSetAnimationHit(): void {

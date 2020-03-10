@@ -1,5 +1,5 @@
 import {Inventory} from "./inventory";
-import {AnimationState, BaseCharacterView, BaseMonsterView, Character, CharacterView} from "./character";
+import {AnimationState, BaseCharacterView, Character, MonsterCharacter} from "./character";
 import {DungeonCellView, DungeonLevel} from "./dungeon.level";
 import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
@@ -221,6 +221,14 @@ export class HeroView extends BaseCharacterView {
   }
 
   protected onSetSprite(): void {
+    this.updateWeaponOrientation();
+  }
+
+  protected onSetOrientation(): void {
+    this.updateWeaponOrientation();
+  }
+
+  private updateWeaponOrientation(): void {
     if (this.weaponSprite) {
       if (this.is_left) {
         this.weaponSprite.position.x = 0;
@@ -239,29 +247,34 @@ export class HeroView extends BaseCharacterView {
     }
   }
 
-  private scanHit() {
+  private scanMonsters(is_left: boolean): MonsterCharacter[] {
     const max_distance = this.character.inventory.equipment.weapon.get()?.distance || 1;
 
-    const scan_x_min = this.is_left ? Math.max(0, this.x - max_distance) : this.x;
-    const scan_x_max = this.is_left ? this.x : Math.min(this.dungeon.width, this.x + max_distance);
+    const scan_x_min = is_left ? Math.max(0, this.x - max_distance) : this.x;
+    const scan_x_max = is_left ? this.x : Math.min(this.dungeon.width, this.x + max_distance);
 
     const scan_y_min = Math.max(0, this.y - max_distance);
     const scan_y_max = Math.min(this.dungeon.height - 1, this.y + max_distance);
 
-    const hitSet = new Set<CharacterView>();
+    const monsters = new Set<MonsterCharacter>();
 
     for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
       for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
         if (!(s_x === this.x && s_y === this.y)) {
-          const monster = this.dungeon.character(s_x, s_y);
-          if (monster && monster instanceof BaseMonsterView) {
-            hitSet.add(monster);
+          const view = this.dungeon.character(s_x, s_y);
+          if (view && view.character instanceof MonsterCharacter) {
+            monsters.add(view.character);
           }
         }
       }
     }
-    for (let monster of hitSet) {
-      monster.character.hitDamage(this.character, this.character.damage);
+    return [...monsters];
+  }
+
+  private scanHit() {
+    const monsters = this.scanMonsters(this.is_left);
+    for (let monster of monsters) {
+      monster.hitDamage(this.character, this.character.damage);
     }
   }
 
@@ -269,6 +282,15 @@ export class HeroView extends BaseCharacterView {
     this.setSprite('_idle');
     if (this.character.inventory.equipment.weapon.get()) {
       this.sprite.animationSpeed = this.character.inventory.equipment.weapon.get().speed;
+    }
+
+    // automatically rotate hero to monsters
+    const leftHealthSum = this.scanMonsters(true).map(m => m.health.get()).reduce((a, b) => a + b, 0);
+    const rightHealthSum = this.scanMonsters(false).map(m => m.health.get()).reduce((a, b) => a + b, 0);
+    if (leftHealthSum > 0 && leftHealthSum > rightHealthSum) {
+      this.is_left = true;
+    } else if (rightHealthSum > 0 && rightHealthSum > leftHealthSum) {
+      this.is_left = false;
     }
   }
 
