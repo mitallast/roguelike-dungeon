@@ -4,10 +4,9 @@ import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {View} from "./view";
+import {Colors, Sizes} from "./ui";
 // @ts-ignore
 import * as PIXI from "pixi.js";
-import {Colors, Sizes} from "./ui";
-import {Color} from "./wfc";
 
 const TILE_SIZE = 16;
 

@@ -1,5 +1,5 @@
 import {Resources} from "./resources";
-import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
+import {DungeonCellView, DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {HeroCharacter} from "./hero";
 import {Observable, Publisher, Subscription} from "./observable";
 import {PathFinding} from "./pathfinding";
@@ -337,6 +337,41 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected abstract onKilledBy(by: Character): void;
 
   protected abstract onDead(): void;
+
+  protected findDropCell(): DungeonCellView {
+    const max_distance = 5;
+    const pos_x = this.x;
+    const pos_y = this.y;
+    const is_left = this.is_left;
+    const is_dead = this.character.dead.get();
+
+    let closestCell: DungeonCellView = null;
+    let closestDistance: number = null;
+
+    const metric = (a: DungeonCellView) => {
+      return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
+        (a.y !== pos_y ? 0.5 : 0) + // boost X
+        (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
+    };
+
+    for (let x = Math.max(0, pos_x - max_distance); x < pos_x + max_distance; x++) {
+      for (let y = Math.max(0, this.y - max_distance); y < this.y + max_distance; y++) {
+        if (!(x === pos_x && y === this.y) || is_dead) {
+          const cell = this.dungeon.cell(x, y);
+          if (cell.hasFloor && !cell.hasDrop) {
+            const distance = metric(cell);
+            if (closestCell === null || closestDistance > distance) {
+              closestCell = cell;
+              closestDistance = distance;
+            }
+          }
+        }
+      }
+    }
+
+    console.log("closestCell", closestCell);
+    return closestCell;
+  }
 }
 
 export abstract class BaseMonsterView extends BaseCharacterView {
@@ -454,7 +489,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   protected onDead(): void {
     this.setAnimation(AnimationState.Idle);
     if (Math.random() < this.character.luck) {
-      this.dungeon.cell(this.x, this.y).randomDrop();
+      this.findDropCell()?.randomDrop();
     }
     this.destroy();
   }

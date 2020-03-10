@@ -1,6 +1,6 @@
 import {Inventory} from "./inventory";
 import {AnimationState, BaseCharacterView, Character, MonsterCharacter} from "./character";
-import {DungeonCellView, DungeonLevel} from "./dungeon.level";
+import {DungeonLevel} from "./dungeon.level";
 import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
 import {BarView} from "./bar.view";
@@ -167,37 +167,12 @@ export class HeroView extends BaseCharacterView {
     return false;
   }
 
-  private dropWeapon() {
+  private dropWeapon(): void {
     if (this.character.inventory.equipment.weapon.get()) {
-      const max_distance = 5;
-      const pos_x = this.x;
-      const pos_y = this.y;
-      const is_left = this.is_left;
-
-      const cells: DungeonCellView[] = [];
-      for (let x = Math.max(0, pos_x - max_distance); x < pos_x + max_distance; x++) {
-        for (let y = Math.max(0, this.y - max_distance); y < this.y + max_distance; y++) {
-          if (!(x === pos_x && y === this.y)) {
-            const cell = this.dungeon.cell(x, y);
-            if (cell.hasFloor && !cell.hasDrop) {
-              cells.push(cell);
-            }
-          }
-        }
-      }
-
-      const metric = (a: DungeonCellView) => {
-        return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
-          (a.y !== pos_y ? 1 : 0) + // boost X
-          (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 1)); // boost side
-      };
-
-      if (cells.length > 0) {
-        cells.sort((a, b) => metric(a) - metric(b));
-        const cell = cells[0];
+      const cell = this.findDropCell();
+      if (cell) {
         cell.drop = this.character.inventory.equipment.weapon.get();
         this.character.inventory.equipment.weapon.set(null);
-        return;
       }
     }
   }
