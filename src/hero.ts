@@ -17,38 +17,7 @@ export const heroMonsterNames = [
   "wizard_m",
 ];
 
-export class HeroCharacter implements Character {
-  readonly name: string;
-
-  readonly speed: number = 0.2;
-
-  private readonly _healthMax: Observable<number> = new Observable(30);
-  private readonly _health: Observable<number> = new Observable(this._healthMax.get());
-  private readonly _dead: Observable<boolean> = new Observable(false);
-
-  get healthMax(): Publisher<number> {
-    return this._healthMax;
-  }
-
-  get health(): Publisher<number> {
-    return this._health;
-  }
-
-  get dead(): Publisher<boolean> {
-    return this._dead;
-  }
-
-  hill(health: number): void {
-    this._health.update(h => Math.min(this._healthMax.get(), h + health));
-  }
-
-  hitDamage(damage: number): void {
-    this._health.update((h) => Math.max(0, h - damage));
-    if (this._health.get() === 0) {
-      this._dead.set(true);
-    }
-  }
-
+export class HeroCharacter extends Character {
   private readonly _coins: Observable<number> = new Observable(0);
 
   get coins(): Publisher<number> {
@@ -59,7 +28,7 @@ export class HeroCharacter implements Character {
     this._coins.update(c => c + coins);
   }
 
-  readonly baseDamage: number = 0;
+  readonly baseDamage: number = 3;
 
   get damage(): number {
     return this.baseDamage + (this.inventory.equipment.weapon.get()?.damage || 0);
@@ -90,24 +59,19 @@ export class HeroCharacter implements Character {
   }
 
   addXp(value: number): void {
-    console.log("add xp", value);
     this._xp.update((v) => {
       let newXp = v + value;
-      console.log("newXp", newXp);
       while (true) {
         const levelXp = this._levelXp.get();
         if (newXp >= levelXp) {
-          console.log("add level");
           newXp = newXp - levelXp;
           this._level.update((v) => v + 1);
           this._levelXp.update((v) => v + 1000);
           this._skillPoints.update((v) => v + 1);
         } else {
-          console.log("no new level");
           break;
         }
       }
-      console.log("newXp", newXp);
       return newXp;
     });
   }
@@ -124,7 +88,11 @@ export class HeroCharacter implements Character {
   }
 
   constructor(name: string) {
-    this.name = name;
+    super({
+      name: name,
+      speed: 0.2,
+      healthMax: 30
+    });
   }
 }
 
@@ -293,7 +261,7 @@ export class HeroView extends BaseCharacterView {
       }
     }
     for (let monster of hitSet) {
-      monster.hitDamage(this.character, this.character.damage);
+      monster.character.hitDamage(this.character, this.character.damage);
     }
   }
 
@@ -331,16 +299,13 @@ export class HeroView extends BaseCharacterView {
     }
   }
 
-  hitDamage(by: Character, damage: number): void {
-    if (!this.character.dead.get()) {
-      this.dungeon.log.push(`${this.character.name} damaged ${damage} by ${by.name}`);
-      this.character.hitDamage(damage);
-      if (this.character.dead.get()) {
-        this.dungeon.log.push(`${this.character.name} killed by ${name}`);
-        this.setAnimation(AnimationState.Idle);
-        this.dungeon.dead();
-      }
-    }
+  protected onKilledBy(by: Character): void {
+    this.dungeon.log(`${this.character.name} killed by ${by.name}`);
+  }
+
+  protected onDead(): void {
+    this.setAnimation(AnimationState.Idle);
+    this.dungeon.dead();
   }
 
   protected onDestroy(): void {

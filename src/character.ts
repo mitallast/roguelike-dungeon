@@ -1,7 +1,7 @@
 import {Resources} from "./resources";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {HeroCharacter} from "./hero";
-import {Publisher} from "./observable";
+import {Observable, Publisher, Subscription} from "./observable";
 import {PathFinding} from "./pathfinding";
 // @ts-ignore
 import * as PIXI from "pixi.js";
@@ -12,22 +12,85 @@ export enum AnimationState {
   Idle = 0, Run = 1, Hit = 2
 }
 
-export interface Character {
+export abstract class Character {
   readonly name: string;
-  readonly healthMax: Publisher<number>;
-  readonly health: Publisher<number>;
-  readonly dead: Publisher<boolean>;
-
   readonly speed: number;
 
-  hill(health: number): void;
-  hitDamage(damage: number): void;
+  protected readonly _healthMax: Observable<number>;
+  protected readonly _health: Observable<number>;
+  private readonly _dead: Observable<boolean>;
+  private readonly _killedBy: Observable<Character>;
+
+  get healthMax(): Publisher<number> {
+    return this._healthMax;
+  }
+
+  get health(): Publisher<number> {
+    return this._health;
+  }
+
+  get dead(): Publisher<boolean> {
+    return this._dead;
+  }
+
+  get killedBy(): Publisher<Character> {
+    return this._killedBy;
+  }
+
+  protected constructor(options: {
+    name: string,
+    speed: number,
+    healthMax: number,
+  }) {
+    this.name = options.name;
+    this.speed = options.speed;
+    this._healthMax = new Observable(options.healthMax);
+    this._health = new Observable(options.healthMax);
+    this._dead = new Observable(false);
+    this._killedBy = new Observable(null);
+  }
+
+  hill(health: number): void {
+    this._health.update(h => Math.min(this._healthMax.get(), h + health));
+  }
+
+  hitDamage(by: Character, damage: number): void {
+    if (!this._dead.get()) {
+      if (by.dead.get()) {
+        console.trace(`${this.name} damaged by ${by.name} with ${damage}`);
+      } else {
+        console.log(`${this.name} damaged by ${by.name} with ${damage}`);
+      }
+      this._health.update((h) => Math.max(0, h - damage));
+      if (this._health.get() === 0) {
+        this._killedBy.set(by);
+        this._dead.set(true);
+      }
+    }
+  }
 }
 
-export interface MonsterCharacter extends Character {
+export abstract class MonsterCharacter extends Character {
+  readonly level: number;
   readonly luck: number;
   readonly damage: number;
   readonly xp: number;
+
+  protected constructor(options: {
+    name: string,
+    speed: number,
+    healthMax: number,
+    level: number,
+    luck: number,
+    damage: number,
+    xp: number,
+  }) {
+    super(options);
+    this.level = options.level;
+    this.luck = options.luck;
+    this.damage = options.damage;
+    this.xp = options.xp;
+  }
 }
 
 export interface CharacterView {
@@ -37,7 +100,6 @@ export interface CharacterView {
 
   update(delta: number): void;
   destroy(): void;
-  hitDamage(by: Character, damage: number): void;
   resetPosition(x: number, y: number): void;
 }
 
@@ -57,8 +119,8 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected readonly grid_width: number; // grid width
   protected readonly grid_height: number; // grid width
-  private pos_x: number; // grid pos
-  private pos_y: number; // grid pos
+  protected pos_x: number; // grid pos
+  protected pos_y: number; // grid pos
   private new_x: number;
   private new_y: number;
   protected is_left: boolean;
@@ -66,6 +128,9 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected duration: number;
   protected sprite: PIXI.AnimatedSprite;
+
+  private killedBySub: Subscription;
+  private deadSub: Subscription;
 
   protected constructor(dungeon: DungeonLevel, width: number, height: number, x: number, y: number) {
     super();
@@ -84,11 +149,19 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     this.setAnimation(AnimationState.Idle);
     this.resetPosition(this.pos_x, this.pos_y);
     this.dungeon.container.addChild(this);
+    this.killedBySub = this.character.killedBy.subscribe((by) => {
+      if (by) this.onKilledBy(by);
+    });
+    this.deadSub = this.character.dead.subscribe((dead) => {
+      if (dead) this.onDead();
+    });
   }
 
   destroy(): void {
     super.destroy();
-    this.clearMap(this.x, this.y);
+    this.killedBySub?.unsubscribe();
+    this.deadSub?.unsubscribe();
+    this.clearMap(this.pos_x, this.pos_y);
     this.clearMap(this.new_x, this.new_y);
     this.onDestroy();
   }
@@ -246,7 +319,9 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     this.new_y = y;
   }
 
-  abstract hitDamage(by: Character, damage: number): void;
+  protected abstract onKilledBy(by: Character): void;
+
+  protected abstract onDead(): void;
 }
 
 export abstract class BaseMonsterView extends BaseCharacterView {
@@ -258,30 +333,31 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected action(): boolean {
-    const hero = this.dungeon.hero;
-    if (!hero.character.dead.get()) {
-      const [dist_x, dist_y] = this.distanceToHero();
-      const is_hero_near = dist_x <= this.max_distance && dist_y <= this.max_distance;
-      if (is_hero_near) {
-        if (dist_x > 1 || dist_y > 1) {
-          return this.pathTo(hero.x, hero.y);
-        } else {
-          this.setAnimation(AnimationState.Hit);
+    if (!this.character.dead.get()) {
+      const hero = this.dungeon.hero;
+      if (!hero.character.dead.get()) {
+        const [dist_x, dist_y] = this.distanceToHero();
+        const is_hero_near = dist_x <= this.max_distance && dist_y <= this.max_distance;
+        if (is_hero_near) {
+          if (dist_x > 1 || dist_y > 1) {
+            return this.pathTo(hero.x, hero.y);
+          } else {
+            this.setAnimation(AnimationState.Hit);
+            return true;
+          }
+        }
+      }
+
+      // random move ?
+      const random_move_percent = 0.1;
+      if (Math.random() < random_move_percent) {
+        const move_x = Math.floor(Math.random() * 3) - 1;
+        const move_y = Math.floor(Math.random() * 3) - 1;
+        if (this.move(move_x, move_y)) {
           return true;
         }
       }
     }
-
-    // random move ?
-    const random_move_percent = 0.1;
-    if (Math.random() < random_move_percent) {
-      const move_x = Math.floor(Math.random() * 3) - 1;
-      const move_y = Math.floor(Math.random() * 3) - 1;
-      if (this.move(move_x, move_y)) {
-        return true;
-      }
-    }
-
     return false;
   }
 
@@ -342,7 +418,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   protected animateHit(): void {
     if (!this.sprite.playing) {
       if (Math.random() < this.character.luck) {
-        this.dungeon.hero.hitDamage(this.character, this.character.damage);
+        this.dungeon.hero.character.hitDamage(this.character, this.character.damage);
       }
       if (!this.action()) {
         this.setAnimation(AnimationState.Idle);
@@ -350,23 +426,21 @@ export abstract class BaseMonsterView extends BaseCharacterView {
     }
   }
 
-  hitDamage(by: Character, damage: number) {
-    if (!this.character.dead.get()) {
-      this.dungeon.log.push(`${this.character.name} damaged ${damage} by ${by.name}`);
-      this.character.hitDamage(damage);
-      if (this.character.dead.get()) {
-        this.dungeon.log.push(`${this.character.name} killed by ${by.name}`);
-        this.destroy();
-        if (by instanceof HeroCharacter) {
-          by.addXp(this.character.xp);
-        }
-        this.onDead();
-      }
+  protected onKilledBy(by: Character): void {
+    if (by && by instanceof HeroCharacter) {
+      this.dungeon.log(`${this.character.name} killed by ${by.name}`);
+      by.addXp(this.character.xp);
     }
+  }
+
+  protected onDead(): void {
+    this.setAnimation(AnimationState.Idle);
+    if (Math.random() < this.character.luck) {
+      this.dungeon.cell(this.x, this.y).randomDrop();
+    }
+    this.destroy();
   }
 
   protected onSetSprite(): void {
   }
-
-  protected abstract onDead(): void;
 }

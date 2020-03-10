@@ -1,7 +1,7 @@
 import {DungeonLevel} from "./dungeon.level";
 import {MonsterCharacter, BaseMonsterView} from "./character";
 import {View} from "./view";
-import {Observable, Publisher, Subscription} from "./observable";
+import {Subscription} from "./observable";
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
 // @ts-ignore
@@ -13,46 +13,17 @@ export const mossMonsterNames = [
   "big_demon",
 ];
 
-export class BossMonster implements MonsterCharacter {
-  readonly name: string;
-
-  private readonly _healthMax: Observable<number>;
-  private readonly _health: Observable<number>;
-  private readonly _dead: Observable<boolean> = new Observable(false);
-
-  get healthMax(): Publisher<number> {
-    return this._healthMax;
-  }
-
-  get health(): Publisher<number> {
-    return this._health;
-  }
-
-  get dead(): Publisher<boolean> {
-    return this._dead;
-  }
-
-  hill(health: number): void {
-    this._health.update(h => Math.min(this._healthMax.get(), h + health));
-  }
-
-  hitDamage(damage: number): void {
-    this._health.update((h) => Math.max(0, h - damage));
-    if (this._health.get() === 0) {
-      this._dead.set(true);
-    }
-  }
-
-  readonly damage: number = 7;
-  readonly luck: number = 0.4;
-  readonly speed: number = 0.2;
-  readonly xp: number;
-
+export class BossMonster extends MonsterCharacter {
   constructor(name: string, level: number) {
-    this.name = name;
-    this._healthMax = new Observable(50 + Math.floor(level * 10));
-    this._health = new Observable(this._healthMax.get());
-    this.xp = 100 + 50 * level;
+    super({
+      name: name,
+      speed: 0.2,
+      healthMax: 50 + Math.floor(level * 10),
+      level: level,
+      luck: 0.4,
+      damage: 7 + 0.5 * level,
+      xp: 100 + 50 * level,
+    });
   }
 }
 
@@ -65,12 +36,6 @@ export class BossMonsterView extends BaseMonsterView {
     super(dungeon, 2, 2, x, y);
     this.character = character;
     this.init();
-  }
-
-  protected onDead(): void {
-    if (Math.random() < this.character.luck) {
-      this.dungeon.cell(this.x, this.y).randomDrop();
-    }
   }
 
   protected onDestroy(): void {

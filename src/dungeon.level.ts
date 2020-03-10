@@ -41,8 +41,6 @@ export class DungeonLevel {
   private readonly cells: DungeonCellView[][];
   private readonly characterMap: CharacterView[][];
 
-  log: string[] = [];
-
   readonly container: PIXI.Container;
   readonly light: DungeonLightView;
   readonly lighting: PIXI.Sprite;
@@ -78,6 +76,10 @@ export class DungeonLevel {
     this.lighting = new PIXI.Sprite(this.light.layer.getRenderTexture());
     this.lighting.blendMode = PIXI.BLEND_MODES.MULTIPLY;
     this.lighting.zIndex = 2;
+  }
+
+  log(message: string): void {
+    console.info(message);
   }
 
   private createBuffer<T>(): T[][] {
