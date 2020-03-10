@@ -57,7 +57,7 @@ export class DungeonLightView implements View {
 
     // hero light source
     this.lights.push(new LightSource(
-      level.hero.container.position,
+      (level.hero as PIXI.Container).position,
       500,
       this.heroLightTexture,
       this.container

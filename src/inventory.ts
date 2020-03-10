@@ -1,5 +1,5 @@
 import {UsableDrop, Weapon} from "./drop";
-import {HeroState} from "./hero";
+import {HeroCharacter} from "./hero";
 import {Observable, Publisher, Subscription} from "./observable";
 import {Colors, Sizes} from "./ui";
 import {Selectable} from "./selectable";
@@ -13,7 +13,7 @@ export class Inventory {
   readonly belt: BeltInventory;
   readonly bagpack: BagpackInventory;
 
-  constructor(hero: HeroState) {
+  constructor(hero: HeroCharacter) {
     this.equipment = new EquipmentInventory(hero);
     this.belt = new BeltInventory(hero);
     this.bagpack = new BagpackInventory(hero);
@@ -33,10 +33,10 @@ export class Inventory {
 }
 
 export class EquipmentInventory {
-  private readonly hero: HeroState;
+  private readonly hero: HeroCharacter;
   readonly weapon: Observable<Weapon> = new Observable<Weapon>(null);
 
-  constructor(hero: HeroState) {
+  constructor(hero: HeroCharacter) {
     this.hero = hero;
   }
 }
@@ -45,7 +45,7 @@ export class BeltInventory {
   readonly length: number = 10;
   private readonly cells: InventoryCell[];
 
-  constructor(hero: HeroState) {
+  constructor(hero: HeroCharacter) {
     this.cells = [];
     for (let i = 0; i < 10; i++) {
       this.cells[i] = new InventoryCell(hero);
@@ -84,7 +84,7 @@ export class BagpackInventory {
   readonly height: number = 5;
   private readonly cells: InventoryCell[][];
 
-  constructor(hero: HeroState) {
+  constructor(hero: HeroCharacter) {
     this.cells = [];
     for (let y = 0; y < this.height; y++) {
       this.cells.push([]);
@@ -126,12 +126,12 @@ export class BagpackInventory {
 }
 
 export class InventoryCell {
-  private readonly hero: HeroState;
+  private readonly hero: HeroCharacter;
   private readonly maxInStack: number;
   readonly item = new Observable<UsableDrop>(null);
   readonly count = new Observable<number>(0);
 
-  constructor(hero: HeroState, maxInStack: number = 3) {
+  constructor(hero: HeroCharacter, maxInStack: number = 3) {
     this.maxInStack = maxInStack;
     this.hero = hero;
   }

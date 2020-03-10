@@ -1,14 +1,14 @@
 import {DungeonCellView, DungeonLevel} from "./dungeon.level";
 import {RNG} from "./rng";
-import {HeroState} from "./hero";
+import {HeroCharacter} from "./hero";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {TinyMonster, tinyMonsterNames} from "./tiny.monster";
-import {BossMonster, mossMonsterNames} from "./boss.monster";
+import {TinyMonsterView, tinyMonsterNames, TinyMonster} from "./tiny.monster";
+import {BossMonster, BossMonsterView, mossMonsterNames} from "./boss.monster";
 
 export interface GenerateOptions {
   readonly level: number
-  readonly hero: HeroState
+  readonly hero: HeroCharacter
 }
 
 export interface DungeonGenerator {
@@ -110,7 +110,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.characterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.character(x, y)) {
           free.push([x, y]);
         }
       }
@@ -130,7 +130,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.characterMap[y][x]) {
+        if (dungeon.cell(x, y).hasFloor && !dungeon.character(x, y)) {
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (distance > min_hero_distance) {
             free.push([x, y]);
@@ -144,9 +144,10 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
       const name = this.rng.choice(tinyMonsterNames);
-      const monster = new TinyMonster(dungeon, x, y, name);
-      dungeon.monsters.push(monster);
-      dungeon.characterMap[y][x] = monster;
+      const monster = new TinyMonster(name, 1);
+      const monsterView = new TinyMonsterView(monster, dungeon, x, y);
+      dungeon.monsters.push(monsterView);
+      dungeon.setCharacter(x, y, monsterView);
     }
   }
 
@@ -158,8 +159,9 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         if (dungeon.cell(x, y).hasFloor &&
-          !dungeon.characterMap[y][x] && !dungeon.characterMap[y][x + 1] &&
-          !dungeon.characterMap[y - 1][x] && !dungeon.characterMap[y - 1][x + 1]
+          // @todo refactor
+          !dungeon.character(x, y) && !dungeon.character(x + 1, y) &&
+          !dungeon.character(x, y - 1) && !dungeon.character(x + 1, y - 1)
         ) {
           const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (distance > min_hero_distance) {
@@ -173,7 +175,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       let [[x, y]] = free.splice(i, 1);
 
       const name = mossMonsterNames[Math.floor(dungeon.level / 5) % mossMonsterNames.length];
-      dungeon.boss = new BossMonster(this.resources, dungeon, x, y, name);
+      const boss = new BossMonster(name, dungeon.level);
+      dungeon.boss = new BossMonsterView(boss, dungeon, x, y);
     } else {
       console.error("boss not placed");
     }

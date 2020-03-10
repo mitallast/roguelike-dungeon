@@ -1,5 +1,5 @@
 import {Scene, SceneController} from "./scene";
-import {heroMonsterNames, HeroState} from "./hero";
+import {heroMonsterNames, HeroCharacter} from "./hero";
 import {WeaponConfig} from "./drop";
 import {Colors} from "./ui";
 // @ts-ignore
@@ -120,7 +120,7 @@ export class SelectHeroScene implements Scene {
       joystick.hit.reset();
       const name = heroMonsterNames[this.selected];
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);
-      const hero = new HeroState(name);
+      const hero = new HeroCharacter(name);
       hero.inventory.equipment.weapon.set(weapon);
       this.controller.generateDungeon({
         level: 1,

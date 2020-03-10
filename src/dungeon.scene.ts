@@ -19,8 +19,8 @@ export class DungeonScene implements Scene {
     this.dungeon = dungeon;
 
     this.titleView = new DungeonTitleView();
-    this.inventoryView = new BeltInventoryView(dungeon.hero.heroState.inventory.belt);
-    this.healthView = new HeroStateView(dungeon.hero.heroState, {fixedHPSize: false});
+    this.inventoryView = new BeltInventoryView(dungeon.hero.character.inventory.belt);
+    this.healthView = new HeroStateView(dungeon.hero.character, {fixedHPSize: false});
   }
 
   init(): void {
@@ -54,7 +54,7 @@ export class DungeonScene implements Scene {
 
     if (this.dungeon.boss) {
       const c_w = this.controller.app.screen.width;
-      this.bossHealthView = new BossHealthView(this.dungeon.boss.bossState);
+      this.bossHealthView = new BossHealthView(this.dungeon.boss.character);
       this.bossHealthView.container.zIndex = 13;
       this.bossHealthView.container.position.set((c_w >> 1), 64);
       this.controller.stage.addChild(this.bossHealthView.container);

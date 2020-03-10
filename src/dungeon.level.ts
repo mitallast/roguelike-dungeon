@@ -1,13 +1,12 @@
-import {TinyMonster} from "./tiny.monster";
 import {Coins, Drop, DropView, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
-import {HeroState, HeroView} from "./hero";
-import {Character} from "./character";
-import {BossMonster} from "./boss.monster";
+import {HeroCharacter, HeroView} from "./hero";
+import {CharacterView} from "./character";
+import {BossMonsterView} from "./boss.monster";
 import {DungeonLightView} from "./dungeon.light";
 import {View} from "./view";
+import {SceneController} from "./scene";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
-import {SceneController} from "./scene";
 
 const TILE_SIZE = 16;
 
@@ -36,11 +35,11 @@ export class DungeonLevel {
   readonly height: number;
 
   readonly hero: HeroView;
-  boss: BossMonster;
-  monsters: TinyMonster[] = [];
+  boss: BossMonsterView;
+  monsters: CharacterView[] = [];
 
   private readonly cells: DungeonCellView[][];
-  readonly characterMap: Character[][];
+  private readonly characterMap: CharacterView[][];
 
   log: string[] = [];
 
@@ -51,7 +50,7 @@ export class DungeonLevel {
 
   private stop: boolean = false;
 
-  constructor(controller: SceneController, heroState: HeroState, level: number, width: number, height: number) {
+  constructor(controller: SceneController, heroState: HeroCharacter, level: number, width: number, height: number) {
     this.controller = controller;
     this.level = level;
     this.width = width;
@@ -70,7 +69,7 @@ export class DungeonLevel {
     this.container.zIndex = 0;
     this.container.scale.set(this.scale, this.scale);
 
-    this.hero = new HeroView(this, heroState);
+    this.hero = new HeroView(heroState, this, 0, 0);
 
     this.light = new DungeonLightView(this);
     this.light.layer.zIndex = 1;
@@ -97,11 +96,19 @@ export class DungeonLevel {
     return this.cells[y][x];
   }
 
+  character(x: number, y: number): CharacterView {
+    return this.characterMap[y][x];
+  }
+
+  setCharacter(x: number, y: number, character: CharacterView): void {
+    this.characterMap[y][x] = character;
+  }
+
   exit() {
     this.stop = true;
     this.controller.updateHero({
       level: this.level + 1,
-      hero: this.hero.heroState,
+      hero: this.hero.character,
     });
   };
 
@@ -130,8 +137,8 @@ export class DungeonLevel {
 
     this.light.update(delta);
 
-    const t_x = this.hero.container.position.x;
-    const t_y = this.hero.container.position.y;
+    const t_x = (this.hero as PIXI.Container).position.x;
+    const t_y = (this.hero as PIXI.Container).position.y;
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
     const p_x = (c_w >> 1) - t_x * this.scale;
@@ -228,7 +235,7 @@ export class DungeonCellView implements View {
     }
   }
 
-  pickedUp(hero: HeroState): void {
+  pickedUp(hero: HeroCharacter): void {
     if (this.dropView) {
       this.dropView.pickedUp(hero);
     }

@@ -1,5 +1,5 @@
 import {RNG} from "./rng";
-import {HeroState} from "./hero";
+import {HeroCharacter} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
@@ -12,7 +12,7 @@ import {Color} from "./wfc";
 const TILE_SIZE = 16;
 
 export interface Drop {
-  pickedUp(hero: HeroState): boolean;
+  pickedUp(hero: HeroCharacter): boolean;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
   dropView(dungeon: DungeonLevel, x: number, y: number): DropView;
 }
@@ -43,7 +43,7 @@ export class DropView implements View {
     level.container.sortChildren();
   }
 
-  pickedUp(hero: HeroState): void {
+  pickedUp(hero: HeroCharacter): void {
     if (this.drop.pickedUp(hero)) {
       this.level.cell(this.x, this.y).drop = null;
     }
@@ -63,7 +63,7 @@ export class DropView implements View {
 export interface UsableDrop extends Drop {
   info(): DropInfo;
   same(item: UsableDrop): boolean;
-  use(cell: InventoryCell, hero: HeroState): void;
+  use(cell: InventoryCell, hero: HeroCharacter): void;
 }
 
 export interface DropInfo {
@@ -83,7 +83,7 @@ export class Coins implements Drop {
     this.coins = rng.nextRange(1, 30)
   }
 
-  pickedUp(hero: HeroState): boolean {
+  pickedUp(hero: HeroCharacter): boolean {
     hero.addCoins(this.coins);
     return true;
   };
@@ -113,7 +113,7 @@ export class HealthFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: HeroState): boolean {
+  pickedUp(hero: HeroCharacter): boolean {
     return hero.inventory.add(this);
   };
 
@@ -121,7 +121,7 @@ export class HealthFlask implements UsableDrop {
     return item instanceof HealthFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroState) {
+  use(cell: InventoryCell, hero: HeroCharacter) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -151,7 +151,7 @@ export class HealthBigFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: HeroState): boolean {
+  pickedUp(hero: HeroCharacter): boolean {
     return hero.inventory.add(this);
   };
 
@@ -163,7 +163,7 @@ export class HealthBigFlask implements UsableDrop {
     return item instanceof HealthBigFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroState) {
+  use(cell: InventoryCell, hero: HeroCharacter) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -246,7 +246,7 @@ export class Weapon implements UsableDrop {
     return this.resources.sprite(this.name + ".png");
   }
 
-  pickedUp(hero: HeroState): boolean {
+  pickedUp(hero: HeroCharacter): boolean {
     return hero.inventory.add(this);
   }
 
@@ -254,7 +254,7 @@ export class Weapon implements UsableDrop {
     return false;
   }
 
-  use(cell: InventoryCell, hero: HeroState): void {
+  use(cell: InventoryCell, hero: HeroCharacter): void {
     const prev = hero.inventory.equipment.weapon.get();
     hero.inventory.equipment.weapon.set(this);
     cell.clear();

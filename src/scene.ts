@@ -12,7 +12,6 @@ import {SelectHeroScene} from "./select.hero.scene";
 import * as PIXI from "pixi.js";
 import {View} from "./view";
 import {UpdateHeroScene} from "./update.hero.scene";
-import {HeroState} from "./hero";
 
 export interface Scene extends View {
   init(): void;

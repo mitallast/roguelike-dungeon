@@ -1,6 +1,6 @@
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
-import {HeroState, HeroStateView} from "./hero";
+import {HeroCharacter, HeroStateView} from "./hero";
 import {BagpackInventoryView, BeltInventoryView, EquipmentInventoryView} from "./inventory";
 import {SelectableMap} from "./selectable";
 // @ts-ignore
@@ -10,7 +10,7 @@ import {DropCardView, Weapon} from "./drop";
 
 export class UpdateHeroScene implements Scene {
   private readonly controller: SceneController;
-  private readonly hero: HeroState;
+  private readonly hero: HeroCharacter;
   private readonly options: GenerateOptions;
 
   private title: PIXI.BitmapText;
