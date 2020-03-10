@@ -56,11 +56,6 @@ export abstract class Character {
 
   hitDamage(by: Character, damage: number): void {
     if (!this._dead.get()) {
-      if (by.dead.get()) {
-        console.trace(`${this.name} damaged by ${by.name} with ${damage}`);
-      } else {
-        console.log(`${this.name} damaged by ${by.name} with ${damage}`);
-      }
       this._health.update((h) => Math.max(0, h - damage));
       if (this._health.get() === 0) {
         this._killedBy.set(by);
@@ -369,7 +364,6 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
       }
     }
 
-    console.log("closestCell", closestCell);
     return closestCell;
   }
 }
