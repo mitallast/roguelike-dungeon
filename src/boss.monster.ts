@@ -5,9 +5,9 @@ import {View} from "./view";
 import {Observable, Subscription} from "./observable";
 import {Colors} from "./ui";
 import {PathFinding} from "./pathfinding";
+import {BarView} from "./bar.view";
 // @ts-ignore
 import * as PIXI from 'pixi.js';
-import {BarView} from "./bar.view";
 
 const TILE_SIZE = 16;
 
