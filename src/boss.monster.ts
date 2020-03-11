@@ -71,7 +71,7 @@ export class BossHealthView implements View {
       widthMax: this.widthMax,
       labelCenter: true
     });
-    (this.health as PIXI.Container).position.set(-(this.widthMax >> 1), 0);
+    this.health.position.set(-(this.widthMax >> 1), 0);
     this.container.addChild(this.health);
 
     this.healthSub = boss.health.subscribe(this.updateHealth.bind(this));
@@ -98,6 +98,6 @@ export class BossHealthView implements View {
     }
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
   }
 }

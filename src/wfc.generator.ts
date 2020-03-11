@@ -4,7 +4,7 @@ import {BorderConstraint, Color, Constraint, OverlappingModel, PathConstraint, R
 import {SceneController} from "./scene";
 
 export class WfcDungeonGenerator extends BaseDungeonGenerator {
-  private model: OverlappingModel<TileSet>;
+  private model: OverlappingModel<TileSet> | null = null;
 
   get percent(): number {
     return this.model?.percent || 0;
@@ -63,7 +63,7 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
         }
         if (tileset.wall) {
           cell.wall = tileset.wall;
-          cell.zIndex = tileset.zIndex;
+          cell.zIndex = tileset.zIndex || 0;
         }
       }
     }
@@ -97,9 +97,9 @@ export interface TileSetOptions {
 }
 
 class TileSet {
-  readonly floor?: string;
-  readonly wall?: string;
-  readonly zIndex?: number;
+  readonly floor: string | null;
+  readonly wall: string | null;
+  readonly zIndex: number | null;
   readonly color: Color;
 
   constructor(options: TileSetOptions) {

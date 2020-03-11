@@ -1,26 +1,25 @@
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {HeroCharacter, HeroStateView} from "./hero";
-import {BagpackInventoryView, BeltInventoryView, EquipmentInventoryView} from "./inventory";
+import {BackpackInventoryView, BeltInventoryView, EquipmentInventoryView} from "./inventory";
 import {SelectableMap} from "./selectable";
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {Button, Colors, Sizes} from "./ui";
 import {DropCardView, Weapon} from "./drop";
+import * as PIXI from "pixi.js";
 
 export class UpdateHeroScene implements Scene {
   private readonly controller: SceneController;
   private readonly hero: HeroCharacter;
   private readonly options: GenerateOptions;
 
-  private title: PIXI.BitmapText;
-  private sprite: PIXI.AnimatedSprite;
-  private spriteBg: PIXI.Graphics;
-  private state: HeroStateView;
-  private equipment: EquipmentInventoryView;
-  private belt: BeltInventoryView;
-  private bagpack: BagpackInventoryView;
-  private dropCard: DropCardView;
+  private title: PIXI.BitmapText | null = null;
+  private sprite: PIXI.AnimatedSprite | null = null;
+  private spriteBg: PIXI.Graphics | null = null;
+  private state: HeroStateView | null = null;
+  private equipment: EquipmentInventoryView | null = null;
+  private belt: BeltInventoryView | null = null;
+  private backpack: BackpackInventoryView | null = null;
+  private dropCard: DropCardView | null = null;
 
   private readonly selectable: SelectableMap = new SelectableMap();
 
@@ -38,15 +37,15 @@ export class UpdateHeroScene implements Scene {
     this.sprite?.destroy();
     this.spriteBg?.destroy();
     this.state?.destroy();
-    (this.equipment as PIXI.Container)?.destroy();
-    (this.belt as PIXI.Container)?.destroy();
-    (this.bagpack as PIXI.Container)?.destroy();
-    (this.dropCard as PIXI.Container)?.destroy();
+    this.equipment?.destroy();
+    this.belt?.destroy();
+    this.backpack?.destroy();
+    this.dropCard?.destroy();
     for (let button of this.buttons) {
-      (button as PIXI.Container).destroy();
+      button.destroy();
     }
     for (let [button] of this.actions) {
-      (button as PIXI.Container).destroy();
+      button.destroy();
     }
     this.sprite = null;
     this.spriteBg = null;
@@ -54,7 +53,7 @@ export class UpdateHeroScene implements Scene {
     this.state = null;
     this.equipment = null;
     this.belt = null;
-    this.bagpack = null;
+    this.backpack = null;
     this.dropCard = null;
     this.buttons.splice(0, 1000);
     this.actions.splice(0, 1000);
@@ -78,7 +77,7 @@ export class UpdateHeroScene implements Scene {
     this.selectable.reset();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     this.handleInput();
   }
 
@@ -95,9 +94,9 @@ export class UpdateHeroScene implements Scene {
     layout.offset(Sizes.uiMargin, 0);
     layout.commit();
     this.state = new HeroStateView(this.hero, {fixedHPSize: true});
-    (this.state as PIXI.Container).position.set(layout.x, layout.y);
+    this.state.position.set(layout.x, layout.y);
     this.controller.stage.addChild(this.state);
-    layout.offset(0, (this.state as PIXI.Container).getBounds().height);
+    layout.offset(0, this.state.getBounds().height);
   }
 
   private renderIcon(layout: Layout) {
@@ -129,7 +128,7 @@ export class UpdateHeroScene implements Scene {
       width: 24,
       height: 24
     });
-    (button as PIXI.Container).position.set(layout.x, layout.y);
+    button.position.set(layout.x, layout.y);
     this.selectable.set(1, 0, button, () => this.increaseHealth());
     this.buttons.push(button);
     this.controller.stage.addChild(button);
@@ -143,7 +142,7 @@ export class UpdateHeroScene implements Scene {
       width: 256,
       height: 32,
     });
-    (button as PIXI.Container).position.set(layout.x, layout.y);
+    button.position.set(layout.x, layout.y);
     this.selectable.set(0, 1, button, () => this.continueGame());
     this.buttons.push(button);
     this.controller.stage.addChild(button);
@@ -152,28 +151,28 @@ export class UpdateHeroScene implements Scene {
 
   private renderInventory(layout: Layout): void {
     this.equipment = new EquipmentInventoryView(this.hero.inventory.equipment);
-    (this.equipment as PIXI.Container).position.set(layout.x, layout.y);
+    this.equipment.position.set(layout.x, layout.y);
     layout.offset(0, 32 + (Sizes.uiBorder << 1));
     layout.offset(0, Sizes.uiMargin);
 
     this.selectable.set(2, 0, this.equipment.weapon, () => this.showWeaponInfo());
 
     this.belt = new BeltInventoryView(this.hero.inventory.belt);
-    (this.belt as PIXI.Container).position.set(layout.x, layout.y);
+    this.belt.position.set(layout.x, layout.y);
     layout.offset(0, 32 + (Sizes.uiBorder << 1));
     layout.offset(0, Sizes.uiMargin);
 
-    this.bagpack = new BagpackInventoryView(this.hero.inventory.bagpack);
-    (this.bagpack as PIXI.Container).position.set(layout.x, layout.y);
-    layout.offset(0, Sizes.uiBorder + (32 + Sizes.uiBorder) * this.bagpack.height);
+    this.backpack = new BackpackInventoryView(this.hero.inventory.backpack);
+    this.backpack.position.set(layout.x, layout.y);
+    layout.offset(0, Sizes.uiBorder + (32 + Sizes.uiBorder) * this.backpack.height);
 
-    for (let x = 0; x < this.bagpack.width; x++) {
+    for (let x = 0; x < this.backpack.width; x++) {
       const index = x;
       this.selectable.set(x + 2, 1, this.belt.cell(x), () => this.showBeltInfo(index));
-      for (let y = 0; y < this.bagpack.height; y++) {
+      for (let y = 0; y < this.backpack.height; y++) {
         const cell_x = x;
         const cell_y = y;
-        this.selectable.set(x + 2, y + 2, this.bagpack.cell(x, y), () => this.showBagpackInfo(cell_x, cell_y));
+        this.selectable.set(x + 2, y + 2, this.backpack.cell(x, y), () => this.showBackpackInfo(cell_x, cell_y));
       }
     }
 
@@ -182,7 +181,7 @@ export class UpdateHeroScene implements Scene {
     layout.offset(Sizes.uiMargin, 0);
     layout.commit();
 
-    this.controller.stage.addChild(this.equipment, this.bagpack, this.belt);
+    this.controller.stage.addChild(this.equipment, this.backpack, this.belt);
   }
 
   private renderDropCard(layout: Layout): void {
@@ -192,24 +191,24 @@ export class UpdateHeroScene implements Scene {
       width: width,
       height: height
     });
-    (this.dropCard as PIXI.Container).position.set(layout.x, layout.y);
+    this.dropCard.position.set(layout.x, layout.y);
     this.controller.stage.addChild(this.dropCard);
   }
 
   private removeActions(): void {
     for (let [button, x, y] of this.actions) {
       this.selectable.remove(x, y);
-      (button as PIXI.Container).destroy();
+      button.destroy();
     }
   }
 
   private showWeaponInfo(): void {
     const drop = this.hero.inventory.equipment.weapon.get();
-    this.dropCard.drop = drop;
+    this.dropCard!.drop = drop;
     this.removeActions();
 
     if (drop) {
-      const cardBounds = (this.dropCard as PIXI.Container).getBounds();
+      const cardBounds = this.dropCard!.getBounds();
       let offsetX = cardBounds.x;
       let offsetY = cardBounds.y + cardBounds.height + Sizes.uiMargin;
       let width = 128;
@@ -222,19 +221,19 @@ export class UpdateHeroScene implements Scene {
       });
       this.actions.push([buttonToBelt, 13, 0]);
       this.selectable.set(13, 0, buttonToBelt, () => this.weaponToBelt());
-      (buttonToBelt as PIXI.Container).position.set(offsetX, offsetY);
+      buttonToBelt.position.set(offsetX, offsetY);
       this.controller.stage.addChild(buttonToBelt);
       offsetX += width + Sizes.uiMargin;
 
-      const buttonToBagpack = new Button({
-        label: "To bagpack",
+      const buttonToBackpack = new Button({
+        label: "To backpack",
         width: width,
         height: height,
       });
-      this.actions.push([buttonToBagpack, 14, 0]);
-      this.selectable.set(14, 0, buttonToBagpack, () => this.weaponToBagpack());
-      (buttonToBagpack as PIXI.Container).position.set(offsetX, offsetY);
-      this.controller.stage.addChild(buttonToBagpack);
+      this.actions.push([buttonToBackpack, 14, 0]);
+      this.selectable.set(14, 0, buttonToBackpack, () => this.weaponToBackpack());
+      buttonToBackpack.position.set(offsetX, offsetY);
+      this.controller.stage.addChild(buttonToBackpack);
       offsetX += width + Sizes.uiMargin;
 
       const buttonDrop = new Button({
@@ -244,7 +243,7 @@ export class UpdateHeroScene implements Scene {
       });
       this.actions.push([buttonDrop, 15, 0]);
       this.selectable.set(15, 0, buttonDrop, () => this.weaponDrop());
-      (buttonDrop as PIXI.Container).position.set(offsetX, offsetY);
+      buttonDrop.position.set(offsetX, offsetY);
       this.controller.stage.addChild(buttonDrop);
     }
   }
@@ -254,20 +253,19 @@ export class UpdateHeroScene implements Scene {
     if (weapon) {
       if (this.hero.inventory.belt.add(weapon)) {
         this.hero.inventory.equipment.weapon.set(null);
-
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
   }
 
-  private weaponToBagpack(): void {
+  private weaponToBackpack(): void {
     const weapon = this.hero.inventory.equipment.weapon.get();
     if (weapon) {
-      if (this.hero.inventory.bagpack.set(weapon)) {
+      if (this.hero.inventory.backpack.set(weapon)) {
         this.hero.inventory.equipment.weapon.set(null);
 
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
@@ -275,17 +273,17 @@ export class UpdateHeroScene implements Scene {
 
   private weaponDrop(): void {
     this.hero.inventory.equipment.weapon.set(null);
-    this.dropCard.drop = null;
+    this.dropCard!.drop = null;
     this.removeActions();
   }
 
   private showBeltInfo(index: number): void {
     const drop = this.hero.inventory.belt.cell(index).item.get();
-    this.dropCard.drop = drop;
+    this.dropCard!.drop = drop;
     this.removeActions();
 
     if (drop) {
-      const cardBounds = (this.dropCard as PIXI.Container).getBounds();
+      const cardBounds = this.dropCard!.getBounds();
       let offsetX = cardBounds.x;
       let offsetY = cardBounds.y + cardBounds.height + Sizes.uiMargin;
       let width = 128;
@@ -299,7 +297,7 @@ export class UpdateHeroScene implements Scene {
         });
         this.actions.push([buttonToBelt, 13, 0]);
         this.selectable.set(13, 0, buttonToBelt, () => this.beltEquip(index));
-        (buttonToBelt as PIXI.Container).position.set(offsetX, offsetY);
+        buttonToBelt.position.set(offsetX, offsetY);
         this.controller.stage.addChild(buttonToBelt);
         offsetX += width + Sizes.uiMargin;
       } else {
@@ -310,20 +308,20 @@ export class UpdateHeroScene implements Scene {
         });
         this.actions.push([buttonToBelt, 13, 0]);
         this.selectable.set(13, 0, buttonToBelt, () => this.beltUseItem(index));
-        (buttonToBelt as PIXI.Container).position.set(offsetX, offsetY);
+        buttonToBelt.position.set(offsetX, offsetY);
         this.controller.stage.addChild(buttonToBelt);
         offsetX += width + Sizes.uiMargin;
       }
 
-      const buttonToBagpack = new Button({
-        label: "To bagpack",
+      const buttonToBackpack = new Button({
+        label: "To backpack",
         width: width,
         height: height,
       });
-      this.actions.push([buttonToBagpack, 14, 0]);
-      this.selectable.set(14, 0, buttonToBagpack, () => this.beltToBagpack(index));
-      (buttonToBagpack as PIXI.Container).position.set(offsetX, offsetY);
-      this.controller.stage.addChild(buttonToBagpack);
+      this.actions.push([buttonToBackpack, 14, 0]);
+      this.selectable.set(14, 0, buttonToBackpack, () => this.beltToBackpack(index));
+      buttonToBackpack.position.set(offsetX, offsetY);
+      this.controller.stage.addChild(buttonToBackpack);
       offsetX += width + Sizes.uiMargin;
 
       const buttonDrop = new Button({
@@ -333,7 +331,7 @@ export class UpdateHeroScene implements Scene {
       });
       this.actions.push([buttonDrop, 15, 0]);
       this.selectable.set(15, 0, buttonDrop, () => this.beltDrop(index));
-      (buttonDrop as PIXI.Container).position.set(offsetX, offsetY);
+      buttonDrop.position.set(offsetX, offsetY);
       this.controller.stage.addChild(buttonDrop);
     }
   }
@@ -348,7 +346,7 @@ export class UpdateHeroScene implements Scene {
       if (prev) {
         cell.set(prev);
       }
-      this.dropCard.drop = null;
+      this.dropCard!.drop = null;
       this.removeActions();
     }
   }
@@ -358,25 +356,25 @@ export class UpdateHeroScene implements Scene {
     const drop = cell.item.get();
     if (drop) {
       if (cell.use() && cell.isEmpty) {
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
   }
 
-  private beltToBagpack(index: number): void {
+  private beltToBackpack(index: number): void {
     const cell = this.hero.inventory.belt.cell(index);
     if (!cell.isEmpty) {
       const drop = cell.item.get();
-      while (!cell.isEmpty) {
-        if (this.hero.inventory.bagpack.add(drop)) {
+      while (drop && !cell.isEmpty) {
+        if (this.hero.inventory.backpack.add(drop)) {
           cell.decrease();
         } else {
           break;
         }
       }
       if (cell.isEmpty) {
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
@@ -385,17 +383,17 @@ export class UpdateHeroScene implements Scene {
   private beltDrop(index: number): void {
     this.hero.inventory.belt.cell(index).clear();
 
-    this.dropCard.drop = null;
+    this.dropCard!.drop = null;
     this.removeActions();
   }
 
-  private showBagpackInfo(x: number, y: number): void {
-    const drop = this.hero.inventory.bagpack.cell(x, y).item.get();
-    this.dropCard.drop = drop;
+  private showBackpackInfo(x: number, y: number): void {
+    const drop = this.hero.inventory.backpack.cell(x, y).item.get();
+    this.dropCard!.drop = drop;
     this.removeActions();
 
     if (drop) {
-      const cardBounds = (this.dropCard as PIXI.Container).getBounds();
+      const cardBounds = this.dropCard!.getBounds();
       let offsetX = cardBounds.x;
       let offsetY = cardBounds.y + cardBounds.height + Sizes.uiMargin;
       let width = 128;
@@ -408,8 +406,8 @@ export class UpdateHeroScene implements Scene {
           height: height,
         });
         this.actions.push([buttonToBelt, 13, 0]);
-        this.selectable.set(13, 0, buttonToBelt, () => this.bagpackEquip(x, y));
-        (buttonToBelt as PIXI.Container).position.set(offsetX, offsetY);
+        this.selectable.set(13, 0, buttonToBelt, () => this.backpackEquip(x, y));
+        buttonToBelt.position.set(offsetX, offsetY);
         this.controller.stage.addChild(buttonToBelt);
         offsetX += width + Sizes.uiMargin;
       } else {
@@ -419,21 +417,21 @@ export class UpdateHeroScene implements Scene {
           height: height,
         });
         this.actions.push([buttonToBelt, 13, 0]);
-        this.selectable.set(13, 0, buttonToBelt, () => this.bagpackUseItem(x, y));
-        (buttonToBelt as PIXI.Container).position.set(offsetX, offsetY);
+        this.selectable.set(13, 0, buttonToBelt, () => this.backpackUseItem(x, y));
+        buttonToBelt.position.set(offsetX, offsetY);
         this.controller.stage.addChild(buttonToBelt);
         offsetX += width + Sizes.uiMargin;
       }
 
-      const buttonToBagpack = new Button({
+      const buttonToBackpack = new Button({
         label: "To belt",
         width: width,
         height: height,
       });
-      this.actions.push([buttonToBagpack, 14, 0]);
-      this.selectable.set(14, 0, buttonToBagpack, () => this.bagpackToBelt(x, y));
-      (buttonToBagpack as PIXI.Container).position.set(offsetX, offsetY);
-      this.controller.stage.addChild(buttonToBagpack);
+      this.actions.push([buttonToBackpack, 14, 0]);
+      this.selectable.set(14, 0, buttonToBackpack, () => this.backpackToBelt(x, y));
+      buttonToBackpack.position.set(offsetX, offsetY);
+      this.controller.stage.addChild(buttonToBackpack);
       offsetX += width + Sizes.uiMargin;
 
       const buttonDrop = new Button({
@@ -442,14 +440,14 @@ export class UpdateHeroScene implements Scene {
         height: height,
       });
       this.actions.push([buttonDrop, 15, 0]);
-      this.selectable.set(15, 0, buttonDrop, () => this.bagpackDrop(x, y));
-      (buttonDrop as PIXI.Container).position.set(offsetX, offsetY);
+      this.selectable.set(15, 0, buttonDrop, () => this.backpackDrop(x, y));
+      buttonDrop.position.set(offsetX, offsetY);
       this.controller.stage.addChild(buttonDrop);
     }
   }
 
-  private bagpackEquip(x: number, y: number): void {
-    const cell = this.hero.inventory.bagpack.cell(x, y);
+  private backpackEquip(x: number, y: number): void {
+    const cell = this.hero.inventory.backpack.cell(x, y);
     const drop = cell.item.get();
     if (drop && drop instanceof Weapon) {
       const prev = this.hero.inventory.equipment.weapon.get();
@@ -458,27 +456,27 @@ export class UpdateHeroScene implements Scene {
       if (prev) {
         cell.set(prev);
       }
-      this.dropCard.drop = null;
+      this.dropCard!.drop = null;
       this.removeActions();
     }
   }
 
-  private bagpackUseItem(x: number, y: number): void {
-    const cell = this.hero.inventory.bagpack.cell(x, y);
+  private backpackUseItem(x: number, y: number): void {
+    const cell = this.hero.inventory.backpack.cell(x, y);
     const drop = cell.item.get();
     if (drop) {
       if (cell.use() && cell.isEmpty) {
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
   }
 
-  private bagpackToBelt(x: number, y: number): void {
-    const cell = this.hero.inventory.bagpack.cell(x, y);
+  private backpackToBelt(x: number, y: number): void {
+    const cell = this.hero.inventory.backpack.cell(x, y);
     if (!cell.isEmpty) {
       const drop = cell.item.get();
-      while (!cell.isEmpty) {
+      while (drop && !cell.isEmpty) {
         if (this.hero.inventory.belt.add(drop)) {
           cell.decrease();
         } else {
@@ -486,16 +484,16 @@ export class UpdateHeroScene implements Scene {
         }
       }
       if (cell.isEmpty) {
-        this.dropCard.drop = null;
+        this.dropCard!.drop = null;
         this.removeActions();
       }
     }
   }
 
-  private bagpackDrop(x: number, y: number): void {
-    this.hero.inventory.bagpack.cell(x, y).clear();
+  private backpackDrop(x: number, y: number): void {
+    this.hero.inventory.backpack.cell(x, y).clear();
 
-    this.dropCard.drop = null;
+    this.dropCard!.drop = null;
     this.removeActions();
   }
 
@@ -534,8 +532,11 @@ export class UpdateHeroScene implements Scene {
   }
 
   private action(): void {
-    let [ignore, callback] = this.selectable.selected;
-    callback();
+    const selected = this.selectable.selected;
+    if (selected) {
+      let [, callback] = selected;
+      callback();
+    }
   }
 }
 

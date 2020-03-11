@@ -27,7 +27,7 @@ import "pixi-layers";
   const resources = new Resources(app.loader);
   await resources.load();
 
-  document.getElementById("container").appendChild(app.view);
+  document.getElementById("container")?.appendChild(app.view);
 
   const rng = new RNG();
   const joystick = new Joystick();

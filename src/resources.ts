@@ -1,10 +1,10 @@
 // https://0x72.itch.io/dungeontileset-ii
 
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 export class Resources {
   private readonly loader: PIXI.Loader;
+  // @ts-ignore
   private sheet: PIXI.Spritesheet;
 
   constructor(loader: PIXI.Loader) {
@@ -17,10 +17,13 @@ export class Resources {
         .add('tiles.json')
         .add('sample.json')
         .add('alagard', 'fonts/alagard.fnt')
-        .load((loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
+        .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           console.log(resources);
+          // @ts-ignore
           this.sheet = resources['tiles.json'].spritesheet;
+          // @ts-ignore
           this.sheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+          // @ts-ignore
           resources['fonts/alagard.png'].texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           resolve();
         });

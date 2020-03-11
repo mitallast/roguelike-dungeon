@@ -57,7 +57,7 @@ export class DungeonLightView implements View {
 
     // hero light source
     this.lights.push(new LightSource(
-      (level.hero as PIXI.Container).position,
+      level.hero.position,
       500,
       this.heroLightTexture,
       this.container
@@ -96,10 +96,11 @@ export class DungeonLightView implements View {
           const has_right = x + 1 < level.width && level.cell(x + 1, y).hasFloor;
 
           let config: WallConfig;
-          if (cell.hasWall && this.config[cell.wall]) {
-            config = this.config[cell.wall];
+          const cellWall = cell.wall;
+          if (cellWall && this.config[cellWall]) {
+            config = this.config[cellWall] || this.defaultConfig;
           } else {
-            config = this.config["default"];
+            config = this.defaultConfig;
           }
           this.add(x, y, config.default);
           if (!has_top) this.add(x, y, config.top);
@@ -123,7 +124,7 @@ export class DungeonLightView implements View {
     }
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     this.lights.forEach((light) => {
       const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
       this.visibility.setLightLocation(start.x, start.y, light.maxDistance);
@@ -138,17 +139,17 @@ export class DungeonLightView implements View {
 
   private static gradient(color: string, radius: number): PIXI.Texture {
     const diameter = radius << 1;
-
     const c = document.createElement("canvas");
     c.width = diameter;
     c.height = diameter;
     const ctx = c.getContext("2d");
-    const grd = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-    grd.addColorStop(0.1, color);
-    grd.addColorStop(1, "transparent");
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, diameter, diameter);
-
+    if (ctx) {
+      const grd = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
+      grd.addColorStop(0.1, color);
+      grd.addColorStop(1, "transparent");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, diameter, diameter);
+    }
     return PIXI.Texture.from(c);
   }
 
@@ -445,23 +446,24 @@ export class DungeonLightView implements View {
         {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
       ],
       bottom: []
-    },
-    "default": {
-      default: [],
-      top: [
-        {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
-      ],
-      left: [
-        {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
-      ],
-      right: [
-        {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
-      ],
-      bottom: [
-        {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
-      ],
     }
   };
+
+  defaultConfig: WallConfig = {
+    default: [],
+    top: [
+      {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},
+    ],
+    left: [
+      {x1: 0, y1: 0, x2: 0, y2: TILE_SIZE, type: SegmentType.NORMAL},
+    ],
+    right: [
+      {x1: TILE_SIZE, y1: 0, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+    ],
+    bottom: [
+      {x1: 0, y1: TILE_SIZE, x2: TILE_SIZE, y2: TILE_SIZE, type: SegmentType.NORMAL},
+    ],
+  }
 }
 
 interface WallConfig {
@@ -509,13 +511,14 @@ class LightSource {
 }
 
 class EndPoint {
-  point: PIXI.Point;
+  readonly point: PIXI.Point;
+  readonly segment: Segment;
   begin: boolean = false;
-  segment: Segment;
   angle: number = 0.0;
 
-  constructor(x: number, y: number) {
-    this.point = new PIXI.Point(x, y);
+  constructor(point: PIXI.Point, segment: Segment) {
+    this.point = point;
+    this.segment = segment;
   }
 }
 
@@ -525,17 +528,23 @@ enum SegmentType {
 }
 
 class Segment {
-  p1: EndPoint;
-  p2: EndPoint;
-  distance: number;
-  type: SegmentType;
+  readonly p1: EndPoint;
+  readonly p2: EndPoint;
+  readonly type: SegmentType;
+  distance: number = 0;
+
+  constructor(p1: PIXI.Point, p2: PIXI.Point, type: SegmentType) {
+    this.p1 = new EndPoint(p1, this);
+    this.p2 = new EndPoint(p2, this);
+    this.type = type;
+  }
 }
 
 class Visibility {
   segments: Segment[] = [];
   endpoints: EndPoint[] = [];
-  light: PIXI.Point;
-  maxDistance: number;
+  light: PIXI.Point = new PIXI.Point(0, 0);
+  maxDistance: number = 500;
 
   open: Segment[] = [];
 
@@ -557,25 +566,12 @@ class Visibility {
   // visualization but the second one does not. (Every endpoint is
   // part of two segments, but we want to only show them once.)
   addSegment(x1: number, y1: number, x2: number, y2: number, type: SegmentType) {
-    let p1: EndPoint = new EndPoint(0, 0);
-    let p2: EndPoint = new EndPoint(0, 0);
-
-    const segment = new Segment();
-    p1.point.x = x1;
-    p1.point.y = y1;
-    p2.point.x = x2;
-    p2.point.y = y2;
-    p1.segment = segment;
-    p2.segment = segment;
-
-    segment.p1 = p1;
-    segment.p2 = p2;
-    segment.distance = 0.0;
-    segment.type = type;
-
+    const p1 = new PIXI.Point(x1, y1);
+    const p2 = new PIXI.Point(x2, y2);
+    const segment = new Segment(p1, p2, type);
     this.segments.push(segment);
-    this.endpoints.push(p1);
-    this.endpoints.push(p2);
+    this.endpoints.push(segment.p1);
+    this.endpoints.push(segment.p2);
   }
 
   setLightLocation(x: number, y: number, maxDistance: number) {
@@ -761,7 +757,7 @@ class Visibility {
     return new PIXI.Point(p1.x + s * (p2.x - p1.x), p1.y + s * (p2.y - p1.y));
   }
 
-  private addTriangle(angle1: number, angle2: number, segment: Segment) {
+  private addTriangle(angle1: number, angle2: number, segment: Segment | null) {
     let p1 = this.light;
     let p2 = new PIXI.Point(this.light.x + Math.cos(angle1), this.light.y + Math.sin(angle1));
     let p3 = new PIXI.Point(0.0, 0.0);

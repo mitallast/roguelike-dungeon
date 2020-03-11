@@ -2,7 +2,6 @@ import {Scene, SceneController} from "./scene";
 import {heroMonsterNames, HeroCharacter} from "./hero";
 import {WeaponConfig} from "./drop";
 import {Colors} from "./ui";
-// @ts-ignore
 import * as PIXI from "pixi.js";
 
 export class SelectHeroScene implements Scene {
@@ -20,7 +19,7 @@ export class SelectHeroScene implements Scene {
     this.renderHeroes();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     this.handleInput();
     this.updateHeroes();
   }

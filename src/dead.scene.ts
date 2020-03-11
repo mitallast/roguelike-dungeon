@@ -14,7 +14,7 @@ export class YouDeadScene implements Scene {
     this.renderHelp();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     this.handleInput();
   }
 

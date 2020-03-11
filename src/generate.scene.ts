@@ -12,7 +12,7 @@ export class GenerateDungeonScreen implements Scene {
   private readonly generator: DungeonGenerator;
   private promise: Promise<DungeonLevel>;
 
-  private title: PIXI.BitmapText;
+  private title: PIXI.BitmapText | null = null;
   private progressBar: PIXI.Graphics;
 
   constructor(controller: SceneController, options: GenerateOptions) {
@@ -51,7 +51,7 @@ export class GenerateDungeonScreen implements Scene {
     this.controller.stage.addChild(this.progressBar);
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
 

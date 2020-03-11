@@ -19,7 +19,7 @@ export abstract class Character {
   protected readonly _healthMax: Observable<number>;
   protected readonly _health: Observable<number>;
   private readonly _dead: Observable<boolean>;
-  private readonly _killedBy: Observable<Character>;
+  private readonly _killedBy: Observable<Character | null>;
 
   get healthMax(): Publisher<number> {
     return this._healthMax;
@@ -33,7 +33,7 @@ export abstract class Character {
     return this._dead;
   }
 
-  get killedBy(): Publisher<Character> {
+  get killedBy(): Publisher<Character | null> {
     return this._killedBy;
   }
 
@@ -46,8 +46,8 @@ export abstract class Character {
     this.speed = options.speed;
     this._healthMax = new Observable(options.healthMax);
     this._health = new Observable(options.healthMax);
-    this._dead = new Observable(false);
-    this._killedBy = new Observable(null);
+    this._dead = new Observable<boolean>(false);
+    this._killedBy = new Observable<Character | null>(null);
   }
 
   hill(health: number): void {
@@ -118,7 +118,7 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected pos_y: number; // grid pos
   private new_x: number;
   private new_y: number;
-  private _is_left: boolean;
+  private _is_left: boolean = false;
 
   protected get is_left(): boolean {
     return this._is_left;
@@ -130,13 +130,13 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     this.onSetOrientation();
   }
 
-  private animationState: AnimationState;
+  private animationState: AnimationState | null = null;
 
-  protected duration: number;
-  protected sprite: PIXI.AnimatedSprite;
+  protected duration: number = 0;
+  protected sprite: PIXI.AnimatedSprite | null = null;
 
-  private killedBySub: Subscription;
-  private deadSub: Subscription;
+  private killedBySub: Subscription | null = null;
+  private deadSub: Subscription | null = null;
 
   protected constructor(dungeon: DungeonLevel, width: number, height: number, x: number, y: number) {
     super();
@@ -197,12 +197,14 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected abstract onSetOrientation(): void;
 
   private updateSpriteOrientation(): void {
-    if (this._is_left) {
-      this.sprite.position.x = this.sprite.width;
-      this.sprite.scale.x = -1;
-    } else {
-      this.sprite.position.x = 0;
-      this.sprite.scale.x = 1;
+    if (this.sprite) {
+      if (this._is_left) {
+        this.sprite.position.x = this.sprite.width;
+        this.sprite.scale.x = -1;
+      } else {
+        this.sprite.position.x = 0;
+        this.sprite.scale.x = 1;
+      }
     }
   }
 
@@ -254,12 +256,14 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected abstract animateIdle(): void;
 
   protected animateRun(): void {
-    const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
-    const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
-    const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
-    super.position.set(t_x, t_y);
+    if (this.sprite) {
+      const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
+      const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
+      const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
+      super.position.set(t_x, t_y);
+    }
 
-    if (!this.sprite.playing) {
+    if (!this.sprite || !this.sprite.playing) {
       this.resetPosition(this.new_x, this.new_y);
       if (!this.action()) {
         this.setAnimation(AnimationState.Idle);
@@ -333,15 +337,15 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected abstract onDead(): void;
 
-  protected findDropCell(): DungeonCellView {
+  protected findDropCell(): (DungeonCellView | null) {
     const max_distance = 5;
     const pos_x = this.x;
     const pos_y = this.y;
     const is_left = this.is_left;
     const is_dead = this.character.dead.get();
 
-    let closestCell: DungeonCellView = null;
-    let closestDistance: number = null;
+    let closestCell: DungeonCellView | null = null;
+    let closestDistance: number | null = null;
 
     const metric = (a: DungeonCellView) => {
       return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
@@ -355,7 +359,7 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
           const cell = this.dungeon.cell(x, y);
           if (cell.hasFloor && !cell.hasDrop) {
             const distance = metric(cell);
-            if (closestCell === null || closestDistance > distance) {
+            if (closestDistance === null || closestDistance > distance) {
               closestCell = cell;
               closestDistance = distance;
             }
@@ -406,15 +410,15 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected distanceToHero(): [number, number] {
-    let min_dist_x: number = null;
-    let min_dist_y: number = null;
+    let min_dist_x: number = -1;
+    let min_dist_y: number = -1;
 
     for (let dx = 0; dx < this.grid_width; dx++) {
       for (let dy = 0; dy < this.grid_height; dy++) {
         const dist_x = Math.abs(this.x + dx - this.dungeon.hero.x);
         const dist_y = Math.abs(this.y - dy - this.dungeon.hero.y);
-        min_dist_x = min_dist_x === null ? dist_x : Math.min(dist_x, min_dist_x);
-        min_dist_y = min_dist_y === null ? dist_y : Math.min(dist_y, min_dist_y);
+        min_dist_x = min_dist_x === -1 ? dist_x : Math.min(dist_x, min_dist_x);
+        min_dist_y = min_dist_y === -1 ? dist_y : Math.min(dist_y, min_dist_y);
       }
     }
     return [min_dist_x, min_dist_y];
@@ -455,7 +459,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected animateIdle(): void {
-    if (!this.sprite.playing) {
+    if (!this.sprite || !this.sprite.playing) {
       if (!this.action()) {
         this.setAnimation(AnimationState.Idle);
       }
@@ -463,7 +467,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected animateHit(): void {
-    if (!this.sprite.playing) {
+    if (!this.sprite || !this.sprite.playing) {
       if (Math.random() < this.character.luck) {
         this.dungeon.hero.character.hitDamage(this.character, this.character.damage);
       }

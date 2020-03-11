@@ -1,5 +1,4 @@
 import {Selectable} from "./selectable";
-// @ts-ignore
 import * as PIXI from "pixi.js";
 
 export interface ColorScheme {
@@ -35,7 +34,7 @@ export class Button extends PIXI.Container implements Selectable {
   private readonly _height: number;
   private readonly _text: PIXI.BitmapText;
   private readonly _bg: PIXI.Graphics;
-  private _selected: boolean;
+  private _selected: boolean = false;
 
   constructor(options: {
     label: string,

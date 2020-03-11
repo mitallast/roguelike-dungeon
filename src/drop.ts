@@ -52,7 +52,7 @@ export class DropView implements View {
     this.sprite.destroy();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     if (this.sprite instanceof PIXI.AnimatedSprite) {
       this.sprite.play();
     }
@@ -249,7 +249,7 @@ export class Weapon implements UsableDrop {
     return hero.inventory.add(this);
   }
 
-  same(item: UsableDrop): boolean {
+  same(_item: UsableDrop): boolean {
     return false;
   }
 
@@ -271,8 +271,7 @@ export class DropCardView extends PIXI.Container {
   private readonly _width: number;
   private readonly _height: number;
   private readonly _sprite_size: number;
-  private _drop: UsableDrop;
-  private _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+  private _sprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private readonly _title: PIXI.BitmapText;
   private readonly _description: PIXI.BitmapText;
 
@@ -307,15 +306,13 @@ export class DropCardView extends PIXI.Container {
     super.addChild(background, this._title, this._description);
   }
 
-  set drop(drop: UsableDrop) {
-    this._drop = null;
+  set drop(drop: UsableDrop | null) {
     this._sprite?.destroy();
     this._sprite = null;
     this._title.text = "";
     this._description.text = "";
 
     if (drop) {
-      this._drop = drop;
       const sprite = this._sprite = drop.sprite();
       super.addChild(sprite);
       sprite.anchor = new PIXI.Point(0.5, 0.5);

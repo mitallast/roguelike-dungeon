@@ -1,10 +1,8 @@
 import {Resources} from "./resources";
 import {Color} from "./wfc";
-
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {TileSetOptions} from "./wfc.generator";
 import {DungeonZIndexes} from "./dungeon.level";
+import * as PIXI from "pixi.js";
 
 const scale = 3;
 const border = 2;
@@ -22,9 +20,9 @@ export class Editor {
   private readonly app: PIXI.Application;
 
   private readonly cells: EditorMapCell[][] = [];
-  private selected: EditorPaletteCell = null;
+  private selected: EditorPaletteCell | null = null;
 
-  private title: PIXI.Text;
+  private readonly title: PIXI.Text;
 
   constructor(width: number, height: number, resources: Resources) {
     this.width = width;
@@ -58,6 +56,13 @@ export class Editor {
     div.classList.add("container");
     div.appendChild(this.app.view);
     document.body.appendChild(div);
+
+    const style = new PIXI.TextStyle({
+      fontFamily: "silkscreennormal",
+      fontSize: 42,
+      fill: "white"
+    });
+    this.title = new PIXI.Text("", style);
 
     this.initPalette();
     this.initCells();
@@ -128,12 +133,6 @@ export class Editor {
       offset++;
     }
 
-    const style = new PIXI.TextStyle({
-      fontFamily: "silkscreennormal",
-      fontSize: 42,
-      fill: "white"
-    });
-    this.title = new PIXI.Text("", style);
     this.title.scale.set(0.5 / scale, 0.5 / scale);
     this.title.position.set(border, (palette_rows) * (sprite_size + border) + border);
     container.addChild(this.title);
@@ -181,9 +180,9 @@ export class Editor {
       for (let x = min_x; x <= max_x; x++) {
         const cell = this.cells[y][x];
         const options: TileSetOptions = {
-          floor: cell.floorSprite?.name || null,
-          wall: cell.wallSprite?.name || null,
-          zIndex: cell.wallSprite?.zIndex || null,
+          floor: cell.floorSprite?.name,
+          wall: cell.wallSprite?.name,
+          zIndex: cell.wallSprite?.zIndex,
           color: cell.color.rgb,
         };
         row.push(options);
@@ -216,8 +215,8 @@ class EditorMapCell {
   readonly y: number;
   readonly container: PIXI.Container;
   readonly bg: PIXI.Graphics;
-  floorSprite: PIXI.Sprite = null;
-  wallSprite: PIXI.Sprite = null;
+  floorSprite: PIXI.Sprite | null = null;
+  wallSprite: PIXI.Sprite | null = null;
   private readonly zIndexText: PIXI.Text;
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
@@ -263,7 +262,7 @@ class EditorMapCell {
     this.container.destroy();
   }
 
-  setFloor(name: string): void {
+  setFloor(name: string | null): void {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
@@ -274,7 +273,7 @@ class EditorMapCell {
     }
   }
 
-  setWall(name: string): void {
+  setWall(name: string | null): void {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
@@ -306,8 +305,8 @@ class EditorMapCell {
   }
 
   setOptions(options: TileSetOptions): void {
-    this.setFloor(options.floor);
-    this.setWall(options.wall);
+    this.setFloor(options.floor || null);
+    this.setWall(options.wall || null);
     if (options.zIndex) {
       this.setWallZIndex(options.zIndex);
     }
@@ -478,8 +477,8 @@ enum DumpState {
 
 class DumpPaletteCell extends NamedPaletteCell {
   private state: DumpState = DumpState.START;
-  private min_x: number;
-  private min_y: number;
+  private min_x: number = 0;
+  private min_y: number = 0;
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
     super("DUMP", "Dump", x, y, resources, editor);
@@ -505,7 +504,7 @@ class DumpPaletteCell extends NamedPaletteCell {
 }
 
 class LoadPaletteCell extends NamedPaletteCell {
-  private options: TileSetOptions[][];
+  private options: TileSetOptions[][] = [];
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
     super("LOAD", "Load", x, y, resources, editor);

@@ -5,10 +5,10 @@ import {BaseDungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {SceneController} from "./scene";
 
 export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
-  private gen: TunnelingAlgorithm;
+  private gen: TunnelingAlgorithm | null = null;
 
   get percent(): number {
-    return this.gen?.percent;
+    return this.gen?.percent || 0;
   }
 
   constructor(controller: SceneController) {

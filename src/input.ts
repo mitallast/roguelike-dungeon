@@ -41,6 +41,8 @@ export class KeyBind {
   }
 }
 
+export type DigitKey = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0
+
 export class Joystick {
   readonly moveUp: KeyBind;
   readonly moveLeft: KeyBind;
@@ -80,7 +82,7 @@ export class Joystick {
     this.init();
   }
 
-  digit(num: number): KeyBind {
+  digit(num: DigitKey): KeyBind {
     switch (num) {
       case 1:
         return this.digit1;

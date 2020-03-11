@@ -67,7 +67,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
         if (cell.hasWall) {
           if (cell.wall === 'wall_mid.png') {
             if (this.rng.nextFloat() < percent) {
-              const is_top = !!dungeon.cell(x, y + 1).hasFloor;
+              const is_top = dungeon.cell(x, y + 1).hasFloor;
               let replacements: string[];
               if (is_top) {
                 replacements = wall_mid_top_replaces;

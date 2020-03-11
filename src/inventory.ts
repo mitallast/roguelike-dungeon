@@ -11,20 +11,20 @@ const CELL_SIZE = 32;
 export class Inventory {
   readonly equipment: EquipmentInventory;
   readonly belt: BeltInventory;
-  readonly bagpack: BagpackInventory;
+  readonly backpack: BackpackInventory;
 
   constructor(hero: HeroCharacter) {
-    this.equipment = new EquipmentInventory(hero);
+    this.equipment = new EquipmentInventory();
     this.belt = new BeltInventory(hero);
-    this.bagpack = new BagpackInventory(hero);
+    this.backpack = new BackpackInventory(hero);
   }
 
   stack(item: UsableDrop): boolean {
-    return this.belt.stack(item) || this.bagpack.stack(item);
+    return this.belt.stack(item) || this.backpack.stack(item);
   }
 
   set(item: UsableDrop): boolean {
-    return this.belt.set(item) || this.bagpack.set(item);
+    return this.belt.set(item) || this.backpack.set(item);
   }
 
   add(item: UsableDrop) {
@@ -33,11 +33,9 @@ export class Inventory {
 }
 
 export class EquipmentInventory {
-  private readonly hero: HeroCharacter;
-  readonly weapon: Observable<Weapon> = new Observable<Weapon>(null);
+  readonly weapon: Observable<Weapon | null> = new Observable<Weapon | null>(null);
 
-  constructor(hero: HeroCharacter) {
-    this.hero = hero;
+  constructor() {
   }
 }
 
@@ -79,7 +77,7 @@ export class BeltInventory {
   }
 }
 
-export class BagpackInventory {
+export class BackpackInventory {
   readonly width: number = 10;
   readonly height: number = 5;
   private readonly cells: InventoryCell[][];
@@ -128,7 +126,7 @@ export class BagpackInventory {
 export class InventoryCell {
   private readonly hero: HeroCharacter;
   private readonly maxInStack: number;
-  readonly item = new Observable<UsableDrop>(null);
+  readonly item = new Observable<UsableDrop | null>(null);
   readonly count = new Observable<number>(0);
 
   constructor(hero: HeroCharacter, maxInStack: number = 3) {
@@ -161,8 +159,9 @@ export class InventoryCell {
   };
 
   use(): boolean {
-    if (this.item.get() && this.count.get() > 0) {
-      this.item.get().use(this, this.hero);
+    const item = this.item.get();
+    if (item) {
+      item.use(this, this.hero);
       return true;
     }
     return false;
@@ -205,7 +204,7 @@ export class EquipmentInventoryView extends PIXI.Container {
       item: this.equipment.weapon,
       count: new Observable(null)
     });
-    (this.weapon as PIXI.Container).position.set(Sizes.uiBorder, Sizes.uiBorder);
+    this.weapon.position.set(Sizes.uiBorder, Sizes.uiBorder);
     super.addChild(this.weapon);
   }
 }
@@ -235,7 +234,7 @@ export class BeltInventoryView extends PIXI.Container {
         item: cell.item,
         count: cell.count,
       });
-      (view as PIXI.Container).position.set(
+      view.position.set(
         Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * i,
         Sizes.uiBorder
       );
@@ -253,11 +252,11 @@ export class BeltInventoryView extends PIXI.Container {
   }
 }
 
-export class BagpackInventoryView extends PIXI.Container {
-  private readonly inventory: BagpackInventory;
+export class BackpackInventoryView extends PIXI.Container {
+  private readonly inventory: BackpackInventory;
   private readonly cells: InventoryCellView[][];
 
-  constructor(inventory: BagpackInventory) {
+  constructor(inventory: BackpackInventory) {
     super();
 
     this.inventory = inventory;
@@ -281,7 +280,7 @@ export class BagpackInventoryView extends PIXI.Container {
           item: cell.item,
           count: cell.count,
         });
-        (view as PIXI.Container).position.set(
+        view.position.set(
           Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * x,
           Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * y
         );
@@ -307,17 +306,17 @@ export class BagpackInventoryView extends PIXI.Container {
 export class InventoryCellView extends PIXI.Container implements Selectable {
   private readonly background: PIXI.Graphics;
   private readonly counter: PIXI.BitmapText;
-  private sprite: PIXI.Sprite;
+  private sprite: PIXI.Sprite | null = null;
 
   private readonly itemSub: Subscription;
   private readonly countSub: Subscription;
 
   private readonly _alpha: number;
-  private _selected: boolean;
+  private _selected: boolean = false;
 
   constructor(options: {
-    item: Publisher<UsableDrop>,
-    count: Publisher<number>,
+    item: Publisher<UsableDrop | null>,
+    count: Publisher<number | null>,
     alpha?: number
   }) {
     super();
@@ -354,7 +353,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
       .endFill();
   }
 
-  private updateCounter(counter: number): void {
+  private updateCounter(counter: number | null): void {
     if (counter === null || counter === 0) {
       this.counter.text = "";
     } else {
@@ -362,7 +361,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     }
   }
 
-  private updateItem(item: UsableDrop): void {
+  private updateItem(item: UsableDrop | null): void {
     this.sprite?.destroy();
     this.sprite = null;
     if (item) {

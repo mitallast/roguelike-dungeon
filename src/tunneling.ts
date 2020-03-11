@@ -31,7 +31,7 @@ export class TunnelingAlgorithm {
   private readonly width: number;
   private readonly height: number;
 
-  private percentValue: number;
+  private percentValue: number = 0;
 
   get percent(): number {
     return this.percentValue;
@@ -105,6 +105,7 @@ export class TunnelingAlgorithm {
       this.rooms.push(room);
       return true;
     }
+    return false;
   }
 
   private generateNextRoom(): boolean {
@@ -186,7 +187,7 @@ export class TunnelingAlgorithm {
 
   // generate corridor area
 
-  private findTopCorridorArea(room: Rect): Rect {
+  private findTopCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.h = min_corr_dist_y;
     buffer.y -= min_corr_dist_y;
@@ -213,7 +214,7 @@ export class TunnelingAlgorithm {
     }
   }
 
-  private findBottomCorridorArea(room: Rect): Rect {
+  private findBottomCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.y += room.h;
     buffer.h = min_corr_dist_y;
@@ -237,7 +238,7 @@ export class TunnelingAlgorithm {
     }
   }
 
-  private findRightCorridorArea(room: Rect): Rect {
+  private findRightCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.x += buffer.w;
     buffer.y += y_dist;
@@ -260,7 +261,7 @@ export class TunnelingAlgorithm {
     }
   }
 
-  private findLeftCorridorArea(room: Rect): Rect {
+  private findLeftCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.w = min_corr_dist_x;
     buffer.x -= min_corr_dist_x;
@@ -289,7 +290,7 @@ export class TunnelingAlgorithm {
 
   // generate room area
 
-  private findTopRoomArea(corridor: Rect): Rect {
+  private findTopRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
     buffer.h -= min_corr_dist_y; // shift bottom
     buffer.x -= x_dist; // shift to min width
@@ -351,7 +352,7 @@ export class TunnelingAlgorithm {
     return null;
   }
 
-  private findBottomRoomArea(corridor: Rect): Rect {
+  private findBottomRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
     buffer.y += min_corr_dist_y; // shift top
     buffer.h -= min_corr_dist_y; // shift top
@@ -410,7 +411,7 @@ export class TunnelingAlgorithm {
     return null;
   }
 
-  private findRightRoomArea(corridor: Rect): Rect {
+  private findRightRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
     buffer.x += min_corr_dist_x; // shift left
     buffer.w -= min_corr_dist_x;
@@ -445,6 +446,8 @@ export class TunnelingAlgorithm {
           y = buffer.y;
           h = buffer.h;
         } else {
+          buffer.y = y;
+          buffer.h = h;
           break;
         }
       }
@@ -457,17 +460,17 @@ export class TunnelingAlgorithm {
         if (this.valid(buffer)) {
           h = buffer.h;
         } else {
+          buffer.h = h;
           break;
         }
       }
-      buffer.h = h;
       return buffer.immutable();
     }
 
     return null;
   }
 
-  private findLeftRoomArea(corridor: Rect): Rect {
+  private findLeftRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
     buffer.w -= min_corr_dist_x; // shift right
     buffer.y -= y_dist; // shift to min height
@@ -766,51 +769,6 @@ export class TunnelingAlgorithm {
         }
       }
     }
-  }
-
-  private debug(drawPossible: boolean = false) {
-    const canvas = document.createElement("canvas");
-    const scale = 8;
-    canvas.width = this.width * scale;
-    canvas.height = this.height * scale;
-    canvas.style.margin = "10px";
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "rgb(50,50,50)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(scale, scale);
-    const render = (rect: Rect, color: string) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-    };
-
-    this.rooms.forEach(r => render(r, "rgb(255, 0, 0)"));
-    this.corridorsH.forEach(r => render(r, "rgb(0, 255, 0)"));
-    this.corridorsV.forEach(r => render(r, "rgb(0, 0, 255)"));
-
-    if (drawPossible) {
-      this.possible.forEach(p => {
-        switch (p.direction) {
-          case Direction.TOP:
-            render(p.room, "rgba(255, 0, 0, 0.3)");
-            render(p.corridor, "rgba(0, 255, 0, 0.3)");
-            break;
-          case Direction.BOTTOM:
-            render(p.room, "rgba(255, 0, 0, 0.3)");
-            render(p.corridor, "rgba(0, 255, 0, 0.3)");
-            break;
-          case Direction.LEFT:
-            render(p.room, "rgba(255, 0, 0, 0.3)");
-            render(p.corridor, "rgba(0, 0, 255, 0.3)");
-            break;
-          case Direction.RIGHT:
-            render(p.room, "rgba(255, 0, 0, 0.3)");
-            render(p.corridor, "rgba(0, 0, 255, 0.3)");
-            break;
-        }
-      });
-    }
-
-    document.body.appendChild(canvas);
   }
 
   private nextRange(min: number, max: number): number {

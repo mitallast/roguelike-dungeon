@@ -8,10 +8,9 @@ import {DungeonScene} from "./dungeon.scene";
 import {DungeonLevel} from "./dungeon.level";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {View} from "./view";
 import {UpdateHeroScene} from "./update.hero.scene";
+import * as PIXI from "pixi.js";
 
 export interface Scene extends View {
   init(): void;
@@ -25,7 +24,7 @@ export class SceneController {
   readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
-  private sceneView: Scene;
+  private sceneView: Scene | null = null;
 
   constructor(
     rng: RNG,

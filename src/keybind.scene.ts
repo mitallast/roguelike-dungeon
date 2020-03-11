@@ -1,5 +1,4 @@
 import {Scene, SceneController} from "./scene";
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 export class KeyBindScene implements Scene {
@@ -14,7 +13,7 @@ export class KeyBindScene implements Scene {
     this.renderHelp();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
     this.handleInput();
   }
 

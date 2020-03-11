@@ -31,13 +31,13 @@ export class DungeonScene implements Scene {
     this.titleView.container.zIndex = 10;
     this.controller.stage.addChild(this.titleView.container);
 
-    const i_w = (this.inventoryView as PIXI.Container).width;
-    (this.inventoryView as PIXI.Container).position.set((c_w >> 1) - (i_w >> 1), c_h - (32 + 4 + 16));
-    (this.inventoryView as PIXI.Container).zIndex = 11;
+    const i_w = this.inventoryView.width;
+    this.inventoryView.position.set((c_w >> 1) - (i_w >> 1), c_h - (32 + 4 + 16));
+    this.inventoryView.zIndex = 11;
     this.controller.stage.addChild(this.inventoryView);
 
-    (this.healthView as PIXI.Container).position.set(16, 16);
-    (this.healthView as PIXI.Container).zIndex = 12;
+    this.healthView.position.set(16, 16);
+    this.healthView.zIndex = 12;
     this.controller.stage.addChild(this.healthView);
 
     this.titleView.setLevel(this.dungeon.level);
@@ -74,7 +74,7 @@ export class DungeonScene implements Scene {
     this.bossHealthView?.destroy();
     this.titleView.destroy();
     this.healthView.destroy();
-    (this.inventoryView as PIXI.Container).destroy();
+    this.inventoryView.destroy();
     this.dungeon.destroy();
     this.controller.stage.removeChildren();
   }

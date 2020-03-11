@@ -5,7 +5,6 @@ import {BossMonsterView} from "./boss.monster";
 import {DungeonLightView} from "./dungeon.light";
 import {View} from "./view";
 import {SceneController} from "./scene";
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
@@ -35,11 +34,11 @@ export class DungeonLevel {
   readonly height: number;
 
   readonly hero: HeroView;
-  boss: BossMonsterView;
+  boss: BossMonsterView | null = null;
   monsters: CharacterView[] = [];
 
   private readonly cells: DungeonCellView[][];
-  private readonly characterMap: CharacterView[][];
+  private readonly characterMap: (CharacterView | null)[][];
 
   readonly container: PIXI.Container;
   readonly light: DungeonLightView;
@@ -54,8 +53,9 @@ export class DungeonLevel {
     this.width = width;
     this.height = height;
 
-    this.cells = this.createBuffer();
+    this.cells = [];
     for (let y = 0; y < this.width; y++) {
+      this.cells[y] = [];
       for (let x = 0; x < this.height; x++) {
         this.cells[y][x] = new DungeonCellView(this, x, y);
       }
@@ -82,10 +82,10 @@ export class DungeonLevel {
     console.info(message);
   }
 
-  private createBuffer<T>(): T[][] {
-    const rows: T[][] = [];
+  private createBuffer<T>(): (T | null)[][] {
+    const rows: (T | null)[][] = [];
     for (let y = 0; y < this.height; y++) {
-      const row: T[] = [];
+      const row: (T | null)[] = [];
       rows.push(row);
       for (let x = 0; x < this.width; x++) {
         row.push(null);
@@ -98,11 +98,11 @@ export class DungeonLevel {
     return this.cells[y][x];
   }
 
-  character(x: number, y: number): CharacterView {
+  character(x: number, y: number): (CharacterView | null) {
     return this.characterMap[y][x];
   }
 
-  setCharacter(x: number, y: number, character: CharacterView): void {
+  setCharacter(x: number, y: number, character: CharacterView | null): void {
     this.characterMap[y][x] = character;
   }
 
@@ -139,8 +139,8 @@ export class DungeonLevel {
 
     this.light.update(delta);
 
-    const t_x = (this.hero as PIXI.Container).position.x;
-    const t_y = (this.hero as PIXI.Container).position.y;
+    const t_x = this.hero.position.x;
+    const t_y = this.hero.position.y;
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
     const p_x = (c_w >> 1) - t_x * this.scale;
@@ -169,9 +169,9 @@ export class DungeonCellView implements View {
   private readonly dungeon: DungeonLevel;
   readonly x: number;
   readonly y: number;
-  private floorSprite: PIXI.Sprite | PIXI.AnimatedSprite = null;
-  private wallSprite: PIXI.Sprite | PIXI.AnimatedSprite = null;
-  private dropView: DropView = null;
+  private floorSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private wallSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private dropView: DropView | null = null;
 
   constructor(dungeon: DungeonLevel, x: number, y: number) {
     this.dungeon = dungeon;
@@ -179,7 +179,7 @@ export class DungeonCellView implements View {
     this.y = y;
   }
 
-  set floor(name: string) {
+  set floor(name: string | null) {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
@@ -187,15 +187,15 @@ export class DungeonCellView implements View {
     }
   }
 
-  get floor(): string {
-    return this.floorSprite?.name;
+  get floor(): string | null {
+    return this.floorSprite?.name || null;
   }
 
   get hasFloor(): boolean {
     return !!this.floorSprite;
   }
 
-  set wallBack(name: string) {
+  set wallBack(name: string | null) {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
@@ -203,7 +203,7 @@ export class DungeonCellView implements View {
     }
   }
 
-  set wallFront(name: string) {
+  set wallFront(name: string | null) {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
@@ -211,12 +211,16 @@ export class DungeonCellView implements View {
     }
   }
 
-  get wall(): string {
-    return this.wallSprite?.name;
+  get wall(): string | null {
+    return this.wallSprite?.name || null;
   }
 
-  set wall(name: string) {
+  set wall(name: string | null) {
     this.wallFront = name;
+  }
+
+  get hasWall(): boolean {
+    return !!this.wallSprite;
   }
 
   set zIndex(zIndex: number) {
@@ -225,11 +229,7 @@ export class DungeonCellView implements View {
     }
   }
 
-  get hasWall(): boolean {
-    return !!this.wallSprite;
-  }
-
-  set drop(drop: Drop) {
+  set drop(drop: Drop | null) {
     this.dropView?.destroy();
     this.dropView = null;
     if (drop) {
@@ -335,6 +335,6 @@ export class DungeonTitleView implements View {
     this.container.destroy();
   }
 
-  update(delta: number): void {
+  update(_delta: number): void {
   }
 }

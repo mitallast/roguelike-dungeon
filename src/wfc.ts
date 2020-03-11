@@ -3,7 +3,7 @@ import {yields} from "./concurency";
 
 // origin: https://github.com/mxgmn/WaveFunctionCollapse/
 
-function array<T>(size: number, value: T = null): T[] {
+function array<T>(size: number, value: T): T[] {
   const a: T[] = [];
   for (let i = 0; i < size; i++) {
     a.push(value);
@@ -89,41 +89,40 @@ export enum Resolution {
 }
 
 export abstract class Model {
-  wave: boolean[][] = null; // wave => pattern map
+  wave: boolean[][] = []; // wave => pattern map
 
-  propagator: number[][][]; // direction => pattern1 => pattern2[]
-  compatible: number[][][];
-  observed: number[];
+  propagator: number[][][] = []; // direction => pattern1 => pattern2[]
+  compatible: number[][][] = [];
+  observed: number[] = [];
 
-  toPropagate: [number, number][];
+  toPropagate: [number, number][] = [];
 
-  backtrackItems: [number, number][]; // wave, pattern
-  private backtrackItemsLengths: number[];
-  private prevChoices: [number, number][];
-  private droppedBacktrackItemsCount: number;
-  private backtrackCount: number; // Purely informational
+  backtrackItems: [number, number][] = []; // wave, pattern
+  private backtrackItemsLengths: number[] = [];
+  private prevChoices: [number, number][] = [];
+  private droppedBacktrackItemsCount: number = 0;
 
   readonly rng: RNG;
   FMX: number;
   FMY: number;
-  T: number;
-  periodic: boolean;
+  T: number = 0;
+  periodic: boolean = false;
 
-  weights: number[];
-  weightLogWeights: number[];
+  weights: number[] = [];
+  weightLogWeights: number[] = [];
 
-  sumsOfOnes: number[]; // by wave index
-  sumOfWeights: number;
-  sumOfWeightLogWeights: number;
-  startingEntropy: number;
+  sumsOfOnes: number[] = []; // by wave index
+  sumOfWeights: number = 0;
+  sumOfWeightLogWeights: number = 0;
+  startingEntropy: number = 0;
 
-  sumsOfWeights: number[];
-  sumsOfWeightLogWeights: number[];
-  entropies: number[];
+  sumsOfWeights: number[] = [];
+  sumsOfWeightLogWeights: number[] = [];
+  entropies: number[] = [];
 
   // The overall status of the propagator, always kept up to date
-  status: Resolution;
-  protected deferredConstraintsStep: boolean;
+  status: Resolution = Resolution.Undecided;
+  protected deferredConstraintsStep: boolean = false;
 
   protected constructor(rng: RNG, width: number, height: number) {
     this.rng = rng;
@@ -143,17 +142,17 @@ export abstract class Model {
   }
 
   init(): void {
-    this.wave = array(this.FMX * this.FMY);
-    this.compatible = array(this.wave.length);
+    this.wave = [];
+    this.compatible = [];
     for (let i = 0; i < this.wave.length; i++) {
       this.wave[i] = array(this.T, true);
-      this.compatible[i] = array(this.T);
+      this.compatible[i] = [];
       for (let t = 0; t < this.T; t++) {
         this.compatible[i][t] = array(4, 0);
       }
     }
 
-    this.weightLogWeights = array(this.T);
+    this.weightLogWeights = [];
     this.sumOfWeights = 0;
     this.sumOfWeightLogWeights = 0;
 
@@ -165,17 +164,17 @@ export abstract class Model {
 
     this.startingEntropy = Math.log(this.sumOfWeights) - this.sumOfWeightLogWeights / this.sumOfWeights;
 
-    this.sumsOfOnes = array(this.FMX * this.FMY);
-    this.sumsOfWeights = array(this.FMX * this.FMY);
-    this.sumsOfWeightLogWeights = array(this.FMX * this.FMY);
-    this.entropies = array(this.FMX * this.FMY);
-
     this.status = Resolution.Undecided;
 
     this.initConstraint();
   }
 
   protected clear(): void {
+    this.sumsOfOnes = [];
+    this.sumsOfWeights = [];
+    this.sumsOfWeightLogWeights = [];
+    this.entropies = [];
+
     for (let i = 0; i < this.wave.length; i++) {
       for (let t = 0; t < this.T; t++) {
         this.wave[i][t] = true;
@@ -195,7 +194,6 @@ export abstract class Model {
     this.backtrackItems = [];
     this.backtrackItemsLengths = [0];
     this.droppedBacktrackItemsCount = 0;
-    this.backtrackCount = 0;
     this.prevChoices = [];
 
     this.status = Resolution.Undecided;
@@ -229,7 +227,7 @@ export abstract class Model {
   }
 
   step(): Resolution {
-    let index: number;
+    let index: number = -1;
     let pattern: number;
     let restart: boolean = false;
 
@@ -297,8 +295,7 @@ export abstract class Model {
             return Resolution.Contradiction;
           }
           this.backtrack();
-          let item = this.prevChoices.pop();
-          this.backtrackCount++;
+          let item = this.prevChoices.pop()!;
           this.toPropagate = [];
           this.status = Resolution.Undecided;
           // Mark the given choice as impossible
@@ -360,7 +357,7 @@ export abstract class Model {
 
     if (argmin == -1) {
       if (this.debug) console.log("complete observed");
-      this.observed = array(this.FMX * this.FMY);
+      this.observed = array(this.FMX * this.FMY, 0);
       for (let i = 0; i < this.wave.length; i++) {
         let x = i % this.FMX, y = Math.floor(i / this.FMX);
         if (this.onBoundary(x, y)) {
@@ -380,7 +377,7 @@ export abstract class Model {
     }
 
     let distribution_sum: number = 0;
-    let distribution: number[] = array(this.T);
+    let distribution: number[] = [];
     for (let t = 0; t < this.T; t++) {
       distribution[t] = this.wave[argmin][t] ? this.weights[t] : 0;
       distribution_sum += distribution[t];
@@ -415,7 +412,7 @@ export abstract class Model {
     if (this.debug) console.log("propagate", this.toPropagate.length);
     const markup: number[] = [];
     while (this.toPropagate.length > 0) {
-      let [i, t] = this.toPropagate.pop();
+      let [i, t] = this.toPropagate.pop()!;
 
       markup.push(i);
 
@@ -502,14 +499,14 @@ export abstract class Model {
   }
 
   protected backtrack(): void {
-    const targetLength = this.backtrackItemsLengths.pop() - this.droppedBacktrackItemsCount;
+    const targetLength = this.backtrackItemsLengths.pop()! - this.droppedBacktrackItemsCount;
     if (this.debug) console.warn("backtrack", targetLength);
 
     const markup: number[] = [];
 
     const toPropagateSet = new Set<string>(this.toPropagate.map((i) => i.join(",")));
     while (this.backtrackItems.length > targetLength) {
-      let [index, patternIndex] = this.backtrackItems.pop();
+      let [index, patternIndex] = this.backtrackItems.pop()!;
 
       markup.push(index);
 
@@ -610,10 +607,10 @@ export class OverlappingModel<T> extends Model {
     let SMY = input.length;
     let SMX = input[0].length;
     this.tiles = [];
-    let sample: number[][] = array(SMY);
+    let sample: number[][] = [];
 
     for (let y = 0; y < SMY; y++) {
-      sample[y] = array(SMX);
+      sample[y] = [];
       for (let x = 0; x < SMX; x++) {
         let tile = input[y][x];
         let i = 0;
@@ -730,9 +727,9 @@ export class OverlappingModel<T> extends Model {
       return true;
     }
 
-    this.propagator = array(4);
+    this.propagator = [];
     for (let direction = 0; direction < 4; direction++) {
-      this.propagator[direction] = array(this.T);
+      this.propagator[direction] = [];
       for (let pattern1 = 0; pattern1 < this.T; pattern1++) {
         this.propagator[direction][pattern1] = [];
         for (let pattern2 = 0; pattern2 < this.T; pattern2++) {
@@ -925,7 +922,7 @@ export class OverlappingModel<T> extends Model {
     canvas.width = this.FMX * scale;
     canvas.height = this.FMY * scale;
     canvas.style.margin = "10px";
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d")!;
     ctx.imageSmoothingEnabled = false;
     const img = ctx.createImageData(this.FMX, this.FMY);
     img.data.set(bitmap);
@@ -963,15 +960,15 @@ export interface Constraint<T> {
 
 export class PathConstraint<T> implements Constraint<T> {
   private readonly pathTiles: Tile<T>[];
-  private isPathTile: boolean[];
+  private isPathTile: boolean[] = [];
 
-  private model: OverlappingModel<T>;
-  private graph: SimpleGraph;
-  private couldBePath: boolean[];
-  private mustBePath: boolean[];
+  private model: OverlappingModel<T> | null = null;
+  private graph: SimpleGraph | null = null;
+  private couldBePath: boolean[] = [];
+  private mustBePath: boolean[] = [];
 
-  private refresh: boolean[];
-  private refreshQueue: number[];
+  private refresh: boolean[] = [];
+  private refreshQueue: number[] = [];
 
   constructor(pathTiles: Tile<T>[]) {
     this.pathTiles = pathTiles;
@@ -993,7 +990,7 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   onClear(): void {
-    let indices = this.model.FMX * this.model.FMY;
+    let indices = this.model!.FMX * this.model!.FMY;
     this.couldBePath = array(indices, false);
     this.mustBePath = array(indices, false);
     this.refresh = array(indices, true);
@@ -1006,19 +1003,19 @@ export class PathConstraint<T> implements Constraint<T> {
     this.graph = this.createGraph();
   }
 
-  onBan(index: number, patternIndex: number): void {
+  onBan(index: number, _patternIndex: number): void {
     this.addRefresh(index);
   }
 
-  onBacktrack(index: number, patternIndex: number): void {
+  onBacktrack(index: number, _patternIndex: number): void {
     this.addRefresh(index);
   }
 
   private addRefresh(index: number): void {
     if (!this.refresh[index]) {
 
-      const FMX = this.model.FMX;
-      const FMY = this.model.FMY;
+      const FMX = this.model!.FMX;
+      const FMY = this.model!.FMY;
       let x = index % FMX, y = Math.floor(index / FMX);
 
       this.refresh[index] = true;
@@ -1027,7 +1024,7 @@ export class PathConstraint<T> implements Constraint<T> {
       for (let direction = 0; direction < 4; direction++) {
         let dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
-        if (this.model.onBoundary(sx, sy)) {
+        if (this.model!.onBoundary(sx, sy)) {
           continue;
         }
 
@@ -1047,14 +1044,14 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private refreshAll(): void {
-    const model = this.model;
+    const model = this.model!;
     const FMX = model.FMX;
     const FMY = model.FMY;
     const N = model.N;
     const T = model.T;
 
     while (this.refreshQueue.length > 0) {
-      const i = this.refreshQueue.pop();
+      const i = this.refreshQueue.pop()!;
       this.refresh[i] = false;
 
       const x = i % FMX, y = Math.floor(i / FMX);
@@ -1099,19 +1096,19 @@ export class PathConstraint<T> implements Constraint<T> {
 
       let isArticulation = this.getArticulationPoints();
       if (isArticulation == null) {
-        if (this.model.debug) console.error("no articulation");
-        this.model.status = Resolution.Contradiction;
+        if (this.model!.debug) console.error("no articulation");
+        this.model!.status = Resolution.Contradiction;
         return;
       }
 
       if (this.applyArticulationPoints(isArticulation)) {
-        if (this.model.debug) {
+        if (this.model!.debug) {
           console.log("articulation");
           let markup: number[] = isArticulation
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
-          this.model.graphics(markup);
+          this.model!.graphics(markup);
           console.log("continue articulation loop");
         }
       } else {
@@ -1121,35 +1118,36 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private applyArticulationPoints(isArticulation: boolean[]): boolean {
-    const FMX = this.model.FMX;
-    const FMY = this.model.FMY;
+    const model = this.model!;
+    const FMX = model.FMX;
+    const FMY = model.FMY;
     let indices = FMX * FMY;
     // All articulation points must be paths,
     // So ban any other possibilities
     let changed = false;
     for (let i = 0; i < indices; i++) {
       if (isArticulation[i] && !this.mustBePath[i]) {
-        if (this.model.debug) console.log("articulation", i);
-        let x = i % this.model.FMX, y = Math.floor(i / this.model.FMX);
-        if (this.model.debug) console.log("x, y, i", x, y, i);
-        for (let dy = 0; dy < this.model.N; dy++) {
-          for (let dx = 0; dx < this.model.N; dx++) {
+        if (model.debug) console.log("articulation", i);
+        let x = i % model.FMX, y = Math.floor(i / model.FMX);
+        if (model.debug) console.log("x, y, i", x, y, i);
+        for (let dy = 0; dy < model.N; dy++) {
+          for (let dx = 0; dx < model.N; dx++) {
             let sx = x - dx;
-            if (sx < 0) sx += this.model.FMX;
+            if (sx < 0) sx += model.FMX;
 
             let sy = y - dy;
-            if (sy < 0) sy += this.model.FMY;
+            if (sy < 0) sy += model.FMY;
 
-            let s = sx + sy * this.model.FMX;
-            if (this.model.onBoundary(sx, sy)) {
+            let s = sx + sy * model.FMX;
+            if (model.onBoundary(sx, sy)) {
               continue;
             }
-            for (let t = 0; t < this.model.T; t++) {
-              if (this.model.wave[s][t]) {
-                let index = this.model.patterns[t][dx + dy * this.model.N];
+            for (let t = 0; t < model.T; t++) {
+              if (model.wave[s][t]) {
+                let index = model.patterns[t][dx + dy * model.N];
                 if (this.isPathTile[index]) {
-                  if (this.model.debug) console.log("ban not path", index, t, this.model.patterns[t]);
-                  this.model.ban(s, t);
+                  if (model.debug) console.log("ban not path", index, t, model.patterns[t]);
+                  model.ban(s, t);
                   changed = true;
                 }
               }
@@ -1161,11 +1159,12 @@ export class PathConstraint<T> implements Constraint<T> {
     return changed;
   }
 
-  private getArticulationPoints(): boolean[] {
+  private getArticulationPoints(): boolean[] | null {
     const walkable = this.couldBePath;
     const relevant = this.mustBePath;
 
-    const graph = this.graph;
+    const model = this.model!;
+    const graph = this.graph!;
     const indices = walkable.length;
 
     const low: number[] = array(indices, 0);
@@ -1321,21 +1320,21 @@ export class PathConstraint<T> implements Constraint<T> {
     // Check connectivity
     for (let i = 0; i < indices; i++) {
       if (relevant[i] && dfsNum[i] == 0) {
-        if (this.model.debug) {
+        if (model.debug) {
           console.warn("walkable:");
           let markupW: number[] = walkable
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
-          this.model.graphics(markupW);
+          model.graphics(markupW);
           console.warn("visited");
-          this.model.graphics(markup);
+          model.graphics(markup);
 
-          const w = this.model.FMX;
+          const w = model.FMX;
           let x = i % w, y = Math.floor(i / w);
           console.error(`not visited relevant point i=${i} x=${x} y=${y}`);
           console.warn('graph neighbours', graph.neighbours[i]);
-          this.model.graphics([i]);
+          model.graphics([i]);
         }
         return null;
       }
@@ -1361,26 +1360,27 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private createGraph(): SimpleGraph {
-    let nodeCount = this.model.FMX * this.model.FMY;
+    const model = this.model!;
+    let nodeCount = model.FMX * model.FMY;
     let neighbours: number[][] = [];
     for (let i = 0; i < nodeCount; i++) {
       neighbours[i] = [];
 
-      let x = i % this.model.FMX, y = Math.floor(i / this.model.FMX);
+      let x = i % model.FMX, y = Math.floor(i / model.FMX);
 
       for (let direction = 0; direction < 4; direction++) {
         let dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
-        if (!this.model.periodic && (sx >= this.model.FMX || sy >= this.model.FMY || sx < 0 || sy < 0)) {
+        if (!model.periodic && (sx >= model.FMX || sy >= model.FMY || sx < 0 || sy < 0)) {
           continue;
         }
 
-        if (sx < 0) sx += this.model.FMX;
-        else if (sx >= this.model.FMX) sx -= this.model.FMX;
-        if (sy < 0) sy += this.model.FMY;
-        else if (sy >= this.model.FMY) sy -= this.model.FMY;
+        if (sx < 0) sx += model.FMX;
+        else if (sx >= model.FMX) sx -= model.FMX;
+        if (sy < 0) sy += model.FMY;
+        else if (sy >= model.FMY) sy -= model.FMY;
 
-        let s = sx + sy * this.model.FMX;
+        let s = sx + sy * model.FMX;
 
         neighbours[i].push(s);
       }
@@ -1395,7 +1395,7 @@ export class PathConstraint<T> implements Constraint<T> {
 
 export class BorderConstraint<T> implements Constraint<T> {
   private readonly borderTile: Tile<T>;
-  private model: OverlappingModel<T>;
+  private model: OverlappingModel<T> | null = null;
 
   constructor(borderTile: Tile<T>) {
     this.borderTile = borderTile;
@@ -1406,7 +1406,7 @@ export class BorderConstraint<T> implements Constraint<T> {
   }
 
   onClear(): void {
-    const model = this.model;
+    const model = this.model!;
     const indices = model.FMX * model.FMY;
     const borderTileIndex = model.tiles.findIndex(c => this.borderTile.equals(c));
 
@@ -1439,10 +1439,10 @@ export class BorderConstraint<T> implements Constraint<T> {
     }
   }
 
-  onBan(index: number, pattern: number): void {
+  onBan(_index: number, _pattern: number): void {
   }
 
-  onBacktrack(index: number, pattern: number): void {
+  onBacktrack(_index: number, _pattern: number): void {
   }
 
   check(): boolean {
@@ -1482,11 +1482,9 @@ export class TestOverlappingModel {
 
     const w_c = new Color(255, 255, 255, 255);
     const r_c = new Color(255, 0, 0, 255);
-    const b_c = new Color(0, 0, 0, 255);
 
     const w = new Tile(w_c, w_c, (a, b) => a.equals(b));
     const r = new Tile(r_c, r_c, (a, b) => a.equals(b));
-    const b = new Tile(b_c, b_c, (a, b) => a.equals(b));
 
     const sample: Tile<Color>[][] = [
       [w, w, r, w, w],

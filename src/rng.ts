@@ -10,7 +10,7 @@ const c = 12345;
 export class RNG {
   private state: number;
 
-  constructor(seed: number = null) {
+  constructor(seed: number | null = null) {
     this.state = seed ? seed : Math.floor(Math.random() * (m - 1));
     console.log("seed", this.state);
   }

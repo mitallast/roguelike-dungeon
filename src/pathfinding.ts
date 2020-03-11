@@ -1,17 +1,16 @@
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 export enum Heuristic {Manhattan = 0, Euclidean = 1, Chebyshev = 2, Octile = 3}
 
 class Node {
-  parent: Node;
+  parent: Node | null;
   position: PIXI.Point;
 
   g: number = 0;
   h: number = 0;
   f: number = 0;
 
-  constructor(parent: Node, position: PIXI.Point) {
+  constructor(parent: Node | null, position: PIXI.Point) {
     this.parent = parent;
     this.position = position;
   }
@@ -102,6 +101,7 @@ export class PathFinding {
         if (this.includeEnd) {
           current = current_node;
         } else {
+          // @ts-ignore
           current = current_node.parent;
         }
         while (current.parent !== null) {

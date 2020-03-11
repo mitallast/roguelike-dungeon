@@ -7,6 +7,7 @@ import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
 // @ts-ignore
 import * as PIXI from "pixi.js";
+import {DigitKey} from "./input";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -101,7 +102,7 @@ const TILE_SIZE = 16;
 export class HeroView extends BaseCharacterView {
   readonly character: HeroCharacter;
 
-  private weaponSprite: PIXI.Sprite = null;
+  private weaponSprite: PIXI.Sprite | null = null;
   private readonly weaponSub: Subscription;
 
   constructor(character: HeroCharacter, dungeon: DungeonLevel, x: number, y: number) {
@@ -117,10 +118,10 @@ export class HeroView extends BaseCharacterView {
       this.scanDrop();
       const joystick = this.dungeon.controller.joystick;
 
-      for (let d = 0; d < 10; d++) {
+      for (let d = 0; d <= 9; d++) {
         const digit = (d + 1) % 10;
-        if (!joystick.digit(digit).processed) {
-          joystick.digit(digit).processed = true;
+        if (!joystick.digit(digit as DigitKey).processed) {
+          joystick.digit(digit as DigitKey).processed = true;
           this.character.inventory.belt.cell(d).use();
         }
       }
@@ -177,7 +178,7 @@ export class HeroView extends BaseCharacterView {
     }
   }
 
-  private onWeaponUpdate(weapon: Weapon): void {
+  private onWeaponUpdate(weapon: Weapon | null): void {
     this.weaponSprite?.destroy();
     this.weaponSprite = null;
     if (weapon) {
@@ -190,8 +191,8 @@ export class HeroView extends BaseCharacterView {
         this.weaponSprite.scale.x = -1;
       }
       this.weaponSprite.anchor.set(0.5, 1);
-      (this as PIXI.Container).addChild(this.weaponSprite);
-      (this as PIXI.Container).sortChildren();
+      this.addChild(this.weaponSprite);
+      this.sortChildren();
     }
   }
 
@@ -255,8 +256,9 @@ export class HeroView extends BaseCharacterView {
 
   protected onSetAnimationHit(): void {
     this.setSprite('_idle');
-    if (this.character.inventory.equipment.weapon.get()) {
-      this.sprite.animationSpeed = this.character.inventory.equipment.weapon.get().speed;
+    const weapon = this.character.inventory.equipment.weapon.get();
+    if (this.sprite && weapon) {
+      this.sprite.animationSpeed = weapon.speed;
     }
 
     // automatically rotate hero to monsters
@@ -271,19 +273,19 @@ export class HeroView extends BaseCharacterView {
 
   protected animateIdle(): void {
     if (!this.action()) {
-      if (!this.sprite.playing) {
+      if (!this.sprite || !this.sprite.playing) {
         this.setAnimation(AnimationState.Idle);
       }
     }
   }
 
   protected animateHit(): void {
-    if (this.weaponSprite) {
+    if (this.weaponSprite && this.sprite) {
       const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
       this.weaponSprite.angle = (this.is_left ? -90 : 90) * delta;
     }
 
-    if (!this.sprite.playing) {
+    if (!this.sprite || !this.sprite.playing) {
       if (this.weaponSprite) {
         this.weaponSprite.angle = 0;
       }
@@ -354,7 +356,7 @@ export class HeroStateView extends PIXI.Container {
       width: 0,
       widthMax: this.maxBarInnerSize
     });
-    (this.xp as PIXI.Container).position.set(0, offsetY);
+    this.xp.position.set(0, offsetY);
 
     this.coins = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
     this.coins.position.set(0, offsetY * 2);
@@ -406,6 +408,7 @@ export class HeroStateView extends PIXI.Container {
   destroy(): void {
     super.destroy();
     this.healthSub.unsubscribe();
+    this.healthMaxSub.unsubscribe();
     this.levelSub.unsubscribe();
     this.levelXpSub.unsubscribe();
     this.skillPointsSub.unsubscribe();
