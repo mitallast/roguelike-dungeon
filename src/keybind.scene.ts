@@ -38,7 +38,7 @@ export class KeyBindScene implements Scene {
       "F - action",
       "Q - drop weapon",
       "I - inventory",
-      "1 ... 0 - inventory",
+      "1 ... 0 - belt",
       "",
       "PRESS F TO CONTINUE",
     ];
