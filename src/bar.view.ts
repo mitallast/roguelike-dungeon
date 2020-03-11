@@ -1,6 +1,5 @@
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {Colors, Sizes} from "./ui";
+import * as PIXI from "pixi.js";
 
 const BAR_HEIGHT = 18;
 

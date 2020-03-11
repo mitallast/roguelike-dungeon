@@ -5,9 +5,8 @@ import {Weapon} from "./drop";
 import {Observable, Publisher, Subscription} from "./observable";
 import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
-// @ts-ignore
-import * as PIXI from "pixi.js";
 import {DigitKey} from "./input";
+import * as PIXI from "pixi.js";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -117,6 +116,12 @@ export class HeroView extends BaseCharacterView {
 
       this.scanDrop();
       const joystick = this.dungeon.controller.joystick;
+
+      if (!joystick.inventory.processed) {
+        joystick.inventory.processed = true;
+        this.dungeon.controller.showInventory(this.character);
+        return true;
+      }
 
       for (let d = 0; d <= 9; d++) {
         const digit = (d + 1) % 10;
@@ -273,7 +278,7 @@ export class HeroView extends BaseCharacterView {
 
   protected animateIdle(): void {
     if (!this.action()) {
-      if (!this.sprite || !this.sprite.playing) {
+      if (!this.sprite || !this.spritePlay) {
         this.setAnimation(AnimationState.Idle);
       }
     }
@@ -281,11 +286,11 @@ export class HeroView extends BaseCharacterView {
 
   protected animateHit(): void {
     if (this.weaponSprite && this.sprite) {
-      const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
+      const delta = this.spriteTime / this.sprite.totalFrames;
       this.weaponSprite.angle = (this.is_left ? -90 : 90) * delta;
     }
 
-    if (!this.sprite || !this.sprite.playing) {
+    if (!this.sprite || !this.spritePlay) {
       if (this.weaponSprite) {
         this.weaponSprite.angle = 0;
       }

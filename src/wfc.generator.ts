@@ -50,7 +50,7 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, model.FMX, model.FMY);
+    const dungeon = this.createDungeon(options, model.FMX, model.FMY);
     for (let y = 0; y < model.FMY; y++) {
       let dy = y < model.FMY - model.N + 1 ? 0 : model.N - 1;
       for (let x = 0; x < model.FMX; x++) {

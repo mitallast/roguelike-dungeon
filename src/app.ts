@@ -3,9 +3,8 @@ import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
 import {Colors} from "./ui";
-// @ts-ignore
 import * as PIXI from 'pixi.js';
-// @ts-ignore
+
 window.PIXI = PIXI;
 import "pixi-layers";
 
@@ -23,17 +22,15 @@ import "pixi-layers";
   // create the stage instead of container
   const stage = new PIXI.display.Stage();
   app.stage = stage;
+  app.renderer.backgroundColor = Colors.background;
 
   const resources = new Resources(app.loader);
   await resources.load();
 
-  document.getElementById("container")?.appendChild(app.view);
+  document.getElementById("container")!.appendChild(app.view);
 
   const rng = new RNG();
   const joystick = new Joystick();
   const controller = new SceneController(rng, joystick, resources, app, stage);
   controller.keyBind();
-
-  app.renderer.backgroundColor = Colors.background;
-  app.ticker.add((delta: number) => controller.tick(delta));
 })();

@@ -17,26 +17,31 @@ export class SelectHeroScene implements Scene {
   init(): void {
     this.renderTitle();
     this.renderHeroes();
-  }
-
-  update(_delta: number): void {
-    this.handleInput();
-    this.updateHeroes();
+    this.controller.app.ticker.add(this.handleInput, this);
+    this.controller.app.ticker.add(this.updateHeroes, this);
   }
 
   destroy(): void {
+    this.controller.app.ticker.remove(this.handleInput, this);
+    this.controller.app.ticker.remove(this.updateHeroes, this);
     this.heroes.forEach(h => h.destroy());
     this.controller.stage.removeChildren();
   }
 
-  renderTitle() {
+  pause(): void {
+  }
+
+  resume(): void {
+  }
+
+  private renderTitle() {
     let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
   }
 
-  renderHeroes() {
+  private renderHeroes() {
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
 
@@ -98,13 +103,13 @@ export class SelectHeroScene implements Scene {
     }
   }
 
-  updateHeroes() {
+  private updateHeroes() {
     this.heroes.forEach((h, i) => {
       h.setSelected(i == this.selected);
     });
   }
 
-  handleInput() {
+  private handleInput() {
     const joystick = this.controller.joystick;
     if (!joystick.moveLeft.processed) {
       joystick.moveLeft.processed = true;

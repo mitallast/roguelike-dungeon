@@ -4,10 +4,9 @@ import {TunnelingDungeonGenerator} from "./tunneling.generator";
 import {WfcDungeonGenerator} from "./wfc.generator";
 import {DungeonLevel} from "./dungeon.level";
 import {Colors} from "./ui";
-// @ts-ignore
 import * as PIXI from "pixi.js";
 
-export class GenerateDungeonScreen implements Scene {
+export class GenerateDungeonScene implements Scene {
   private readonly controller: SceneController;
   private readonly generator: DungeonGenerator;
   private promise: Promise<DungeonLevel>;
@@ -17,7 +16,6 @@ export class GenerateDungeonScreen implements Scene {
 
   constructor(controller: SceneController, options: GenerateOptions) {
     this.controller = controller;
-
     if (options.level <= 5) {
       this.generator = new TunnelingDungeonGenerator(this.controller);
     } else {
@@ -29,29 +27,37 @@ export class GenerateDungeonScreen implements Scene {
     this.progressBar = new PIXI.Graphics();
   }
 
+  init(): void {
+    this.renderTitle();
+    this.renderProgressBar();
+    this.controller.app.ticker.add(this.update, this);
+  }
+
   destroy(): void {
+    this.controller.app.ticker.remove(this.update, this);
     this.title?.destroy();
     this.progressBar?.destroy();
   }
 
-  init(): void {
-    this.renderTitle();
-    this.renderProgressBar();
+  pause(): void {
   }
 
-  renderTitle(): void {
+  resume(): void {
+  }
+
+  private renderTitle(): void {
     this.title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     this.title.anchor = new PIXI.Point(0.5, 0);
     this.title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(this.title);
   }
 
-  renderProgressBar(): void {
+  private renderProgressBar(): void {
     this.progressBar = new PIXI.Graphics();
     this.controller.stage.addChild(this.progressBar);
   }
 
-  update(_delta: number): void {
+  private update(): void {
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
 

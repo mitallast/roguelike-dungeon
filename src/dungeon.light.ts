@@ -1,16 +1,14 @@
-import {View} from "./view";
 import {DungeonLevel} from "./dungeon.level";
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
 const WALL_SIZE_X = 5;
 const WALL_SIZE_Y = 4;
 
-export class DungeonLightView implements View {
+export class DungeonLight {
   readonly layer: PIXI.display.Layer;
   readonly container: PIXI.Container;
-  private readonly level: DungeonLevel;
+  private readonly dungeon: DungeonLevel;
 
   private readonly heroLightTexture: PIXI.Texture;
   private readonly fountainRedTexture: PIXI.Texture;
@@ -19,8 +17,8 @@ export class DungeonLightView implements View {
 
   private readonly lights: LightSource[] = [];
 
-  constructor(level: DungeonLevel) {
-    this.level = level;
+  constructor(dungeon: DungeonLevel) {
+    this.dungeon = dungeon;
     this.layer = new PIXI.display.Layer();
     this.layer.useRenderTexture = true;
     this.layer.on('display', (element: any) => {
@@ -31,14 +29,17 @@ export class DungeonLightView implements View {
     this.container = new PIXI.Container();
     this.layer.addChild(this.container);
 
-    this.heroLightTexture = DungeonLightView.gradient("white", 150);
-    this.fountainRedTexture = DungeonLightView.gradient("rgb(211,78,56)", 50);
-    this.fountainBlueTexture = DungeonLightView.gradient("rgb(86,152,204)", 50);
+    this.heroLightTexture = DungeonLight.gradient("white", 150);
+    this.fountainRedTexture = DungeonLight.gradient("rgb(211,78,56)", 50);
+    this.fountainBlueTexture = DungeonLight.gradient("rgb(86,152,204)", 50);
 
     this.visibility = new Visibility();
+
+    this.dungeon.ticker.add(this.update, this);
   }
 
   destroy(): void {
+    this.dungeon.ticker.remove(this.update, this);
     this.lights.forEach(l => l.destroy());
     this.heroLightTexture.destroy();
     this.fountainBlueTexture.destroy();
@@ -53,7 +54,7 @@ export class DungeonLightView implements View {
     this.lights.splice(0, this.lights.length);
     this.visibility.init();
 
-    const level = this.level;
+    const level = this.dungeon;
 
     // hero light source
     this.lights.push(new LightSource(
@@ -124,7 +125,7 @@ export class DungeonLightView implements View {
     }
   }
 
-  update(_delta: number): void {
+  private update(): void {
     this.lights.forEach((light) => {
       const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
       this.visibility.setLightLocation(start.x, start.y, light.maxDistance);
@@ -153,7 +154,7 @@ export class DungeonLightView implements View {
     return PIXI.Texture.from(c);
   }
 
-  config: Partial<Record<string, WallConfig>> = {
+  private config: Partial<Record<string, WallConfig>> = {
     "wall_top_mid.png": {
       default: [
         {x1: 0, y1: TILE_SIZE - WALL_SIZE_Y, x2: TILE_SIZE, y2: TILE_SIZE - WALL_SIZE_Y, type: SegmentType.NORMAL},
@@ -449,7 +450,7 @@ export class DungeonLightView implements View {
     }
   };
 
-  defaultConfig: WallConfig = {
+  private defaultConfig: WallConfig = {
     default: [],
     top: [
       {x1: 0, y1: 0, x2: TILE_SIZE, y2: 0, type: SegmentType.TOP},

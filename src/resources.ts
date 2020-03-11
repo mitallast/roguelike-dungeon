@@ -43,11 +43,11 @@ export class Resources {
     return sprite;
   }
 
-  animated(name: string): PIXI.AnimatedSprite {
+  animated(name: string, autoUpdate: boolean = true): PIXI.AnimatedSprite {
     if (!this.sheet.animations[name]) {
       throw `animation not found: ${name}`;
     }
-    const sprite = new PIXI.AnimatedSprite(this.sheet.animations[name]);
+    const sprite = new PIXI.AnimatedSprite(this.sheet.animations[name], autoUpdate);
     sprite.name = name;
     return sprite;
   }

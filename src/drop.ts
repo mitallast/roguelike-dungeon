@@ -2,61 +2,12 @@ import {RNG} from "./rng";
 import {HeroCharacter} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
-import {DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {View} from "./view";
 import {Colors, Sizes} from "./ui";
-// @ts-ignore
 import * as PIXI from "pixi.js";
-
-const TILE_SIZE = 16;
 
 export interface Drop {
   pickedUp(hero: HeroCharacter): boolean;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
-  dropView(dungeon: DungeonLevel, x: number, y: number): DropView;
-}
-
-export class DropView implements View {
-  private readonly drop: Drop;
-  private readonly level: DungeonLevel;
-  private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
-  private readonly x: number;
-  private readonly y: number;
-
-  constructor(drop: Drop, level: DungeonLevel, x: number, y: number) {
-    this.drop = drop;
-    this.level = level;
-    this.x = x;
-    this.y = y;
-    this.sprite = drop.sprite();
-    this.sprite.position.set(
-      x * TILE_SIZE + (TILE_SIZE >> 1) - (this.sprite.width >> 1),
-      y * TILE_SIZE + TILE_SIZE - 2
-    );
-    this.sprite.anchor.set(0, 1);
-    this.sprite.zIndex = DungeonZIndexes.drop;
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.sprite.animationSpeed = 0.2;
-    }
-    level.container.addChild(this.sprite);
-    level.container.sortChildren();
-  }
-
-  pickedUp(hero: HeroCharacter): void {
-    if (this.drop.pickedUp(hero)) {
-      this.level.cell(this.x, this.y).drop = null;
-    }
-  }
-
-  destroy(): void {
-    this.sprite.destroy();
-  }
-
-  update(_delta: number): void {
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.sprite.play();
-    }
-  }
 }
 
 export interface UsableDrop extends Drop {
@@ -89,10 +40,6 @@ export class Coins implements Drop {
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
     return this.resources.animated("coin");
-  }
-
-  dropView(level: DungeonLevel, x: number, y: number): DropView {
-    return new DropView(this, level, x, y);
   }
 }
 
@@ -128,10 +75,6 @@ export class HealthFlask implements UsableDrop {
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
     return this.resources.sprite("flask_red.png");
   }
-
-  dropView(level: DungeonLevel, x: number, y: number): DropView {
-    return new DropView(this, level, x, y);
-  }
 }
 
 export class HealthBigFlask implements UsableDrop {
@@ -166,10 +109,6 @@ export class HealthBigFlask implements UsableDrop {
     hero.hill(this.health);
     cell.decrease();
   };
-
-  dropView(level: DungeonLevel, x: number, y: number): DropView {
-    return new DropView(this, level, x, y);
-  }
 }
 
 export class WeaponConfig {
@@ -260,10 +199,6 @@ export class Weapon implements UsableDrop {
     if (prev) {
       cell.set(prev);
     }
-  }
-
-  dropView(level: DungeonLevel, x: number, y: number): DropView {
-    return new DropView(this, level, x, y);
   }
 }
 

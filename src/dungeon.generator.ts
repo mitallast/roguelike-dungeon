@@ -1,10 +1,11 @@
-import {DungeonCellView, DungeonLevel} from "./dungeon.level";
+import {DungeonCell, DungeonLevel} from "./dungeon.level";
 import {RNG} from "./rng";
 import {HeroCharacter} from "./hero";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {TinyMonsterView, tinyMonsterNames, TinyMonster} from "./tiny.monster";
 import {BossMonster, BossMonsterView, mossMonsterNames} from "./boss.monster";
+import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
   readonly level: number
@@ -27,6 +28,10 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     this.rng = controller.rng;
     this.resources = controller.resources;
     this.controller = controller;
+  }
+
+  protected createDungeon(options: GenerateOptions, width: number, height: number): DungeonLevel {
+    return new DungeonLevel(this.controller, new PIXI.Ticker(), options.hero, options.level, width, height);
   }
 
   abstract generate(options: GenerateOptions): Promise<DungeonLevel>;
@@ -183,7 +188,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected placeDrop(dungeon: DungeonLevel): void {
-    const free: DungeonCellView[] = [];
+    const free: DungeonCell[] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         const cell = dungeon.cell(x, y);
@@ -204,8 +209,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
 
   protected placeLadder(dungeon: DungeonLevel) {
     const hero = dungeon.hero;
-    const free3: [DungeonCellView, number][] = [];
-    const free1: [DungeonCellView, number][] = [];
+    const free3: [DungeonCell, number][] = [];
+    const free1: [DungeonCell, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
     for (let y = 1; y < dungeon.height - 1; y++) {
       for (let x = 1; x < dungeon.height - 1; x++) {

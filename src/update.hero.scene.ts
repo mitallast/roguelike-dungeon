@@ -2,8 +2,7 @@ import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {HeroCharacter, HeroStateView} from "./hero";
 import {BackpackInventoryView, BeltInventoryView, EquipmentInventoryView} from "./inventory";
-import {SelectableMap} from "./selectable";
-import {Button, Colors, Sizes} from "./ui";
+import {Button, Colors, Layout, Sizes, SelectableMap} from "./ui";
 import {DropCardView, Weapon} from "./drop";
 import * as PIXI from "pixi.js";
 
@@ -32,7 +31,27 @@ export class UpdateHeroScene implements Scene {
     this.options = options;
   }
 
+  init(): void {
+    const layout = new Layout();
+    this.renderTitle(layout);
+    this.renderState(layout);
+    this.renderIcon(layout);
+    this.renderContinue(layout);
+    layout.reset();
+    layout.offset(256 + Sizes.uiMargin, 0);
+    layout.commit();
+    this.renderIncreaseHealth(layout);
+    layout.reset();
+    layout.offset(24 + Sizes.uiMargin * 2, 0);
+    layout.commit();
+    this.renderInventory(layout);
+    this.renderDropCard(layout);
+    this.selectable.reset();
+    this.controller.app.ticker.add(this.handleInput, this);
+  }
+
   destroy(): void {
+    this.controller.app.ticker.remove(this.handleInput, this);
     this.title?.destroy();
     this.sprite?.destroy();
     this.spriteBg?.destroy();
@@ -59,26 +78,10 @@ export class UpdateHeroScene implements Scene {
     this.actions.splice(0, 1000);
   }
 
-  init(): void {
-    const layout = new Layout();
-    this.renderTitle(layout);
-    this.renderState(layout);
-    this.renderIcon(layout);
-    this.renderContinue(layout);
-    layout.reset();
-    layout.offset(256 + Sizes.uiMargin, 0);
-    layout.commit();
-    this.renderIncreaseHealth(layout);
-    layout.reset();
-    layout.offset(24 + Sizes.uiMargin * 2, 0);
-    layout.commit();
-    this.renderInventory(layout);
-    this.renderDropCard(layout);
-    this.selectable.reset();
+  pause(): void {
   }
 
-  update(_delta: number): void {
-    this.handleInput();
+  resume(): void {
   }
 
   private renderTitle(layout: Layout) {
@@ -164,12 +167,12 @@ export class UpdateHeroScene implements Scene {
 
     this.backpack = new BackpackInventoryView(this.hero.inventory.backpack);
     this.backpack.position.set(layout.x, layout.y);
-    layout.offset(0, Sizes.uiBorder + (32 + Sizes.uiBorder) * this.backpack.height);
+    layout.offset(0, Sizes.uiBorder + (32 + Sizes.uiBorder) * this.backpack.gridHeight);
 
-    for (let x = 0; x < this.backpack.width; x++) {
+    for (let x = 0; x < this.backpack.gridWidth; x++) {
       const index = x;
       this.selectable.set(x + 2, 1, this.belt.cell(x), () => this.showBeltInfo(index));
-      for (let y = 0; y < this.backpack.height; y++) {
+      for (let y = 0; y < this.backpack.gridHeight; y++) {
         const cell_x = x;
         const cell_y = y;
         this.selectable.set(x + 2, y + 2, this.backpack.cell(x, y), () => this.showBackpackInfo(cell_x, cell_y));
@@ -537,36 +540,5 @@ export class UpdateHeroScene implements Scene {
       let [, callback] = selected;
       callback();
     }
-  }
-}
-
-class Layout {
-  private commitX: number = 0;
-  private commitY: number = 0;
-
-  private offsetX: number = 0;
-  private offsetY: number = 0;
-
-  commit(): void {
-    this.commitX = this.offsetX;
-    this.commitY = this.offsetY;
-  }
-
-  reset(): void {
-    this.offsetX = this.commitX;
-    this.offsetY = this.commitY;
-  }
-
-  offset(x: number, y: number) {
-    this.offsetX += x;
-    this.offsetY += y;
-  }
-
-  get x(): number {
-    return this.offsetX;
-  }
-
-  get y(): number {
-    return this.offsetY;
   }
 }

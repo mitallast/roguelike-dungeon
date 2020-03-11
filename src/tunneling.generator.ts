@@ -23,7 +23,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     this.gen = new TunnelingAlgorithm(this.rng, level_size, level_size);
     await this.gen.generate(rooms_total);
 
-    const dungeon = new DungeonLevel(this.controller, options.hero, options.level, level_size, level_size);
+    const dungeon = this.createDungeon(options, level_size, level_size);
     this.gen.rooms.forEach(r => TunnelingDungeonGenerator.fillRoom(dungeon, r));
     this.gen.corridorsH.forEach(r => TunnelingDungeonGenerator.fillCorridorH(dungeon, r));
     this.gen.corridorsV.forEach(r => TunnelingDungeonGenerator.fillCorridorV(dungeon, r));

@@ -3,18 +3,26 @@ import {Joystick} from "./input";
 import {Resources} from "./resources";
 import {YouDeadScene} from "./dead.scene";
 import {GenerateOptions} from "./dungeon.generator";
-import {GenerateDungeonScreen} from "./generate.scene";
+import {GenerateDungeonScene} from "./generate.scene";
 import {DungeonScene} from "./dungeon.scene";
 import {DungeonLevel} from "./dungeon.level";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
-import {View} from "./view";
 import {UpdateHeroScene} from "./update.hero.scene";
 import * as PIXI from "pixi.js";
+import {InventoryModalScene} from "./inventory.modal";
+import {HeroCharacter} from "./hero";
 
-export interface Scene extends View {
+export interface Scene {
   init(): void;
-  update(delta: number): void;
+  destroy(): void
+
+  pause(): void;
+  resume(): void;
+}
+
+export interface ModalScene {
+  init(): void;
   destroy(): void
 }
 
@@ -24,7 +32,8 @@ export class SceneController {
   readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
-  private sceneView: Scene | null = null;
+  private mainScene: Scene | null = null;
+  private modalScene: ModalScene | null = null;
 
   constructor(
     rng: RNG,
@@ -41,9 +50,9 @@ export class SceneController {
   }
 
   private set scene(scene: Scene) {
-    this.sceneView?.destroy();
-    this.sceneView = scene;
-    this.sceneView.init();
+    this.mainScene?.destroy();
+    this.mainScene = scene;
+    this.mainScene.init();
   }
 
   keyBind(): void {
@@ -63,14 +72,25 @@ export class SceneController {
   }
 
   generateDungeon(options: GenerateOptions): void {
-    this.scene = new GenerateDungeonScreen(this, options);
+    this.scene = new GenerateDungeonScene(this, options);
   }
 
   dungeon(dungeon: DungeonLevel): void {
     this.scene = new DungeonScene(this, dungeon);
   }
 
-  tick(delta: number): void {
-    this.sceneView?.update(delta);
+  modal(scene: ModalScene): void {
+    this.mainScene?.pause();
+    this.modalScene = scene;
+    this.modalScene.init();
+  }
+
+  closeModal(): void {
+    this.modalScene?.destroy();
+    this.mainScene?.resume();
+  }
+
+  showInventory(hero: HeroCharacter): void {
+    this.modal(new InventoryModalScene(this, hero));
   }
 }

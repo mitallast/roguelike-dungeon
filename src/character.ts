@@ -1,9 +1,8 @@
 import {Resources} from "./resources";
-import {DungeonCellView, DungeonLevel, DungeonZIndexes} from "./dungeon.level";
+import {DungeonCell, DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {HeroCharacter} from "./hero";
 import {Observable, Publisher, Subscription} from "./observable";
 import {PathFinding} from "./pathfinding";
-// @ts-ignore
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -93,14 +92,14 @@ export interface CharacterView {
   readonly x: number;
   readonly y: number;
 
-  update(delta: number): void;
   destroy(): void;
   resetPosition(x: number, y: number): void;
 }
 
 export abstract class BaseCharacterView extends PIXI.Container implements CharacterView {
-  protected readonly resources: Resources;
   protected readonly dungeon: DungeonLevel;
+  protected readonly resources: Resources;
+  protected readonly ticker: PIXI.Ticker;
 
   abstract readonly character: Character;
 
@@ -132,8 +131,9 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   private animationState: AnimationState | null = null;
 
-  protected duration: number = 0;
   protected sprite: PIXI.AnimatedSprite | null = null;
+  protected spriteTime: number = 0;
+  protected spritePlay: boolean = false;
 
   private killedBySub: Subscription | null = null;
   private deadSub: Subscription | null = null;
@@ -143,6 +143,7 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     super.zIndex = DungeonZIndexes.character;
     this.dungeon = dungeon;
     this.resources = dungeon.controller.resources;
+    this.ticker = dungeon.ticker;
     this.grid_width = width;
     this.grid_height = height;
     this.pos_x = x;
@@ -152,6 +153,7 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   }
 
   protected init(): void {
+    this.ticker.add(this.update, this);
     this.setAnimation(AnimationState.Idle);
     this.resetPosition(this.pos_x, this.pos_y);
     this.dungeon.container.addChild(this);
@@ -165,6 +167,7 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   destroy(): void {
     super.destroy();
+    this.ticker.remove(this.update, this);
     this.killedBySub?.unsubscribe();
     this.deadSub?.unsubscribe();
     this.clearMap(this.pos_x, this.pos_y);
@@ -174,22 +177,44 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected abstract onDestroy(): void;
 
-  update(delta: number): void {
-    this.duration += delta;
+  private update(deltaTime: number): void {
+    this.updateSprite(deltaTime);
     this.animate();
+  }
+
+  private updateSprite(deltaTime: number): void {
+    const sprite = this.sprite!;
+    const elapsed = sprite.animationSpeed * deltaTime;
+    const previousFrame = sprite.currentFrame;
+    this.spriteTime += elapsed;
+
+    let currentFrame = Math.floor(this.spriteTime) % sprite.totalFrames;
+    if (currentFrame < 0) {
+      currentFrame += sprite.totalFrames;
+    }
+
+    if (this.spriteTime < 0) {
+      this.spriteTime = 0;
+      this.spritePlay = false;
+    } else if (this.spriteTime >= sprite.totalFrames) {
+      this.spriteTime = sprite.totalFrames - 1;
+      this.spritePlay = false;
+    } else if (previousFrame !== currentFrame) {
+      this.sprite?.gotoAndStop(currentFrame);
+    }
   }
 
   protected setSprite(postfix: string): void {
     this.sprite?.destroy();
-    this.sprite = this.resources.animated(this.character.name + postfix);
+    this.sprite = this.resources.animated(this.character.name + postfix, false);
     this.sprite.loop = false;
     this.sprite.animationSpeed = this.character.speed;
     this.sprite.anchor.set(0, 1);
     this.sprite.position.y = TILE_SIZE - 2;
     this.sprite.zIndex = 1;
-    this.sprite.play();
+    this.spriteTime = 0;
+    this.spritePlay = true;
     super.addChild(this.sprite);
-    this.duration = 0;
     this.updateSpriteOrientation();
     this.onSetSprite();
   }
@@ -257,13 +282,13 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected animateRun(): void {
     if (this.sprite) {
-      const delta = this.duration / (this.sprite.totalFrames / this.sprite.animationSpeed);
+      const delta = this.spriteTime / this.sprite.totalFrames;
       const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
       const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
       super.position.set(t_x, t_y);
     }
 
-    if (!this.sprite || !this.sprite.playing) {
+    if (!this.sprite || !this.spritePlay) {
       this.resetPosition(this.new_x, this.new_y);
       if (!this.action()) {
         this.setAnimation(AnimationState.Idle);
@@ -337,17 +362,17 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
   protected abstract onDead(): void;
 
-  protected findDropCell(): (DungeonCellView | null) {
+  protected findDropCell(): (DungeonCell | null) {
     const max_distance = 5;
     const pos_x = this.x;
     const pos_y = this.y;
     const is_left = this.is_left;
     const is_dead = this.character.dead.get();
 
-    let closestCell: DungeonCellView | null = null;
+    let closestCell: DungeonCell | null = null;
     let closestDistance: number | null = null;
 
-    const metric = (a: DungeonCellView) => {
+    const metric = (a: DungeonCell) => {
       return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
         (a.y !== pos_y ? 0.5 : 0) + // boost X
         (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
@@ -459,7 +484,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected animateIdle(): void {
-    if (!this.sprite || !this.sprite.playing) {
+    if (!this.sprite || !this.spritePlay) {
       if (!this.action()) {
         this.setAnimation(AnimationState.Idle);
       }
@@ -467,7 +492,7 @@ export abstract class BaseMonsterView extends BaseCharacterView {
   }
 
   protected animateHit(): void {
-    if (!this.sprite || !this.sprite.playing) {
+    if (!this.sprite || !this.spritePlay) {
       if (Math.random() < this.character.luck) {
         this.dungeon.hero.character.hitDamage(this.character, this.character.damage);
       }

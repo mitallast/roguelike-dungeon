@@ -1,9 +1,8 @@
-import {Coins, Drop, DropView, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
+import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
 import {HeroCharacter, HeroView} from "./hero";
 import {CharacterView} from "./character";
 import {BossMonsterView} from "./boss.monster";
-import {DungeonLightView} from "./dungeon.light";
-import {View} from "./view";
+import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
 
@@ -27,6 +26,7 @@ export const DungeonZIndexes: DungeonZIndexScheme = {
 
 export class DungeonLevel {
   readonly controller: SceneController;
+  readonly ticker: PIXI.Ticker;
 
   readonly level: number;
 
@@ -37,18 +37,19 @@ export class DungeonLevel {
   boss: BossMonsterView | null = null;
   monsters: CharacterView[] = [];
 
-  private readonly cells: DungeonCellView[][];
+  private readonly cells: DungeonCell[][];
   private readonly characterMap: (CharacterView | null)[][];
 
   readonly container: PIXI.Container;
-  readonly light: DungeonLightView;
+  readonly light: DungeonLight;
   readonly lighting: PIXI.Sprite;
   readonly scale: number = 2;
 
   private stop: boolean = false;
 
-  constructor(controller: SceneController, heroState: HeroCharacter, level: number, width: number, height: number) {
+  constructor(controller: SceneController, ticker: PIXI.Ticker, heroState: HeroCharacter, level: number, width: number, height: number) {
     this.controller = controller;
+    this.ticker = ticker;
     this.level = level;
     this.width = width;
     this.height = height;
@@ -57,7 +58,7 @@ export class DungeonLevel {
     for (let y = 0; y < this.width; y++) {
       this.cells[y] = [];
       for (let x = 0; x < this.height; x++) {
-        this.cells[y][x] = new DungeonCellView(this, x, y);
+        this.cells[y][x] = new DungeonCell(this, x, y);
       }
     }
 
@@ -69,13 +70,15 @@ export class DungeonLevel {
 
     this.hero = new HeroView(heroState, this, 0, 0);
 
-    this.light = new DungeonLightView(this);
+    this.light = new DungeonLight(this);
     this.light.layer.zIndex = 1;
     this.light.container.scale.set(this.scale, this.scale);
 
     this.lighting = new PIXI.Sprite(this.light.layer.getRenderTexture());
     this.lighting.blendMode = PIXI.BLEND_MODES.MULTIPLY;
     this.lighting.zIndex = 2;
+
+    this.ticker.add(this.update, this);
   }
 
   log(message: string): void {
@@ -94,7 +97,7 @@ export class DungeonLevel {
     return rows;
   };
 
-  cell(x: number, y: number): DungeonCellView {
+  cell(x: number, y: number): DungeonCell {
     return this.cells[y][x];
   }
 
@@ -108,6 +111,7 @@ export class DungeonLevel {
 
   exit() {
     this.stop = true;
+    this.ticker.stop();
     this.controller.updateHero({
       level: this.level + 1,
       hero: this.hero.character,
@@ -119,25 +123,8 @@ export class DungeonLevel {
     this.controller.dead();
   }
 
-  update(delta: number): void {
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        this.cells[y][x]?.update(delta);
-      }
-    }
-
-    this.hero.update(delta);
+  update(): void {
     if (this.stop) return;
-
-    this.boss?.update(delta);
-    if (this.stop) return;
-
-    for (let i = 0; i < this.monsters.length; i++) {
-      this.monsters[i].update(delta);
-      if (this.stop) return;
-    }
-
-    this.light.update(delta);
 
     const t_x = this.hero.position.x;
     const t_y = this.hero.position.y;
@@ -151,6 +138,8 @@ export class DungeonLevel {
   }
 
   destroy(): void {
+    this.ticker.remove(this.update, this);
+
     this.lighting.destroy();
     this.light.destroy();
     this.hero.destroy();
@@ -165,13 +154,14 @@ export class DungeonLevel {
   }
 }
 
-export class DungeonCellView implements View {
+export class DungeonCell {
   private readonly dungeon: DungeonLevel;
   readonly x: number;
   readonly y: number;
   private floorSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private wallSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private dropView: DropView | null = null;
+  private _dropSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private _drop: Drop | null = null;
 
   constructor(dungeon: DungeonLevel, x: number, y: number) {
     this.dungeon = dungeon;
@@ -230,21 +220,39 @@ export class DungeonCellView implements View {
   }
 
   set drop(drop: Drop | null) {
-    this.dropView?.destroy();
-    this.dropView = null;
+    this._dropSprite?.destroy();
+    this._dropSprite = null;
+    this._drop = null;
     if (drop) {
-      this.dropView = drop.dropView(this.dungeon, this.x, this.y);
+      // this.dropView = drop.dropView(this.dungeon, this.x, this.y);
+
+      this._drop = drop;
+      this._dropSprite = drop.sprite();
+      this._dropSprite.position.set(
+        this.x * TILE_SIZE + (TILE_SIZE >> 1) - (this._dropSprite.width >> 1),
+        this.y * TILE_SIZE + TILE_SIZE - 2
+      );
+      this._dropSprite.anchor.set(0, 1);
+      this._dropSprite.zIndex = DungeonZIndexes.drop;
+      if (this._dropSprite instanceof PIXI.AnimatedSprite) {
+        this._dropSprite.animationSpeed = 0.2;
+        this._dropSprite.play();
+      }
+      this.dungeon.container.addChild(this._dropSprite);
+      this.dungeon.container.sortChildren();
     }
   }
 
   pickedUp(hero: HeroCharacter): void {
-    if (this.dropView) {
-      this.dropView.pickedUp(hero);
+    if (this._drop?.pickedUp(hero)) {
+      this._dropSprite?.destroy();
+      this._dropSprite = null;
+      this._drop = null;
     }
   }
 
   get hasDrop(): boolean {
-    return !!this.dropView;
+    return !!this._drop;
   }
 
   randomDrop(): boolean {
@@ -284,6 +292,7 @@ export class DungeonCellView implements View {
     if (!name.endsWith('.png')) {
       const anim = sprite = this.dungeon.controller.resources.animated(name);
       anim.animationSpeed = 0.2;
+      anim.play();
     } else {
       sprite = this.dungeon.controller.resources.sprite(name);
     }
@@ -296,17 +305,8 @@ export class DungeonCellView implements View {
   destroy(): void {
     this.floorSprite?.destroy();
     this.wallSprite?.destroy();
-    this.dropView?.destroy();
-  }
-
-  update(delta: number): void {
-    if (this.floorSprite instanceof PIXI.AnimatedSprite) {
-      this.floorSprite.play();
-    }
-    if (this.wallSprite instanceof PIXI.AnimatedSprite) {
-      this.wallSprite.play();
-    }
-    this.dropView?.update(delta);
+    this._dropSprite?.destroy();
+    this._drop = null;
   }
 
   get isLadder(): boolean {
@@ -314,27 +314,22 @@ export class DungeonCellView implements View {
   }
 }
 
-export class DungeonTitleView implements View {
-  readonly container: PIXI.Container;
+export class DungeonTitle extends PIXI.Container {
   private readonly title: PIXI.BitmapText;
 
   constructor() {
-    this.container = new PIXI.Container();
+    super();
     this.title = new PIXI.BitmapText("", {font: {name: 'alagard', size: 32}});
     this.title.anchor = 0.5;
     this.title.position.set(0, 16);
-    this.container.addChild(this.title);
+    this.addChild(this.title);
   }
 
-  setLevel(level: number) {
+  set level(level: number) {
     this.title.text = `LEVEL ${level}`;
   }
 
   destroy(): void {
     this.title.destroy();
-    this.container.destroy();
-  }
-
-  update(_delta: number): void {
   }
 }

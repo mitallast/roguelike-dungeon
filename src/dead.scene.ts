@@ -1,5 +1,4 @@
 import {Scene, SceneController} from "./scene";
-// @ts-ignore
 import * as PIXI from 'pixi.js';
 
 export class YouDeadScene implements Scene {
@@ -12,14 +11,18 @@ export class YouDeadScene implements Scene {
   init(): void {
     this.renderTitle();
     this.renderHelp();
-  }
-
-  update(_delta: number): void {
-    this.handleInput();
+    this.controller.app.ticker.add(this.handleInput, this);
   }
 
   destroy(): void {
+    this.controller.app.ticker.remove(this.handleInput, this);
     this.controller.stage.removeChildren();
+  }
+
+  pause(): void {
+  }
+
+  resume(): void {
   }
 
   renderTitle() {

@@ -11,28 +11,33 @@ export class KeyBindScene implements Scene {
   init(): void {
     this.renderTitle();
     this.renderHelp();
-  }
-
-  update(_delta: number): void {
-    this.handleInput();
+    this.controller.app.ticker.add(this.handleInput, this);
   }
 
   destroy(): void {
+    this.controller.app.ticker.remove(this.handleInput, this);
     this.controller.stage.removeChildren();
   }
 
-  renderTitle() {
+  pause(): void {
+  }
+
+  resume(): void {
+  }
+
+  private renderTitle() {
     let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this.controller.app.screen.width >> 1, 64);
     this.controller.stage.addChild(title);
   }
 
-  renderHelp() {
+  private renderHelp() {
     const bindings = [
       "WASD - top, left, bottom, right",
       "F - action",
       "Q - drop weapon",
+      "I - inventory",
       "1 ... 0 - inventory",
       "",
       "PRESS F TO CONTINUE",
@@ -47,7 +52,7 @@ export class KeyBindScene implements Scene {
     }
   }
 
-  handleInput() {
+  private handleInput() {
     if (!this.controller.joystick.hit.processed) {
       this.controller.joystick.hit.reset();
       this.controller.selectHero();
