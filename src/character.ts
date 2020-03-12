@@ -13,7 +13,12 @@ export enum AnimationState {
 
 export abstract class Character {
   readonly name: string;
-  readonly speed: number;
+
+  protected readonly _speed: ObservableVar<number>;
+
+  get speed(): number {
+    return this._speed.get();
+  }
 
   protected readonly _healthMax: ObservableVar<number>;
   protected readonly _health: ObservableVar<number>;
@@ -42,7 +47,7 @@ export abstract class Character {
     healthMax: number,
   }) {
     this.name = options.name;
-    this.speed = options.speed;
+    this._speed = new ObservableVar(options.speed);
     this._healthMax = new ObservableVar(options.healthMax);
     this._health = new ObservableVar(options.healthMax);
     this._dead = new ObservableVar<boolean>(false);

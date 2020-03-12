@@ -42,7 +42,7 @@ const defaultGlobalState: GlobalHeroState = {
 
 export class HeroCharacter extends Character {
   private readonly persistent: PersistentState;
-  private readonly _coins: ObservableVar<number> = new ObservableVar(0);
+  private readonly _coins: ObservableVar<number>;
 
   get coins(): Observable<number> {
     return this._coins;
@@ -52,11 +52,11 @@ export class HeroCharacter extends Character {
     this._coins.update(c => c + coins);
   }
 
-  readonly baseDamage: number;
+  private readonly _baseDamage: ObservableVar<number>;
 
   get damage(): number {
     const weapon = this.inventory.equipment.weapon.item.get() as Weapon;
-    return this.baseDamage + (weapon?.damage || 0);
+    return this._baseDamage.get() + (weapon?.damage || 0);
   }
 
   readonly inventory: Inventory = new Inventory(this);
@@ -119,7 +119,7 @@ export class HeroCharacter extends Character {
     });
     this.persistent = persistent;
     this._coins = new ObservableVar(state.coins);
-    this.baseDamage = state.baseDamage;
+    this._baseDamage = new ObservableVar<number>(state.baseDamage);
     this._level = new ObservableVar(state.level);
     this._levelXp = new ObservableVar(state.levelXp);
     this._skillPoints = new ObservableVar(state.skillPoints);
@@ -128,12 +128,14 @@ export class HeroCharacter extends Character {
   }
 
   private subscribe(): void {
-    this._healthMax.subscribe(this.save, this);
     this._coins.subscribe(this.save, this);
+    this._baseDamage.subscribe(this.save, this);
     this._level.subscribe(this.save, this);
     this._levelXp.subscribe(this.save, this);
     this._skillPoints.subscribe(this.save, this);
     this._xp.subscribe(this.save, this);
+    this._healthMax.subscribe(this.save, this);
+    this._speed.subscribe(this.save, this);
   }
 
   private save(): void {
@@ -143,13 +145,13 @@ export class HeroCharacter extends Character {
   private get state(): GlobalHeroState {
     return {
       coins: this._coins.get(),
-      baseDamage: this.baseDamage,
+      baseDamage: this._baseDamage.get(),
       level: this._level.get(),
       levelXp: this._levelXp.get(),
       skillPoints: this._skillPoints.get(),
       xp: this._xp.get(),
       healthMax: this._healthMax.get(),
-      speed: this.speed,
+      speed: this._speed.get(),
     };
   }
 
