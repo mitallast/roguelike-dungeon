@@ -124,7 +124,7 @@ export class SelectHeroScene implements Scene {
       joystick.hit.reset();
       const name = heroMonsterNames[this.selected];
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);
-      const hero = new HeroCharacter(name);
+      const hero = HeroCharacter.load(name, this.controller.persistent);
       hero.inventory.equipment.weapon.set(weapon);
       this.controller.generateDungeon({
         level: 1,

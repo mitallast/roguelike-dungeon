@@ -12,6 +12,7 @@ import {UpdateHeroScene} from "./update.hero.scene";
 import * as PIXI from "pixi.js";
 import {InventoryModalScene} from "./inventory.modal";
 import {HeroCharacter} from "./hero";
+import {PersistentState} from "./persistent.state";
 
 export interface Scene {
   init(): void;
@@ -27,26 +28,33 @@ export interface ModalScene {
 }
 
 export class SceneController {
+  readonly persistent: PersistentState;
   readonly rng: RNG;
   readonly joystick: Joystick;
   readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
+
   private mainScene: Scene | null = null;
   private modalScene: ModalScene | null = null;
 
   constructor(
+    persistent: PersistentState,
     rng: RNG,
     joystick: Joystick,
     resources: Resources,
     app: PIXI.Application,
     stage: PIXI.display.Stage,
   ) {
+    this.persistent = persistent;
     this.rng = rng;
     this.joystick = joystick;
     this.resources = resources;
     this.app = app;
     this.stage = stage;
+
+    this.app.ticker.add(this.persistent.global.commit, this.persistent.global, PIXI.UPDATE_PRIORITY.LOW);
+    this.app.ticker.add(this.persistent.session.commit, this.persistent.session, PIXI.UPDATE_PRIORITY.LOW);
   }
 
   private set scene(scene: Scene) {

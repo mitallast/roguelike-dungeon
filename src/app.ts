@@ -7,6 +7,7 @@ import * as PIXI from 'pixi.js';
 
 window.PIXI = PIXI;
 import "pixi-layers";
+import {SessionPersistentState} from "./persistent.state";
 
 (async function () {
 
@@ -29,8 +30,9 @@ import "pixi-layers";
 
   document.getElementById("container")!.appendChild(app.view);
 
+  const persistent = new SessionPersistentState();
   const rng = new RNG();
   const joystick = new Joystick();
-  const controller = new SceneController(rng, joystick, resources, app, stage);
+  const controller = new SceneController(persistent, rng, joystick, resources, app, stage);
   controller.keyBind();
 })();

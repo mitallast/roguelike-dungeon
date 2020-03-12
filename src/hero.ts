@@ -7,6 +7,7 @@ import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
 import {DigitKey} from "./input";
 import * as PIXI from "pixi.js";
+import {PersistentState} from "./persistent.state";
 
 export const heroMonsterNames = [
   "elf_f",
@@ -17,7 +18,30 @@ export const heroMonsterNames = [
   "wizard_m",
 ];
 
+export interface GlobalHeroState {
+  readonly coins: number;
+  readonly baseDamage: number;
+  readonly level: number;
+  readonly levelXp: number;
+  readonly skillPoints: number;
+  readonly xp: number;
+  readonly healthMax: number;
+  readonly speed: number;
+}
+
+const defaultGlobalState: GlobalHeroState = {
+  coins: 0,
+  baseDamage: 3,
+  level: 1,
+  levelXp: 0,
+  skillPoints: 0,
+  xp: 0,
+  healthMax: 30,
+  speed: 0.2,
+};
+
 export class HeroCharacter extends Character {
+  private readonly persistent: PersistentState;
   private readonly _coins: ObservableVar<number> = new ObservableVar(0);
 
   get coins(): Observable<number> {
@@ -28,7 +52,7 @@ export class HeroCharacter extends Character {
     this._coins.update(c => c + coins);
   }
 
-  readonly baseDamage: number = 3;
+  readonly baseDamage: number;
 
   get damage(): number {
     const weapon = this.inventory.equipment.weapon.item.get() as Weapon;
@@ -37,11 +61,10 @@ export class HeroCharacter extends Character {
 
   readonly inventory: Inventory = new Inventory(this);
 
-  private readonly _level: ObservableVar<number> = new ObservableVar(0);
-  private readonly _levelXp: ObservableVar<number> = new ObservableVar(1000);
-  private readonly _skillPoints: ObservableVar<number> = new ObservableVar(0);
-
-  private readonly _xp: ObservableVar<number> = new ObservableVar(0);
+  private readonly _level: ObservableVar<number>;
+  private readonly _levelXp: ObservableVar<number>;
+  private readonly _skillPoints: ObservableVar<number>;
+  private readonly _xp: ObservableVar<number>;
 
   get level(): Observable<number> {
     return this._level;
@@ -88,12 +111,51 @@ export class HeroCharacter extends Character {
     });
   }
 
-  constructor(name: string) {
+  private constructor(name: string, state: GlobalHeroState, persistent: PersistentState) {
     super({
       name: name,
-      speed: 0.2,
-      healthMax: 30
+      speed: state.speed,
+      healthMax: state.healthMax
     });
+    this.persistent = persistent;
+    this._coins = new ObservableVar(state.coins);
+    this.baseDamage = state.baseDamage;
+    this._level = new ObservableVar(state.level);
+    this._levelXp = new ObservableVar(state.levelXp);
+    this._skillPoints = new ObservableVar(state.skillPoints);
+    this._xp = new ObservableVar(state.xp);
+    this.subscribe();
+  }
+
+  private subscribe(): void {
+    this._healthMax.subscribe(this.save, this);
+    this._coins.subscribe(this.save, this);
+    this._level.subscribe(this.save, this);
+    this._levelXp.subscribe(this.save, this);
+    this._skillPoints.subscribe(this.save, this);
+    this._xp.subscribe(this.save, this);
+  }
+
+  private save(): void {
+    this.persistent.global.save(this.name, this.state);
+  }
+
+  private get state(): GlobalHeroState {
+    return {
+      coins: this._coins.get(),
+      baseDamage: this.baseDamage,
+      level: this._level.get(),
+      levelXp: this._levelXp.get(),
+      skillPoints: this._skillPoints.get(),
+      xp: this._xp.get(),
+      healthMax: this._healthMax.get(),
+      speed: this.speed,
+    };
+  }
+
+  static load(name: string, persistent: PersistentState): HeroCharacter {
+    let state: GlobalHeroState = persistent.global.load(name) || defaultGlobalState;
+    return new HeroCharacter(name, state, persistent);
   }
 }
 
