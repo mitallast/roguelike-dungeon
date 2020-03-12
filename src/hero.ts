@@ -1,8 +1,8 @@
 import {Inventory} from "./inventory";
 import {AnimationState, BaseCharacterView, Character, MonsterCharacter} from "./character";
 import {DungeonLevel} from "./dungeon.level";
-import {Weapon} from "./drop";
-import {Observable, Publisher, Subscription} from "./observable";
+import {UsableDrop, Weapon} from "./drop";
+import {ObservableVar, Observable} from "./observable";
 import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
 import {DigitKey} from "./input";
@@ -18,9 +18,9 @@ export const heroMonsterNames = [
 ];
 
 export class HeroCharacter extends Character {
-  private readonly _coins: Observable<number> = new Observable(0);
+  private readonly _coins: ObservableVar<number> = new ObservableVar(0);
 
-  get coins(): Publisher<number> {
+  get coins(): Observable<number> {
     return this._coins;
   }
 
@@ -31,30 +31,31 @@ export class HeroCharacter extends Character {
   readonly baseDamage: number = 3;
 
   get damage(): number {
-    return this.baseDamage + (this.inventory.equipment.weapon.get()?.damage || 0);
+    const weapon = this.inventory.equipment.weapon.item.get() as Weapon;
+    return this.baseDamage + (weapon?.damage || 0);
   }
 
   readonly inventory: Inventory = new Inventory(this);
 
-  private readonly _level: Observable<number> = new Observable(0);
-  private readonly _levelXp: Observable<number> = new Observable(1000);
-  private readonly _skillPoints: Observable<number> = new Observable(0);
+  private readonly _level: ObservableVar<number> = new ObservableVar(0);
+  private readonly _levelXp: ObservableVar<number> = new ObservableVar(1000);
+  private readonly _skillPoints: ObservableVar<number> = new ObservableVar(0);
 
-  private readonly _xp: Observable<number> = new Observable(0);
+  private readonly _xp: ObservableVar<number> = new ObservableVar(0);
 
-  get level(): Publisher<number> {
+  get level(): Observable<number> {
     return this._level;
   }
 
-  get levelXp(): Publisher<number> {
+  get levelXp(): Observable<number> {
     return this._levelXp;
   }
 
-  get skillPoints(): Publisher<number> {
+  get skillPoints(): Observable<number> {
     return this._skillPoints;
   }
 
-  get xp(): Publisher<number> {
+  get xp(): Observable<number> {
     return this._xp;
   }
 
@@ -102,13 +103,18 @@ export class HeroView extends BaseCharacterView {
   readonly character: HeroCharacter;
 
   private weaponSprite: PIXI.Sprite | null = null;
-  private readonly weaponSub: Subscription;
 
   constructor(character: HeroCharacter, dungeon: DungeonLevel, x: number, y: number) {
     super(dungeon, 1, 1, x, y);
     this.character = character;
     this.init();
-    this.weaponSub = this.character.inventory.equipment.weapon.subscribe(this.onWeaponUpdate.bind(this));
+    this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
+    this.character.inventory.drop.subscribe(this.onDrop, this);
+  }
+
+  protected onDestroy(): void {
+    this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
+    this.character.inventory.drop.unsubscribe(this.onDrop, this);
   }
 
   protected action(): boolean {
@@ -132,7 +138,7 @@ export class HeroView extends BaseCharacterView {
       }
       if (!joystick.drop.processed) {
         joystick.drop.processed = true;
-        this.dropWeapon();
+        this.character.inventory.equipment.weapon.drop();
       }
 
       if (joystick.hit.triggered || !joystick.hit.processed) {
@@ -173,17 +179,15 @@ export class HeroView extends BaseCharacterView {
     return false;
   }
 
-  private dropWeapon(): void {
-    if (this.character.inventory.equipment.weapon.get()) {
-      const cell = this.findDropCell();
-      if (cell) {
-        cell.drop = this.character.inventory.equipment.weapon.get();
-        this.character.inventory.equipment.weapon.set(null);
-      }
+  private onDrop(event: [UsableDrop, number]): void {
+    let [drop] = event;
+    const cell = this.findDropCell();
+    if (cell) {
+      cell.drop = drop;
     }
   }
 
-  private onWeaponUpdate(weapon: Weapon | null): void {
+  private onWeaponUpdate(weapon: UsableDrop | null): void {
     this.weaponSprite?.destroy();
     this.weaponSprite = null;
     if (weapon) {
@@ -229,7 +233,8 @@ export class HeroView extends BaseCharacterView {
   }
 
   private scanMonsters(is_left: boolean): MonsterCharacter[] {
-    const max_distance = this.character.inventory.equipment.weapon.get()?.distance || 1;
+    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    const max_distance = weapon?.distance || 1;
 
     const scan_x_min = is_left ? Math.max(0, this.x - max_distance) : this.x;
     const scan_x_max = is_left ? this.x : Math.min(this.dungeon.width, this.x + max_distance);
@@ -261,8 +266,8 @@ export class HeroView extends BaseCharacterView {
 
   protected onSetAnimationHit(): void {
     this.setSprite('_idle');
-    const weapon = this.character.inventory.equipment.weapon.get();
-    if (this.sprite && weapon) {
+    const weapon = this.character.inventory.equipment.weapon.item.get();
+    if (this.sprite && weapon instanceof Weapon) {
       this.sprite.animationSpeed = weapon.speed;
     }
 
@@ -311,10 +316,6 @@ export class HeroView extends BaseCharacterView {
     this.setAnimation(AnimationState.Idle);
     this.dungeon.dead();
   }
-
-  protected onDestroy(): void {
-    this.weaponSub.unsubscribe();
-  }
 }
 
 export class HeroStateView extends PIXI.Container {
@@ -327,14 +328,6 @@ export class HeroStateView extends PIXI.Container {
   private readonly hpBarSize: number;
   private readonly maxBarSize: number;
   private readonly maxBarInnerSize: number;
-
-  private readonly healthSub: Subscription;
-  private readonly healthMaxSub: Subscription;
-  private readonly levelSub: Subscription;
-  private readonly levelXpSub: Subscription;
-  private readonly skillPointsSub: Subscription;
-  private readonly xpSub: Subscription;
-  private readonly coinsSub: Subscription;
 
   constructor(heroState: HeroCharacter, options: {
     fixedHPSize: boolean
@@ -368,13 +361,24 @@ export class HeroStateView extends PIXI.Container {
 
     super.addChild(this.health, this.xp, this.coins);
 
-    this.healthSub = heroState.health.subscribe(this.updateHealth.bind(this));
-    this.healthMaxSub = heroState.healthMax.subscribe(this.updateHealthMax.bind(this));
-    this.levelSub = heroState.level.subscribe(this.updateXp.bind(this));
-    this.levelXpSub = heroState.levelXp.subscribe(this.updateXp.bind(this));
-    this.skillPointsSub = heroState.skillPoints.subscribe(this.updateXp.bind(this));
-    this.xpSub = heroState.xp.subscribe(this.updateXp.bind(this));
-    this.coinsSub = heroState.coins.subscribe(this.updateCoins.bind(this));
+    heroState.health.subscribe(this.updateHealth, this);
+    heroState.healthMax.subscribe(this.updateHealthMax, this);
+    heroState.level.subscribe(this.updateXp, this);
+    heroState.levelXp.subscribe(this.updateXp, this);
+    heroState.skillPoints.subscribe(this.updateXp, this);
+    heroState.xp.subscribe(this.updateXp, this);
+    heroState.coins.subscribe(this.updateCoins, this);
+  }
+
+  destroy(): void {
+    super.destroy();
+    this.heroState.health.unsubscribe(this.updateHealth, this);
+    this.heroState.healthMax.unsubscribe(this.updateHealthMax, this);
+    this.heroState.level.unsubscribe(this.updateXp, this);
+    this.heroState.levelXp.unsubscribe(this.updateXp, this);
+    this.heroState.skillPoints.unsubscribe(this.updateXp, this);
+    this.heroState.xp.unsubscribe(this.updateXp, this);
+    this.heroState.coins.unsubscribe(this.updateCoins, this);
   }
 
   private updateHealthMax(healthMax: number) {
@@ -408,17 +412,6 @@ export class HeroStateView extends PIXI.Container {
 
   private updateCoins(coins: number) {
     this.coins.text = `$${coins}`;
-  }
-
-  destroy(): void {
-    super.destroy();
-    this.healthSub.unsubscribe();
-    this.healthMaxSub.unsubscribe();
-    this.levelSub.unsubscribe();
-    this.levelXpSub.unsubscribe();
-    this.skillPointsSub.unsubscribe();
-    this.xpSub.unsubscribe();
-    this.coinsSub.unsubscribe();
   }
 }
 

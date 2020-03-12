@@ -2,7 +2,6 @@ import {RNG} from "./rng";
 import {HeroCharacter} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
-import {Colors, Sizes} from "./ui";
 import * as PIXI from "pixi.js";
 
 export interface Drop {
@@ -193,89 +192,12 @@ export class Weapon implements UsableDrop {
   }
 
   use(cell: InventoryCell, hero: HeroCharacter): void {
-    const prev = hero.inventory.equipment.weapon.get();
+    const prev = hero.inventory.equipment.weapon.item.get();
+    hero.inventory.equipment.weapon.clear();
     hero.inventory.equipment.weapon.set(this);
     cell.clear();
     if (prev) {
       cell.set(prev);
-    }
-  }
-}
-
-export class DropCardView extends PIXI.Container {
-  private readonly _width: number;
-  private readonly _height: number;
-  private readonly _sprite_size: number;
-  private _sprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private readonly _title: PIXI.BitmapText;
-  private readonly _description: PIXI.BitmapText;
-
-  constructor(options: {
-    width?: number,
-    height?: number,
-  }) {
-    super();
-
-    this._width = options.width || 400;
-    this._height = options.height || 400;
-    this._sprite_size = 128 + (Sizes.uiMargin << 1);
-
-    const background = new PIXI.Graphics()
-      .beginFill(Colors.uiBackground, 0.3)
-      .drawRect(0, 0, this._width, this._height)
-      .endFill()
-      .beginFill(Colors.uiNotSelected, 0.3)
-      .drawRect(Sizes.uiMargin, Sizes.uiMargin + 32 + Sizes.uiMargin, this._sprite_size, this._sprite_size)
-      .endFill();
-
-    this._title = new PIXI.BitmapText("", {font: {name: "alagard", size: 32}});
-    this._title.anchor = new PIXI.Point(0.5, 0);
-    this._title.position.set(this._width >> 1, Sizes.uiMargin);
-
-    this._description = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this._description.position.set(
-      Sizes.uiMargin + this._sprite_size + Sizes.uiMargin,
-      Sizes.uiMargin + 32 + Sizes.uiMargin
-    );
-
-    super.addChild(background, this._title, this._description);
-  }
-
-  set drop(drop: UsableDrop | null) {
-    this._sprite?.destroy();
-    this._sprite = null;
-    this._title.text = "";
-    this._description.text = "";
-
-    if (drop) {
-      const sprite = this._sprite = drop.sprite();
-      super.addChild(sprite);
-      sprite.anchor = new PIXI.Point(0.5, 0.5);
-      sprite.position.set(
-        Sizes.uiMargin + (this._sprite_size >> 1),
-        Sizes.uiMargin + (this._sprite_size >> 1) + 32 + Sizes.uiMargin
-      );
-      const s_w = sprite.width;
-      const s_h = sprite.height;
-      const max_size = this._sprite_size - Sizes.uiMargin;
-      if (s_w > s_h) {
-        this._sprite.width = max_size;
-        this._sprite.height = (max_size / s_w) * s_h;
-      } else {
-        this._sprite.height = max_size;
-        this._sprite.width = (max_size / s_h) * s_w;
-      }
-
-      const info = drop.info();
-
-      this._title.text = info.name;
-
-      const text: string[] = [];
-      if (info.health) text.push(`health: ${info.health}`);
-      if (info.speed) text.push(`speed: ${info.speed}`);
-      if (info.distance) text.push(`distance: ${info.distance}`);
-      if (info.damage) text.push(`damage: ${info.damage}`);
-      this._description.text = text.join("\n");
     }
   }
 }

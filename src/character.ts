@@ -1,7 +1,7 @@
 import {Resources} from "./resources";
 import {DungeonCell, DungeonLevel, DungeonZIndexes} from "./dungeon.level";
 import {HeroCharacter} from "./hero";
-import {Observable, Publisher, Subscription} from "./observable";
+import {ObservableVar, Observable} from "./observable";
 import {PathFinding} from "./pathfinding";
 import * as PIXI from "pixi.js";
 
@@ -15,24 +15,24 @@ export abstract class Character {
   readonly name: string;
   readonly speed: number;
 
-  protected readonly _healthMax: Observable<number>;
-  protected readonly _health: Observable<number>;
-  private readonly _dead: Observable<boolean>;
-  private readonly _killedBy: Observable<Character | null>;
+  protected readonly _healthMax: ObservableVar<number>;
+  protected readonly _health: ObservableVar<number>;
+  private readonly _dead: ObservableVar<boolean>;
+  private readonly _killedBy: ObservableVar<Character | null>;
 
-  get healthMax(): Publisher<number> {
+  get healthMax(): Observable<number> {
     return this._healthMax;
   }
 
-  get health(): Publisher<number> {
+  get health(): Observable<number> {
     return this._health;
   }
 
-  get dead(): Publisher<boolean> {
+  get dead(): Observable<boolean> {
     return this._dead;
   }
 
-  get killedBy(): Publisher<Character | null> {
+  get killedBy(): Observable<Character | null> {
     return this._killedBy;
   }
 
@@ -43,10 +43,10 @@ export abstract class Character {
   }) {
     this.name = options.name;
     this.speed = options.speed;
-    this._healthMax = new Observable(options.healthMax);
-    this._health = new Observable(options.healthMax);
-    this._dead = new Observable<boolean>(false);
-    this._killedBy = new Observable<Character | null>(null);
+    this._healthMax = new ObservableVar(options.healthMax);
+    this._health = new ObservableVar(options.healthMax);
+    this._dead = new ObservableVar<boolean>(false);
+    this._killedBy = new ObservableVar<Character | null>(null);
   }
 
   hill(health: number): void {
@@ -135,9 +135,6 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   protected spriteTime: number = 0;
   protected spritePlay: boolean = false;
 
-  private killedBySub: Subscription | null = null;
-  private deadSub: Subscription | null = null;
-
   protected constructor(dungeon: DungeonLevel, width: number, height: number, x: number, y: number) {
     super();
     super.zIndex = DungeonZIndexes.character;
@@ -157,19 +154,15 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     this.setAnimation(AnimationState.Idle);
     this.resetPosition(this.pos_x, this.pos_y);
     this.dungeon.container.addChild(this);
-    this.killedBySub = this.character.killedBy.subscribe((by) => {
-      if (by) this.onKilledBy(by);
-    });
-    this.deadSub = this.character.dead.subscribe((dead) => {
-      if (dead) this.onDead();
-    });
+    this.character.killedBy.subscribe(this.handleKilledBy, this);
+    this.character.dead.subscribe(this.handleDead, this);
   }
 
   destroy(): void {
     super.destroy();
     this.ticker.remove(this.update, this);
-    this.killedBySub?.unsubscribe();
-    this.deadSub?.unsubscribe();
+    this.character.killedBy.unsubscribe(this.handleKilledBy, this);
+    this.character.dead.unsubscribe(this.handleDead, this);
     this.clearMap(this.pos_x, this.pos_y);
     this.clearMap(this.new_x, this.new_y);
     this.onDestroy();
@@ -356,6 +349,14 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
     }
     this.new_x = x;
     this.new_y = y;
+  }
+
+  private handleKilledBy(by: Character | null): void {
+    if (by) this.onKilledBy(by);
+  }
+
+  private handleDead(dead: boolean): void {
+    if (dead) this.onDead();
   }
 
   protected abstract onKilledBy(by: Character): void;

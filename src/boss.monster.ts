@@ -1,6 +1,5 @@
 import {DungeonLevel} from "./dungeon.level";
 import {MonsterCharacter, BaseMonsterView} from "./character";
-import {Subscription} from "./observable";
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
 import * as PIXI from 'pixi.js';
@@ -48,9 +47,6 @@ export class BossHealthView extends PIXI.Container{
   private readonly widthMax: number;
   private readonly pointWidth: number;
 
-  private readonly healthSub: Subscription;
-  private readonly deadSub: Subscription;
-
   private destroyed = false;
 
   constructor(boss: BossMonster) {
@@ -71,8 +67,17 @@ export class BossHealthView extends PIXI.Container{
     this.health.position.set(-(this.widthMax >> 1), 0);
     this.addChild(this.health);
 
-    this.healthSub = boss.health.subscribe(this.updateHealth.bind(this));
-    this.deadSub = boss.dead.subscribe(this.updateDead.bind(this));
+    boss.health.subscribe(this.updateHealth, this);
+    boss.dead.subscribe(this.updateDead, this);
+  }
+
+  destroy(): void {
+    if (!this.destroyed) {
+      super.destroy();
+      this.destroyed = true;
+      this.boss.health.unsubscribe(this.updateHealth, this);
+      this.boss.dead.unsubscribe(this.updateDead, this);
+    }
   }
 
   updateHealth(health: number) {
@@ -83,15 +88,6 @@ export class BossHealthView extends PIXI.Container{
   updateDead(dead: boolean) {
     if (dead) {
       this.destroy();
-    }
-  }
-
-  destroy(): void {
-    if (!this.destroyed) {
-      super.destroy();
-      this.destroyed = true;
-      this.healthSub.unsubscribe();
-      this.deadSub.unsubscribe();
     }
   }
 }

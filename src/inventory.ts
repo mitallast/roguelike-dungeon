@@ -1,6 +1,6 @@
-import {DropCardView, UsableDrop, Weapon} from "./drop";
+import {UsableDrop, Weapon} from "./drop";
 import {HeroCharacter} from "./hero";
-import {Observable, Publisher, Subscription} from "./observable";
+import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
 import {Colors, Sizes, Selectable, Layout, SelectableMap, Button} from "./ui";
 import * as PIXI from "pixi.js";
 
@@ -14,10 +14,16 @@ export class Inventory {
   readonly belt: BeltInventory;
   readonly backpack: BackpackInventory;
 
+  private readonly _drop = new EventPublisher<[UsableDrop, number]>();
+
+  get drop(): Publisher<[UsableDrop, number]> {
+    return this._drop;
+  }
+
   constructor(hero: HeroCharacter) {
-    this.equipment = new EquipmentInventory();
-    this.belt = new BeltInventory(hero);
-    this.backpack = new BackpackInventory(hero);
+    this.equipment = new EquipmentInventory(hero, this._drop);
+    this.belt = new BeltInventory(hero, this._drop);
+    this.backpack = new BackpackInventory(hero, this._drop);
   }
 
   stack(item: UsableDrop): boolean {
@@ -34,9 +40,10 @@ export class Inventory {
 }
 
 export class EquipmentInventory {
-  readonly weapon: Observable<Weapon | null> = new Observable<Weapon | null>(null);
+  readonly weapon: InventoryCell;
 
-  constructor() {
+  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
+    this.weapon = new InventoryCell(hero, 1, (item) => item instanceof Weapon, drop, this);
   }
 }
 
@@ -44,10 +51,10 @@ export class BeltInventory {
   readonly length: number = 10;
   private readonly cells: InventoryCell[];
 
-  constructor(hero: HeroCharacter) {
+  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
     this.cells = [];
     for (let i = 0; i < 10; i++) {
-      this.cells[i] = new InventoryCell(hero);
+      this.cells[i] = new InventoryCell(hero, 3, () => true, drop, this);
     }
   }
 
@@ -83,12 +90,12 @@ export class BackpackInventory {
   readonly height: number = 5;
   private readonly cells: InventoryCell[][];
 
-  constructor(hero: HeroCharacter) {
+  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
     this.cells = [];
     for (let y = 0; y < this.height; y++) {
       this.cells.push([]);
       for (let x = 0; x < this.width; x++) {
-        this.cells[y][x] = new InventoryCell(hero);
+        this.cells[y][x] = new InventoryCell(hero, 3, () => true, drop, this);
       }
     }
   }
@@ -125,88 +132,157 @@ export class BackpackInventory {
 }
 
 export class InventoryCell {
-  private readonly hero: HeroCharacter;
-  private readonly maxInStack: number;
-  readonly item = new Observable<UsableDrop | null>(null);
-  readonly count = new Observable<number>(0);
+  private readonly _hero: HeroCharacter;
+  private readonly _maxInStack: number;
+  private readonly _item = new ObservableVar<UsableDrop | null>(null);
+  private readonly _count = new ObservableVar<number>(0);
+  private readonly _predicate: (item: UsableDrop) => boolean;
+  private readonly _drop: EventPublisher<[UsableDrop, number]>;
 
-  constructor(hero: HeroCharacter, maxInStack: number = 3) {
-    this.maxInStack = maxInStack;
-    this.hero = hero;
+  readonly parent: EquipmentInventory | BeltInventory | BackpackInventory;
+
+  get item(): Observable<UsableDrop | null> {
+    return this._item;
+  }
+
+  get count(): Observable<number> {
+    return this._count;
+  }
+
+  constructor(
+    hero: HeroCharacter,
+    maxInStack: number,
+    predicate: (item: UsableDrop) => boolean,
+    drop: EventPublisher<[UsableDrop, number]>,
+    parent: EquipmentInventory | BeltInventory | BackpackInventory,
+  ) {
+    this._hero = hero;
+    this._maxInStack = maxInStack;
+    this._predicate = predicate;
+    this._drop = drop;
+    this.parent = parent;
+  }
+
+  supports(item: UsableDrop): boolean {
+    return this._predicate(item);
   }
 
   stack(item: UsableDrop): boolean {
-    if (this.item.get()?.same(item) && this.count.get() < this.maxInStack) {
-      this.count.update(c => c + 1);
+    if (this._item.get()?.same(item) && this._count.get() < this._maxInStack) {
+      this._count.update(c => c + 1);
       return true;
     }
     return false;
   };
 
   clear(): void {
-    if (this.item.get()) {
-      this.item.set(null);
-      this.count.set(0);
+    if (this._item.get()) {
+      this._item.set(null);
+      this._count.set(0);
     }
   }
 
   set(item: UsableDrop): boolean {
-    if (!this.item.get()) {
-      this.item.set(item);
-      this.count.set(1);
-      return true;
-    }
-    return false;
-  };
-
-  use(): boolean {
-    const item = this.item.get();
-    if (item) {
-      item.use(this, this.hero);
+    if (!this._item.get() && this._predicate(item)) {
+      this._item.set(item);
+      this._count.set(1);
       return true;
     }
     return false;
   };
 
   decrease(): void {
-    this.count.update(c => c - 1);
-    if (this.count.get() <= 0) {
-      this.item.set(null);
-      this.count.set(0);
+    this._count.update(c => Math.max(0, c - 1));
+    if (this._count.get() <= 0) {
+      this._item.set(null);
+      this._count.set(0);
     }
   }
 
   get isEmpty(): boolean {
-    return this.item.get() == null;
+    return this._item.get() == null;
+  }
+
+  use(): boolean {
+    const item = this._item.get();
+    if (item) {
+      // @ts-ignore
+      item.use((this as InventoryCell<UsableDrop>), this._hero);
+      return true;
+    }
+    return false;
+  };
+
+  equip(): void {
+    const item = this._item.get();
+    const weapon = this._hero.inventory.equipment.weapon;
+    if (item && weapon.supports(item)) {
+      const prev = weapon.item.get();
+      weapon.clear();
+      weapon.set(item);
+      this.clear();
+      if (prev) {
+        this.set(prev);
+      }
+    }
+  }
+
+  toBelt(): void {
+    const item = this._item.get();
+    while (item && !this.isEmpty) {
+      if (this._hero.inventory.belt.add(item)) {
+        this.decrease();
+      } else {
+        break;
+      }
+    }
+  }
+
+  toBackpack(): void {
+    const item = this._item.get();
+    while (item && !this.isEmpty) {
+      if (this._hero.inventory.backpack.add(item)) {
+        this.decrease();
+      } else {
+        break;
+      }
+    }
+  }
+
+  drop(): void {
+    const drop = this._item.get();
+    const count = this._count.get();
+    if (drop) {
+      this._item.set(null);
+      this._count.set(0);
+      this._drop.send([drop, count]);
+    }
   }
 }
 
 export class InventoryView extends PIXI.Container {
-  private readonly inventory: Inventory;
   private readonly selectable: SelectableMap;
   private readonly selectableOffset: number;
 
   readonly equipment: EquipmentInventoryView;
   readonly belt: BeltInventoryView;
   readonly backpack: BackpackInventoryView;
-  readonly dropCard: DropCardView;
-
-  private readonly layout: Layout;
-  private readonly buttons: [Button, number, number][] = [];
+  readonly card: InventoryCellCardView;
+  readonly actions: InventoryCellActionsView;
 
   constructor(inventory: Inventory, selectable: SelectableMap, selectableOffset: number) {
     super();
-    this.inventory = inventory;
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
 
-    const layout = this.layout = new Layout();
+    const layout = new Layout();
     this.equipment = new EquipmentInventoryView(inventory.equipment);
     this.equipment.position.set(layout.x, layout.y);
     this.equipment.calculateBounds();
     layout.offset(0, this.equipment.height);
     layout.offset(0, Sizes.uiMargin);
-    selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.showWeaponInfo());
+    // @ts-ignore
+    selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
 
     this.belt = new BeltInventoryView(inventory.belt);
     this.belt.position.set(layout.x, layout.y);
@@ -214,8 +290,8 @@ export class InventoryView extends PIXI.Container {
     layout.offset(0, this.belt.height);
     layout.offset(0, Sizes.uiMargin);
     for (let i = 0; i < this.belt.length; i++) {
-      const index = i;
-      this.selectable.set(selectableOffset + i, 1, this.belt.cell(i), () => this.showBeltInfo(index));
+      const cell = inventory.belt.cell(i);
+      this.selectable.set(selectableOffset + i, 1, this.belt.cell(i), () => this.show(cell));
     }
 
     this.backpack = new BackpackInventoryView(inventory.backpack);
@@ -223,236 +299,32 @@ export class InventoryView extends PIXI.Container {
     this.backpack.calculateBounds();
     layout.offset(0, this.backpack.height);
     layout.offset(0, Sizes.uiMargin);
-    for (let x = 0; x < this.backpack.gridWidth; x++) {
-      for (let y = 0; y < this.backpack.gridHeight; y++) {
-        const cell_x = x;
-        const cell_y = y;
-        this.selectable.set(selectableOffset + x, y + 2, this.backpack.cell(x, y), () => this.showBackpackInfo(cell_x, cell_y));
+
+    for (let x = 0; x < inventory.backpack.width; x++) {
+      for (let y = 0; y < inventory.backpack.height; y++) {
+        const cell = inventory.backpack.cell(x, y);
+        this.selectable.set(selectableOffset + x, y + 2, this.backpack.cell(x, y), () => this.show(cell));
       }
     }
 
-    const buttonHeight = layout.y;
+    this.actions = new InventoryCellActionsView(this.selectable, this.selectableOffset, inventory);
+    this.actions.position.set(layout.x, layout.y);
 
     layout.offset(0, BUTTON_HEIGHT);
-
     const totalHeight = layout.y;
 
     layout.reset();
     layout.offset(this.backpack.width, 0);
     layout.offset(Sizes.uiMargin, 0);
 
-    this.dropCard = new DropCardView({
+    this.card = new InventoryCellCardView({
       width: 400,
       height: totalHeight
     });
-    this.dropCard.position.set(layout.x, layout.y);
-    this.dropCard.calculateBounds();
-    layout.offset(0, this.dropCard.height);
-    layout.offset(0, Sizes.uiMargin);
+    this.card.position.set(layout.x, layout.y);
+    this.card.calculateBounds();
 
-    layout.reset();
-    layout.offset(0, buttonHeight);
-    layout.commit();
-
-    this.addChild(this.equipment, this.belt, this.backpack, this.dropCard);
-  }
-
-  private removeButtons(): void {
-    for (let [button, x, y] of this.buttons) {
-      this.selectable.remove(x, y);
-      button.destroy();
-    }
-    this.layout.reset();
-  }
-
-  private addButton(label: string, action: () => void): void {
-    const selectableX = this.selectableOffset + this.buttons.length;
-    const selectableY = 100;
-    const button = new Button({
-      label: label,
-      width: BUTTON_WIDTH,
-      height: BUTTON_HEIGHT,
-    });
-    button.position.set(this.layout.x, this.layout.y);
-    this.layout.offset(BUTTON_WIDTH, 0);
-    this.layout.offset(Sizes.uiMargin, 0);
-    this.buttons.push([button, selectableX, selectableY]);
-    this.selectable.set(selectableX, selectableY, button, action);
-    this.addChild(button);
-  }
-
-  private showWeaponInfo(): void {
-    const drop = this.inventory.equipment.weapon.get();
-    this.dropCard!.drop = drop;
-    this.removeButtons();
-
-    if (drop) {
-      this.addButton("To belt", () => this.weaponToBelt());
-      this.addButton("To backpack", () => this.weaponToBackpack());
-      this.addButton("Drop", () => this.weaponDrop());
-    }
-  }
-
-  private weaponToBelt(): void {
-    const weapon = this.inventory.equipment.weapon.get();
-    if (weapon) {
-      if (this.inventory.belt.add(weapon)) {
-        this.inventory.equipment.weapon.set(null);
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private weaponToBackpack(): void {
-    const weapon = this.inventory.equipment.weapon.get();
-    if (weapon) {
-      if (this.inventory.backpack.set(weapon)) {
-        this.inventory.equipment.weapon.set(null);
-
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private weaponDrop(): void {
-    this.inventory.equipment.weapon.set(null);
-    this.dropCard!.drop = null;
-    this.removeButtons();
-  }
-
-  private showBeltInfo(index: number): void {
-    const drop = this.inventory.belt.cell(index).item.get();
-    this.dropCard!.drop = drop;
-    this.removeButtons();
-
-    if (drop) {
-      if (drop instanceof Weapon) {
-        this.addButton("Equip", () => this.beltEquip(index));
-      } else {
-        this.addButton("Use item", () => this.beltUseItem(index));
-      }
-      this.addButton("To backpack", () => this.beltToBackpack(index));
-      this.addButton("Drop", () => this.beltDrop(index));
-    }
-  }
-
-  private beltEquip(index: number): void {
-    const cell = this.inventory.belt.cell(index);
-    const drop = cell.item.get();
-    if (drop && drop instanceof Weapon) {
-      const prev = this.inventory.equipment.weapon.get();
-      this.inventory.equipment.weapon.set(drop);
-      cell.clear();
-      if (prev) {
-        cell.set(prev);
-      }
-      this.dropCard!.drop = null;
-      this.removeButtons();
-    }
-  }
-
-  private beltUseItem(index: number): void {
-    const cell = this.inventory.belt.cell(index);
-    const drop = cell.item.get();
-    if (drop) {
-      if (cell.use() && cell.isEmpty) {
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private beltToBackpack(index: number): void {
-    const cell = this.inventory.belt.cell(index);
-    if (!cell.isEmpty) {
-      const drop = cell.item.get();
-      while (drop && !cell.isEmpty) {
-        if (this.inventory.backpack.add(drop)) {
-          cell.decrease();
-        } else {
-          break;
-        }
-      }
-      if (cell.isEmpty) {
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private beltDrop(index: number): void {
-    this.inventory.belt.cell(index).clear();
-
-    this.dropCard!.drop = null;
-    this.removeButtons();
-  }
-
-  private showBackpackInfo(x: number, y: number): void {
-    const drop = this.inventory.backpack.cell(x, y).item.get();
-    this.dropCard!.drop = drop;
-    this.removeButtons();
-    if (drop) {
-      if (drop instanceof Weapon) {
-        this.addButton("Equip", () => this.backpackEquip(x, y));
-      } else {
-        this.addButton("Use item", () => this.backpackUseItem(x, y));
-      }
-      this.addButton("To belt", () => this.backpackToBelt(x, y));
-      this.addButton("Drop", () => this.backpackDrop(x, y));
-    }
-  }
-
-  private backpackEquip(x: number, y: number): void {
-    const cell = this.inventory.backpack.cell(x, y);
-    const drop = cell.item.get();
-    if (drop && drop instanceof Weapon) {
-      const prev = this.inventory.equipment.weapon.get();
-      this.inventory.equipment.weapon.set(drop);
-      cell.clear();
-      if (prev) {
-        cell.set(prev);
-      }
-      this.dropCard!.drop = null;
-      this.removeButtons();
-    }
-  }
-
-  private backpackUseItem(x: number, y: number): void {
-    const cell = this.inventory.backpack.cell(x, y);
-    const drop = cell.item.get();
-    if (drop) {
-      if (cell.use() && cell.isEmpty) {
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private backpackToBelt(x: number, y: number): void {
-    const cell = this.inventory.backpack.cell(x, y);
-    if (!cell.isEmpty) {
-      const drop = cell.item.get();
-      while (drop && !cell.isEmpty) {
-        if (this.inventory.belt.add(drop)) {
-          cell.decrease();
-        } else {
-          break;
-        }
-      }
-      if (cell.isEmpty) {
-        this.dropCard!.drop = null;
-        this.removeButtons();
-      }
-    }
-  }
-
-  private backpackDrop(x: number, y: number): void {
-    this.inventory.backpack.cell(x, y).clear();
-
-    this.dropCard!.drop = null;
-    this.removeButtons();
+    this.addChild(this.equipment, this.belt, this.backpack, this.card, this.actions);
   }
 
   destroy(): void {
@@ -461,7 +333,12 @@ export class InventoryView extends PIXI.Container {
     this.equipment.destroy();
     this.belt.destroy();
     this.backpack.destroy();
-    this.dropCard.destroy();
+    this.card.destroy();
+  }
+
+  private show(cell: InventoryCell) {
+    this.card.publisher = cell.item;
+    this.actions.cell = cell;
   }
 }
 
@@ -486,8 +363,8 @@ export class EquipmentInventoryView extends PIXI.Container {
     super.addChild(background);
 
     this.weapon = new InventoryCellView({
-      item: this.equipment.weapon,
-      count: new Observable(null)
+      item: this.equipment.weapon.item,
+      count: new ObservableVar(null)
     });
     this.weapon.position.set(Sizes.uiBorder, Sizes.uiBorder);
     super.addChild(this.weapon);
@@ -538,14 +415,10 @@ export class BeltInventoryView extends PIXI.Container {
 }
 
 export class BackpackInventoryView extends PIXI.Container {
-  private readonly inventory: BackpackInventory;
   private readonly cells: InventoryCellView[][];
 
   constructor(inventory: BackpackInventory) {
     super();
-
-    this.inventory = inventory;
-
     const background = new PIXI.Graphics()
       .beginFill(Colors.uiBackground, 0.3)
       .drawRect(
@@ -575,36 +448,30 @@ export class BackpackInventoryView extends PIXI.Container {
     }
   }
 
-  get gridWidth(): number {
-    return this.inventory.width;
-  }
-
-  get gridHeight(): number {
-    return this.inventory.height;
-  }
-
   cell(x: number, y: number): InventoryCellView {
     return this.cells[y][x];
   }
 }
 
 export class InventoryCellView extends PIXI.Container implements Selectable {
+  private readonly _item: Observable<UsableDrop | null>;
+  private readonly _count: Observable<number | null>;
+
   private readonly background: PIXI.Graphics;
   private readonly counter: PIXI.BitmapText;
   private sprite: PIXI.Sprite | null = null;
-
-  private readonly itemSub: Subscription;
-  private readonly countSub: Subscription;
 
   private readonly _alpha: number;
   private _selected: boolean = false;
 
   constructor(options: {
-    item: Publisher<UsableDrop | null>,
-    count: Publisher<number | null>,
+    item: Observable<UsableDrop | null>,
+    count: Observable<number | null>,
     alpha?: number
   }) {
     super();
+    this._item = options.item;
+    this._count = options.count;
     this._alpha = options.alpha || 0.3;
     this.background = new PIXI.Graphics();
     this.selected = false;
@@ -615,14 +482,14 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
 
     super.addChild(this.background, this.counter);
 
-    this.itemSub = options.item.subscribe(this.updateItem.bind(this));
-    this.countSub = options.count.subscribe(this.updateCounter.bind(this));
+    this._item.subscribe(this.updateItem, this);
+    this._count.subscribe(this.updateCounter, this);
   }
 
   destroy(): void {
     super.destroy();
-    this.itemSub.unsubscribe();
-    this.countSub.unsubscribe();
+    this._item.unsubscribe(this.updateItem, this);
+    this._count.unsubscribe(this.updateCounter, this);
   }
 
   get selected(): boolean {
@@ -658,5 +525,177 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
       this.sprite.position.set(CELL_SIZE >> 1, Sizes.uiBorder);
       super.addChild(this.sprite);
     }
+  }
+}
+
+export class InventoryCellCardView extends PIXI.Container {
+  private readonly _width: number;
+  private readonly _height: number;
+  private readonly _sprite_size: number;
+
+  private _sprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private readonly _title: PIXI.BitmapText;
+  private readonly _description: PIXI.BitmapText;
+
+  private _publisher: Publisher<UsableDrop | null> | null = null;
+
+  constructor(options: {
+    width?: number,
+    height?: number,
+  }) {
+    super();
+
+    this._width = options.width || 400;
+    this._height = options.height || 400;
+    this._sprite_size = 128 + (Sizes.uiMargin << 1);
+
+    const background = new PIXI.Graphics()
+      .beginFill(Colors.uiBackground, 0.3)
+      .drawRect(0, 0, this._width, this._height)
+      .endFill()
+      .beginFill(Colors.uiNotSelected, 0.3)
+      .drawRect(Sizes.uiMargin, Sizes.uiMargin + 32 + Sizes.uiMargin, this._sprite_size, this._sprite_size)
+      .endFill();
+
+    this._title = new PIXI.BitmapText("", {font: {name: "alagard", size: 32}});
+    this._title.anchor = new PIXI.Point(0.5, 0);
+    this._title.position.set(this._width >> 1, Sizes.uiMargin);
+
+    this._description = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this._description.position.set(
+      Sizes.uiMargin + this._sprite_size + Sizes.uiMargin,
+      Sizes.uiMargin + 32 + Sizes.uiMargin
+    );
+
+    super.addChild(background, this._title, this._description);
+  }
+
+
+  destroy(): void {
+    super.destroy();
+    this._publisher?.unsubscribe(this.handle, this);
+    this._publisher = null;
+  }
+
+  set publisher(publisher: Publisher<UsableDrop | null>) {
+    this._publisher?.unsubscribe(this.handle, this);
+    this._publisher = null;
+
+    this._publisher = publisher;
+    this._publisher.subscribe(this.handle, this);
+  }
+
+  private handle(drop: UsableDrop | null): void {
+    this._sprite?.destroy();
+    this._sprite = null;
+    this._title.text = "";
+    this._description.text = "";
+
+    if (drop) {
+      const sprite = this._sprite = drop.sprite();
+      super.addChild(sprite);
+      sprite.anchor = new PIXI.Point(0.5, 0.5);
+      sprite.position.set(
+        Sizes.uiMargin + (this._sprite_size >> 1),
+        Sizes.uiMargin + (this._sprite_size >> 1) + 32 + Sizes.uiMargin
+      );
+      const s_w = sprite.width;
+      const s_h = sprite.height;
+      const max_size = this._sprite_size - Sizes.uiMargin;
+      if (s_w > s_h) {
+        this._sprite.width = max_size;
+        this._sprite.height = (max_size / s_w) * s_h;
+      } else {
+        this._sprite.height = max_size;
+        this._sprite.width = (max_size / s_h) * s_w;
+      }
+
+      const info = drop.info();
+
+      this._title.text = info.name;
+
+      const text: string[] = [];
+      if (info.health) text.push(`health: ${info.health}`);
+      if (info.speed) text.push(`speed: ${info.speed}`);
+      if (info.distance) text.push(`distance: ${info.distance}`);
+      if (info.damage) text.push(`damage: ${info.damage}`);
+      this._description.text = text.join("\n");
+    }
+  }
+}
+
+export class InventoryCellActionsView extends PIXI.Container {
+  private readonly selectable: SelectableMap;
+  private readonly selectableOffset: number;
+  private readonly inventory: Inventory;
+  private readonly layout: Layout = new Layout();
+  private readonly buttons: [Button, number, number][] = [];
+
+  private _cell: InventoryCell | null = null;
+
+  constructor(selectable: SelectableMap, selectableOffset: number, inventory: Inventory) {
+    super();
+    this.selectable = selectable;
+    this.selectableOffset = selectableOffset;
+    this.inventory = inventory;
+  }
+
+  destroy(): void {
+    super.destroy();
+    this._cell?.item.unsubscribe(this.handle, this);
+    this._cell = null;
+    this.removeButtons();
+  }
+
+  set cell(cell: InventoryCell) {
+    this._cell?.item.unsubscribe(this.handle, this);
+    this.removeButtons();
+    this._cell = cell;
+    this._cell.item.subscribe(this.handle, this);
+  }
+
+  private handle(item: UsableDrop | null): void {
+    this.removeButtons();
+
+    if (item) {
+      const cell = this._cell!;
+
+      if (cell.parent instanceof BeltInventory || cell.parent instanceof BackpackInventory) {
+        if (this.inventory.equipment.weapon.supports(item)) {
+          this.addButton("Equip", () => cell.equip());
+        } else {
+          this.addButton("Use item", () => cell.use());
+        }
+      }
+
+      if (!(cell.parent instanceof BeltInventory)) this.addButton("To belt", () => cell.toBelt());
+      if (!(cell.parent instanceof BackpackInventory)) this.addButton("To backpack", () => cell.toBackpack());
+      this.addButton("Drop", () => cell.drop());
+    }
+  }
+
+  private removeButtons(): void {
+    for (let [button, x, y] of this.buttons) {
+      this.selectable.remove(x, y);
+      button.destroy();
+    }
+    this.buttons.splice(0, this.buttons.length);
+    this.layout.reset();
+  }
+
+  private addButton(label: string, action: () => void): void {
+    const selectableX = this.selectableOffset + this.buttons.length;
+    const selectableY = 100;
+    const button = new Button({
+      label: label,
+      width: BUTTON_WIDTH,
+      height: BUTTON_HEIGHT,
+    });
+    button.position.set(this.layout.x, this.layout.y);
+    this.layout.offset(BUTTON_WIDTH, 0);
+    this.layout.offset(Sizes.uiMargin, 0);
+    this.buttons.push([button, selectableX, selectableY]);
+    this.selectable.set(selectableX, selectableY, button, action);
+    this.addChild(button);
   }
 }
