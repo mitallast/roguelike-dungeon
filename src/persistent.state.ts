@@ -6,21 +6,11 @@ export interface PersistentStore {
 }
 
 export class StoragePersistentStore implements PersistentStore {
-
-  private transaction = new Map<string, any>();
-
-  static sessionStore(prefix: string): PersistentStore {
-    return new StoragePersistentStore(sessionStorage, prefix + ".");
-  }
-
-  static localStore(prefix: string): PersistentStore {
-    return new StoragePersistentStore(localStorage, prefix + ".");
-  }
-
+  private readonly transaction = new Map<string, any>();
   private readonly storage: Storage;
   private readonly prefix: string;
 
-  private constructor(storage: Storage, prefix: string) {
+  constructor(storage: Storage, prefix: string) {
     this.storage = storage;
     this.prefix = prefix;
   }
@@ -72,12 +62,19 @@ export interface PersistentState {
   readonly session: PersistentStore;
 }
 
+function isLocalhost(): boolean {
+  return location.hostname === "localhost" ||
+    location.hostname === "0.0.0.0" ||
+    location.hostname === "127.0.0.1";
+}
+
 export class SessionPersistentState implements PersistentState {
   readonly global: PersistentStore;
   readonly session: PersistentStore;
 
   constructor() {
-    this.global = StoragePersistentStore.sessionStore("global");
-    this.session = StoragePersistentStore.sessionStore("session");
+    const storage = isLocalhost() ? sessionStorage : localStorage;
+    this.global = new StoragePersistentStore(storage, "global.");
+    this.session = new StoragePersistentStore(storage, "session.");
   }
 }
