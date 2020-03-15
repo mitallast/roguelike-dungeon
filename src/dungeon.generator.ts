@@ -1,20 +1,23 @@
-import {DungeonCell, DungeonLevel} from "./dungeon.level";
+import {DungeonMap, MapCell} from "./dungeon.map";
 import {RNG} from "./rng";
-import {HeroCharacter} from "./hero";
+import {Hero, HeroAI} from "./hero";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {TinyMonsterView, tinyMonsterNames, TinyMonster} from "./tiny.monster";
-import {BossMonster, BossMonsterView, mossMonsterNames} from "./boss.monster";
+import {TinyMonster, TinyMonsterAI, tinyMonsterNames} from "./tiny.monster";
+import {BossMonster, BossMonsterAI, mossMonsterNames} from "./boss.monster";
+import {NpcAI, NpcCharacter, npcCharacters} from "./npc";
+import {LightType} from "./dungeon.light";
+import {CharacterView} from "./character";
 import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
   readonly level: number
-  readonly hero: HeroCharacter
+  readonly hero: Hero
 }
 
 export interface DungeonGenerator {
   readonly percent: number;
-  generate(options: GenerateOptions): Promise<DungeonLevel>;
+  generate(options: GenerateOptions): Promise<DungeonMap>;
 }
 
 export abstract class BaseDungeonGenerator implements DungeonGenerator {
@@ -30,13 +33,13 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     this.controller = controller;
   }
 
-  protected createDungeon(options: GenerateOptions, width: number, height: number): DungeonLevel {
-    return new DungeonLevel(this.controller, new PIXI.Ticker(), options.hero, options.level, width, height);
+  protected createDungeon(options: GenerateOptions, width: number, height: number): DungeonMap {
+    return new DungeonMap(this.controller, new PIXI.Ticker(), options.level, width, height);
   }
 
-  abstract generate(options: GenerateOptions): Promise<DungeonLevel>;
+  abstract generate(options: GenerateOptions): Promise<DungeonMap>;
 
-  protected replaceFloorRandomly(dungeon: DungeonLevel): void {
+  protected replaceFloorRandomly(dungeon: DungeonMap): void {
     const replacements = ['floor_2.png', 'floor_3.png', 'floor_4.png', 'floor_5.png', 'floor_6.png', 'floor_7.png', 'floor_8.png'];
     const percent = 0.2;
     for (let y = 0; y < dungeon.height; y++) {
@@ -49,7 +52,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   };
 
-  protected replaceWallRandomly(dungeon: DungeonLevel): void {
+  protected replaceWallRandomly(dungeon: DungeonMap): void {
     const wall_mid_top_replaces = [
       'wall_hole_1.png',
       'wall_hole_2.png',
@@ -111,11 +114,12 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeHero(dungeon: DungeonLevel): void {
+  protected placeHero(dungeon: DungeonMap, hero: Hero): CharacterView {
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.character(x, y)) {
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor && !cell.hasCharacter) {
           free.push([x, y]);
         }
       }
@@ -124,19 +128,20 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       throw "hero not placed";
     }
     let [x, y] = this.rng.choice(free);
-    dungeon.hero.resetPosition(x, y);
+    const ai = new HeroAI(hero, dungeon, x, y);
+    const view = ai.view;
+    dungeon.light.addLight(view.position, LightType.HERO);
+    return view;
   }
 
-  protected placeMonsters(dungeon: DungeonLevel): void {
+  protected placeMonsters(dungeon: DungeonMap, hero: CharacterView): void {
     const min_hero_distance = 10;
-    const hero = dungeon.hero;
-    const monster_percent = 3;
-
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor && !dungeon.character(x, y)) {
-          const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor && !cell.hasCharacter) {
+          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
           if (distance > min_hero_distance) {
             free.push([x, y]);
           }
@@ -144,31 +149,56 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       }
     }
 
+    const monster_percent = 3;
     const monster_count = Math.floor(free.length * monster_percent / 100);
     for (let m = 0; m < monster_count && free.length > 0; m++) {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
       const name = this.rng.choice(tinyMonsterNames);
       const monster = new TinyMonster(name, 1);
-      const monsterView = new TinyMonsterView(monster, dungeon, x, y);
-      dungeon.monsters.push(monsterView);
-      dungeon.setCharacter(x, y, monsterView);
+      new TinyMonsterAI(monster, dungeon, x, y);
+      dungeon.cell(x, y).character = monster;
     }
   }
 
-  protected placeBoss(dungeon: DungeonLevel): void {
+  protected placeNpc(dungeon: DungeonMap, hero: CharacterView): void {
+    const max_hero_distance = 10;
+
+    const free: [number, number][] = [];
+    for (let y = 0; y < dungeon.height; y++) {
+      for (let x = 0; x < dungeon.height; x++) {
+        const cell = dungeon.cell(x, y);
+        if (cell.hasFloor && !cell.hasCharacter) {
+          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+          if (distance < max_hero_distance) {
+            free.push([x, y]);
+          }
+        }
+      }
+    }
+
+    const npc_count = 5;
+    for (let n = 0; n < npc_count && free.length > 0; n++) {
+      const i = this.rng.nextRange(0, free.length);
+      let [[x, y]] = free.splice(i, 1);
+      const config = this.rng.choice(npcCharacters);
+      const npc = new NpcCharacter(config.name);
+      new NpcAI(npc, config, dungeon, x, y);
+      dungeon.cell(x, y).character = npc;
+    }
+  }
+
+  protected placeBoss(dungeon: DungeonMap, hero: CharacterView): void {
     const min_hero_distance = 20;
-    const hero = dungeon.hero;
 
     const free: [number, number][] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         if (dungeon.cell(x, y).hasFloor &&
-          // @todo refactor
-          !dungeon.character(x, y) && !dungeon.character(x + 1, y) &&
-          !dungeon.character(x, y - 1) && !dungeon.character(x + 1, y - 1)
+          !dungeon.cell(x, y).hasCharacter && !dungeon.cell(x + 1, y).hasCharacter &&
+          !dungeon.cell(x, y - 1).hasCharacter && !dungeon.cell(x + 1, y - 1).hasCharacter
         ) {
-          const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
+          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
           if (distance > min_hero_distance) {
             free.push([x, y]);
           }
@@ -181,14 +211,14 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
 
       const name = mossMonsterNames[Math.floor(dungeon.level / 5) % mossMonsterNames.length];
       const boss = new BossMonster(name, dungeon.level);
-      dungeon.boss = new BossMonsterView(boss, dungeon, x, y);
+      new BossMonsterAI(boss, dungeon, x, y);
     } else {
       console.error("boss not placed");
     }
   }
 
-  protected placeDrop(dungeon: DungeonLevel): void {
-    const free: DungeonCell[] = [];
+  protected placeDrop(dungeon: DungeonMap): void {
+    const free: MapCell[] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         const cell = dungeon.cell(x, y);
@@ -207,10 +237,9 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeLadder(dungeon: DungeonLevel) {
-    const hero = dungeon.hero;
-    const free3: [DungeonCell, number][] = [];
-    const free1: [DungeonCell, number][] = [];
+  protected placeLadder(dungeon: DungeonMap, hero: CharacterView) {
+    const free3: [MapCell, number][] = [];
+    const free1: [MapCell, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
     for (let y = 1; y < dungeon.height - 1; y++) {
       for (let x = 1; x < dungeon.height - 1; x++) {
@@ -222,7 +251,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
               c++
             }
           }
-          const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
+          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
           if (c === directions.length) {
             free3.push([cell, distance]);
           } else {

@@ -1,5 +1,5 @@
 import {UsableDrop, Weapon} from "./drop";
-import {HeroCharacter} from "./hero";
+import {Hero} from "./hero";
 import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
 import {Colors, Sizes, Selectable, Layout, SelectableMap, Button} from "./ui";
 import * as PIXI from "pixi.js";
@@ -20,7 +20,7 @@ export class Inventory {
     return this._drop;
   }
 
-  constructor(hero: HeroCharacter) {
+  constructor(hero: Hero) {
     this.equipment = new EquipmentInventory(hero, this._drop);
     this.belt = new BeltInventory(hero, this._drop);
     this.backpack = new BackpackInventory(hero, this._drop);
@@ -42,7 +42,7 @@ export class Inventory {
 export class EquipmentInventory {
   readonly weapon: InventoryCell;
 
-  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
+  constructor(hero: Hero, drop: EventPublisher<[UsableDrop, number]>) {
     this.weapon = new InventoryCell(hero, 1, (item) => item instanceof Weapon, drop, this);
   }
 }
@@ -51,7 +51,7 @@ export class BeltInventory {
   readonly length: number = 10;
   private readonly cells: InventoryCell[];
 
-  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
+  constructor(hero: Hero, drop: EventPublisher<[UsableDrop, number]>) {
     this.cells = [];
     for (let i = 0; i < 10; i++) {
       this.cells[i] = new InventoryCell(hero, 3, () => true, drop, this);
@@ -90,7 +90,7 @@ export class BackpackInventory {
   readonly height: number = 5;
   private readonly cells: InventoryCell[][];
 
-  constructor(hero: HeroCharacter, drop: EventPublisher<[UsableDrop, number]>) {
+  constructor(hero: Hero, drop: EventPublisher<[UsableDrop, number]>) {
     this.cells = [];
     for (let y = 0; y < this.height; y++) {
       this.cells.push([]);
@@ -132,7 +132,7 @@ export class BackpackInventory {
 }
 
 export class InventoryCell {
-  private readonly _hero: HeroCharacter;
+  private readonly _hero: Hero;
   private readonly _maxInStack: number;
   private readonly _item = new ObservableVar<UsableDrop | null>(null);
   private readonly _count = new ObservableVar<number>(0);
@@ -150,7 +150,7 @@ export class InventoryCell {
   }
 
   constructor(
-    hero: HeroCharacter,
+    hero: Hero,
     maxInStack: number,
     predicate: (item: UsableDrop) => boolean,
     drop: EventPublisher<[UsableDrop, number]>,

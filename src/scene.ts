@@ -5,14 +5,15 @@ import {YouDeadScene} from "./dead.scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {GenerateDungeonScene} from "./generate.scene";
 import {DungeonScene} from "./dungeon.scene";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonMap} from "./dungeon.map";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
 import {UpdateHeroScene} from "./update.hero.scene";
 import * as PIXI from "pixi.js";
 import {InventoryModalScene} from "./inventory.modal";
-import {HeroCharacter} from "./hero";
+import {Hero} from "./hero";
 import {PersistentState} from "./persistent.state";
+import {Dialog, DialogModalScene} from "./dialog";
 
 export interface Scene {
   init(): void;
@@ -83,8 +84,8 @@ export class SceneController {
     this.scene = new GenerateDungeonScene(this, options);
   }
 
-  dungeon(dungeon: DungeonLevel): void {
-    this.scene = new DungeonScene(this, dungeon);
+  dungeon(hero: Hero, dungeon: DungeonMap): void {
+    this.scene = new DungeonScene(this, hero, dungeon);
   }
 
   modal(scene: ModalScene): void {
@@ -98,7 +99,11 @@ export class SceneController {
     this.mainScene?.resume();
   }
 
-  showInventory(hero: HeroCharacter): void {
+  showInventory(hero: Hero): void {
     this.modal(new InventoryModalScene(this, hero));
+  }
+
+  showDialog(dialog: Dialog): void {
+    this.modal(new DialogModalScene(this, dialog))
   }
 }

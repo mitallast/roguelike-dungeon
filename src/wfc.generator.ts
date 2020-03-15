@@ -1,4 +1,4 @@
-import {DungeonLevel} from './dungeon.level';
+import {DungeonMap} from './dungeon.map';
 import {BaseDungeonGenerator, GenerateOptions} from './dungeon.generator';
 import {BorderConstraint, Color, Constraint, OverlappingModel, PathConstraint, Resolution, Tile} from './wfc';
 import {SceneController} from "./scene";
@@ -14,7 +14,7 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     super(controller);
   }
 
-  async generate(options: GenerateOptions): Promise<DungeonLevel> {
+  async generate(options: GenerateOptions): Promise<DungeonMap> {
     const sample: TileSetOptions[][] = this.controller.app.loader.resources['sample.json'].data;
     const input: Tile<TileSet>[][] = sample.map(m => m.map(o => new TileSet(o).tile));
     const floorTiles: Tile<TileSet>[] = [];
@@ -71,14 +71,15 @@ export class WfcDungeonGenerator extends BaseDungeonGenerator {
     this.replaceFloorRandomly(dungeon);
     this.replaceWallRandomly(dungeon);
 
-    this.placeHero(dungeon);
-    this.placeLadder(dungeon);
+    const hero = this.placeHero(dungeon, options.hero);
+    this.placeLadder(dungeon, hero);
 
     const is_boss = options.level % 5 === 0;
 
-    this.placeMonsters(dungeon);
+    this.placeNpc(dungeon, hero);
+    this.placeMonsters(dungeon, hero);
     if (is_boss) {
-      this.placeBoss(dungeon);
+      this.placeBoss(dungeon, hero);
     }
 
     this.placeDrop(dungeon);

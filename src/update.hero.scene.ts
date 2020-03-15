@@ -1,13 +1,13 @@
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
-import {HeroCharacter, HeroStateView} from "./hero";
+import {Hero, HeroStateView} from "./hero";
 import {InventoryView} from "./inventory";
 import {Button, Colors, Layout, Sizes, SelectableMap} from "./ui";
 import * as PIXI from "pixi.js";
 
 export class UpdateHeroScene implements Scene {
   private readonly controller: SceneController;
-  private readonly hero: HeroCharacter;
+  private readonly hero: Hero;
   private readonly options: GenerateOptions;
 
   private title: PIXI.BitmapText | null = null;

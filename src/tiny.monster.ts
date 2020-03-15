@@ -1,5 +1,5 @@
-import {DungeonLevel} from "./dungeon.level";
-import {MonsterCharacter, BaseMonsterView} from "./character";
+import {DungeonMap} from "./dungeon.map";
+import {MonsterCharacter, BaseMonsterAI} from "./monster";
 
 export const tinyMonsterNames = [
   "tiny_zombie",
@@ -26,18 +26,13 @@ export class TinyMonster extends MonsterCharacter {
   }
 }
 
-export class TinyMonsterView extends BaseMonsterView {
+export class TinyMonsterAI extends BaseMonsterAI {
   readonly character: TinyMonster;
+  readonly max_distance: number = 5;
 
-  protected readonly max_distance: number = 5;
-
-  constructor(character: TinyMonster, dungeon: DungeonLevel, x: number, y: number) {
-    super(dungeon, 1, 1, x, y);
+  constructor(character: TinyMonster, dungeon: DungeonMap, x: number, y: number) {
+    super(dungeon, {x: x, y: y});
     this.character = character;
     this.init();
-  }
-
-  protected onDestroy(): void {
-    this.dungeon.monsters = this.dungeon.monsters.filter(s => s !== this);
   }
 }

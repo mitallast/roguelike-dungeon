@@ -1,18 +1,18 @@
 import {RNG} from "./rng";
-import {HeroCharacter} from "./hero";
+import {Hero} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import * as PIXI from "pixi.js";
 
 export interface Drop {
-  pickedUp(hero: HeroCharacter): boolean;
+  pickedUp(hero: Hero): boolean;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
 }
 
 export interface UsableDrop extends Drop {
   info(): DropInfo;
   same(item: UsableDrop): boolean;
-  use(cell: InventoryCell, hero: HeroCharacter): void;
+  use(cell: InventoryCell, hero: Hero): void;
 }
 
 export interface DropInfo {
@@ -32,7 +32,7 @@ export class Coins implements Drop {
     this.coins = rng.nextRange(1, 30)
   }
 
-  pickedUp(hero: HeroCharacter): boolean {
+  pickedUp(hero: Hero): boolean {
     hero.addCoins(this.coins);
     return true;
   };
@@ -58,7 +58,7 @@ export class HealthFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: HeroCharacter): boolean {
+  pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
   };
 
@@ -66,7 +66,7 @@ export class HealthFlask implements UsableDrop {
     return item instanceof HealthFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroCharacter) {
+  use(cell: InventoryCell, hero: Hero) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -92,7 +92,7 @@ export class HealthBigFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: HeroCharacter): boolean {
+  pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
   };
 
@@ -104,7 +104,7 @@ export class HealthBigFlask implements UsableDrop {
     return item instanceof HealthBigFlask;
   };
 
-  use(cell: InventoryCell, hero: HeroCharacter) {
+  use(cell: InventoryCell, hero: Hero) {
     hero.hill(this.health);
     cell.decrease();
   };
@@ -183,7 +183,7 @@ export class Weapon implements UsableDrop {
     return this.resources.sprite(this.name + ".png");
   }
 
-  pickedUp(hero: HeroCharacter): boolean {
+  pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
   }
 
@@ -191,7 +191,7 @@ export class Weapon implements UsableDrop {
     return false;
   }
 
-  use(cell: InventoryCell, hero: HeroCharacter): void {
+  use(cell: InventoryCell, hero: Hero): void {
     const prev = hero.inventory.equipment.weapon.item.get();
     hero.inventory.equipment.weapon.clear();
     hero.inventory.equipment.weapon.set(this);

@@ -1,4 +1,4 @@
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonMap} from "./dungeon.map";
 import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
@@ -8,7 +8,7 @@ const WALL_SIZE_Y = 4;
 export class DungeonLight {
   readonly layer: PIXI.display.Layer;
   readonly container: PIXI.Container;
-  private readonly dungeon: DungeonLevel;
+  private readonly dungeon: DungeonMap;
 
   private readonly heroLightTexture: PIXI.Texture;
   private readonly fountainRedTexture: PIXI.Texture;
@@ -17,7 +17,7 @@ export class DungeonLight {
 
   private readonly lights: LightSource[] = [];
 
-  constructor(dungeon: DungeonLevel) {
+  constructor(dungeon: DungeonMap) {
     this.dungeon = dungeon;
     this.layer = new PIXI.display.Layer();
     this.layer.useRenderTexture = true;
@@ -49,52 +49,29 @@ export class DungeonLight {
   }
 
   loadMap() {
-    // clear
-    this.lights.forEach(l => l.destroy());
-    this.lights.splice(0, this.lights.length);
     this.visibility.init();
+    const dungeon = this.dungeon;
 
-    const level = this.dungeon;
-
-    // hero light source
-    this.lights.push(new LightSource(
-      level.hero.position,
-      500,
-      this.heroLightTexture,
-      this.container
-    ));
-
-    for (let y = 0; y < level.height; y++) {
-      for (let x = 0; x < level.width; x++) {
-        const cell = level.cell(x, y);
+    for (let y = 0; y < dungeon.height; y++) {
+      for (let x = 0; x < dungeon.width; x++) {
+        const cell = dungeon.cell(x, y);
         if (cell.hasFloor) {
-          // find static light sources
           switch (cell.floor) {
             case 'wall_fountain_basin_red':
-              this.lights.push(new LightSource(
-                new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
-                200,
-                this.fountainRedTexture,
-                this.container
-              ));
+              this.addLight(new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE), LightType.RED_BASIN);
               break;
             case 'wall_fountain_basin_blue':
-              this.lights.push(new LightSource(
-                new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE),
-                200,
-                this.fountainBlueTexture,
-                this.container
-              ));
+              this.addLight(new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE), LightType.BLUE_BASIN);
               break;
             default:
               break;
           }
 
           // find wall segments
-          const has_top = y > 0 && level.cell(x, y - 1).hasFloor;
-          const has_bottom = y + 1 < level.height && level.cell(x, y + 1).hasFloor;
-          const has_left = x > 0 && level.cell(x - 1, y).hasFloor;
-          const has_right = x + 1 < level.width && level.cell(x + 1, y).hasFloor;
+          const has_top = y > 0 && dungeon.cell(x, y - 1).hasFloor;
+          const has_bottom = y + 1 < dungeon.height && dungeon.cell(x, y + 1).hasFloor;
+          const has_left = x > 0 && dungeon.cell(x - 1, y).hasFloor;
+          const has_right = x + 1 < dungeon.width && dungeon.cell(x + 1, y).hasFloor;
 
           let config: WallConfig;
           const cellWall = cell.wall;
@@ -110,6 +87,35 @@ export class DungeonLight {
           if (!has_right) this.add(x, y, config.right);
         }
       }
+    }
+  }
+
+  addLight(position: PIXI.IPoint, type: LightType): void {
+    switch (type) {
+      case LightType.HERO:
+        this.lights.push(new LightSource(
+          position,
+          500,
+          this.heroLightTexture,
+          this.container
+        ));
+        break;
+      case LightType.RED_BASIN:
+        this.lights.push(new LightSource(
+          position,
+          200,
+          this.fountainRedTexture,
+          this.container
+        ));
+        break;
+      case LightType.BLUE_BASIN:
+        this.lights.push(new LightSource(
+          position,
+          200,
+          this.fountainBlueTexture,
+          this.container
+        ));
+        break;
     }
   }
 
@@ -481,6 +487,12 @@ interface WallSegment {
   x2: number;
   y2: number;
   type: SegmentType;
+}
+
+export enum LightType {
+  HERO = 0,
+  RED_BASIN = 1,
+  BLUE_BASIN = 2
 }
 
 class LightSource {

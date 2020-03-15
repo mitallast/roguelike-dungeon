@@ -1,15 +1,10 @@
 import {Resources} from "./resources";
-import {DungeonCell, DungeonLevel, DungeonZIndexes} from "./dungeon.level";
-import {HeroCharacter} from "./hero";
+import {MapCell, DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {ObservableVar, Observable} from "./observable";
-import {PathFinding} from "./pathfinding";
+import {UsableDrop} from "./drop";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
-
-export enum AnimationState {
-  Idle = 0, Run = 1, Hit = 2
-}
 
 export abstract class Character {
   readonly name: string;
@@ -69,291 +64,42 @@ export abstract class Character {
   }
 }
 
-export abstract class MonsterCharacter extends Character {
-  readonly level: number;
-  readonly luck: number;
-  readonly damage: number;
-  readonly xp: number;
-
-  protected constructor(options: {
-    name: string,
-    speed: number,
-    healthMax: number,
-    level: number,
-    luck: number,
-    damage: number,
-    xp: number,
-  }) {
-    super(options);
-    this.level = options.level;
-    this.luck = options.luck;
-    this.damage = options.damage;
-    this.xp = options.xp;
-  }
-}
-
-export interface CharacterView {
-  readonly character: Character
-  readonly x: number;
-  readonly y: number;
-
+export interface CharacterAI {
   destroy(): void;
-  resetPosition(x: number, y: number): void;
 }
 
-export abstract class BaseCharacterView extends PIXI.Container implements CharacterView {
-  protected readonly dungeon: DungeonLevel;
-  protected readonly resources: Resources;
-  protected readonly ticker: PIXI.Ticker;
-
+export abstract class BaseCharacterAI implements CharacterAI {
   abstract readonly character: Character;
+  readonly view: CharacterView;
+  readonly dungeon: DungeonMap;
 
-  get x(): number {
-    return this.pos_x;
+  private _animation: Animation | null = null;
+
+  set animation(animation: Animation) {
+    this._animation?.terminate();
+    this._animation = animation;
+    this._animation.run()
   }
 
-  get y(): number {
-    return this.pos_y;
-  }
-
-  protected readonly grid_width: number; // grid width
-  protected readonly grid_height: number; // grid width
-  protected pos_x: number; // grid pos
-  protected pos_y: number; // grid pos
-  private new_x: number;
-  private new_y: number;
-  private _is_left: boolean = false;
-
-  protected get is_left(): boolean {
-    return this._is_left;
-  }
-
-  protected set is_left(is_left: boolean) {
-    this._is_left = is_left;
-    this.updateSpriteOrientation();
-    this.onSetOrientation();
-  }
-
-  private animationState: AnimationState | null = null;
-
-  protected sprite: PIXI.AnimatedSprite | null = null;
-  protected spriteTime: number = 0;
-  protected spritePlay: boolean = false;
-
-  protected constructor(dungeon: DungeonLevel, width: number, height: number, x: number, y: number) {
-    super();
-    super.zIndex = DungeonZIndexes.character;
+  protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     this.dungeon = dungeon;
-    this.resources = dungeon.controller.resources;
-    this.ticker = dungeon.ticker;
-    this.grid_width = width;
-    this.grid_height = height;
-    this.pos_x = x;
-    this.pos_y = y;
-    this.new_x = x;
-    this.new_y = y;
+    this.view = new CharacterView(this, dungeon.controller.resources, options);
   }
 
-  protected init(): void {
-    this.ticker.add(this.update, this);
-    this.setAnimation(AnimationState.Idle);
-    this.resetPosition(this.pos_x, this.pos_y);
-    this.dungeon.container.addChild(this);
+  init(): void {
+    this.dungeon.container.addChild(this.view);
+    this.resetPosition(this.view.pos_x, this.view.pos_y);
     this.character.killedBy.subscribe(this.handleKilledBy, this);
     this.character.dead.subscribe(this.handleDead, this);
+    this.idle();
   }
 
   destroy(): void {
-    super.destroy();
-    this.ticker.remove(this.update, this);
+    this._animation?.terminate();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
-    this.clearMap(this.pos_x, this.pos_y);
-    this.clearMap(this.new_x, this.new_y);
-    this.onDestroy();
-  }
-
-  protected abstract onDestroy(): void;
-
-  private update(deltaTime: number): void {
-    this.updateSprite(deltaTime);
-    this.animate();
-  }
-
-  private updateSprite(deltaTime: number): void {
-    const sprite = this.sprite!;
-    const elapsed = sprite.animationSpeed * deltaTime;
-    const previousFrame = sprite.currentFrame;
-    this.spriteTime += elapsed;
-
-    let currentFrame = Math.floor(this.spriteTime) % sprite.totalFrames;
-    if (currentFrame < 0) {
-      currentFrame += sprite.totalFrames;
-    }
-
-    if (this.spriteTime < 0) {
-      this.spriteTime = 0;
-      this.spritePlay = false;
-    } else if (this.spriteTime >= sprite.totalFrames) {
-      this.spriteTime = sprite.totalFrames - 1;
-      this.spritePlay = false;
-    } else if (previousFrame !== currentFrame) {
-      this.sprite?.gotoAndStop(currentFrame);
-    }
-  }
-
-  protected setSprite(postfix: string): void {
-    this.sprite?.destroy();
-    this.sprite = this.resources.animated(this.character.name + postfix, false);
-    this.sprite.loop = false;
-    this.sprite.animationSpeed = this.character.speed;
-    this.sprite.anchor.set(0, 1);
-    this.sprite.position.y = TILE_SIZE - 2;
-    this.sprite.zIndex = 1;
-    this.spriteTime = 0;
-    this.spritePlay = true;
-    super.addChild(this.sprite);
-    this.updateSpriteOrientation();
-    this.onSetSprite();
-  }
-
-  protected abstract onSetOrientation(): void;
-
-  private updateSpriteOrientation(): void {
-    if (this.sprite) {
-      if (this._is_left) {
-        this.sprite.position.x = this.sprite.width;
-        this.sprite.scale.x = -1;
-      } else {
-        this.sprite.position.x = 0;
-        this.sprite.scale.x = 1;
-      }
-    }
-  }
-
-  protected abstract onSetSprite(): void;
-
-  protected setAnimation(state: AnimationState) {
-    switch (state) {
-      case AnimationState.Idle:
-        this.animationState = state;
-        this.onSetAnimationIdle();
-        break;
-      case AnimationState.Run:
-        this.animationState = state;
-        this.onSetAnimationRun();
-        break;
-      case AnimationState.Hit:
-        if (!this.character.dead.get()) {
-          this.animationState = state;
-          this.onSetAnimationHit();
-        }
-        break;
-    }
-  };
-
-  protected onSetAnimationIdle(): void {
-    this.setSprite('_idle');
-  }
-
-  protected onSetAnimationRun(): void {
-    this.setSprite('_run');
-  }
-
-  protected abstract onSetAnimationHit(): void;
-
-  protected animate(): void {
-    switch (this.animationState) {
-      case AnimationState.Idle:
-        this.animateIdle();
-        break;
-      case AnimationState.Run:
-        this.animateRun();
-        break;
-      case AnimationState.Hit:
-        this.animateHit();
-        break;
-    }
-  }
-
-  protected abstract animateIdle(): void;
-
-  protected animateRun(): void {
-    if (this.sprite) {
-      const delta = this.spriteTime / this.sprite.totalFrames;
-      const t_x = this.x * TILE_SIZE + TILE_SIZE * (this.new_x - this.x) * delta;
-      const t_y = this.y * TILE_SIZE + TILE_SIZE * (this.new_y - this.y) * delta;
-      super.position.set(t_x, t_y);
-    }
-
-    if (!this.sprite || !this.spritePlay) {
-      this.resetPosition(this.new_x, this.new_y);
-      if (!this.action()) {
-        this.setAnimation(AnimationState.Idle);
-      }
-    }
-  }
-
-  protected abstract animateHit(): void;
-
-  protected abstract action(): boolean;
-
-  protected move(mx: number, my: number): boolean {
-    if (mx > 0) this.is_left = false;
-    if (mx < 0) this.is_left = true;
-    if (this.animationState === AnimationState.Idle || this.animationState === AnimationState.Run) {
-      const new_x = this.x + mx;
-      const new_y = this.y + my;
-      for (let dx = 0; dx < this.grid_width; dx++) {
-        for (let dy = 0; dy < this.grid_height; dy++) {
-          // check is floor exists
-          if (!this.dungeon.cell(new_x + dx, new_y - dy).hasFloor) {
-            return false;
-          }
-          // check is no monster
-          const m = this.dungeon.character(new_x + dx, new_y - dy);
-          if (m && m !== this) {
-            return false;
-          }
-        }
-      }
-      this.markNewPosition(new_x, new_y);
-      this.setAnimation(AnimationState.Run);
-      return true;
-    }
-    return false;
-  }
-
-  resetPosition(x: number, y: number): void {
-    this.clearMap(this.x, this.y);
-    this.clearMap(this.new_x, this.new_y);
-    this.pos_x = x;
-    this.pos_y = y;
-    this.markNewPosition(this.x, this.y);
-    super.position.set(x * TILE_SIZE, y * TILE_SIZE);
-  }
-
-  protected clearMap(x: number, y: number): void {
-    if (x >= 0 && y >= 0) {
-      for (let dx = 0; dx < this.grid_width; dx++) {
-        for (let dy = 0; dy < this.grid_height; dy++) {
-          const m = this.dungeon.character(x + dx, y - dy);
-          if (m && (m === this)) {
-            this.dungeon.setCharacter(x + dx, y - dy, null);
-          }
-        }
-      }
-    }
-  }
-
-  protected markNewPosition(x: number, y: number) {
-    for (let dx = 0; dx < this.grid_width; dx++) {
-      for (let dy = 0; dy < this.grid_height; dy++) {
-        this.dungeon.setCharacter(x + dx, y - dy, this);
-      }
-    }
-    this.new_x = x;
-    this.new_y = y;
+    this.clearMap(this.view.pos_x, this.view.pos_y);
+    this.clearMap(this.view.new_x, this.view.new_y);
   }
 
   private handleKilledBy(by: Character | null): void {
@@ -361,32 +107,34 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
   }
 
   private handleDead(dead: boolean): void {
-    if (dead) this.onDead();
+    if (dead) {
+      this.onDead();
+    }
   }
 
   protected abstract onKilledBy(by: Character): void;
 
   protected abstract onDead(): void;
 
-  protected findDropCell(): (DungeonCell | null) {
+  protected findDropCell(): (MapCell | null) {
     const max_distance = 5;
-    const pos_x = this.x;
-    const pos_y = this.y;
-    const is_left = this.is_left;
+    const pos_x = this.view.pos_x;
+    const pos_y = this.view.pos_y;
+    const is_left = this.view.is_left;
     const is_dead = this.character.dead.get();
 
-    let closestCell: DungeonCell | null = null;
+    let closestCell: MapCell | null = null;
     let closestDistance: number | null = null;
 
-    const metric = (a: DungeonCell) => {
+    const metric = (a: MapCell) => {
       return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
         (a.y !== pos_y ? 0.5 : 0) + // boost X
         (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
     };
 
     for (let x = Math.max(0, pos_x - max_distance); x < pos_x + max_distance; x++) {
-      for (let y = Math.max(0, this.y - max_distance); y < this.y + max_distance; y++) {
-        if (!(x === pos_x && y === this.y) || is_dead) {
+      for (let y = Math.max(0, pos_y - max_distance); y < pos_y + max_distance; y++) {
+        if (!(x === pos_x && y === pos_y) || is_dead) {
           const cell = this.dungeon.cell(x, y);
           if (cell.hasFloor && !cell.hasDrop) {
             const distance = metric(cell);
@@ -401,128 +149,403 @@ export abstract class BaseCharacterView extends PIXI.Container implements Charac
 
     return closestCell;
   }
-}
 
-export abstract class BaseMonsterView extends BaseCharacterView {
-  abstract readonly character: MonsterCharacter;
-  protected abstract readonly max_distance: number;
-
-  protected constructor(dungeon: DungeonLevel, width: number, height: number, x: number, y: number) {
-    super(dungeon, width, height, x, y);
+  move(mx: number, my: number): boolean {
+    if (mx > 0) this.view.is_left = false;
+    if (mx < 0) this.view.is_left = true;
+    const new_x = this.view.pos_x + mx;
+    const new_y = this.view.pos_y + my;
+    for (let dx = 0; dx < this.view.grid_width; dx++) {
+      for (let dy = 0; dy < this.view.grid_height; dy++) {
+        // check is floor exists
+        if (!this.dungeon.cell(new_x + dx, new_y - dy).hasFloor) {
+          return false;
+        }
+        // check is no monster
+        const m = this.dungeon.cell(new_x + dx, new_y - dy).character;
+        if (m && m !== this.character) {
+          return false;
+        }
+      }
+    }
+    this.markNewPosition(new_x, new_y);
+    this.run();
+    return true;
   }
 
-  protected action(): boolean {
-    if (!this.character.dead.get()) {
-      const hero = this.dungeon.hero;
-      if (!hero.character.dead.get()) {
-        const [dist_x, dist_y] = this.distanceToHero();
-        const is_hero_near = dist_x <= this.max_distance && dist_y <= this.max_distance;
-        if (is_hero_near) {
-          if (dist_x > 1 || dist_y > 1) {
-            return this.pathTo(hero.x, hero.y);
-          } else {
-            this.setAnimation(AnimationState.Hit);
-            return true;
+  idle(): void {
+    this.animation = new IdleAnimation(this.view, this.dungeon.ticker, {
+      sprite: this.character.name + '_idle',
+      speed: this.character.speed,
+      update: (animation) => {
+        if (this.action()) {
+          animation.terminate();
+        }
+      },
+      finish: () => {
+        if (!this.action()) {
+          this.idle();
+        }
+      }
+    });
+  }
+
+  run(): void {
+    this.animation = new RunAnimation(this.view, this.dungeon.ticker, {
+      sprite: this.character.name + '_run',
+      speed: this.character.speed,
+      update: (animation) => this.updatePosition(animation.spriteTime),
+      finish: () => {
+        this.resetPosition(this.view.new_x, this.view.new_y);
+        if (!this.action()) {
+          this.idle();
+        }
+      }
+    });
+  }
+
+  abstract hit(): void;
+
+  abstract action(): boolean;
+
+  protected abstract onPositionChanged(): void;
+
+  resetPosition(x: number, y: number): void {
+    this.clearMap(this.view.pos_x, this.view.pos_y);
+    this.clearMap(this.view.new_x, this.view.new_y);
+    this.view.pos_x = x;
+    this.view.pos_y = y;
+    this.markNewPosition(this.view.pos_x, this.view.pos_y);
+    this.updatePosition();
+  }
+
+  updatePosition(spriteTime: number = 0): void {
+    let pos_x = this.view.pos_x;
+    let pos_y = this.view.pos_y;
+    let new_x = this.view.new_x;
+    let new_y = this.view.new_y;
+    if (pos_x !== new_x || pos_y !== new_y) {
+      const delta = spriteTime / this.view.sprite!.totalFrames;
+      pos_x += (new_x - pos_x) * delta;
+      pos_y += (new_y - pos_y) * delta;
+    }
+    this.view.position.set(pos_x * TILE_SIZE, pos_y * TILE_SIZE);
+    this.onPositionChanged();
+  }
+
+  clearMap(x: number, y: number): void {
+    if (x >= 0 && y >= 0) {
+      for (let dx = 0; dx < this.view.grid_width; dx++) {
+        for (let dy = 0; dy < this.view.grid_height; dy++) {
+          const cell = this.dungeon.cell(x + dx, y - dy);
+          const m = cell.character;
+          if (m && (m === this.character)) {
+            cell.character = null;
           }
         }
       }
+    }
+  }
 
-      // random move ?
-      const random_move_percent = 0.1;
-      if (Math.random() < random_move_percent) {
-        const move_x = Math.floor(Math.random() * 3) - 1;
-        const move_y = Math.floor(Math.random() * 3) - 1;
-        if (this.move(move_x, move_y)) {
-          return true;
+  markNewPosition(x: number, y: number) {
+    for (let dx = 0; dx < this.view.grid_width; dx++) {
+      for (let dy = 0; dy < this.view.grid_height; dy++) {
+        this.dungeon.cell(x + dx, y - dy).character = this.character;
+      }
+    }
+    this.view.new_x = x;
+    this.view.new_y = y;
+  }
+
+  protected scan(is_left: boolean, max_distance: number, predicate: (character: Character) => boolean): Character[] {
+    const scan_x_min = is_left ? Math.max(0, this.view.pos_x - max_distance) : this.view.pos_x;
+    const scan_x_max = is_left ? this.view.pos_x : Math.min(this.dungeon.width, this.view.pos_x + max_distance);
+
+    const scan_y_min = Math.max(0, this.view.pos_y - max_distance);
+    const scan_y_max = Math.min(this.dungeon.height - 1, this.view.pos_y + max_distance);
+
+    const set = new Set<Character>();
+
+    for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
+      for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
+        if (!(s_x === this.view.pos_x && s_y === this.view.pos_y)) {
+          const cell = this.dungeon.cell(s_x, s_y);
+          const character = cell.character;
+          if (character && predicate(character)) {
+            set.add(character);
+          }
         }
       }
     }
-    return false;
+    return [...set];
+  }
+}
+
+interface AnimationOptions {
+  readonly sprite: string;
+  readonly speed: number;
+  readonly start?: (animation: Animation) => void;
+  readonly update?: (animation: Animation) => void;
+  readonly finish: (animation: Animation) => void;
+}
+
+export abstract class Animation {
+  protected readonly view: CharacterView;
+  protected readonly ticker: PIXI.Ticker;
+
+  protected readonly sprite: string;
+  protected readonly speed: number;
+  protected readonly on_start: ((animation: Animation) => void) | null;
+  protected readonly on_update: ((animation: Animation) => void) | null;
+  protected readonly on_finish: ((animation: Animation) => void);
+
+  protected _spriteTime: number = 0;
+  protected _spritePlay: boolean = false;
+  protected _terminated: boolean = false;
+
+  get spriteTime(): number {
+    return this._spriteTime;
   }
 
-  protected distanceToHero(): [number, number] {
-    let min_dist_x: number = -1;
-    let min_dist_y: number = -1;
+  protected constructor(view: CharacterView, ticker: PIXI.Ticker, options: AnimationOptions) {
+    this.view = view;
+    this.ticker = ticker;
+    this.sprite = options.sprite;
+    this.speed = options.speed;
+    this.on_start = options.start || null;
+    this.on_update = options.update || null;
+    this.on_finish = options.finish;
+  }
 
-    for (let dx = 0; dx < this.grid_width; dx++) {
-      for (let dy = 0; dy < this.grid_height; dy++) {
-        const dist_x = Math.abs(this.x + dx - this.dungeon.hero.x);
-        const dist_y = Math.abs(this.y - dy - this.dungeon.hero.y);
-        min_dist_x = min_dist_x === -1 ? dist_x : Math.min(dist_x, min_dist_x);
-        min_dist_y = min_dist_y === -1 ? dist_y : Math.min(dist_y, min_dist_y);
-      }
+  run(): void {
+    this._spritePlay = true;
+    this._terminated = false;
+    this.start();
+    this.ticker.add(this.tick, this);
+    if (this.on_start) this.on_start(this);
+  }
+
+  private tick(deltaTime: number): void {
+    this.updateSprite(deltaTime);
+    this.update(deltaTime);
+    if (this.on_update) this.on_update(this);
+    if (!this._terminated && !this._spritePlay) {
+      this.terminate();
+      this.finish();
+      if (this.on_finish) this.on_finish(this);
     }
-    return [min_dist_x, min_dist_y];
   }
 
-  protected pathTo(to_x: number, to_y: number): boolean {
-    const dungeon = this.dungeon;
-    const pf = new PathFinding(dungeon.width, dungeon.height);
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.width; x++) {
-        const m = dungeon.character(x, y);
-        if (m && m !== this && m !== dungeon.hero) {
-          pf.mark(x, y);
-        } else if (dungeon.cell(x, y).hasFloor) {
-          pf.clear(x, y);
+  terminate(): void {
+    if (!this._terminated) {
+      this._terminated = true;
+      this.ticker.remove(this.tick, this);
+    }
+  }
+
+  protected abstract start(): void;
+
+  protected abstract update(deltaTime: number): void;
+
+  protected abstract finish(): void;
+
+  private updateSprite(deltaTime: number): void {
+    const sprite = this.view.sprite!;
+    const elapsed = sprite.animationSpeed * deltaTime;
+    const previousFrame = sprite.currentFrame;
+    this._spriteTime += elapsed;
+
+    let currentFrame = Math.floor(this._spriteTime) % sprite.totalFrames;
+    if (currentFrame < 0) {
+      currentFrame += sprite.totalFrames;
+    }
+
+    if (this._spriteTime < 0) {
+      this._spriteTime = 0;
+      this._spritePlay = false;
+    } else if (this._spriteTime >= sprite.totalFrames) {
+      this._spriteTime = sprite.totalFrames - 1;
+      this._spritePlay = false;
+    } else if (previousFrame !== currentFrame) {
+      sprite.gotoAndStop(currentFrame);
+    }
+  }
+}
+
+export class IdleAnimation extends Animation {
+  constructor(view: CharacterView, ticker: PIXI.Ticker, options: AnimationOptions) {
+    super(view, ticker, options);
+  }
+
+  protected start(): void {
+    this.view.setSprite(this.sprite, this.speed);
+  }
+
+  protected update(_deltaTime: number): void {
+  }
+
+  protected finish(): void {
+  }
+}
+
+export class RunAnimation extends Animation {
+  constructor(view: CharacterView, ticker: PIXI.Ticker, options: AnimationOptions) {
+    super(view, ticker, options);
+  }
+
+  protected start(): void {
+    this.view.setSprite(this.sprite, this.speed);
+  }
+
+  protected update(_deltaTime: number): void {
+  }
+
+  protected finish(): void {
+  }
+}
+
+export class HitAnimation extends Animation {
+  constructor(view: CharacterView, ticker: PIXI.Ticker, options: AnimationOptions) {
+    super(view, ticker, options);
+  }
+
+  protected start(): void {
+    this.view.setSprite(this.sprite, this.speed);
+  }
+
+  protected update(_deltaTime: number): void {
+    const weapon = this.view.weaponSprite;
+    if (weapon) {
+      const sprite = this.view.sprite!;
+      const delta = this._spriteTime / sprite.totalFrames;
+      weapon.angle = (this.view.is_left ? -90 : 90) * delta;
+    }
+  }
+
+  protected finish(): void {
+    const weapon = this.view.weaponSprite;
+    if (weapon) {
+      weapon.angle = 0;
+    }
+  }
+}
+
+export interface CharacterViewOptions {
+  width?: number
+  height?: number
+  x: number
+  y: number
+}
+
+export class CharacterView extends PIXI.Container {
+  private readonly ai: CharacterAI;
+  private readonly resources: Resources;
+
+  readonly grid_width: number; // grid width
+  readonly grid_height: number; // grid width
+  pos_x: number; // grid pos
+  pos_y: number; // grid pos
+  new_x: number;
+  new_y: number;
+  private _is_left: boolean = false;
+
+  get is_left(): boolean {
+    return this._is_left;
+  }
+
+  set is_left(is_left: boolean) {
+    this._is_left = is_left;
+    this.updateSpriteOrientation();
+    this.updateWeaponOrientation();
+  }
+
+  sprite: PIXI.AnimatedSprite | null = null;
+
+  weaponSprite: PIXI.Sprite | null = null;
+
+  constructor(ai: CharacterAI, resources: Resources, options: CharacterViewOptions) {
+    super();
+    this.ai = ai;
+    this.resources = resources;
+    this.grid_width = options.width || 1;
+    this.grid_height = options.height || 1;
+    this.pos_x = options.x;
+    this.pos_y = options.y;
+    this.new_x = options.x;
+    this.new_y = options.y;
+    this.zIndex = DungeonZIndexes.character;
+  }
+
+  destroy(): void {
+    this.sprite?.destroy();
+    this.sprite = null;
+    this.weaponSprite?.destroy();
+    this.weaponSprite = null;
+    this.ai.destroy();
+    super.destroy();
+  }
+
+  setSprite(name: string, speed: number): void {
+    this.sprite?.destroy();
+    this.sprite = this.resources.animated(name, false);
+    this.sprite.loop = false;
+    this.sprite.animationSpeed = speed;
+    this.sprite.anchor.set(0, 1);
+    this.sprite.position.y = TILE_SIZE - 2;
+    if (this.sprite.width > this.grid_width * TILE_SIZE) {
+      this.sprite.position.x = 0 - (this.sprite.width - this.grid_width * TILE_SIZE) / 2;
+    }
+    this.sprite.zIndex = 1;
+    this.addChild(this.sprite);
+    this.updateSpriteOrientation();
+    this.updateWeaponOrientation();
+  }
+
+  private updateSpriteOrientation(): void {
+    if (this.sprite) {
+      if (this._is_left) {
+        this.sprite.position.x = this.sprite.width;
+        if (this.sprite.width > this.grid_width * TILE_SIZE) {
+          this.sprite.position.x += (this.sprite.width - this.grid_width * TILE_SIZE) / 2;
         }
-      }
-    }
-
-    const start = new PIXI.Point(this.x, this.y);
-    const end = new PIXI.Point(to_x, to_y);
-    const path = pf.find(start, end);
-    if (path.length > 0) {
-      const next = path[0];
-      const d_x = next.x - this.x;
-      const d_y = next.y - this.y;
-      return this.move(d_x, d_y);
-    } else {
-      return false;
-    }
-  }
-
-  protected onSetOrientation(): void {
-  }
-
-  protected onSetAnimationHit(): void {
-    this.setSprite('_idle');
-  }
-
-  protected animateIdle(): void {
-    if (!this.sprite || !this.spritePlay) {
-      if (!this.action()) {
-        this.setAnimation(AnimationState.Idle);
+        this.sprite.scale.x = -1;
+      } else {
+        this.sprite.position.x = 0;
+        if (this.sprite.width > this.grid_width * TILE_SIZE) {
+          this.sprite.position.x -= (this.sprite.width - this.grid_width * TILE_SIZE) / 2;
+        }
+        this.sprite.scale.x = 1;
       }
     }
   }
 
-  protected animateHit(): void {
-    if (!this.sprite || !this.spritePlay) {
-      if (Math.random() < this.character.luck) {
-        this.dungeon.hero.character.hitDamage(this.character, this.character.damage);
+  setWeapon(weapon: UsableDrop | null): void {
+    this.weaponSprite?.destroy();
+    this.weaponSprite = null;
+    if (weapon) {
+      this.weaponSprite = weapon.sprite();
+      this.weaponSprite.zIndex = 2;
+      this.weaponSprite.position.x = TILE_SIZE;
+      this.weaponSprite.position.y = TILE_SIZE - 4;
+      if (this.is_left) {
+        this.weaponSprite.position.x = 0;
+        this.weaponSprite.scale.x = -1;
       }
-      if (!this.action()) {
-        this.setAnimation(AnimationState.Idle);
+      this.weaponSprite.anchor.set(0.5, 1);
+      this.addChild(this.weaponSprite);
+      this.sortChildren();
+    }
+  }
+
+  private updateWeaponOrientation(): void {
+    if (this.weaponSprite) {
+      if (this.is_left) {
+        this.weaponSprite.position.x = 0;
+        this.weaponSprite.scale.x = -1;
+      } else {
+        this.weaponSprite.position.x = TILE_SIZE;
+        this.weaponSprite.scale.x = 1;
       }
     }
-  }
-
-  protected onKilledBy(by: Character): void {
-    if (by && by instanceof HeroCharacter) {
-      this.dungeon.log(`${this.character.name} killed by ${by.name}`);
-      by.addXp(this.character.xp);
-    }
-  }
-
-  protected onDead(): void {
-    this.setAnimation(AnimationState.Idle);
-    if (Math.random() < this.character.luck) {
-      this.findDropCell()?.randomDrop();
-    }
-    this.destroy();
-  }
-
-  protected onSetSprite(): void {
   }
 }

@@ -1,15 +1,18 @@
 import {Inventory} from "./inventory";
-import {AnimationState, BaseCharacterView, Character, MonsterCharacter} from "./character";
-import {DungeonLevel} from "./dungeon.level";
+import {BaseCharacterAI, Character, HitAnimation} from "./character";
+import {DungeonMap} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {ObservableVar, Observable} from "./observable";
 import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
-import {DigitKey} from "./input";
-import * as PIXI from "pixi.js";
+import {DigitKey, KeyBind} from "./input";
 import {PersistentState} from "./persistent.state";
+import {MonsterCharacter} from "./monster";
+import {NpcCharacter} from "./npc";
+import * as PIXI from "pixi.js";
+import {Dialog} from "./dialog";
 
-export const heroMonsterNames = [
+export const heroCharacterNames = [
   "elf_f",
   "elf_m",
   "knight_f",
@@ -40,7 +43,7 @@ const defaultGlobalState: GlobalHeroState = {
   speed: 0.2,
 };
 
-export class HeroCharacter extends Character {
+export class Hero extends Character {
   private readonly persistent: PersistentState;
   private readonly _coins: ObservableVar<number>;
 
@@ -155,33 +158,50 @@ export class HeroCharacter extends Character {
     };
   }
 
-  static load(name: string, persistent: PersistentState): HeroCharacter {
+  static load(name: string, persistent: PersistentState): Hero {
     let state: GlobalHeroState = persistent.global.load(name) || defaultGlobalState;
-    return new HeroCharacter(name, state, persistent);
+    return new Hero(name, state, persistent);
   }
 }
 
-const TILE_SIZE = 16;
+export class HeroAI extends BaseCharacterAI {
+  readonly character: Hero;
 
-export class HeroView extends BaseCharacterView {
-  readonly character: HeroCharacter;
-
-  private weaponSprite: PIXI.Sprite | null = null;
-
-  constructor(character: HeroCharacter, dungeon: DungeonLevel, x: number, y: number) {
-    super(dungeon, 1, 1, x, y);
+  constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
+    super(dungeon, {x: x, y: y});
     this.character = character;
     this.init();
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this.character.inventory.drop.subscribe(this.onDrop, this);
   }
 
-  protected onDestroy(): void {
+  destroy(): void {
+    super.destroy();
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this.character.inventory.drop.unsubscribe(this.onDrop, this);
   }
 
-  protected action(): boolean {
+  protected onKilledBy(by: Character): void {
+    this.dungeon.log(`${this.character.name} killed by ${by.name}`);
+  }
+
+  protected onDead(): void {
+    this.dungeon.controller.dead();
+  }
+
+  private onDrop(event: [UsableDrop, number]): void {
+    let [drop] = event;
+    const cell = this.findDropCell();
+    if (cell) {
+      cell.drop = drop;
+    }
+  }
+
+  private onWeaponUpdate(weapon: UsableDrop | null): void {
+    this.view.setWeapon(weapon);
+  }
+
+  action(): boolean {
     if (!this.character.dead.get()) {
 
       this.scanDrop();
@@ -200,39 +220,35 @@ export class HeroView extends BaseCharacterView {
           this.character.inventory.belt.cell(d).use();
         }
       }
+
       if (!joystick.drop.processed) {
         joystick.drop.processed = true;
         this.character.inventory.equipment.weapon.drop();
       }
 
       if (joystick.hit.triggered || !joystick.hit.processed) {
-        if (this.dungeon.cell(this.x, this.y).isLadder) {
+        if (this.dungeon.cell(this.view.pos_x, this.view.pos_y).isLadder) {
           joystick.hit.reset();
-          this.dungeon.exit();
+          this.dungeon.controller.updateHero({
+            level: this.dungeon.level + 1,
+            hero: this.character,
+          });
         } else {
-          joystick.hit.processed = true;
-          this.setAnimation(AnimationState.Hit);
+          const npc = this.scanNpc(this.view.is_left);
+          if (npc.length > 0) {
+            joystick.hit.reset();
+            this.dungeon.controller.showDialog(new Dialog(this.character, npc[0]));
+            this.idle();
+          } else {
+            joystick.hit.processed = true;
+            this.hit();
+          }
         }
         return true;
       }
 
-      let d_y = 0;
-      if (joystick.moveUp.triggered || !joystick.moveUp.processed) {
-        joystick.moveUp.processed = true;
-        d_y = -1;
-      } else if (joystick.moveDown.triggered || !joystick.moveDown.processed) {
-        joystick.moveDown.processed = true;
-        d_y = 1;
-      }
-
-      let d_x = 0;
-      if (joystick.moveLeft.triggered || !joystick.moveLeft.processed) {
-        joystick.moveLeft.processed = true;
-        d_x = -1;
-      } else if (joystick.moveRight.triggered || !joystick.moveRight.processed) {
-        joystick.moveRight.processed = true;
-        d_x = 1;
-      }
+      const d_x = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
+      const d_y = HeroAI.delta(joystick.moveUp, joystick.moveDown);
 
       if (d_x !== 0 || d_y !== 0) {
         if (this.move(d_x, d_y)) {
@@ -243,147 +259,77 @@ export class HeroView extends BaseCharacterView {
     return false;
   }
 
-  private onDrop(event: [UsableDrop, number]): void {
-    let [drop] = event;
-    const cell = this.findDropCell();
-    if (cell) {
-      cell.drop = drop;
+  private static delta(a: KeyBind, b: KeyBind): number {
+    if (a.triggered || !a.processed) {
+      a.processed = true;
+      return -1;
+    } else if (b.triggered || !b.processed) {
+      b.processed = true;
+      return 1;
+    } else {
+      return 0;
     }
   }
 
-  private onWeaponUpdate(weapon: UsableDrop | null): void {
-    this.weaponSprite?.destroy();
-    this.weaponSprite = null;
-    if (weapon) {
-      this.weaponSprite = weapon.sprite();
-      this.weaponSprite.zIndex = 2;
-      this.weaponSprite.position.x = TILE_SIZE;
-      this.weaponSprite.position.y = TILE_SIZE - 4;
-      if (this.is_left) {
-        this.weaponSprite.position.x = 0;
-        this.weaponSprite.scale.x = -1;
-      }
-      this.weaponSprite.anchor.set(0.5, 1);
-      this.addChild(this.weaponSprite);
-      this.sortChildren();
-    }
-  }
-
-  protected onSetSprite(): void {
-    this.updateWeaponOrientation();
-  }
-
-  protected onSetOrientation(): void {
-    this.updateWeaponOrientation();
-  }
-
-  private updateWeaponOrientation(): void {
-    if (this.weaponSprite) {
-      if (this.is_left) {
-        this.weaponSprite.position.x = 0;
-        this.weaponSprite.scale.x = -1;
-      } else {
-        this.weaponSprite.position.x = TILE_SIZE;
-        this.weaponSprite.scale.x = 1;
-      }
-    }
-  }
-
-  private scanDrop() {
-    const cell = this.dungeon.cell(this.x, this.y);
+  scanDrop() {
+    const cell = this.dungeon.cell(this.view.pos_x, this.view.pos_y);
     if (cell.hasDrop) {
       cell.pickedUp(this.character);
     }
   }
 
-  private scanMonsters(is_left: boolean): MonsterCharacter[] {
-    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
-    const max_distance = weapon?.distance || 1;
-
-    const scan_x_min = is_left ? Math.max(0, this.x - max_distance) : this.x;
-    const scan_x_max = is_left ? this.x : Math.min(this.dungeon.width, this.x + max_distance);
-
-    const scan_y_min = Math.max(0, this.y - max_distance);
-    const scan_y_max = Math.min(this.dungeon.height - 1, this.y + max_distance);
-
-    const monsters = new Set<MonsterCharacter>();
-
-    for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
-      for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
-        if (!(s_x === this.x && s_y === this.y)) {
-          const view = this.dungeon.character(s_x, s_y);
-          if (view && view.character instanceof MonsterCharacter) {
-            monsters.add(view.character);
-          }
-        }
-      }
-    }
-    return [...monsters];
+  scanNpc(is_left: boolean): NpcCharacter[] {
+    return this.scan(is_left, 1, c => c instanceof NpcCharacter) as NpcCharacter[];
   }
 
-  private scanHit() {
-    const monsters = this.scanMonsters(this.is_left);
+  scanMonsters(is_left: boolean): MonsterCharacter[] {
+    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    return this.scan(is_left, weapon?.distance || 1, c => c instanceof MonsterCharacter) as MonsterCharacter[];
+  }
+
+  monstersHealth(is_left: boolean): number {
+    return this.scanMonsters(is_left).map(m => m.health.get()).reduce((a, b) => a + b, 0);
+  }
+
+  scanHit() {
+    const monsters = this.scanMonsters(this.view.is_left);
     for (let monster of monsters) {
       monster.hitDamage(this.character, this.character.damage);
     }
   }
 
-  protected onSetAnimationHit(): void {
-    this.setSprite('_idle');
-    const weapon = this.character.inventory.equipment.weapon.item.get();
-    if (this.sprite && weapon instanceof Weapon) {
-      this.sprite.animationSpeed = weapon.speed;
-    }
+  hit(): void {
+    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    this.animation = new HitAnimation(this.view, this.dungeon.ticker, {
+      sprite: this.character.name + '_idle',
+      speed: weapon?.speed || this.character.speed,
+      start: () => this.lookAtMonsters(),
+      finish: () => {
+        this.scanHit();
+        if (!this.action()) {
+          this.idle();
+        }
+      },
+    });
+  }
 
-    // automatically rotate hero to monsters
-    const leftHealthSum = this.scanMonsters(true).map(m => m.health.get()).reduce((a, b) => a + b, 0);
-    const rightHealthSum = this.scanMonsters(false).map(m => m.health.get()).reduce((a, b) => a + b, 0);
+  protected onPositionChanged(): void {
+    this.dungeon.camera(this.view.position.x, this.view.position.y);
+  }
+
+  protected lookAtMonsters(): void {
+    const leftHealthSum = this.monstersHealth(true);
+    const rightHealthSum = this.monstersHealth(false);
     if (leftHealthSum > 0 && leftHealthSum > rightHealthSum) {
-      this.is_left = true;
+      this.view.is_left = true;
     } else if (rightHealthSum > 0 && rightHealthSum > leftHealthSum) {
-      this.is_left = false;
+      this.view.is_left = false;
     }
-  }
-
-  protected animateIdle(): void {
-    if (!this.action()) {
-      if (!this.sprite || !this.spritePlay) {
-        this.setAnimation(AnimationState.Idle);
-      }
-    }
-  }
-
-  protected animateHit(): void {
-    if (this.weaponSprite && this.sprite) {
-      const delta = this.spriteTime / this.sprite.totalFrames;
-      this.weaponSprite.angle = (this.is_left ? -90 : 90) * delta;
-    }
-
-    if (!this.sprite || !this.spritePlay) {
-      if (this.weaponSprite) {
-        this.weaponSprite.angle = 0;
-      }
-
-      this.scanHit();
-      this.scanDrop();
-      if (!this.action()) {
-        this.setAnimation(AnimationState.Idle);
-      }
-    }
-  }
-
-  protected onKilledBy(by: Character): void {
-    this.dungeon.log(`${this.character.name} killed by ${by.name}`);
-  }
-
-  protected onDead(): void {
-    this.setAnimation(AnimationState.Idle);
-    this.dungeon.dead();
   }
 }
 
 export class HeroStateView extends PIXI.Container {
-  private readonly heroState: HeroCharacter;
+  private readonly heroState: Hero;
   private readonly health: BarView;
   private readonly xp: BarView;
   private readonly coins: PIXI.BitmapText;
@@ -393,7 +339,7 @@ export class HeroStateView extends PIXI.Container {
   private readonly maxBarSize: number;
   private readonly maxBarInnerSize: number;
 
-  constructor(heroState: HeroCharacter, options: {
+  constructor(heroState: Hero, options: {
     fixedHPSize: boolean
     hpBarSize?: number
     maxBarSize?: number

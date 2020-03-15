@@ -1,24 +1,22 @@
-import {HeroStateView} from "./hero";
-import {DungeonLevel, DungeonTitle} from "./dungeon.level";
+import {Hero, HeroStateView} from "./hero";
+import {DungeonMap, DungeonTitle} from "./dungeon.map";
 import {Scene, SceneController} from "./scene";
 import {BeltInventoryView} from "./inventory";
-import {BossHealthView} from "./boss.monster";
 
 export class DungeonScene implements Scene {
   private readonly controller: SceneController;
-  private readonly dungeon: DungeonLevel;
+  private readonly dungeon: DungeonMap;
   private readonly titleView: DungeonTitle;
   private readonly inventoryView: BeltInventoryView;
   private readonly healthView: HeroStateView;
-  private bossHealthView?: BossHealthView;
 
-  constructor(controller: SceneController, dungeon: DungeonLevel) {
+  constructor(controller: SceneController, hero: Hero, dungeon: DungeonMap) {
     this.controller = controller;
     this.dungeon = dungeon;
 
     this.titleView = new DungeonTitle();
-    this.inventoryView = new BeltInventoryView(dungeon.hero.character.inventory.belt);
-    this.healthView = new HeroStateView(dungeon.hero.character, {fixedHPSize: false});
+    this.inventoryView = new BeltInventoryView(hero.inventory.belt);
+    this.healthView = new HeroStateView(hero, {fixedHPSize: false});
   }
 
   init(): void {
@@ -50,21 +48,12 @@ export class DungeonScene implements Scene {
     this.dungeon.lighting.alpha = 0.8;
     this.controller.stage.addChild(this.dungeon.lighting);
 
-    if (this.dungeon.boss) {
-      const c_w = this.controller.app.screen.width;
-      this.bossHealthView = new BossHealthView(this.dungeon.boss.character);
-      this.bossHealthView.zIndex = 13;
-      this.bossHealthView.position.set((c_w >> 1), 64);
-      this.controller.stage.addChild(this.bossHealthView);
-    }
-
     this.controller.stage.sortChildren();
 
     this.dungeon.ticker.start();
   }
 
   destroy(): void {
-    this.bossHealthView?.destroy();
     this.titleView.destroy();
     this.healthView.destroy();
     this.inventoryView.destroy();

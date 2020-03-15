@@ -1,18 +1,18 @@
 import {ModalScene, SceneController} from "./scene";
-import {HeroCharacter} from "./hero";
+import {Hero} from "./hero";
 import {SelectableMap, Sizes} from "./ui";
 import {InventoryView} from "./inventory";
 
 export class InventoryModalScene implements ModalScene {
   private readonly controller: SceneController;
-  private readonly hero: HeroCharacter;
+  private readonly hero: Hero;
 
   private container: PIXI.Container | null = null;
   private background: PIXI.Graphics | null = null;
   private selectable: SelectableMap | null = null;
   private inventoryView: InventoryView | null = null;
 
-  constructor(controller: SceneController, hero: HeroCharacter) {
+  constructor(controller: SceneController, hero: Hero) {
     this.controller = controller;
     this.hero = hero;
   }

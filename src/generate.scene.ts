@@ -2,14 +2,14 @@ import {Scene, SceneController} from "./scene";
 import {DungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {TunnelingDungeonGenerator} from "./tunneling.generator";
 import {WfcDungeonGenerator} from "./wfc.generator";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonMap} from "./dungeon.map";
 import {Colors} from "./ui";
 import * as PIXI from "pixi.js";
 
 export class GenerateDungeonScene implements Scene {
   private readonly controller: SceneController;
   private readonly generator: DungeonGenerator;
-  private promise: Promise<DungeonLevel>;
+  private promise: Promise<DungeonMap>;
 
   private title: PIXI.BitmapText | null = null;
   private progressBar: PIXI.Graphics;
@@ -23,7 +23,7 @@ export class GenerateDungeonScene implements Scene {
     }
 
     this.promise = this.generator.generate(options);
-    this.promise.then((dungeon) => this.controller.dungeon(dungeon));
+    this.promise.then((dungeon) => this.controller.dungeon(options.hero, dungeon));
     this.progressBar = new PIXI.Graphics();
   }
 

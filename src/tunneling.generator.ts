@@ -1,5 +1,5 @@
 import {Rect} from "./geometry";
-import {DungeonLevel} from "./dungeon.level";
+import {DungeonMap} from "./dungeon.map";
 import {TunnelingAlgorithm} from "./tunneling";
 import {BaseDungeonGenerator, GenerateOptions} from "./dungeon.generator";
 import {SceneController} from "./scene";
@@ -15,7 +15,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     super(controller);
   }
 
-  async generate(options: GenerateOptions): Promise<DungeonLevel> {
+  async generate(options: GenerateOptions): Promise<DungeonMap> {
     const rooms_total = 1 + options.level;
     const is_boss = options.level % 5 === 0;
     const level_size = 200;
@@ -24,6 +24,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     await this.gen.generate(rooms_total);
 
     const dungeon = this.createDungeon(options, level_size, level_size);
+
     this.gen.rooms.forEach(r => TunnelingDungeonGenerator.fillRoom(dungeon, r));
     this.gen.corridorsH.forEach(r => TunnelingDungeonGenerator.fillCorridorH(dungeon, r));
     this.gen.corridorsV.forEach(r => TunnelingDungeonGenerator.fillCorridorV(dungeon, r));
@@ -31,12 +32,13 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     this.replaceFloorRandomly(dungeon);
     this.replaceWallRandomly(dungeon);
 
-    this.placeHero(dungeon);
-    this.placeLadder(dungeon);
+    const hero = this.placeHero(dungeon, options.hero);
+    this.placeLadder(dungeon, hero);
 
-    this.placeMonsters(dungeon);
+    this.placeNpc(dungeon, hero);
+    this.placeMonsters(dungeon, hero);
     if (is_boss) {
-      this.placeBoss(dungeon);
+      this.placeBoss(dungeon, hero);
     }
 
     this.placeDrop(dungeon);
@@ -46,7 +48,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     return dungeon;
   }
 
-  private static fillRoom(dungeon: DungeonLevel, room: Rect): void {
+  private static fillRoom(dungeon: DungeonMap, room: Rect): void {
     const x = room.x;
     const y = room.y;
     const w = room.w;
@@ -93,7 +95,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     }
   }
 
-  private static fillCorridorH(dungeon: DungeonLevel, room: Rect): void {
+  private static fillCorridorH(dungeon: DungeonMap, room: Rect): void {
     const x = room.x;
     const y = room.y;
     const w = room.w;
@@ -233,7 +235,7 @@ export class TunnelingDungeonGenerator extends BaseDungeonGenerator {
     }
   }
 
-  private static fillCorridorV(dungeon: DungeonLevel, room: Rect): void {
+  private static fillCorridorV(dungeon: DungeonMap, room: Rect): void {
     const x = room.x;
     const y = room.y;
     const w = room.w;

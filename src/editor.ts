@@ -1,7 +1,7 @@
 import {Resources} from "./resources";
 import {Color} from "./wfc";
 import {TileSetOptions} from "./wfc.generator";
-import {DungeonZIndexes} from "./dungeon.level";
+import {DungeonZIndexes} from "./dungeon.map";
 import * as PIXI from "pixi.js";
 
 const scale = 3;

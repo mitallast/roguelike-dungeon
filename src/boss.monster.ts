@@ -1,5 +1,5 @@
-import {DungeonLevel} from "./dungeon.level";
-import {MonsterCharacter, BaseMonsterView} from "./character";
+import {DungeonMap} from "./dungeon.map";
+import {MonsterCharacter, BaseMonsterAI} from "./monster";
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
 import * as PIXI from 'pixi.js';
@@ -24,23 +24,29 @@ export class BossMonster extends MonsterCharacter {
   }
 }
 
-export class BossMonsterView extends BaseMonsterView {
+export class BossMonsterAI extends BaseMonsterAI {
   readonly character: BossMonster;
+  readonly max_distance: number = 7;
 
-  protected readonly max_distance: number = 7;
-
-  constructor(character: BossMonster, dungeon: DungeonLevel, x: number, y: number) {
-    super(dungeon, 2, 2, x, y);
+  constructor(character: BossMonster, dungeon: DungeonMap, x: number, y: number) {
+    super(dungeon, {
+      width: 2,
+      height: 2,
+      x: x,
+      y: y
+    });
     this.character = character;
     this.init();
-  }
 
-  protected onDestroy(): void {
-    this.dungeon.boss = null;
+    const c_w = dungeon.controller.app.screen.width;
+    const healthView = new BossHealthView(this.character);
+    healthView.zIndex = 13;
+    healthView.position.set((c_w >> 1), 64);
+    dungeon.controller.stage.addChild(healthView);
   }
 }
 
-export class BossHealthView extends PIXI.Container{
+export class BossHealthView extends PIXI.Container {
   private readonly boss: BossMonster;
   private readonly health: BarView;
 
@@ -73,7 +79,7 @@ export class BossHealthView extends PIXI.Container{
 
   destroy(): void {
     if (!this.destroyed) {
-      super.destroy();
+      super.destroy({children: true});
       this.destroyed = true;
       this.boss.health.unsubscribe(this.updateHealth, this);
       this.boss.dead.unsubscribe(this.updateDead, this);

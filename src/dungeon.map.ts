@@ -1,7 +1,6 @@
 import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
-import {HeroCharacter, HeroView} from "./hero";
-import {CharacterView} from "./character";
-import {BossMonsterView} from "./boss.monster";
+import {Hero} from "./hero";
+import {Character} from "./character";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
@@ -24,7 +23,7 @@ export const DungeonZIndexes: DungeonZIndexScheme = {
   wallFront: 100,
 };
 
-export class DungeonLevel {
+export class DungeonMap {
   readonly controller: SceneController;
   readonly ticker: PIXI.Ticker;
 
@@ -33,21 +32,14 @@ export class DungeonLevel {
   readonly width: number;
   readonly height: number;
 
-  readonly hero: HeroView;
-  boss: BossMonsterView | null = null;
-  monsters: CharacterView[] = [];
-
-  private readonly cells: DungeonCell[][];
-  private readonly characterMap: (CharacterView | null)[][];
+  private readonly cells: MapCell[][];
 
   readonly container: PIXI.Container;
   readonly light: DungeonLight;
   readonly lighting: PIXI.Sprite;
   readonly scale: number = 2;
 
-  private stop: boolean = false;
-
-  constructor(controller: SceneController, ticker: PIXI.Ticker, heroState: HeroCharacter, level: number, width: number, height: number) {
+  constructor(controller: SceneController, ticker: PIXI.Ticker, level: number, width: number, height: number) {
     this.controller = controller;
     this.ticker = ticker;
     this.level = level;
@@ -58,17 +50,13 @@ export class DungeonLevel {
     for (let y = 0; y < this.width; y++) {
       this.cells[y] = [];
       for (let x = 0; x < this.height; x++) {
-        this.cells[y][x] = new DungeonCell(this, x, y);
+        this.cells[y][x] = new MapCell(this, x, y);
       }
     }
-
-    this.characterMap = this.createBuffer();
 
     this.container = new PIXI.Container();
     this.container.zIndex = 0;
     this.container.scale.set(this.scale, this.scale);
-
-    this.hero = new HeroView(heroState, this, 0, 0);
 
     this.light = new DungeonLight(this);
     this.light.layer.zIndex = 1;
@@ -77,132 +65,83 @@ export class DungeonLevel {
     this.lighting = new PIXI.Sprite(this.light.layer.getRenderTexture());
     this.lighting.blendMode = PIXI.BLEND_MODES.MULTIPLY;
     this.lighting.zIndex = 2;
+  }
 
-    this.ticker.add(this.update, this);
+  destroy(): void {
+    this.lighting.destroy();
+    this.light.destroy();
+    this.container.destroy({children: true});
   }
 
   log(message: string): void {
     console.info(message);
   }
 
-  private createBuffer<T>(): (T | null)[][] {
-    const rows: (T | null)[][] = [];
-    for (let y = 0; y < this.height; y++) {
-      const row: (T | null)[] = [];
-      rows.push(row);
-      for (let x = 0; x < this.width; x++) {
-        row.push(null);
-      }
-    }
-    return rows;
-  };
-
-  cell(x: number, y: number): DungeonCell {
+  cell(x: number, y: number): MapCell {
     return this.cells[y][x];
   }
 
-  character(x: number, y: number): (CharacterView | null) {
-    return this.characterMap[y][x];
-  }
-
-  setCharacter(x: number, y: number, character: CharacterView | null): void {
-    this.characterMap[y][x] = character;
-  }
-
-  exit() {
-    this.stop = true;
-    this.ticker.stop();
-    this.controller.updateHero({
-      level: this.level + 1,
-      hero: this.hero.character,
-    });
-  };
-
-  dead() {
-    this.stop = true;
-    this.controller.dead();
-  }
-
-  update(): void {
-    if (this.stop) return;
-
-    const t_x = this.hero.position.x;
-    const t_y = this.hero.position.y;
+  camera(x: number, y: number): void {
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
-    const p_x = (c_w >> 1) - t_x * this.scale;
-    const p_y = (c_h >> 1) - t_y * this.scale;
+    const p_x = (c_w >> 1) - x * this.scale;
+    const p_y = (c_h >> 1) - y * this.scale;
 
     this.container.position.set(p_x, p_y);
     this.light.container.position.set(p_x, p_y);
   }
-
-  destroy(): void {
-    this.ticker.remove(this.update, this);
-
-    this.lighting.destroy();
-    this.light.destroy();
-    this.hero.destroy();
-    this.boss?.destroy();
-    this.monsters.forEach(m => m.destroy());
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        this.cells[y][x].destroy();
-      }
-    }
-  }
 }
 
-export class DungeonCell {
-  private readonly dungeon: DungeonLevel;
+export class MapCell {
+  private readonly dungeon: DungeonMap;
   readonly x: number;
   readonly y: number;
-  private floorSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private wallSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private _floor: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
+  private _wall: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private _dropSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private _drop: Drop | null = null;
+  private _character: Character | null = null;
 
-  constructor(dungeon: DungeonLevel, x: number, y: number) {
+  constructor(dungeon: DungeonMap, x: number, y: number) {
     this.dungeon = dungeon;
     this.x = x;
     this.y = y;
   }
 
   set floor(name: string | null) {
-    this.floorSprite?.destroy();
-    this.floorSprite = null;
+    this._floor?.destroy();
+    this._floor = null;
     if (name) {
-      this.floorSprite = this.sprite(name, DungeonZIndexes.floor);
+      this._floor = this.sprite(name, DungeonZIndexes.floor);
     }
   }
 
   get floor(): string | null {
-    return this.floorSprite?.name || null;
+    return this._floor?.name || null;
   }
 
   get hasFloor(): boolean {
-    return !!this.floorSprite;
+    return !!this._floor;
   }
 
   set wallBack(name: string | null) {
-    this.wallSprite?.destroy();
-    this.wallSprite = null;
+    this._wall?.destroy();
+    this._wall = null;
     if (name) {
-      this.wallSprite = this.sprite(name, DungeonZIndexes.wallBack);
+      this._wall = this.sprite(name, DungeonZIndexes.wallBack);
     }
   }
 
   set wallFront(name: string | null) {
-    this.wallSprite?.destroy();
-    this.wallSprite = null;
+    this._wall?.destroy();
+    this._wall = null;
     if (name) {
-      this.wallSprite = this.sprite(name, DungeonZIndexes.wallFront);
+      this._wall = this.sprite(name, DungeonZIndexes.wallFront);
     }
   }
 
   get wall(): string | null {
-    return this.wallSprite?.name || null;
+    return this._wall?.name || null;
   }
 
   set wall(name: string | null) {
@@ -210,12 +149,12 @@ export class DungeonCell {
   }
 
   get hasWall(): boolean {
-    return !!this.wallSprite;
+    return !!this._wall;
   }
 
   set zIndex(zIndex: number) {
-    if (this.wallSprite) {
-      this.wallSprite.zIndex = zIndex;
+    if (this._wall) {
+      this._wall.zIndex = zIndex;
     }
   }
 
@@ -243,7 +182,7 @@ export class DungeonCell {
     }
   }
 
-  pickedUp(hero: HeroCharacter): void {
+  pickedUp(hero: Hero): void {
     if (this._drop?.pickedUp(hero)) {
       this._dropSprite?.destroy();
       this._dropSprite = null;
@@ -287,6 +226,18 @@ export class DungeonCell {
     return this.hasDrop;
   };
 
+  get character(): Character | null {
+    return this._character;
+  }
+
+  set character(character: Character | null) {
+    this._character = character;
+  }
+
+  get hasCharacter(): boolean {
+    return this._character != null;
+  }
+
   private sprite(name: string, zIndex: number): PIXI.Sprite | PIXI.AnimatedSprite {
     let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
     if (!name.endsWith('.png')) {
@@ -300,13 +251,6 @@ export class DungeonCell {
     sprite.zIndex = zIndex;
     this.dungeon.container.addChild(sprite);
     return sprite;
-  }
-
-  destroy(): void {
-    this.floorSprite?.destroy();
-    this.wallSprite?.destroy();
-    this._dropSprite?.destroy();
-    this._drop = null;
   }
 
   get isLadder(): boolean {

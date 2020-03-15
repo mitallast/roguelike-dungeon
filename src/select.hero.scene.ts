@@ -1,5 +1,5 @@
 import {Scene, SceneController} from "./scene";
-import {heroMonsterNames, HeroCharacter} from "./hero";
+import {heroCharacterNames, Hero} from "./hero";
 import {WeaponConfig} from "./drop";
 import {Colors} from "./ui";
 import * as PIXI from "pixi.js";
@@ -45,7 +45,7 @@ export class SelectHeroScene implements Scene {
     const c_w = this.controller.app.screen.width;
     const c_h = this.controller.app.screen.height;
 
-    const total = heroMonsterNames.length;
+    const total = heroCharacterNames.length;
     const margin = 40;
     const rect_w = Math.floor((c_w - margin * (total + 1)) / total);
 
@@ -64,7 +64,7 @@ export class SelectHeroScene implements Scene {
     console.log("sprite", sprite_w, sprite_h);
 
     for (let i = 0; i < total; i++) {
-      const heroName = heroMonsterNames[i];
+      const heroName = heroCharacterNames[i];
 
       const d_x = margin * (i + 1) + rect_w * i;
       const d_y = (c_h >> 1) - (rect_h >> 1);
@@ -113,18 +113,18 @@ export class SelectHeroScene implements Scene {
     const joystick = this.controller.joystick;
     if (!joystick.moveLeft.processed) {
       joystick.moveLeft.processed = true;
-      if (this.selected === 0) this.selected = heroMonsterNames.length - 1;
+      if (this.selected === 0) this.selected = heroCharacterNames.length - 1;
       else this.selected--;
     }
     if (!joystick.moveRight.processed) {
       joystick.moveRight.processed = true;
-      this.selected = (this.selected + 1) % heroMonsterNames.length;
+      this.selected = (this.selected + 1) % heroCharacterNames.length;
     }
     if (!joystick.hit.processed) {
       joystick.hit.reset();
-      const name = heroMonsterNames[this.selected];
+      const name = heroCharacterNames[this.selected];
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);
-      const hero = HeroCharacter.load(name, this.controller.persistent);
+      const hero = Hero.load(name, this.controller.persistent);
       hero.inventory.equipment.weapon.set(weapon);
       this.controller.generateDungeon({
         level: 1,

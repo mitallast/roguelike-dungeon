@@ -1,11 +1,10 @@
-// https://0x72.itch.io/dungeontileset-ii
-
 import * as PIXI from 'pixi.js';
 
 export class Resources {
   private readonly loader: PIXI.Loader;
-  // @ts-ignore
-  private sheet: PIXI.Spritesheet;
+
+  private readonly _textures: Partial<Record<string, PIXI.Texture>> = {};
+  private readonly _animations: Partial<Record<string, any>> = {};
 
   constructor(loader: PIXI.Loader) {
     this.loader = loader;
@@ -15,39 +14,50 @@ export class Resources {
     return await new Promise<void>((resolve => {
       this.loader
         .add('tiles.json')
+        .add('npc.json')
         .add('sample.json')
         .add('alagard', 'fonts/alagard.fnt')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
-          console.log(resources);
-          // @ts-ignore
-          this.sheet = resources['tiles.json'].spritesheet;
-          // @ts-ignore
-          this.sheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-          // @ts-ignore
-          resources['fonts/alagard.png'].texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+          resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+          this.add(resources['npc.json']!.spritesheet!);
+          this.add(resources['tiles.json']!.spritesheet!);
           resolve();
         });
     }));
   }
 
+  private add(spritesheet: PIXI.Spritesheet): void {
+    spritesheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    for (let name of Object.keys(spritesheet.textures)) {
+      this._textures[name] = spritesheet.textures[name];
+    }
+    for (let name of Object.keys(spritesheet.animations)) {
+      this._animations[name] = spritesheet.animations[name];
+    }
+  }
+
   get textures(): string[] {
-    return Object.keys(this.sheet.textures);
+    return Object.keys(this._textures);
+  }
+
+  get animations(): string[] {
+    return Object.keys(this._animations);
   }
 
   sprite(name: string): PIXI.Sprite {
-    if (!this.sheet.textures[name]) {
+    if (!this._textures[name]) {
       throw `sprite not found: ${name}`;
     }
-    const sprite = new PIXI.Sprite(this.sheet.textures[name]);
+    const sprite = new PIXI.Sprite(this._textures[name]);
     sprite.name = name;
     return sprite;
   }
 
   animated(name: string, autoUpdate: boolean = true): PIXI.AnimatedSprite {
-    if (!this.sheet.animations[name]) {
+    if (!this._animations[name]) {
       throw `animation not found: ${name}`;
     }
-    const sprite = new PIXI.AnimatedSprite(this.sheet.animations[name], autoUpdate);
+    const sprite = new PIXI.AnimatedSprite(this._animations[name], autoUpdate);
     sprite.name = name;
     return sprite;
   }
