@@ -1,7 +1,7 @@
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {Hero, HeroStateView} from "./hero";
-import {InventoryView} from "./inventory";
+import {DefaultInventoryActionsController, InventoryView} from "./inventory";
 import {Button, Colors, Layout, Sizes, SelectableMap} from "./ui";
 import * as PIXI from "pixi.js";
 
@@ -16,7 +16,7 @@ export class UpdateHeroScene implements Scene {
   private state: HeroStateView | null = null;
   private inventory: InventoryView | null = null;
 
-  private readonly selectable: SelectableMap = new SelectableMap();
+  private readonly selectable: SelectableMap;
 
   private readonly buttons: Button[] = [];
 
@@ -24,6 +24,7 @@ export class UpdateHeroScene implements Scene {
     this.controller = controller;
     this.hero = options.hero;
     this.options = options;
+    this.selectable = new SelectableMap(controller.joystick);
   }
 
   init(): void {
@@ -137,42 +138,13 @@ export class UpdateHeroScene implements Scene {
   }
 
   private renderInventory(layout: Layout): void {
-    this.inventory = new InventoryView(this.hero.inventory, this.selectable, 2);
+    const controller = new DefaultInventoryActionsController(this.hero.inventory);
+    this.inventory = new InventoryView(this.hero.inventory, controller, this.selectable, 2);
     this.inventory.position.set(layout.x, layout.y);
     this.controller.stage.addChild(this.inventory);
   }
 
   private handleInput() {
-    const joystick = this.controller.joystick;
-
-    if (!joystick.moveUp.processed) {
-      joystick.moveUp.processed = true;
-      this.selectable.moveUp();
-    }
-    if (!joystick.moveDown.processed) {
-      joystick.moveDown.processed = true;
-      this.selectable.moveDown();
-    }
-    if (!joystick.moveLeft.processed) {
-      joystick.moveLeft.processed = true;
-      this.selectable.moveLeft();
-    }
-    if (!joystick.moveRight.processed) {
-      joystick.moveRight.processed = true;
-      this.selectable.moveRight();
-    }
-
-    if (!joystick.hit.processed) {
-      joystick.hit.reset();
-      this.action();
-    }
-  }
-
-  private action(): void {
-    const selected = this.selectable.selected;
-    if (selected) {
-      let [, callback] = selected;
-      callback();
-    }
+    this.selectable.handleInput();
   }
 }

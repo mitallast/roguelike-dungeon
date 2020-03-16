@@ -21,6 +21,7 @@ export interface DropInfo {
   speed?: number;
   distance?: number;
   damage?: number;
+  price?: number;
 }
 
 export class Coins implements Drop {
@@ -116,42 +117,44 @@ export class WeaponConfig {
   readonly distance: number;
   readonly damage: number;
   readonly level: number;
+  readonly price: number;
 
-  constructor(name: string, speed: number, distance: number, damage: number, level: number) {
+  constructor(name: string, speed: number, distance: number, damage: number, level: number, price: number) {
     this.name = name;
     this.speed = speed;
     this.distance = distance;
     this.damage = damage;
     this.level = level;
+    this.price = price;
   }
 
   create(resources: Resources): Weapon {
-    return new Weapon(resources, this.name, this.speed, this.distance, this.damage);
+    return new Weapon(resources, this);
   }
 
   static configs: WeaponConfig[] = [
-    new WeaponConfig("weapon_knife", 0.2, 1, 3, 1),
-    new WeaponConfig("weapon_rusty_sword", 0.2, 1, 4, 1),
-    new WeaponConfig("weapon_regular_sword", 0.2, 1, 5, 3),
-    new WeaponConfig("weapon_red_gem_sword", 0.2, 1, 6, 3),
+    new WeaponConfig("weapon_knife", 0.2, 1, 3, 1, 12),
+    new WeaponConfig("weapon_rusty_sword", 0.2, 1, 4, 1, 15),
+    new WeaponConfig("weapon_regular_sword", 0.2, 1, 5, 3, 20),
+    new WeaponConfig("weapon_red_gem_sword", 0.2, 1, 6, 3, 30),
 
-    new WeaponConfig("weapon_big_hammer", 0.5, 2, 10, 5),
-    new WeaponConfig("weapon_hammer", 0.4, 1, 7, 5),
-    new WeaponConfig("weapon_baton_with_spikes", 0.4, 1, 7, 5),
-    new WeaponConfig("weapon_mace", 0.4, 1, 7, 5),
+    new WeaponConfig("weapon_hammer", 0.4, 1, 7, 5, 38),
+    new WeaponConfig("weapon_big_hammer", 0.5, 2, 10, 5, 40),
+    new WeaponConfig("weapon_baton_with_spikes", 0.4, 1, 7, 5, 42),
+    new WeaponConfig("weapon_mace", 0.4, 1, 7, 5, 45),
 
-    new WeaponConfig("weapon_katana", 0.2, 1, 8, 7),
-    new WeaponConfig("weapon_saw_sword", 0.4, 1, 9, 7),
-    new WeaponConfig("weapon_anime_sword", 0.4, 1, 12, 7),
-    new WeaponConfig("weapon_axe", 0.4, 1, 12, 7),
+    new WeaponConfig("weapon_katana", 0.2, 1, 8, 7, 100),
+    new WeaponConfig("weapon_saw_sword", 0.4, 1, 9, 7, 110),
+    new WeaponConfig("weapon_anime_sword", 0.4, 1, 12, 7, 130),
+    new WeaponConfig("weapon_axe", 0.4, 1, 12, 7, 115),
 
-    new WeaponConfig("weapon_machete", 0.2, 1, 11, 9),
-    new WeaponConfig("weapon_cleaver", 0.2, 1, 12, 9),
-    new WeaponConfig("weapon_duel_sword", 0.2, 1, 13, 9),
-    new WeaponConfig("weapon_knight_sword", 0.2, 1, 14, 9),
+    new WeaponConfig("weapon_machete", 0.2, 1, 11, 9, 150),
+    new WeaponConfig("weapon_cleaver", 0.2, 1, 12, 9, 160),
+    new WeaponConfig("weapon_duel_sword", 0.2, 1, 13, 9, 170),
+    new WeaponConfig("weapon_knight_sword", 0.2, 1, 14, 9, 180),
 
-    new WeaponConfig("weapon_golden_sword", 0.2, 1, 15, 11),
-    new WeaponConfig("weapon_lavish_sword", 0.2, 1, 16, 11),
+    new WeaponConfig("weapon_golden_sword", 0.2, 1, 15, 11, 220),
+    new WeaponConfig("weapon_lavish_sword", 0.2, 1, 16, 11, 240),
   ];
 }
 
@@ -161,13 +164,15 @@ export class Weapon implements UsableDrop {
   readonly speed: number;
   readonly distance: number;
   readonly damage: number;
+  readonly price: number;
 
-  constructor(resources: Resources, name: string, speed: number, distance: number, damage: number) {
+  constructor(resources: Resources, config: WeaponConfig) {
     this.resources = resources;
-    this.name = name;
-    this.speed = speed;
-    this.distance = distance;
-    this.damage = damage;
+    this.name = config.name;
+    this.speed = config.speed;
+    this.distance = config.distance;
+    this.damage = config.damage;
+    this.price = config.price;
   }
 
   info(): DropInfo {
@@ -176,6 +181,7 @@ export class Weapon implements UsableDrop {
       speed: this.speed,
       distance: this.distance,
       damage: this.damage,
+      price: this.price
     };
   }
 

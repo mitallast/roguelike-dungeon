@@ -19,6 +19,12 @@
             ]
           },
           {
+            "text": "Can I sell some stuff?",
+            "commands": [
+              "selling()"
+            ]
+          },
+          {
             "text": "Bye!",
             "commands": [
               "exit()"
@@ -33,6 +39,12 @@
             "text": "Hi, {{npc.name}}!",
             "commands": [
               "goto('hello', 'hello-again')"
+            ]
+          },
+          {
+            "text": "Can I sell some stuff?",
+            "commands": [
+              "selling()"
             ]
           },
           {

@@ -1,12 +1,9 @@
-import {Joystick} from "./input";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {RNG} from "./rng";
 import {Colors} from "./ui";
-import {SessionPersistentState} from "./persistent.state";
-import {DialogManager} from "./dialog";
 
 import * as PIXI from 'pixi.js';
+
 window.PIXI = PIXI;
 import "pixi-layers";
 
@@ -31,10 +28,6 @@ import "pixi-layers";
 
   document.getElementById("container")!.appendChild(app.view);
 
-  const dialogs = new DialogManager(app.loader);
-  const persistent = new SessionPersistentState();
-  const rng = new RNG();
-  const joystick = new Joystick();
-  const controller = new SceneController(persistent, rng, joystick, dialogs, resources, app, stage);
+  const controller = new SceneController(resources, app, stage);
   controller.keyBind();
 })();

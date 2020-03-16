@@ -25,25 +25,27 @@ interface NpcAnswerConfig {
 }
 
 export class DialogManager {
+  private readonly controller: SceneController;
   private readonly config: Partial<Record<string, NpcDialogConfig>>;
 
-  constructor(loader: PIXI.Loader) {
-    this.config = loader.resources['dialogs.json'].data;
+  constructor(controller: SceneController) {
+    this.controller = controller;
+    this.config = controller.app.loader.resources['dialogs.json'].data;
   }
 
   dialog(hero: Hero, npc: NpcCharacter): Dialog {
     const config = this.config[npc.name] || this.config["default"]!;
-    return new Dialog(hero, npc, config);
+    return new Dialog(this.controller, hero, npc, config);
   }
 }
 
 export class Dialog {
+  private readonly controller: SceneController;
   readonly hero: Hero;
   readonly npc: NpcCharacter;
 
   private readonly _config: NpcDialogConfig;
   private readonly _question: EventPublisher<DialogQuestion> = new EventPublisher<DialogQuestion>();
-  private readonly _exit: EventPublisher<void> = new EventPublisher<void>();
   private readonly _expression: Expression;
   private readonly _template: Template;
 
@@ -51,18 +53,16 @@ export class Dialog {
     return this._question;
   }
 
-  get exit(): Publisher<void> {
-    return this._exit;
-  }
-
-  constructor(hero: Hero, npc: NpcCharacter, config: NpcDialogConfig) {
+  constructor(controller: SceneController, hero: Hero, npc: NpcCharacter, config: NpcDialogConfig) {
+    this.controller = controller;
     this.hero = hero;
     this.npc = npc;
     this._config = config;
     this._expression = new Expression();
     this._expression.register("goto", 100, true, this.goto.bind(this));
-    this._expression.register("exit", 100, false, () => this._exit.send());
+    this._expression.register("exit", 100, false, this.exit.bind(this));
     this._expression.register("context", 100, false, this.context.bind(this));
+    this._expression.register("selling", 100, false, this.selling.bind(this));
     this._template = new Template();
     this._template.add("hero", this.hero);
     this._template.add("npc", this.npc);
@@ -70,6 +70,15 @@ export class Dialog {
 
   start(): void {
     this.goto(...this._config.start);
+  }
+
+  private selling(): void {
+    this.exit();
+    this.controller.showInventory(this.hero, this.npc);
+  }
+
+  private exit(): void {
+    this.controller.closeModal();
   }
 
   private context(key: string, value: any): any {
@@ -169,7 +178,7 @@ export class DialogModalScene implements ModalScene {
   init(): void {
     this.background = new PIXI.Graphics();
 
-    this.selectable = new SelectableMap();
+    this.selectable = new SelectableMap(this.controller.joystick);
 
     const width = 600;
     const height = 400;
@@ -211,13 +220,11 @@ export class DialogModalScene implements ModalScene {
     this.controller.app.ticker.add(this.handleInput, this);
 
     this.dialog.question.subscribe(this.onQuestion, this);
-    this.dialog.exit.subscribe(this.onComplete, this);
     this.dialog.start();
   }
 
   destroy(): void {
     this.dialog.question.unsubscribe(this.onQuestion, this);
-    this.dialog.exit.unsubscribe(this.onComplete, this);
     this.controller.app.ticker.remove(this.handleInput, this);
     this.container?.destroy();
     this.container = null;
@@ -260,38 +267,8 @@ export class DialogModalScene implements ModalScene {
     this.selectable!.reset();
   }
 
-  private onComplete(): void {
-    this.controller.closeModal();
-  }
-
   private handleInput(): void {
-    const selectable = this.selectable!;
-    const joystick = this.controller.joystick;
-
-    if (!joystick.moveUp.processed) {
-      joystick.moveUp.processed = true;
-      selectable.moveUp();
-    }
-    if (!joystick.moveDown.processed) {
-      joystick.moveDown.processed = true;
-      selectable.moveDown();
-    }
-    if (!joystick.moveLeft.processed) {
-      joystick.moveLeft.processed = true;
-      selectable.moveLeft();
-    }
-    if (!joystick.moveRight.processed) {
-      joystick.moveRight.processed = true;
-      selectable.moveRight();
-    }
-    if (!joystick.hit.processed) {
-      joystick.hit.reset();
-      const selected = selectable.selected;
-      if (selected) {
-        let [, callback] = selected;
-        callback();
-      }
-    }
+    this.selectable?.handleInput();
   }
 }
 

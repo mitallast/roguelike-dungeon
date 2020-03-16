@@ -3,10 +3,11 @@ import {Hero} from "./hero";
 import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
 import {Colors, Sizes, Selectable, Layout, SelectableMap, Button} from "./ui";
 import * as PIXI from "pixi.js";
+import {NpcCharacter} from "./npc";
 
 const CELL_SIZE = 32;
 
-const BUTTON_WIDTH = 110;
+const BUTTON_WIDTH = 170;
 const BUTTON_HEIGHT = 32;
 
 export class Inventory {
@@ -260,6 +261,73 @@ export class InventoryCell {
   }
 }
 
+export interface InventoryActionsController {
+  handle(view: InventoryCellActionsView, item: UsableDrop | null): void;
+}
+
+export abstract class BaseInventoryActionsController implements InventoryActionsController {
+  protected readonly inventory: Inventory;
+
+  protected constructor(inventory: Inventory) {
+    this.inventory = inventory;
+  }
+
+  handle(view: InventoryCellActionsView, item: UsableDrop | null): void {
+    view.removeButtons();
+    if (item) {
+      this.basicButtons(view, item);
+      this.additionalButtons(view, item);
+    }
+  }
+
+  protected basicButtons(view: InventoryCellActionsView, item: UsableDrop): void {
+    const cell = view.cell;
+    if (cell.parent instanceof BeltInventory || cell.parent instanceof BackpackInventory) {
+      if (this.inventory.equipment.weapon.supports(item)) {
+        view.addButton("Equip", () => cell.equip());
+      } else {
+        view.addButton("Use item", () => cell.use());
+      }
+    }
+    if (!(cell.parent instanceof BeltInventory)) view.addButton("To belt", () => cell.toBelt());
+    if (!(cell.parent instanceof BackpackInventory)) view.addButton("To backpack", () => cell.toBackpack());
+    view.addButton("Drop", () => cell.drop());
+  }
+
+  protected abstract additionalButtons(view: InventoryCellActionsView, item: UsableDrop): void;
+}
+
+export class DefaultInventoryActionsController extends BaseInventoryActionsController {
+  constructor(inventory: Inventory) {
+    super(inventory);
+  }
+
+  protected additionalButtons(_view: InventoryCellActionsView, _item: UsableDrop): void {
+  }
+}
+
+export class SellingInventoryActionsController extends BaseInventoryActionsController {
+  private readonly hero: Hero;
+  // @ts-ignore
+  private readonly npc: NpcCharacter;
+
+  constructor(hero: Hero, npc: NpcCharacter) {
+    super(hero.inventory);
+    this.hero = hero;
+    this.npc = npc;
+  }
+
+  protected additionalButtons(view: InventoryCellActionsView, item: UsableDrop): void {
+    const price = item.info().price;
+    if (price) {
+      view.addButton('Sell', () => {
+        view.cell.decrease();
+        this.hero.addCoins(price);
+      });
+    }
+  }
+}
+
 export class InventoryView extends PIXI.Container {
   private readonly selectable: SelectableMap;
   private readonly selectableOffset: number;
@@ -270,7 +338,7 @@ export class InventoryView extends PIXI.Container {
   readonly card: InventoryCellCardView;
   readonly actions: InventoryCellActionsView;
 
-  constructor(inventory: Inventory, selectable: SelectableMap, selectableOffset: number) {
+  constructor(inventory: Inventory, controller: InventoryActionsController, selectable: SelectableMap, selectableOffset: number) {
     super();
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
@@ -281,7 +349,6 @@ export class InventoryView extends PIXI.Container {
     this.equipment.calculateBounds();
     layout.offset(0, this.equipment.height);
     layout.offset(0, Sizes.uiMargin);
-    // @ts-ignore
     selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
 
     this.belt = new BeltInventoryView(inventory.belt);
@@ -307,9 +374,11 @@ export class InventoryView extends PIXI.Container {
       }
     }
 
-    this.actions = new InventoryCellActionsView(this.selectable, this.selectableOffset, inventory);
+    this.actions = new InventoryCellActionsView(this.selectable, this.selectableOffset, controller);
     this.actions.position.set(layout.x, layout.y);
 
+    layout.offset(0, BUTTON_HEIGHT);
+    layout.offset(0, Sizes.uiMargin); // two rows of buttons
     layout.offset(0, BUTTON_HEIGHT);
     const totalHeight = layout.y;
 
@@ -619,6 +688,7 @@ export class InventoryCellCardView extends PIXI.Container {
       if (info.speed) text.push(`speed: ${info.speed}`);
       if (info.distance) text.push(`distance: ${info.distance}`);
       if (info.damage) text.push(`damage: ${info.damage}`);
+      if (info.price) text.push(`price: ${info.price}$`);
       this._description.text = text.join("\n");
     }
   }
@@ -627,17 +697,16 @@ export class InventoryCellCardView extends PIXI.Container {
 export class InventoryCellActionsView extends PIXI.Container {
   private readonly selectable: SelectableMap;
   private readonly selectableOffset: number;
-  private readonly inventory: Inventory;
-  private readonly layout: Layout = new Layout();
+  private readonly controller: InventoryActionsController;
   private readonly buttons: [Button, number, number][] = [];
 
   private _cell: InventoryCell | null = null;
 
-  constructor(selectable: SelectableMap, selectableOffset: number, inventory: Inventory) {
+  constructor(selectable: SelectableMap, selectableOffset: number, controller: InventoryActionsController) {
     super();
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
-    this.inventory = inventory;
+    this.controller = controller;
   }
 
   destroy(): void {
@@ -654,46 +723,39 @@ export class InventoryCellActionsView extends PIXI.Container {
     this._cell.item.subscribe(this.handle, this);
   }
 
-  private handle(item: UsableDrop | null): void {
-    this.removeButtons();
-
-    if (item) {
-      const cell = this._cell!;
-
-      if (cell.parent instanceof BeltInventory || cell.parent instanceof BackpackInventory) {
-        if (this.inventory.equipment.weapon.supports(item)) {
-          this.addButton("Equip", () => cell.equip());
-        } else {
-          this.addButton("Use item", () => cell.use());
-        }
-      }
-
-      if (!(cell.parent instanceof BeltInventory)) this.addButton("To belt", () => cell.toBelt());
-      if (!(cell.parent instanceof BackpackInventory)) this.addButton("To backpack", () => cell.toBackpack());
-      this.addButton("Drop", () => cell.drop());
-    }
+  get cell(): InventoryCell {
+    return this._cell!;
   }
 
-  private removeButtons(): void {
+  private handle(item: UsableDrop | null): void {
+    this.controller.handle(this, item);
+  }
+
+  removeButtons(): void {
     for (let [button, x, y] of this.buttons) {
       this.selectable.remove(x, y);
       button.destroy();
     }
     this.buttons.splice(0, this.buttons.length);
-    this.layout.reset();
   }
 
-  private addButton(label: string, action: () => void): void {
-    const selectableX = this.selectableOffset + this.buttons.length;
-    const selectableY = 100;
+  addButton(label: string, action: () => void): void {
+    const total = this.buttons.length;
+    const row = total >> 1;
+    const cell = total % 2;
+
+    const selectableX = this.selectableOffset + cell;
+    const selectableY = 100 + row;
     const button = new Button({
       label: label,
       width: BUTTON_WIDTH,
       height: BUTTON_HEIGHT,
     });
-    button.position.set(this.layout.x, this.layout.y);
-    this.layout.offset(BUTTON_WIDTH, 0);
-    this.layout.offset(Sizes.uiMargin, 0);
+    button.position.set(
+      cell * (BUTTON_WIDTH + Sizes.uiMargin),
+      row * (BUTTON_HEIGHT + Sizes.uiMargin)
+    );
+
     this.buttons.push([button, selectableX, selectableY]);
     this.selectable.set(selectableX, selectableY, button, action);
     this.addChild(button);

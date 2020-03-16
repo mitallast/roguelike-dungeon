@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import {Joystick} from "./input";
 
 export interface ColorScheme {
   readonly background: number
@@ -108,6 +109,12 @@ export class SelectableMap {
   private minX: number | null = null;
   private maxX: number | null = null;
   private readonly columns: SelectableColumn[] = [];
+
+  private readonly joystick: Joystick;
+
+  constructor(joystick: Joystick) {
+    this.joystick = joystick;
+  }
 
   reset() {
     this.clean();
@@ -247,6 +254,34 @@ export class SelectableMap {
     } else {
       this.selectedX = null;
       this.selectedY = null;
+    }
+  }
+
+  handleInput(): void {
+    const joystick = this.joystick;
+    if (!joystick.moveUp.processed) {
+      joystick.moveUp.processed = true;
+      this.moveUp();
+    }
+    if (!joystick.moveDown.processed) {
+      joystick.moveDown.processed = true;
+      this.moveDown();
+    }
+    if (!joystick.moveLeft.processed) {
+      joystick.moveLeft.processed = true;
+      this.moveLeft();
+    }
+    if (!joystick.moveRight.processed) {
+      joystick.moveRight.processed = true;
+      this.moveRight();
+    }
+    if (!joystick.hit.processed) {
+      joystick.hit.reset();
+      const selected = this.selected;
+      if (selected) {
+        let [, callback] = selected;
+        callback();
+      }
     }
   }
 }
