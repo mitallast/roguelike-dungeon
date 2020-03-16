@@ -16,6 +16,7 @@ export class Resources {
         .add('tiles.json')
         .add('npc.json')
         .add('sample.json')
+        .add('dialogs.json')
         .add('alagard', 'fonts/alagard.fnt')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;

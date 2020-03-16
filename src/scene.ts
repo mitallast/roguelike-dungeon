@@ -9,11 +9,12 @@ import {DungeonMap} from "./dungeon.map";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
 import {UpdateHeroScene} from "./update.hero.scene";
-import * as PIXI from "pixi.js";
 import {InventoryModalScene} from "./inventory.modal";
 import {Hero} from "./hero";
 import {PersistentState} from "./persistent.state";
-import {Dialog, DialogModalScene} from "./dialog";
+import {DialogManager, DialogModalScene} from "./dialog";
+import * as PIXI from "pixi.js";
+import {NpcCharacter} from "./npc";
 
 export interface Scene {
   init(): void;
@@ -32,6 +33,7 @@ export class SceneController {
   readonly persistent: PersistentState;
   readonly rng: RNG;
   readonly joystick: Joystick;
+  readonly dialogs: DialogManager;
   readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
@@ -43,6 +45,7 @@ export class SceneController {
     persistent: PersistentState,
     rng: RNG,
     joystick: Joystick,
+    dialogs: DialogManager,
     resources: Resources,
     app: PIXI.Application,
     stage: PIXI.display.Stage,
@@ -50,6 +53,7 @@ export class SceneController {
     this.persistent = persistent;
     this.rng = rng;
     this.joystick = joystick;
+    this.dialogs = dialogs;
     this.resources = resources;
     this.app = app;
     this.stage = stage;
@@ -103,7 +107,8 @@ export class SceneController {
     this.modal(new InventoryModalScene(this, hero));
   }
 
-  showDialog(dialog: Dialog): void {
-    this.modal(new DialogModalScene(this, dialog))
+  showDialog(hero: Hero, npc: NpcCharacter): void {
+    const dialog = this.dialogs.dialog(hero, npc);
+    this.modal(new DialogModalScene(this, dialog));
   }
 }

@@ -1,0 +1,48 @@
+{
+  "default": {
+    "start": [
+      "hello",
+      "hello-again"
+    ],
+    "questions": {
+      "hello": {
+        "text": "Hello! my name is {{npc.name}}",
+        "conditions": [
+          "!context('meets')"
+        ],
+        "answers": [
+          {
+            "text": "Hi, my name is {{npc.name}}!",
+            "commands": [
+              "context('meets', true)",
+              "goto('hello', 'hello-again')"
+            ]
+          },
+          {
+            "text": "Bye!",
+            "commands": [
+              "exit()"
+            ]
+          }
+        ]
+      },
+      "hello-again": {
+        "text": "Hello, {{hero.name}}!",
+        "answers": [
+          {
+            "text": "Hi, {{npc.name}}!",
+            "commands": [
+              "goto('hello', 'hello-again')"
+            ]
+          },
+          {
+            "text": "Bye!",
+            "commands": [
+              "exit()"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -10,7 +10,6 @@ import {PersistentState} from "./persistent.state";
 import {MonsterCharacter} from "./monster";
 import {NpcCharacter} from "./npc";
 import * as PIXI from "pixi.js";
-import {Dialog} from "./dialog";
 
 export const heroCharacterNames = [
   "elf_f",
@@ -237,7 +236,7 @@ export class HeroAI extends BaseCharacterAI {
           const npc = this.scanNpc(this.view.is_left);
           if (npc.length > 0) {
             joystick.hit.reset();
-            this.dungeon.controller.showDialog(new Dialog(this.character, npc[0]));
+            this.dungeon.controller.showDialog(this.character, npc[0]);
             this.idle();
           } else {
             joystick.hit.processed = true;

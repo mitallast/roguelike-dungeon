@@ -3,63 +3,148 @@ import {NpcCharacter} from "./npc";
 import {ModalScene, SceneController} from "./scene";
 import {Colors, Layout, Selectable, SelectableMap, Sizes} from "./ui";
 import {EventPublisher, Publisher} from "./observable";
+import {Expression} from "./expression";
+import {Template} from "./template";
 import * as PIXI from "pixi.js";
+
+interface NpcDialogConfig {
+  readonly start: string[];
+  readonly questions: Partial<Record<string, NpcQuestionConfig>>;
+}
+
+interface NpcQuestionConfig {
+  readonly text: string;
+  readonly conditions?: [string];
+  readonly answers: NpcAnswerConfig[];
+}
+
+interface NpcAnswerConfig {
+  readonly text: string;
+  readonly conditions?: [string];
+  readonly commands: string[];
+}
+
+export class DialogManager {
+  private readonly config: Partial<Record<string, NpcDialogConfig>>;
+
+  constructor(loader: PIXI.Loader) {
+    this.config = loader.resources['dialogs.json'].data;
+  }
+
+  dialog(hero: Hero, npc: NpcCharacter): Dialog {
+    const config = this.config[npc.name] || this.config["default"]!;
+    return new Dialog(hero, npc, config);
+  }
+}
 
 export class Dialog {
   readonly hero: Hero;
   readonly npc: NpcCharacter;
 
-  private readonly _questions: DialogQuestion[];
-
+  private readonly _config: NpcDialogConfig;
   private readonly _question: EventPublisher<DialogQuestion> = new EventPublisher<DialogQuestion>();
-  private readonly _complete: EventPublisher<void> = new EventPublisher<void>();
+  private readonly _exit: EventPublisher<void> = new EventPublisher<void>();
+  private readonly _expression: Expression;
+  private readonly _template: Template;
 
   get question(): Publisher<DialogQuestion> {
     return this._question;
   }
 
-  get complete(): Publisher<void> {
-    return this._complete;
+  get exit(): Publisher<void> {
+    return this._exit;
   }
 
-  constructor(hero: Hero, npc: NpcCharacter) {
+  constructor(hero: Hero, npc: NpcCharacter, config: NpcDialogConfig) {
     this.hero = hero;
     this.npc = npc;
-
-    const hello = new DialogQuestion(`Hello!\n\nMy name is ${npc.name}`);
-    hello.add(new DialogAnswer(this, "Hello", () => this._question.send(hello)));
-    hello.add(new DialogAnswer(this, "bye", () => this._complete.send()));
-
-    this._questions = [hello];
+    this._config = config;
+    this._expression = new Expression();
+    this._expression.register("goto", 100, true, this.goto.bind(this));
+    this._expression.register("exit", 100, false, () => this._exit.send());
+    this._expression.register("context", 100, false, this.context.bind(this));
+    this._template = new Template();
+    this._template.add("hero", this.hero);
+    this._template.add("npc", this.npc);
   }
 
   start(): void {
-    this._question.send(this._questions[0]);
+    this.goto(...this._config.start);
+  }
+
+  private context(key: string, value: any): any {
+    if (value === undefined) {
+      return this.npc.getContext(key);
+    } else {
+      this.npc.setContext(key, value);
+      return null;
+    }
+  }
+
+  private goto(...ids: string[]): void {
+    for (let id of ids) {
+      const config = this._config.questions[id]!;
+      if (this.check(config.conditions || [])) {
+        const text = this._template.render(config.text);
+        const question = new DialogQuestion(this, text);
+        for (let answer of config.answers) {
+          if (this.check(answer.conditions)) {
+            const text = this._template.render(answer.text);
+            question.add(text, answer.commands);
+          }
+        }
+        this._question.send(question);
+        return;
+      }
+    }
+  }
+
+  private check(conditions: string[] | undefined): boolean {
+    if (conditions) {
+      for (let rule of conditions) {
+        if (!this.evaluate(rule)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  evaluate(command: string): any {
+    return this._expression.evaluate(command);
   }
 }
 
 export class DialogQuestion {
+  private readonly dialog: Dialog;
   readonly text: string;
   readonly answers: DialogAnswer[] = [];
 
-  constructor(text: string) {
+  constructor(dialog: Dialog, text: string) {
+    this.dialog = dialog;
     this.text = text;
   }
 
-  add(answer: DialogAnswer) {
-    this.answers.push(answer);
+  add(text: string, commands: string[]): void {
+    this.answers.push(new DialogAnswer(this.dialog, text, commands));
   }
 }
 
 export class DialogAnswer {
   readonly dialog: Dialog;
   readonly text: string;
-  readonly action: () => void;
+  readonly commands: string[];
 
-  constructor(dialog: Dialog, text: string, action: () => void) {
+  constructor(dialog: Dialog, text: string, commands: string[]) {
     this.dialog = dialog;
     this.text = text;
-    this.action = action;
+    this.commands = commands;
+  }
+
+  action(): void {
+    for (let command of this.commands) {
+      this.dialog.evaluate(command);
+    }
   }
 }
 
@@ -126,13 +211,13 @@ export class DialogModalScene implements ModalScene {
     this.controller.app.ticker.add(this.handleInput, this);
 
     this.dialog.question.subscribe(this.onQuestion, this);
-    this.dialog.complete.subscribe(this.onComplete, this);
+    this.dialog.exit.subscribe(this.onComplete, this);
     this.dialog.start();
   }
 
   destroy(): void {
     this.dialog.question.unsubscribe(this.onQuestion, this);
-    this.dialog.complete.unsubscribe(this.onComplete, this);
+    this.dialog.exit.unsubscribe(this.onComplete, this);
     this.controller.app.ticker.remove(this.handleInput, this);
     this.container?.destroy();
     this.container = null;
@@ -164,7 +249,7 @@ export class DialogModalScene implements ModalScene {
     for (let i = 0; i < question.answers.length; i++) {
       let answer = question.answers[i];
       const view = new DialogAnswerView(answer, width);
-      this.selectable!.set(0, i, view, answer.action);
+      this.selectable!.set(0, i, view, answer.action.bind(answer));
       view.position.set(layout.x, layout.y);
       layout.offset(0, view.height);
       layout.offset(0, Sizes.uiMargin);

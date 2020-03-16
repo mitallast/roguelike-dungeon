@@ -35,6 +35,16 @@ export interface NpcConfig {
 }
 
 export class NpcCharacter extends Character {
+  private _context: Partial<Record<string, any>> = {};
+
+  setContext(key: string, value: any): void {
+    this._context[key] = value;
+  }
+
+  getContext(key: string): any {
+    return this._context[key];
+  }
+
   constructor(name: string) {
     super({
       name: name,

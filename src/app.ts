@@ -3,11 +3,12 @@ import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";
 import {Colors} from "./ui";
-import * as PIXI from 'pixi.js';
+import {SessionPersistentState} from "./persistent.state";
+import {DialogManager} from "./dialog";
 
+import * as PIXI from 'pixi.js';
 window.PIXI = PIXI;
 import "pixi-layers";
-import {SessionPersistentState} from "./persistent.state";
 
 (async function () {
 
@@ -30,9 +31,10 @@ import {SessionPersistentState} from "./persistent.state";
 
   document.getElementById("container")!.appendChild(app.view);
 
+  const dialogs = new DialogManager(app.loader);
   const persistent = new SessionPersistentState();
   const rng = new RNG();
   const joystick = new Joystick();
-  const controller = new SceneController(persistent, rng, joystick, resources, app, stage);
+  const controller = new SceneController(persistent, rng, joystick, dialogs, resources, app, stage);
   controller.keyBind();
 })();
