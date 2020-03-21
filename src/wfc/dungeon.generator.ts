@@ -23,8 +23,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     const model = this.model = new EvenSimpleTiledModel(this.resources, tileset, this.rng, 70, 70, [
       new BorderConstraint(borderCells),
       new RoomConstraint(pathCells, {
-        room_max_w: 7,
-        room_max_h: 7,
+        room_max_w: 10,
+        room_max_h: 10,
         max_corr_dist: 10
       }),
       new PathConstraint(pathCells),

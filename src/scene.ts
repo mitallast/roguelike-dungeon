@@ -49,10 +49,10 @@ export class SceneController {
     this.persistent = new SessionPersistentState();
     this.rng = new RNG();
     this.joystick = new Joystick();
-    this.dialogs = new DialogManager(this);
     this.resources = resources;
     this.app = app;
     this.stage = stage;
+    this.dialogs = new DialogManager(this);
 
     this.app.ticker.add(this.persistent.global.commit, this.persistent.global, PIXI.UPDATE_PRIORITY.LOW);
     this.app.ticker.add(this.persistent.session.commit, this.persistent.session, PIXI.UPDATE_PRIORITY.LOW);

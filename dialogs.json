@@ -12,7 +12,7 @@
         ],
         "answers": [
           {
-            "text": "Hi, my name is {{npc.name}}!",
+            "text": "Hi, my name is {{hero.name}}!",
             "commands": [
               "context('meets', true)",
               "goto('hello', 'hello-again')"
