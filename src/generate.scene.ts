@@ -1,7 +1,6 @@
 import {Scene, SceneController} from "./scene";
 import {DungeonGenerator, GenerateOptions} from "./dungeon.generator";
-import {TunnelingDungeonGenerator} from "./tunneling.generator";
-import {WfcDungeonGenerator} from "./wfc.generator";
+import {HybridDungeonGenerator} from "./wfc/dungeon.generator";
 import {DungeonMap} from "./dungeon.map";
 import {Colors} from "./ui";
 import * as PIXI from "pixi.js";
@@ -16,11 +15,7 @@ export class GenerateDungeonScene implements Scene {
 
   constructor(controller: SceneController, options: GenerateOptions) {
     this.controller = controller;
-    if (options.level <= 5) {
-      this.generator = new TunnelingDungeonGenerator(this.controller);
-    } else {
-      this.generator = new WfcDungeonGenerator(this.controller);
-    }
+    this.generator = new HybridDungeonGenerator(this.controller);
 
     this.promise = this.generator.generate(options);
     this.promise.then((dungeon) => this.controller.dungeon(options.hero, dungeon));

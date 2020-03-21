@@ -13,8 +13,8 @@ import {InventoryModalScene} from "./inventory.modal";
 import {Hero} from "./hero";
 import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
-import * as PIXI from "pixi.js";
 import {NpcCharacter} from "./npc";
+import * as PIXI from "pixi.js";
 
 export interface Scene {
   init(): void;
@@ -33,10 +33,10 @@ export class SceneController {
   readonly persistent: PersistentState;
   readonly rng: RNG;
   readonly joystick: Joystick;
+  readonly dialogs: DialogManager;
   readonly resources: Resources;
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
-  readonly dialogs: DialogManager;
 
   private mainScene: Scene | null = null;
   private modalScene: ModalScene | null = null;
@@ -49,10 +49,10 @@ export class SceneController {
     this.persistent = new SessionPersistentState();
     this.rng = new RNG();
     this.joystick = new Joystick();
+    this.dialogs = new DialogManager(this);
     this.resources = resources;
     this.app = app;
     this.stage = stage;
-    this.dialogs = new DialogManager(this);
 
     this.app.ticker.add(this.persistent.global.commit, this.persistent.global, PIXI.UPDATE_PRIORITY.LOW);
     this.app.ticker.add(this.persistent.session.commit, this.persistent.session, PIXI.UPDATE_PRIORITY.LOW);

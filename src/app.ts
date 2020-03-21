@@ -1,7 +1,6 @@
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {Colors} from "./ui";
-
 import * as PIXI from 'pixi.js';
 
 window.PIXI = PIXI;

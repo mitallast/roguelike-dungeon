@@ -6934,7 +6934,7 @@
     "app": "https://www.codeandweb.com/texturepacker",
     "homepage": "https://0x72.itch.io/dungeontileset-ii",
     "version": "1.0",
-    "image": "tiles.png",
+    "image": "dungeon.png",
     "format": "RGBA8888",
     "size": {
       "w": 330,

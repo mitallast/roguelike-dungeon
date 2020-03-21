@@ -1,0 +1,915 @@
+{
+  "size": 16,
+  "cells": [
+    {
+      "id": "grass_1",
+      "tiles": [
+        "grass_1.png"
+      ],
+      "weight": 0.1
+    },
+    {
+      "id": "road_1",
+      "tiles": [
+        "road_1.png"
+      ],
+      "weight": 0.01
+    },
+    {
+      "id": "grass_1_wall_top_1_2",
+      "tiles": [
+        "grass_1.png",
+        "wall_top_1.png"
+      ]
+    },
+    {
+      "id": "grass_1_wall_top_2_2",
+      "tiles": [
+        "grass_1.png",
+        "wall_top_2.png"
+      ]
+    },
+    {
+      "id": "grass_1_wall_top_3_2",
+      "tiles": [
+        "grass_1.png",
+        "wall_top_3.png"
+      ]
+    },
+    {
+      "id": "road_11",
+      "tiles": [
+        "road_11.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_5",
+      "tiles": [
+        "road_5.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_10",
+      "tiles": [
+        "road_10.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "wall_1_2",
+      "tiles": [
+        "wall_1.png"
+      ]
+    },
+    {
+      "id": "wall_3_2",
+      "tiles": [
+        "wall_3.png"
+      ]
+    },
+    {
+      "id": "wall_2_2",
+      "tiles": [
+        "wall_2.png"
+      ]
+    },
+    {
+      "id": "road_3",
+      "tiles": [
+        "road_3.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "wood_floor_1_wall_top_4_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "wall_top_4.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1",
+      "tiles": [
+        "wood_floor_1.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_wall_top_5_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "wall_top_5.png"
+      ]
+    },
+    {
+      "id": "road_13",
+      "tiles": [
+        "road_13.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_4",
+      "tiles": [
+        "road_4.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_12",
+      "tiles": [
+        "road_12.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "wood_floor_1_wall_top_6_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "wall_top_6.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_door_1_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "door_1.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_door_2_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "door_2.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_wall_top_7_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "wall_top_7.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_wall_top_8_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "wall_top_8.png"
+      ]
+    },
+    {
+      "id": "road_8",
+      "tiles": [
+        "road_8.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_9",
+      "tiles": [
+        "road_9.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "road_7",
+      "tiles": [
+        "road_7.png"
+      ],
+      "weight": 0.001
+    },
+    {
+      "id": "wall_1_100",
+      "tiles": [
+        "wall_1.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_door_3_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "door_3.png"
+      ]
+    },
+    {
+      "id": "wood_floor_1_door_4_100",
+      "tiles": [
+        "wood_floor_1.png",
+        "door_4.png"
+      ]
+    },
+    {
+      "id": "wall_3_100",
+      "tiles": [
+        "wall_3.png"
+      ]
+    },
+    {
+      "id": "window_1_100",
+      "tiles": [
+        "window_1.png"
+      ]
+    },
+    {
+      "id": "wall_2_100",
+      "tiles": [
+        "wall_2.png"
+      ]
+    }
+  ],
+  "compatibilities": [
+    {
+      "first": "grass_1",
+      "next": "grass_1",
+      "directions": [
+        "right",
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "grass_1_wall_top_1_2",
+      "directions": [
+        "down",
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "grass_1_wall_top_2_2",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "grass_1_wall_top_3_2",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_11",
+      "directions": [
+        "down",
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_5",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_10",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_1_2",
+      "next": "grass_1_wall_top_2_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_1_2",
+      "next": "wall_1_2",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_2_2",
+      "next": "grass_1_wall_top_2_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_2_2",
+      "next": "wall_3_2",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_2_2",
+      "next": "grass_1_wall_top_3_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_3_2",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "grass_1_wall_top_3_2",
+      "next": "wall_2_2",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_11",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_11",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_5",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_5",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_5",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_10",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_10",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_10",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "wall_1_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_1_2",
+      "next": "wall_3_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_1_2",
+      "next": "wood_floor_1_wall_top_4_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wall_3_2",
+      "next": "wall_3_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_3_2",
+      "next": "wood_floor_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wall_3_2",
+      "next": "wall_2_2",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_2_2",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_2_2",
+      "next": "wood_floor_1_wall_top_5_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_3",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_13",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_4",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_12",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "wood_floor_1_wall_top_4_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_4_100",
+      "next": "wood_floor_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_4_100",
+      "next": "wood_floor_1_wall_top_4_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1",
+      "next": "wood_floor_1",
+      "directions": [
+        "right",
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1",
+      "next": "wood_floor_1_wall_top_5_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_5_100",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_5_100",
+      "next": "wood_floor_1_wall_top_5_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_13",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_13",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_13",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_4",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_4",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_4",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_12",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_12",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_12",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_4_100",
+      "next": "wood_floor_1_wall_top_6_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1",
+      "next": "wood_floor_1_door_1_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1",
+      "next": "wood_floor_1_door_2_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1",
+      "next": "wood_floor_1_wall_top_7_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_5_100",
+      "next": "wood_floor_1_wall_top_8_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_8",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_9",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_7",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "wood_floor_1_wall_top_6_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_6_100",
+      "next": "wood_floor_1_door_1_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_6_100",
+      "next": "wall_1_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_1_100",
+      "next": "wood_floor_1_door_2_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_1_100",
+      "next": "wood_floor_1_door_3_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_2_100",
+      "next": "wood_floor_1_wall_top_7_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_2_100",
+      "next": "wood_floor_1_door_4_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_7_100",
+      "next": "wood_floor_1_wall_top_7_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_7_100",
+      "next": "wall_3_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_7_100",
+      "next": "window_1_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_7_100",
+      "next": "wood_floor_1_wall_top_8_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_8_100",
+      "next": "grass_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_wall_top_8_100",
+      "next": "wall_2_100",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "road_8",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_8",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_8",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_9",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_9",
+      "next": "road_1",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_9",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "road_1",
+      "next": "road_7",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "road_7",
+      "next": "grass_1",
+      "directions": [
+        "right",
+        "down"
+      ]
+    },
+    {
+      "first": "grass_1",
+      "next": "wall_1_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_1_100",
+      "next": "wood_floor_1_door_3_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_1_100",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_3_100",
+      "next": "wood_floor_1_door_4_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_3_100",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_4_100",
+      "next": "wall_3_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wood_floor_1_door_4_100",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wall_3_100",
+      "next": "wall_3_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_3_100",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wall_3_100",
+      "next": "window_1_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "window_1_100",
+      "next": "wall_3_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "window_1_100",
+      "next": "grass_1",
+      "directions": [
+        "down"
+      ]
+    },
+    {
+      "first": "wall_3_100",
+      "next": "wall_2_100",
+      "directions": [
+        "right"
+      ]
+    },
+    {
+      "first": "wall_2_100",
+      "next": "grass_1",
+      "directions": [
+        "right",
+        "down"
+      ]
+    },
+    {
+      "first": "road_3",
+      "next": "road_3",
+      "directions": [
+        "down"
+      ]
+    }
+  ]
+}

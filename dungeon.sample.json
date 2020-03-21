@@ -1,0 +1,4866 @@
+[
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_t_top_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_t_top_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_t_top_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_t_top_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_mid_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_mid_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_t_top_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_mid_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_mid_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_t_top_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_mid_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_front_right.png",
+      "zIndex": 2,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_front_left.png",
+      "zIndex": 2,
+      "color": 255
+    },
+    {
+      "wall": "wall_inner_corner_mid_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_t_top_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_top_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_t_top_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_inner_corner_mid_left.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_front_right.png",
+      "zIndex": 2,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_front_left.png",
+      "zIndex": 2,
+      "color": 255
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_inner_corner_mid_right.png",
+      "zIndex": 2,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_left.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "wall": "wall_right.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_left.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_right.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_left.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_right.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "color": 65535
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_side_mid_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_left.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_top_mid.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "floor": "floor_1.png",
+      "wall": "wall_inner_corner_l_top_right.png",
+      "zIndex": 100,
+      "color": 255
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "wall": "wall_left.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_mid.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "wall": "wall_right.png",
+      "zIndex": 100,
+      "color": 16711935
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ],
+  [
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    },
+    {
+      "color": 16777215
+    }
+  ]
+]

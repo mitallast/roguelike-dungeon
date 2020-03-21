@@ -13,15 +13,15 @@ export class Resources {
   async load(): Promise<void> {
     return await new Promise<void>((resolve => {
       this.loader
-        .add('tiles.json')
         .add('npc.json')
-        .add('sample.json')
+        .add('dungeon.json')
+        .add('dungeon.rules.json')
         .add('dialogs.json')
         .add('alagard', 'fonts/alagard.fnt')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           this.add(resources['npc.json']!.spritesheet!);
-          this.add(resources['tiles.json']!.spritesheet!);
+          this.add(resources['dungeon.json']!.spritesheet!);
           resolve();
         });
     }));

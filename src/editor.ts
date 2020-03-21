@@ -1,6 +1,4 @@
 import {Resources} from "./resources";
-import {Color} from "./wfc";
-import {TileSetOptions} from "./wfc.generator";
 import {DungeonZIndexes} from "./dungeon.map";
 import * as PIXI from "pixi.js";
 
@@ -8,6 +6,12 @@ const scale = 3;
 const border = 2;
 const skip = 1;
 const sprite_size = 16;
+
+interface EditorCellConfig {
+  readonly floor?: string;
+  readonly wall?: string;
+  readonly zIndex?: number;
+}
 
 export class Editor {
   private readonly width: number;
@@ -30,19 +34,19 @@ export class Editor {
     this.resources = resources;
 
     const textures = resources.textures
-      .filter(s => s.startsWith("floor_") || !s.match(/_\d\.png$/))
+      // .filter(s => s.startsWith("floor_") || !s.match(/_\d\.png$/))
       .filter(s => s.indexOf("_banner_") < 0)
       .filter(s => s.indexOf("_column_") < 0)
       .filter(s => s.indexOf("_goo") < 0)
       .filter(s => s.indexOf("_fountain_") < 0)
     ;
-    this.floorNames = textures.filter(s => s.startsWith("floor_"));
-    this.wallNames = textures.filter(s => s.startsWith("wall_"));
+    this.floorNames = textures.filter(s => s.match(/^(wood|floor|road|grass)_/));
+    this.wallNames = textures.filter(s => s.match(/^(wall|window|door)_/));
 
     const map_width = this.width * sprite_size + border * 2;
     const map_height = this.height * sprite_size + border * 2;
 
-    const palette_length = this.floorNames.length + this.wallNames.length + 5;
+    const palette_length = this.floorNames.length + this.wallNames.length + 7;
     const palette_width = Math.floor((map_width - border) / (sprite_size + border));
     const palette_rows = Math.ceil(palette_length / palette_width);
     const palette_height = ((palette_rows + skip) * (sprite_size + border) + border);
@@ -70,7 +74,7 @@ export class Editor {
 
   private initPalette() {
     const map_width = this.width * sprite_size + border * 2;
-    const palette_length = this.floorNames.length + this.wallNames.length + 4;
+    const palette_length = this.floorNames.length + this.wallNames.length + 7;
     const palette_width = Math.floor((map_width - border) / (sprite_size + border));
     const palette_rows = Math.ceil(palette_length / palette_width);
 
@@ -133,6 +137,22 @@ export class Editor {
       offset++;
     }
 
+    {// rules
+      const x = offset % palette_width, y = Math.floor(offset / palette_width);
+      const cell = new EmptyRulesPaletteCell(x, y, this.resources, this);
+      cell.init();
+      container.addChild(cell.container);
+      offset++;
+    }
+
+    {// rules
+      const x = offset % palette_width, y = Math.floor(offset / palette_width);
+      const cell = new NotEmptyRulesPaletteCell(x, y, this.resources, this);
+      cell.init();
+      container.addChild(cell.container);
+      offset++;
+    }
+
     this.title.scale.set(0.5 / scale, 0.5 / scale);
     this.title.position.set(border, (palette_rows) * (sprite_size + border) + border);
     container.addChild(this.title);
@@ -173,17 +193,16 @@ export class Editor {
     max_x = Math.min(this.width - 1, max_x);
     max_y = Math.min(this.height - 1, max_y);
 
-    const dump: TileSetOptions[][] = [];
+    const dump: EditorCellConfig[][] = [];
     for (let y = min_y; y <= max_y; y++) {
-      const row: TileSetOptions[] = [];
+      const row: EditorCellConfig[] = [];
       dump.push(row);
       for (let x = min_x; x <= max_x; x++) {
         const cell = this.cells[y][x];
-        const options: TileSetOptions = {
+        const options: EditorCellConfig = {
           floor: cell.floorSprite?.name,
           wall: cell.wallSprite?.name,
-          zIndex: cell.wallSprite?.zIndex,
-          color: cell.color.rgb,
+          zIndex: cell.wallSprite?.zIndex
         };
         row.push(options);
       }
@@ -191,7 +210,7 @@ export class Editor {
     console.log(JSON.stringify(dump));
   }
 
-  load(dx: number, dy: number, options: TileSetOptions[][]): void {
+  load(dx: number, dy: number, options: EditorCellConfig[][]): void {
     for (let y = 0; y < options.length; y++) {
       for (let x = 0; x < options[y].length; x++) {
         if (y + dy < this.height && x + dx < this.width) {
@@ -205,6 +224,102 @@ export class Editor {
         }
       }
     }
+  }
+
+  rules(allowEmpty: boolean): void {
+    interface Tileset {
+      readonly size: number;
+      readonly cells: CellConfig[];
+      readonly compatibilities: CellCompatibility[];
+    }
+
+    interface CellConfig {
+      readonly id: string;
+      floor?: string;
+      wall?: string;
+      zIndex?: number;
+    }
+
+    interface CellCompatibility {
+      readonly first: string;
+      readonly next: string;
+      readonly directions: string[];
+    }
+
+    const tileset: Tileset = {
+      size: 16,
+      cells: [],
+      compatibilities: []
+    };
+
+    const tilemap: Partial<Record<string, CellConfig>> = {};
+    const cellsmap: string[][] = [];
+    for (let y = 0; y < this.height; y++) {
+      cellsmap[y] = [];
+      for (let x = 0; x < this.width; x++) {
+        const cell = this.cells[y][x];
+        const keys = [];
+        if (cell.floorSprite) {
+          keys.push(cell.floorSprite.name);
+        }
+        if (cell.wallSprite) {
+          keys.push(cell.wallSprite.name);
+          keys.push(cell.wallSprite.zIndex.toString());
+        }
+        const id = keys.map(s => s.replace(/\.png$/, '')).join('_');
+        cellsmap[y][x] = id;
+        if (keys.length > 0 || allowEmpty) {
+          if (!tilemap[id]) {
+            const config: CellConfig = {id: id};
+            if (cell.floorSprite) config.floor = cell.floorSprite.name;
+            if (cell.wallSprite) config.wall = cell.wallSprite.name;
+            if (cell.wallSprite) config.zIndex = cell.wallSprite.zIndex;
+            tilemap[id] = config;
+            tileset.cells.push(config);
+          }
+        }
+      }
+    }
+
+    console.log(cellsmap);
+
+    const rules: Map<string, Set<string>> = new Map();
+    for (let y = 0; y < this.height - 1; y++) {
+      for (let x = 0; x < this.width - 1; x++) {
+        const first = cellsmap[y][x];
+        if (first !== "" || allowEmpty) {
+          const right = cellsmap[y][x + 1];
+          if (right !== "" || allowEmpty) {
+            console.log("right", right);
+            const rightId = [first, right].join(';');
+            if (!rules.has(rightId)) {
+              rules.set(rightId, new Set<string>());
+            }
+            rules.get(rightId)!.add("right");
+          }
+          const down = cellsmap[y + 1][x];
+          if (down !== "" || allowEmpty) {
+            console.log("down", down);
+            const downId = [first, down].join(';');
+            if (!rules.has(downId)) {
+              rules.set(downId, new Set<string>());
+            }
+            rules.get(downId)!.add("down");
+          }
+        }
+      }
+    }
+
+    for (let [pair, set] of rules) {
+      const [first, next] = pair.split(';');
+      tileset.compatibilities.push({
+        first: first,
+        next: next,
+        directions: [...set]
+      });
+    }
+
+    console.log(JSON.stringify(tileset));
   }
 }
 
@@ -304,7 +419,7 @@ class EditorMapCell {
     }
   }
 
-  setOptions(options: TileSetOptions): void {
+  setOptions(options: EditorCellConfig): void {
     this.setFloor(options.floor || null);
     this.setWall(options.wall || null);
     if (options.zIndex) {
@@ -319,12 +434,6 @@ class EditorMapCell {
 
   private select() {
     this.editor.action(this);
-  }
-
-  get color(): Color {
-    const r: number = this.floorSprite ? 0 : 255;
-    const g: number = this.wallSprite ? 0 : 255;
-    return new Color(r, g, 255, 0);
   }
 }
 
@@ -504,7 +613,7 @@ class DumpPaletteCell extends NamedPaletteCell {
 }
 
 class LoadPaletteCell extends NamedPaletteCell {
-  private options: TileSetOptions[][] = [];
+  private options: EditorCellConfig[][] = [];
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
     super("LOAD", "Load", x, y, resources, editor);
@@ -524,5 +633,33 @@ class LoadPaletteCell extends NamedPaletteCell {
       console.log("click", this.options);
       this.editor.selectPalette(this);
     }
+  }
+}
+
+class EmptyRulesPaletteCell extends NamedPaletteCell {
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("RUL E", "Rules with empty cells", x, y, resources, editor);
+  }
+
+  action(_cell: EditorMapCell): void {
+
+  }
+
+  click(): void {
+    this.editor.rules(true);
+  }
+}
+
+class NotEmptyRulesPaletteCell extends NamedPaletteCell {
+  constructor(x: number, y: number, resources: Resources, editor: Editor) {
+    super("RUL N", "Rules without empty cells", x, y, resources, editor);
+  }
+
+  action(_cell: EditorMapCell): void {
+
+  }
+
+  click(): void {
+    this.editor.rules(false);
   }
 }
