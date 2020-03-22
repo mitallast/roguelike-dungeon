@@ -1,6 +1,5 @@
 import {ImmutableRect, MutableRect, Rect} from "./geometry";
 import {RNG} from "./rng";
-import {yields} from "./concurency";
 
 export interface TunnelingOptions {
   readonly room_min_w?: number;
@@ -17,6 +16,13 @@ export interface TunnelingOptions {
 
   readonly x_dist?: number;
   readonly y_dist?: number;
+
+  readonly min_corr_dist_x?: number;
+  readonly min_corr_dist_y?: number;
+
+  readonly max_rooms?: number;
+
+  readonly debug?: boolean;
 }
 
 export class TunnelingAlgorithm {
@@ -29,8 +35,6 @@ export class TunnelingAlgorithm {
   private readonly rng: RNG;
   private readonly width: number;
   private readonly height: number;
-
-  private percentValue: number = 0;
 
   private readonly room_min_w: number;
   private readonly room_min_h: number;
@@ -50,9 +54,9 @@ export class TunnelingAlgorithm {
   private readonly min_corr_dist_x: number;
   private readonly min_corr_dist_y: number;
 
-  get percent(): number {
-    return this.percentValue;
-  }
+  private readonly max_rooms: number;
+
+  private readonly debug: boolean;
 
   constructor(rng: RNG, width: number, height: number, options: TunnelingOptions) {
     this.rng = rng;
@@ -74,8 +78,12 @@ export class TunnelingAlgorithm {
     this.x_dist = options.x_dist || 2;
     this.y_dist = options.y_dist || 2;
 
-    this.min_corr_dist_x = (this.x_dist << 1) + 1;
-    this.min_corr_dist_y = (this.y_dist << 1) + 1;
+    this.min_corr_dist_x = options.min_corr_dist_x || (this.x_dist << 1) + 1;
+    this.min_corr_dist_y = options.min_corr_dist_y || (this.y_dist << 1) + 1;
+
+    this.max_rooms = options.max_rooms || 0;
+
+    this.debug = options.debug || false;
   }
 
   private isOverlap(a: Rect) {
@@ -92,52 +100,24 @@ export class TunnelingAlgorithm {
       !this.isOverlap(rect);
   }
 
-  async generate(total: number): Promise<boolean> {
-    console.log("generate rooms");
-    // clear
-    this.percentValue = 0;
+  generate(): boolean {
     this.rooms.splice(0, this.rooms.length);
     this.corridorsH.splice(0, this.corridorsH.length);
     this.corridorsV.splice(0, this.corridorsV.length);
 
-    let count = 0;
     if (this.generateFirstRoom()) {
-      count++;
-      this.percentValue = count * 100.0 / total;
-      await yields(100);
-
-      while (this.rooms.length < total) {
-        if (!this.generateNextRoom()) {
-          return false;
+      if (this.max_rooms > 0) {
+        while (this.rooms.length < this.max_rooms) {
+          if (!this.generateNextRoom()) {
+            return false;
+          }
         }
-        count++;
-        this.percentValue = count * 100.0 / total;
-        await yields(100);
-      }
-      return true;
-    }
-    return false;
-  }
-
-  generateSync(total: number): boolean {
-    this.percentValue = 0;
-    this.rooms.splice(0, this.rooms.length);
-    this.corridorsH.splice(0, this.corridorsH.length);
-    this.corridorsV.splice(0, this.corridorsV.length);
-
-    let count = 0;
-    if (this.generateFirstRoom()) {
-      count++;
-      this.percentValue = count * 100.0 / total;
-
-      while (this.rooms.length < total) {
-        if (!this.generateNextRoom()) {
-          return false;
+        return true;
+      } else {
+        while (this.generateNextRoom()) {
         }
-        count++;
-        this.percentValue = count * 100.0 / total;
+        return true;
       }
-      return true;
     }
     return false;
   }
@@ -167,6 +147,7 @@ export class TunnelingAlgorithm {
   }
 
   private generateNextRoom(): boolean {
+    if (this.debug) console.log("generate next room");
     // clear
     this.possible.splice(0, this.possible.length);
 
@@ -177,40 +158,43 @@ export class TunnelingAlgorithm {
       const leftC = this.findLeftCorridorArea(room);
 
       if (topC) {
-        // console.log("possible top corridor area", room, topC);
+        if (this.debug) console.log("possible top corridor area", room, topC);
         const topR = this.findTopRoomArea(topC);
         if (topR) {
-          // console.log("add possible top room area", room, topC, topR);
+          if (this.debug) console.log("add possible top room area", room, topC, topR);
           this.possible.push(new Possible(topR, topC, Direction.TOP));
         }
       }
       if (bottomC) {
+        if (this.debug) console.log("possible bottom corridor area", room, bottomC);
         const bottomR = this.findBottomRoomArea(bottomC);
         if (bottomR) {
-          // console.log("add possible bottom room area", room, bottomC, bottomR);
+          if (this.debug) console.log("add possible bottom room area", room, bottomC, bottomR);
           this.possible.push(new Possible(bottomR, bottomC, Direction.BOTTOM));
         }
       }
       if (rightC) {
+        if (this.debug) console.log("possible right corridor area", room, rightC);
         const rightR = this.findRightRoomArea(rightC);
         if (rightR) {
-          // console.log("add possible right room area", room, rightC, rightR);
+          if (this.debug) console.log("add possible right room area", room, rightC, rightR);
           this.possible.push(new Possible(rightR, rightC, Direction.RIGHT));
         }
       }
       if (leftC) {
+        if (this.debug) console.log("possible left corridor area", room, leftC);
         const leftR = this.findLeftRoomArea(leftC);
         if (leftR) {
-          // console.log("add possible left room area", room, leftC, leftR);
+          if (this.debug) console.log("add possible left room area", room, leftC, leftR);
           this.possible.push(new Possible(leftR, leftC, Direction.LEFT));
         }
       }
     });
 
-    console.log("possible", [...this.possible]);
-    console.log("rooms", [...this.rooms]);
-    console.log("corridorsV", [...this.corridorsV]);
-    console.log("corridorsH", [...this.corridorsH]);
+    if (this.debug) console.log("possible", [...this.possible]);
+    if (this.debug) console.log("rooms", [...this.rooms]);
+    if (this.debug) console.log("corridorsV", [...this.corridorsV]);
+    if (this.debug) console.log("corridorsH", [...this.corridorsH]);
 
     while (this.possible.length > 0) {
       const i = this.rng.nextRange(0, this.possible.length);
@@ -361,21 +345,20 @@ export class TunnelingAlgorithm {
     }
 
     // find max height
-    let y = -1;
-    let h = -1;
+    let y = buffer.y;
+    let h = buffer.h;
     for (; buffer.h <= this.room_max_h; buffer.h++, buffer.y--) {
       if (this.valid(buffer)) {
         h = buffer.h;
         y = buffer.y;
       } else {
+        buffer.h = h;
+        buffer.y = y;
         break;
       }
     }
 
     if (y >= 0 && h >= 0) {
-      buffer.h = h;
-      buffer.y = y;
-
       // find min x
       let x = buffer.x;
       let w = buffer.w;
@@ -422,17 +405,17 @@ export class TunnelingAlgorithm {
     }
 
     // find max height
-    let h = -1;
+    let h = buffer.h;
     for (; buffer.h <= this.room_max_h; buffer.h++) {
       if (this.valid(buffer)) {
         h = buffer.h;
       } else {
+        buffer.h = h;
         break;
       }
     }
 
     if (h >= 0) {
-      buffer.h = h;
 
       // find min x
       let x = buffer.x;
@@ -481,18 +464,17 @@ export class TunnelingAlgorithm {
     }
 
     // find max width
-    let w = -1;
+    let w = buffer.w;
     for (; buffer.w <= this.room_max_w; buffer.w++) {
       if (this.valid(buffer)) {
         w = buffer.w;
       } else {
+        buffer.w = w;
         break;
       }
     }
 
     if (w >= 0) {
-      buffer.w = w;
-
       // find min y
       let y = buffer.y;
       let h = buffer.h;
@@ -541,20 +523,20 @@ export class TunnelingAlgorithm {
     }
 
     // find max width
-    let x = -1;
-    let w = -1;
+    let x = buffer.x;
+    let w = buffer.w;
     for (; buffer.w <= this.room_max_w; buffer.w++, buffer.x--) {
       if (this.valid(buffer)) {
         w = buffer.w;
         x = buffer.x;
       } else {
+        buffer.x = x;
+        buffer.w = w;
         break;
       }
     }
 
     if (x >= 0 && w >= 0) {
-      buffer.x = x;
-      buffer.w = w;
 
       // find min y
       let y = buffer.y;
@@ -587,7 +569,7 @@ export class TunnelingAlgorithm {
       buffer.h = h;
       return buffer.immutable();
     } else {
-      console.warn("left room area not valid", corridor, buffer);
+      if (this.debug) console.warn("left room area not valid", corridor, buffer);
     }
     return null;
   }
@@ -618,16 +600,16 @@ export class TunnelingAlgorithm {
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
       if (this.valid(room.expand())) {
-        console.log("add top room", corr, room);
+        if (this.debug) console.log("add top room", corr, room);
         this.corridorsV.push(corr);
         this.rooms.push(room);
         this.connectWithOthers(room);
         return true;
       } else {
-        console.warn("top room not valid");
+        if (this.debug) console.warn("top room not valid");
       }
     } else {
-      console.warn("top corridor not valid");
+      if (this.debug) console.warn("top corridor not valid");
     }
     return false;
   }
@@ -658,16 +640,16 @@ export class TunnelingAlgorithm {
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
       if (this.valid(room.expand())) {
-        console.log("add bottom room", corr, room);
+        if (this.debug) console.log("add bottom room", corr, room);
         this.corridorsV.push(corr);
         this.rooms.push(room);
         this.connectWithOthers(room);
         return true;
       } else {
-        console.warn("bottom room not valid", corr, room);
+        if (this.debug) console.warn("bottom room not valid", corr, room);
       }
     } else {
-      console.warn("bottom corridor not valid", corr);
+      if (this.debug) console.warn("bottom corridor not valid", corr);
     }
     return false;
   }
@@ -695,26 +677,20 @@ export class TunnelingAlgorithm {
 
       const room_bottom_y = this.nextRange(room_min_bottom_y, room_max_bottom_y);
       const room_h = room_bottom_y - room_y;
-      console.log({
-        room_min_bottom_y: room_min_bottom_y,
-        room_max_bottom_y: room_max_bottom_y,
-        room_bottom_y: room_bottom_y,
-        room_h: room_h,
-      });
 
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
       if (this.valid(room.expand())) {
-        console.log("add right room", corr, room);
+        if (this.debug) console.log("add right room", corr, room);
         this.corridorsH.push(corr);
         this.rooms.push(room);
         this.connectWithOthers(room);
         return true;
       } else {
-        console.warn("right room not valid", corr, room);
+        if (this.debug) console.warn("right room not valid", corr, room);
       }
     } else {
-      console.warn("right corridor not valid", corr);
+      if (this.debug) console.warn("right corridor not valid", corr);
     }
 
     return false;
@@ -744,16 +720,16 @@ export class TunnelingAlgorithm {
       const room = new ImmutableRect(room_x, room_y, room_w, room_h);
 
       if (this.valid(room.expand())) {
-        console.log("add left room", corr, room);
+        if (this.debug) console.log("add left room", corr, room);
         this.corridorsH.push(corr);
         this.rooms.push(room);
         this.connectWithOthers(room);
         return true;
       } else {
-        console.warn("left room not valid");
+        if (this.debug) console.warn("left room not valid");
       }
     } else {
-      console.warn("left corridor not valid");
+      if (this.debug) console.warn("left corridor not valid");
     }
     return false;
   }
@@ -792,9 +768,9 @@ export class TunnelingAlgorithm {
             a.y - b.y - b.h
           );
         }
-        console.log("test v corr", rect);
+        if (this.debug) console.log("test v corr", rect);
         if (rect.w < this.max_corr_dist && this.valid(rect.expandV())) {
-          console.log("add v corr", rect);
+          if (this.debug) console.log("add v corr", rect);
           this.corridorsV.push(rect);
         }
       }
@@ -820,9 +796,9 @@ export class TunnelingAlgorithm {
           );
         }
 
-        console.log("test h corr", rect);
+        if (this.debug) console.log("test h corr", rect);
         if (rect.h < this.max_corr_dist && this.valid(rect.expandH())) {
-          console.log("add h corr", rect);
+          if (this.debug) console.log("add h corr", rect);
           this.corridorsH.push(rect);
         }
       }

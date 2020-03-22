@@ -17,11 +17,14 @@ export class Resources {
         .add('dungeon.json')
         .add('dungeon.rules.json')
         .add('dialogs.json')
+        .add('village.json')
+        .add('village.rules.json')
         .add('alagard', 'fonts/alagard.fnt')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           this.add(resources['npc.json']!.spritesheet!);
           this.add(resources['dungeon.json']!.spritesheet!);
+          this.add(resources['village.json']!.spritesheet!);
           resolve();
         });
     }));

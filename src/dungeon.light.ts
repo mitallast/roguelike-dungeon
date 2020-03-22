@@ -609,7 +609,6 @@ class Visibility {
         }
         if (pair) {
           const [a, b] = pair;
-          console.log(`merge segments ${a} and ${b}`);
           queue.push(new Segment(a.p1.point, b.p2.point, a.type));
         } else {
           segments.push(first);
@@ -632,7 +631,6 @@ class Visibility {
     }
 
     const after = this.segments.length;
-
     console.log(`optimize: before=${before} after=${after}`)
   }
 

@@ -1,56 +1,59 @@
 import {buffer, Model, Resolution} from "./model";
 import {RNG} from "../rng";
 import {Resources} from "../resources";
-import * as PIXI from "pixi.js";
 import {TunnelingAlgorithm, TunnelingOptions} from "../tunneling";
+import {Indexer} from "../indexer";
+import * as PIXI from "pixi.js";
 
-export interface Tileset {
+export interface TilesetRules {
   readonly size: number;
-  readonly cells: CellConfig[];
-  readonly compatibilities: CellCompatibility[];
+  readonly tiles: string[];
+  readonly cells: [number, number, number][];
+  readonly rules: [number, number, number][];
 }
 
-export interface CellConfig {
-  readonly id: string;
+export class TilesetRulesBuilder {
+  private readonly tilesIndex: Indexer<string> = Indexer.identity();
+  private readonly cellsIndex: Indexer<[number, number, number]> = Indexer.array();
+  private readonly rulesIndex: Indexer<[number, number, number]> = Indexer.array();
 
-  readonly floor?: string;
-  readonly wall?: string;
-  readonly zIndex?: number;
+  addCell(floor: string | undefined, wall: string | undefined, zIndex: number | undefined): number {
+    const floorId = floor ? this.tilesIndex.index(floor) : -1;
+    const wallId = wall ? this.tilesIndex.index(wall) : -1;
+    return this.cellsIndex.index([floorId, wallId, zIndex || 0]);
+  }
 
-  readonly path?: boolean;
-  readonly border?: boolean;
-  readonly weight?: number;
-}
+  addRule(first: number, next: number, direction: number): number {
+    return this.rulesIndex.index([first, next, direction]);
+  }
 
-export interface CellCompatibility {
-  readonly first: string;
-  readonly next: string;
-  readonly directions: ("up" | "down" | "left" | "right")[];
+  build(): TilesetRules {
+    return {
+      size: 16,
+      tiles: this.tilesIndex.values,
+      cells: this.cellsIndex.values,
+      rules: this.rulesIndex.values,
+    };
+  }
 }
 
 export class EvenSimpleTiledModel extends Model {
   private readonly resources: Resources;
-  private readonly tilesize: number;
-  readonly cells: CellConfig[];
+  readonly tileset: TilesetRules;
 
   private readonly constraints: Constraint[];
 
-  constructor(resources: Resources, tileset: Tileset, rng: RNG, width: number, height: number, constraints: Constraint[]) {
+  constructor(resources: Resources, tileset: TilesetRules, rng: RNG, width: number, height: number, constraints: Constraint[]) {
     super(rng, width, height);
     this.resources = resources;
     this.weights = [];
-    this.cells = [];
-    this.tilesize = tileset.size;
+    this.tileset = tileset;
     this.constraints = constraints;
 
-    const index: Partial<Record<string, number>> = {};
-    for (let i = 0; i < tileset.cells.length; i++) {
-      let cells = tileset.cells[i];
-      index[cells.id] = i;
-      this.weights[i] = cells.weight || 1;
-      this.cells[i] = cells;
+    this.T = tileset.cells.length;
+    for (let i = 0; i < this.T; i++) {
+      this.weights[i] = 1;
     }
-    this.T = this.weights.length;
 
     const tmpPropagator: boolean[][][] = [];
     for (let direction = 0; direction < 4; direction++) {
@@ -63,27 +66,11 @@ export class EvenSimpleTiledModel extends Model {
       }
     }
 
-    const directions = {
-      up: 3,
-      down: 1,
-      left: 0,
-      right: 2
-    };
-
-    for (let compatibility of tileset.compatibilities) {
-      const first = index[compatibility.first]!;
-      const next = index[compatibility.next]!;
-      console.log(compatibility.first, compatibility.next, first, next);
-      for (let d of compatibility.directions) {
-        const direction = directions[d];
-        const opposite = Model.opposite[direction];
-        console.log(d, direction, opposite);
-        tmpPropagator[direction][first][next] = true;
-        tmpPropagator[opposite][next][first] = true;
-      }
+    for (let [first, next, direction] of tileset.rules) {
+      const opposite = Model.opposite[direction];
+      tmpPropagator[direction][first][next] = true;
+      tmpPropagator[opposite][next][first] = true;
     }
-
-    console.log("tmpPropagator", tmpPropagator);
 
     this.propagator = [];
     for (let direction = 0; direction < 4; direction++) {
@@ -97,7 +84,6 @@ export class EvenSimpleTiledModel extends Model {
         }
       }
     }
-    console.log("propagator", this.propagator);
   }
 
   onBoundary(x: number, y: number): boolean {
@@ -164,10 +150,12 @@ export class EvenSimpleTiledModel extends Model {
 
   graphics(markup: number[]): void {
     const scale = 1;
+    const tilesize = this.tileset.size;
+    console.log("tilesize", tilesize, this.tileset, this.tileset.size);
     if (this.app == null) {
       this.app = new PIXI.Application({
-        width: this.FMX * this.tilesize * scale,
-        height: this.FMY * this.tilesize * scale,
+        width: this.FMX * tilesize * scale,
+        height: this.FMY * tilesize * scale,
         resolution: 1,
         antialias: false,
         autoStart: false,
@@ -184,16 +172,16 @@ export class EvenSimpleTiledModel extends Model {
     if (this.observed != null) {
       for (let x = 0; x < this.FMX; x++) {
         for (let y = 0; y < this.FMY; y++) {
-          let cell = this.cells[this.observed[x + y * this.FMX]];
-          if (cell.floor) {
-            const sprite = this.resources.sprite(cell.floor);
-            sprite.position.set(x * this.tilesize, y * this.tilesize);
+          let [floor, wall] = this.tileset.cells[this.observed[x + y * this.FMX]];
+          if (floor >= 0) {
+            const sprite = this.resources.sprite(this.tileset.tiles[floor]);
+            sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 1;
             container.addChild(sprite);
           }
-          if (cell.wall) {
-            const sprite = this.resources.sprite(cell.wall);
-            sprite.position.set(x * this.tilesize, y * this.tilesize);
+          if (wall >= 0) {
+            const sprite = this.resources.sprite(this.tileset.tiles[wall]);
+            sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 2;
             container.addChild(sprite);
           }
@@ -212,20 +200,20 @@ export class EvenSimpleTiledModel extends Model {
           const alpha = 1 / weights_sum;
           for (let t = 0; t < this.T; t++) {
             if (a[t]) {
-              let cell = this.cells[t];
-              const tiles = (cell.floor ? 1 : 0) + (cell.wall ? 1 : 0);
-              if (cell.floor) {
-                const sprite = this.resources.sprite(cell.floor);
-                sprite.position.set(x * this.tilesize, y * this.tilesize);
+              const [floor, wall] = this.tileset.cells[t];
+              const tiles = (floor >= 0 ? 1 : 0) + (wall >= 0 ? 1 : 0);
+              if (floor >= 0) {
+                const sprite = this.resources.sprite(this.tileset.tiles[floor]);
+                sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 1;
-                sprite.alpha = alpha * (1 / tiles);
+                sprite.alpha = alpha * (1 / tiles) * this.weights[t];
                 container.addChild(sprite);
               }
-              if (cell.wall) {
-                const sprite = this.resources.sprite(cell.wall);
-                sprite.position.set(x * this.tilesize, y * this.tilesize);
+              if (wall >= 0) {
+                const sprite = this.resources.sprite(this.tileset.tiles[wall]);
+                sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 2;
-                sprite.alpha = alpha * (1 / tiles);
+                sprite.alpha = alpha * (1 / tiles) * this.weights[t];
                 container.addChild(sprite);
               }
             }
@@ -239,7 +227,7 @@ export class EvenSimpleTiledModel extends Model {
     graphics.lineStyle(1, 0xFF0000);
     for (let i of markup) {
       let x = i % this.FMX, y = Math.floor(i / this.FMX);
-      graphics.drawRect(x * this.tilesize, y * this.tilesize, this.tilesize, this.tilesize);
+      graphics.drawRect(x * tilesize, y * tilesize, tilesize, tilesize);
     }
 
     app.render();
@@ -266,23 +254,16 @@ export interface Constraint {
 }
 
 export class BorderConstraint implements Constraint {
-  private readonly borderCells: string[];
-  private isBorderCell: boolean[] = [];
+  private readonly isBorderCell: boolean[];
 
   private model: EvenSimpleTiledModel | null = null;
 
-  constructor(borderCells: string[]) {
-    this.borderCells = borderCells;
+  constructor(isBorderCell: boolean[]) {
+    this.isBorderCell = isBorderCell;
   }
 
   init(model: EvenSimpleTiledModel): void {
     this.model = model;
-    const indices = model.FMX * model.FMY;
-    this.isBorderCell = buffer(indices, false);
-    for (const borderCell of this.borderCells) {
-      const index = model.cells.findIndex(m => m.id === borderCell);
-      this.isBorderCell[index] = true;
-    }
   }
 
   onClear(): void {
@@ -314,8 +295,7 @@ export class BorderConstraint implements Constraint {
 }
 
 export class PathConstraint implements Constraint {
-  private readonly pathCells: string[];
-  private isPathCell: boolean[] = [];
+  private readonly isPathCell: boolean[];
 
   private model: EvenSimpleTiledModel | null = null;
   private graph: SimpleGraph | null = null;
@@ -325,19 +305,13 @@ export class PathConstraint implements Constraint {
   private refresh: boolean[] = [];
   private refreshQueue: number[] = [];
 
-  constructor(pathCells: string[]) {
-    this.pathCells = pathCells;
+  constructor(isPathCell: boolean[]) {
+    this.isPathCell = isPathCell;
   }
 
   init(model: EvenSimpleTiledModel): void {
     this.model = model;
     const indices = model.FMX * model.FMY;
-    this.isPathCell = buffer(indices, false);
-    for (const pathCell of this.pathCells) {
-      const index = model.cells.findIndex(m => m.id === pathCell);
-      this.isPathCell[index] = true;
-    }
-
     this.couldBePath = buffer(indices, false);
     this.mustBePath = buffer(indices, false);
     this.refresh = buffer(indices, true);
@@ -729,40 +703,46 @@ interface SimpleGraph {
 }
 
 export class RoomConstraint implements Constraint {
-  private readonly options: TunnelingOptions;
-  private readonly pathCells: string[];
-  private isPathCell: boolean[] = [];
+  private readonly tunnelingOptions: TunnelingOptions;
+  private readonly isRoomCell: boolean[] = [];
+  private readonly denyOther: boolean;
 
   private model: EvenSimpleTiledModel | null = null;
 
-  constructor(pathCells: string[], options: TunnelingOptions) {
-    this.pathCells = pathCells;
-    this.options = options;
+  constructor(isRoomCell: boolean[], denyOther: boolean, tunneling: TunnelingOptions) {
+    this.isRoomCell = isRoomCell;
+    this.denyOther = denyOther;
+    this.tunnelingOptions = tunneling;
   }
 
   init(model: EvenSimpleTiledModel): void {
     this.model = model;
-    const indices = model.FMX * model.FMY;
-    this.isPathCell = buffer(indices, false);
-    for (const pathCell of this.pathCells) {
-      const index = model.cells.findIndex(m => m.id === pathCell);
-      this.isPathCell[index] = true;
-    }
   }
 
   onClear(): void {
     const model = this.model!;
-    const tunneling = new TunnelingAlgorithm(model.rng, model.FMX, model.FMY, this.options);
-    tunneling.generateSync(1000);
+    const tunneling = new TunnelingAlgorithm(model.rng, model.FMX, model.FMY, this.tunnelingOptions);
+    tunneling.generate();
+
+    const isRoom = buffer(model.FMX * model.FMY, false);
 
     for (const room of tunneling.rooms) {
       for (let y = room.y; y < room.y + room.h; y++) {
         for (let x = room.x; x < room.x + room.w; x++) {
-          const i = x + y * model.FMX;
-          for (let t = 0; t < model.T; t++) {
-            if (!this.isPathCell[t]) {
-              model.ban(i, t);
-            }
+          isRoom[x + y * model.FMX] = true;
+        }
+      }
+    }
+
+    for (let i = 0; i < isRoom.length; i++) {
+      for (let t = 0; t < model.T; t++) {
+        if (isRoom[i]) {
+          if (!this.isRoomCell[t]) {
+            model.ban(i, t);
+          }
+        } else if (this.denyOther) {
+          if (this.isRoomCell[t]) {
+            model.ban(i, t);
           }
         }
       }
@@ -782,29 +762,54 @@ export class RoomConstraint implements Constraint {
 export class EvenSimpleTiledModelTest {
   static async test(resources: Resources): Promise<void> {
     const loader = new PIXI.Loader();
-    loader.add("dungeon.rules.json");
     loader.add("village.rules.json");
     await new Promise((resolve) => loader.load(() => resolve()));
 
-    const tileset: Tileset = loader.resources["dungeon.rules.json"].data!;
+    const tileset: TilesetRules = loader.resources["village.rules.json"].data!;
 
-    const pathCells = tileset.cells.filter(c => c.path).map(c => c.id);
-    const borderCells = tileset.cells.filter(c => c.border).map(c => c.id);
-    const model = new EvenSimpleTiledModel(resources, tileset, new RNG(), 40, 40, [
+    console.log("tileset", tileset);
+
+    const filter = (regex: RegExp) => {
+      const tiles: boolean[] = tileset.tiles.map(t => !!t.match(regex));
+      return tileset.cells.map(cell => {
+        const [f, w] = cell;
+        return f >= 0 && tiles[f]! && w === -1;
+      });
+    };
+
+    const borderCells = filter(/^grass_\d+\.png$/);
+    const pathCells = filter(/^road_\d+\.png$/);
+    const roomCells = filter(/^wood_floor_\d+\.png$/);
+
+    console.log("borderCells", borderCells);
+    console.log("pathCells", pathCells);
+    console.log("roomCells", roomCells);
+
+    const model = new EvenSimpleTiledModel(resources, tileset, new RNG(), 50, 50, [
       new BorderConstraint(borderCells),
-      new RoomConstraint(pathCells, {
+      new RoomConstraint(roomCells, true, {
         room_max_w: 7,
-        room_max_h: 7,
-        max_corr_dist: 10
+        room_max_h: 5,
+        max_corr_dist: 20,
+        min_corr_dist_x: 5,
+        min_corr_dist_y: 10,
       }),
       new PathConstraint(pathCells),
     ]);
-    const result = await model.run();
-    if (result !== Resolution.Decided) {
-      console.log("fail", result);
-    } else {
-      console.log("success");
+    console.time("model loop run");
+    let state;
+    while (true) {
+      console.time("model run");
+      state = await model.run(10000);
+      console.timeEnd("model run");
+      if (state !== Resolution.Decided) {
+        console.error("failed run model");
+      } else {
+        console.log("success run model");
+        break;
+      }
     }
+    console.timeEnd("model loop run");
     console.log("model", model);
     model.graphics([]);
   }

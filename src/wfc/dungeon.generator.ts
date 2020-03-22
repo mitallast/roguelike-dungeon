@@ -1,7 +1,13 @@
 import {DungeonMap} from '../dungeon.map';
 import {BaseDungeonGenerator, GenerateOptions} from '../dungeon.generator';
 import {SceneController} from "../scene";
-import {BorderConstraint, EvenSimpleTiledModel, PathConstraint, RoomConstraint, Tileset} from "./even.simple.tiled";
+import {
+  BorderConstraint,
+  EvenSimpleTiledModel,
+  PathConstraint,
+  RoomConstraint,
+  TilesetRules
+} from "./even.simple.tiled";
 import {Resolution} from "./model";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
@@ -16,13 +22,21 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
   }
 
   async generate(options: GenerateOptions): Promise<DungeonMap> {
-    const tileset: Tileset = this.controller.app.loader.resources['dungeon.rules.json'].data;
+    const tileset: TilesetRules = this.controller.app.loader.resources['dungeon.rules.json'].data;
 
-    const pathCells = tileset.cells.filter(c => c.path).map(c => c.id);
-    const borderCells = tileset.cells.filter(c => c.border).map(c => c.id);
+    const borderCells = tileset.cells.map(cell => {
+      const [f, w] = cell;
+      return f === -1 && w === -1;
+    });
+    const isFloorTile = tileset.tiles.map(t => !!t.match(/^floor_\d\.png$/));
+    const pathCells = tileset.cells.map(cell => {
+      const [f, w] = cell;
+      return isFloorTile[f] && w === -1;
+    });
+
     const model = this.model = new EvenSimpleTiledModel(this.resources, tileset, this.rng, 70, 70, [
       new BorderConstraint(borderCells),
-      new RoomConstraint(pathCells, {
+      new RoomConstraint(pathCells, false, {
         room_max_w: 10,
         room_max_h: 10,
         max_corr_dist: 10
@@ -51,15 +65,13 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     for (let y = 0; y < model.FMY; y++) {
       for (let x = 0; x < model.FMX; x++) {
         const i = x + y * model.FMX;
-        const cell = model.cells[observed[i]];
-        if (cell.floor) {
-          dungeon.cell(x, y).floor = cell.floor;
+        const [floor, wall, zIndex] = tileset.cells[observed[i]];
+        if (floor >= 0) {
+          dungeon.cell(x, y).floor = tileset.tiles[floor];
         }
-        if (cell.wall) {
-          dungeon.cell(x, y).wall = cell.wall;
-          if (cell.zIndex) {
-            dungeon.cell(x, y).zIndex = cell.zIndex;
-          }
+        if (wall >= 0) {
+          dungeon.cell(x, y).wall = tileset.tiles[wall];
+          dungeon.cell(x, y).zIndex = zIndex;
         }
       }
     }

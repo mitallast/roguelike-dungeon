@@ -64,6 +64,10 @@ export class ImmutableRect implements Rect {
       && a.y < b.y + b.h
       && a.y + a.h > b.y;
   }
+
+  toString(): string {
+    return `{x=${this.x},y=${this.y},w=${this.w},h=${this.h}}`;
+  }
 }
 
 export class MutableRect implements Rect {
@@ -93,5 +97,9 @@ export class MutableRect implements Rect {
       && a.x + a.w > b.x
       && a.y < b.y + b.h
       && a.y + a.h > b.y;
+  }
+
+  toString(): string {
+    return `{x=${this.x},y=${this.y},w=${this.w},h=${this.h}}`;
   }
 }

@@ -59,17 +59,12 @@ export class SelectHeroScene implements Scene {
     const sprite_h = Math.floor(tile_h * scale);
     const rect_h = sprite_h + title_h + margin * 3;
 
-    console.log("stage", c_w, c_h);
-    console.log("rect", rect_w, rect_h);
-    console.log("sprite", sprite_w, sprite_h);
-
     for (let i = 0; i < total; i++) {
       const heroName = heroCharacterNames[i];
 
       const d_x = margin * (i + 1) + rect_w * i;
       const d_y = (c_h >> 1) - (rect_h >> 1);
       const container = new PIXI.Container();
-      console.log(d_x, d_y);
       container.position.set(d_x, d_y);
 
       const selected = new PIXI.Graphics();

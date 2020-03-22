@@ -193,16 +193,14 @@ export abstract class Model {
 
   debug: boolean = false;
 
-  async run(limit: number = 0): Promise<Resolution> {
+  async run(limit: number = 0, debug: boolean = false): Promise<Resolution> {
     if (this.wave.length === 0) this.init();
     this.clear();
-    this.debug = false;
+    this.debug = debug;
     for (let i = 0; i < limit || limit === 0; i++) {
       if (i % 50 === 0) {
         await yields();
       }
-
-      // this.debug = this.debug || i >= 57;
       if (this.debug) {
         console.log("step", i);
       }
@@ -434,12 +432,9 @@ export abstract class Model {
         let pattern1 = this.propagator[direction][t]; // item2
         let compat = this.compatible[s];
 
-        if (this.debug) console.log("direction", "s", s, "sx", sx, "sy", sy, "pattern1", pattern1, "compat", compat);
-
         for (let st of pattern1) {
           let comp = compat[st];
           comp[direction]--;
-          if (this.debug) console.log("comp[direction]", comp[direction]);
           if (comp[direction] == 0) {
             if (this.internalBan(s, st)) {
               this.status = Resolution.Contradiction;

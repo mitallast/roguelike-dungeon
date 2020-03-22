@@ -1,5 +1,7 @@
 import {Resources} from "./resources";
 import {DungeonZIndexes} from "./dungeon.map";
+import {TilesetRulesBuilder} from "./wfc/even.simple.tiled";
+import {Indexer} from "./indexer";
 import * as PIXI from "pixi.js";
 
 const scale = 3;
@@ -7,10 +9,40 @@ const border = 2;
 const skip = 1;
 const sprite_size = 16;
 
-interface EditorCellConfig {
-  readonly floor?: string;
-  readonly wall?: string;
-  readonly zIndex?: number;
+interface EditorSample {
+  readonly tiles: string[];
+  readonly cells: [number, number, number][];
+  readonly map: number[][];
+}
+
+class EditorSampleBuilder {
+  private readonly tilesIndex: Indexer<string> = Indexer.identity();
+  private readonly cellsIndex: Indexer<[number, number, number]> = Indexer.array();
+  private readonly map: number[][];
+
+  constructor(width: number, height: number) {
+    this.map = [];
+    for (let y = 0; y < height; y++) {
+      this.map[y] = [];
+      for (let x = 0; x < width; x++) {
+        this.map[y][x] = 0;
+      }
+    }
+  }
+
+  set(x: number, y: number, floorTile: string | undefined, wallTile: string | undefined, zIndex: number | undefined): void {
+    const floorId = floorTile ? this.tilesIndex.index(floorTile) : -1;
+    const wallId = wallTile ? this.tilesIndex.index(wallTile) : -1;
+    this.map[y][x] = this.cellsIndex.index([floorId, wallId, zIndex || 1]);
+  }
+
+  build(): EditorSample {
+    return {
+      tiles: this.tilesIndex.values,
+      cells: this.cellsIndex.values,
+      map: this.map
+    }
+  }
 }
 
 export class Editor {
@@ -193,133 +225,77 @@ export class Editor {
     max_x = Math.min(this.width - 1, max_x);
     max_y = Math.min(this.height - 1, max_y);
 
-    const dump: EditorCellConfig[][] = [];
+    const builder = new EditorSampleBuilder(max_x - min_x + 1, max_y - min_y + 1);
+
     for (let y = min_y; y <= max_y; y++) {
-      const row: EditorCellConfig[] = [];
-      dump.push(row);
       for (let x = min_x; x <= max_x; x++) {
         const cell = this.cells[y][x];
-        const options: EditorCellConfig = {
-          floor: cell.floorSprite?.name,
-          wall: cell.wallSprite?.name,
-          zIndex: cell.wallSprite?.zIndex
-        };
-        row.push(options);
+        builder.set(
+          x - min_x,
+          y - min_y,
+          cell.floorSprite?.name,
+          cell.wallSprite?.name,
+          cell.wallSprite?.zIndex
+        );
       }
     }
-    console.log(JSON.stringify(dump));
+    console.log(JSON.stringify(builder.build()));
   }
 
-  load(dx: number, dy: number, options: EditorCellConfig[][]): void {
-    for (let y = 0; y < options.length; y++) {
-      for (let x = 0; x < options[y].length; x++) {
+  load(dx: number, dy: number, sample: EditorSample): void {
+    for (let y = 0; y < sample.map.length; y++) {
+      for (let x = 0; x < sample.map[y].length; x++) {
         if (y + dy < this.height && x + dx < this.width) {
           const cell = this.cells[y + dy][x + dx];
-          const option = options[y][x];
-          if (option) {
-            cell.setOptions(option)
-          } else {
-            cell.clear();
-          }
+          const cellId = sample.map[y][x];
+          const [floorId, wallId, zIndex] = sample.cells[cellId];
+          cell.clear();
+          if (floorId >= 0) cell.floor = sample.tiles[floorId];
+          if (wallId >= 0) cell.wall = sample.tiles[wallId];
+          if (zIndex >= 0) cell.zIndex = zIndex;
         }
       }
     }
   }
 
   rules(allowEmpty: boolean): void {
-    interface Tileset {
-      readonly size: number;
-      readonly cells: CellConfig[];
-      readonly compatibilities: CellCompatibility[];
-    }
+    const builder = new TilesetRulesBuilder();
+    const RIGHT = 2;
+    const DOWN = 1;
 
-    interface CellConfig {
-      readonly id: string;
-      floor?: string;
-      wall?: string;
-      zIndex?: number;
-    }
-
-    interface CellCompatibility {
-      readonly first: string;
-      readonly next: string;
-      readonly directions: string[];
-    }
-
-    const tileset: Tileset = {
-      size: 16,
-      cells: [],
-      compatibilities: []
-    };
-
-    const tilemap: Partial<Record<string, CellConfig>> = {};
-    const cellsmap: string[][] = [];
+    const map: number[][] = [];
     for (let y = 0; y < this.height; y++) {
-      cellsmap[y] = [];
+      map[y] = [];
       for (let x = 0; x < this.width; x++) {
         const cell = this.cells[y][x];
-        const keys = [];
-        if (cell.floorSprite) {
-          keys.push(cell.floorSprite.name);
-        }
-        if (cell.wallSprite) {
-          keys.push(cell.wallSprite.name);
-          keys.push(cell.wallSprite.zIndex.toString());
-        }
-        const id = keys.map(s => s.replace(/\.png$/, '')).join('_');
-        cellsmap[y][x] = id;
-        if (keys.length > 0 || allowEmpty) {
-          if (!tilemap[id]) {
-            const config: CellConfig = {id: id};
-            if (cell.floorSprite) config.floor = cell.floorSprite.name;
-            if (cell.wallSprite) config.wall = cell.wallSprite.name;
-            if (cell.wallSprite) config.zIndex = cell.wallSprite.zIndex;
-            tilemap[id] = config;
-            tileset.cells.push(config);
-          }
+        if (cell.floorSprite || cell.wallSprite || allowEmpty) {
+          map[y][x] = builder.addCell(
+            cell.floorSprite?.name,
+            cell.wallSprite?.name,
+            cell.wallSprite?.zIndex
+          );
+        } else {
+          map[y][x] = -1;
         }
       }
     }
-
-    console.log(cellsmap);
-
-    const rules: Map<string, Set<string>> = new Map();
     for (let y = 0; y < this.height - 1; y++) {
       for (let x = 0; x < this.width - 1; x++) {
-        const first = cellsmap[y][x];
-        if (first !== "" || allowEmpty) {
-          const right = cellsmap[y][x + 1];
-          if (right !== "" || allowEmpty) {
-            console.log("right", right);
-            const rightId = [first, right].join(';');
-            if (!rules.has(rightId)) {
-              rules.set(rightId, new Set<string>());
-            }
-            rules.get(rightId)!.add("right");
+        const first = map[y][x];
+        if (first !== -1 || allowEmpty) {
+          const right = map[y][x + 1];
+          if (right !== -1 || allowEmpty) {
+            builder.addRule(first, right, RIGHT);
           }
-          const down = cellsmap[y + 1][x];
-          if (down !== "" || allowEmpty) {
-            console.log("down", down);
-            const downId = [first, down].join(';');
-            if (!rules.has(downId)) {
-              rules.set(downId, new Set<string>());
-            }
-            rules.get(downId)!.add("down");
+          const down = map[y + 1][x];
+          if (down !== -1 || allowEmpty) {
+            builder.addRule(first, down, DOWN);
           }
         }
       }
     }
 
-    for (let [pair, set] of rules) {
-      const [first, next] = pair.split(';');
-      tileset.compatibilities.push({
-        first: first,
-        next: next,
-        directions: [...set]
-      });
-    }
-
-    console.log(JSON.stringify(tileset));
+    console.log(JSON.stringify(builder.build()));
   }
 }
 
@@ -377,7 +353,7 @@ class EditorMapCell {
     this.container.destroy();
   }
 
-  setFloor(name: string | null): void {
+  set floor(name: string | null) {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
@@ -388,20 +364,20 @@ class EditorMapCell {
     }
   }
 
-  setWall(name: string | null): void {
+  set wall(name: string | null) {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
       this.wallSprite = this.resources.sprite(name);
       this.container.addChild(this.wallSprite);
       this.container.sortChildren();
-      this.setWallZIndex(DungeonZIndexes.wallFront);
+      this.zIndex = DungeonZIndexes.wallFront;
     } else {
       this.zIndexText.text = "";
     }
   }
 
-  setWallZIndex(zIndex: number): void {
+  set zIndex(zIndex: number) {
     if (this.wallSprite) {
       this.wallSprite.zIndex = zIndex;
       this.zIndexText.text = `${zIndex}`;
@@ -412,24 +388,16 @@ class EditorMapCell {
   toggleWallZIndex(): void {
     if (this.wallSprite) {
       if (this.wallSprite.zIndex === DungeonZIndexes.wallFront) {
-        this.setWallZIndex(DungeonZIndexes.wallBack);
+        this.zIndex = DungeonZIndexes.wallBack;
       } else {
-        this.setWallZIndex(DungeonZIndexes.wallFront);
+        this.zIndex = DungeonZIndexes.wallFront;
       }
     }
   }
 
-  setOptions(options: EditorCellConfig): void {
-    this.setFloor(options.floor || null);
-    this.setWall(options.wall || null);
-    if (options.zIndex) {
-      this.setWallZIndex(options.zIndex);
-    }
-  }
-
   clear(): void {
-    this.setFloor(null);
-    this.setWall(null);
+    this.floor = null;
+    this.wall = null;
   }
 
   private select() {
@@ -482,7 +450,7 @@ class FloorPaletteCell extends SpritePaletteCell {
   }
 
   action(cell: EditorMapCell): void {
-    cell.setFloor(this.name);
+    cell.floor = this.name;
   }
 }
 
@@ -492,7 +460,7 @@ class WallPaletteCell extends SpritePaletteCell {
   }
 
   action(cell: EditorMapCell): void {
-    cell.setWall(this.name);
+    cell.wall = this.name;
   }
 }
 
@@ -544,7 +512,7 @@ class ClearFloorPaletteCell extends NamedPaletteCell {
   }
 
   action(cell: EditorMapCell): void {
-    cell.setFloor(null);
+    cell.floor = null;
   }
 
   click(): void {
@@ -558,7 +526,7 @@ class ClearWallPaletteCell extends NamedPaletteCell {
   }
 
   action(cell: EditorMapCell): void {
-    cell.setWall(null);
+    cell.wall = null;
   }
 
   click(): void {
@@ -613,7 +581,7 @@ class DumpPaletteCell extends NamedPaletteCell {
 }
 
 class LoadPaletteCell extends NamedPaletteCell {
-  private options: EditorCellConfig[][] = [];
+  private options: EditorSample | null = null;
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
     super("LOAD", "Load", x, y, resources, editor);
@@ -621,7 +589,6 @@ class LoadPaletteCell extends NamedPaletteCell {
 
   action(cell: EditorMapCell): void {
     if (this.options) {
-      console.log("action", this.options);
       this.editor.load(cell.x, cell.y, this.options);
     }
   }
@@ -630,7 +597,6 @@ class LoadPaletteCell extends NamedPaletteCell {
     const source = prompt("enter json");
     if (source) {
       this.options = JSON.parse(source);
-      console.log("click", this.options);
       this.editor.selectPalette(this);
     }
   }
