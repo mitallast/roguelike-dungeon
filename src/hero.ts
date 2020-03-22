@@ -200,8 +200,8 @@ export class HeroAI extends BaseCharacterAI {
     this.view.setWeapon(weapon);
   }
 
-  action(): boolean {
-    if (!this.character.dead.get()) {
+  action(finished: boolean): boolean {
+    if (!this.character.dead.get() && finished) {
 
       this.scanDrop();
       const joystick = this.dungeon.controller.joystick;
@@ -305,7 +305,7 @@ export class HeroAI extends BaseCharacterAI {
       start: () => this.lookAtMonsters(),
       finish: () => {
         this.scanHit();
-        if (!this.action()) {
+        if (!this.action(true)) {
           this.idle();
         }
       },

@@ -178,12 +178,12 @@ export abstract class BaseCharacterAI implements CharacterAI {
       sprite: this.character.name + '_idle',
       speed: this.character.speed,
       update: (animation) => {
-        if (this.action()) {
+        if (this.action(false)) {
           animation.terminate();
         }
       },
       finish: () => {
-        if (!this.action()) {
+        if (!this.action(true)) {
           this.idle();
         }
       }
@@ -197,7 +197,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
       update: (animation) => this.updatePosition(animation.spriteTime),
       finish: () => {
         this.resetPosition(this.view.new_x, this.view.new_y);
-        if (!this.action()) {
+        if (!this.action(true)) {
           this.idle();
         }
       }
@@ -206,7 +206,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
 
   abstract hit(): void;
 
-  abstract action(): boolean;
+  abstract action(finished: boolean): boolean;
 
   protected abstract onPositionChanged(): void;
 

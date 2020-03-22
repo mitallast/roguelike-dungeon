@@ -109,7 +109,7 @@ export abstract class BaseMonsterAI extends BaseCharacterAI {
     }
   }
 
-  action(): boolean {
+  action(finished: boolean): boolean {
     if (!this.character.dead.get()) {
       const pos_x = this.view.pos_x;
       const pos_y = this.view.pos_y;
@@ -126,13 +126,15 @@ export abstract class BaseMonsterAI extends BaseCharacterAI {
         }
       }
 
-      // random move ?
-      const random_move_percent = 0.1;
-      if (Math.random() < random_move_percent) {
-        const move_x = Math.floor(Math.random() * 3) - 1;
-        const move_y = Math.floor(Math.random() * 3) - 1;
-        if (this.move(move_x, move_y)) {
-          return true;
+      if (finished) {
+        // random move ?
+        const random_move_percent = 0.1;
+        if (Math.random() < random_move_percent) {
+          const move_x = Math.floor(Math.random() * 3) - 1;
+          const move_y = Math.floor(Math.random() * 3) - 1;
+          if (this.move(move_x, move_y)) {
+            return true;
+          }
         }
       }
     }
@@ -152,7 +154,7 @@ export abstract class BaseMonsterAI extends BaseCharacterAI {
             return;
           }
         }
-        if (!this.action()) {
+        if (!this.action(true)) {
           this.idle();
         }
       }
