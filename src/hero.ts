@@ -209,6 +209,7 @@ export class HeroAI extends BaseCharacterAI {
       if (!joystick.inventory.processed) {
         joystick.inventory.processed = true;
         this.dungeon.controller.showInventory(this.character);
+        this.idle();
         return true;
       }
 
