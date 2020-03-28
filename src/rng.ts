@@ -15,13 +15,25 @@ export class RNG {
     console.log("seed", this.state);
   }
 
-  nextInt(): number {
+  get boolean(): boolean {
+    return this.nextInt() % 1 != 0;
+  }
+
+  get int(): number {
     this.state = (a * this.state + c) % m;
     return this.state;
   }
 
+  get float(): number {
+    return this.int / (m - 1);
+  }
+
+  nextInt(): number {
+    return this.int;
+  }
+
   nextFloat(): number {
-    return this.nextInt() / (m - 1);
+    return this.float;
   }
 
   nextRange(start: number, end: number): number {

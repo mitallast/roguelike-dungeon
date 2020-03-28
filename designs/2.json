@@ -1,0 +1,588 @@
+{
+  "width": 100,
+  "height": 150,
+  "background": 0,
+  "openings": [
+    3
+  ],
+  "design": [
+    {
+      "startX": 1,
+      "startY": 109,
+      "endX": 98,
+      "endY": 109,
+      "type": 3
+    },
+    {
+      "startX": 10,
+      "startY": 71,
+      "endX": 90,
+      "endY": 147,
+      "type": 1
+    },
+    {
+      "startX": 10,
+      "startY": 70,
+      "endX": 90,
+      "endY": 70,
+      "type": 3
+    },
+    {
+      "startX": 1,
+      "startY": 110,
+      "endX": 98,
+      "endY": 147,
+      "type": 1
+    },
+    {
+      "startX": 30,
+      "startY": 41,
+      "endX": 70,
+      "endY": 147,
+      "type": 1
+    },
+    {
+      "startX": 30,
+      "startY": 40,
+      "endX": 70,
+      "endY": 40,
+      "type": 3
+    },
+    {
+      "startX": 0,
+      "startY": 147,
+      "endX": 10,
+      "endY": 147,
+      "type": 1
+    },
+    {
+      "startX": 91,
+      "startY": 147,
+      "endX": 99,
+      "endY": 147,
+      "type": 1
+    },
+    {
+      "startX": 0,
+      "startY": 148,
+      "endX": 99,
+      "endY": 148,
+      "type": 2
+    }
+  ],
+  "stepLengths": [
+    8,
+    8,
+    8,
+    8,
+    4
+  ],
+  "corridorWidths": [
+    15,
+    7,
+    7,
+    7,
+    3,
+    1,
+    3,
+    1,
+    3,
+    3,
+    1,
+    3,
+    1,
+    3,
+    1,
+    3,
+    3,
+    1,
+    3
+  ],
+  "maxAgesCrawlers": [
+    10,
+    15,
+    15,
+    15,
+    20,
+    10,
+    20,
+    10,
+    30,
+    30,
+    10,
+    20,
+    10,
+    20,
+    10,
+    20,
+    20,
+    10,
+    15
+  ],
+  "maxAgesTunnelCrawlers": [
+    5,
+    12,
+    12,
+    15,
+    15,
+    15,
+    15,
+    15,
+    15,
+    20,
+    30,
+    10,
+    15,
+    10,
+    3,
+    20,
+    10,
+    5,
+    15,
+    10,
+    5,
+    20,
+    20,
+    20,
+    20,
+    10,
+    20,
+    5,
+    20,
+    5
+  ],
+  "crawlers": [
+    {
+      "location": {
+        "x": 10,
+        "y": 70
+      },
+      "direction": {
+        "x": 0,
+        "y": -1
+      },
+      "intendedDirection": {
+        "x": 1,
+        "y": -1
+      },
+      "age": 0,
+      "maxAge": 15,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 20,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    },
+    {
+      "location": {
+        "x": 90,
+        "y": 70
+      },
+      "direction": {
+        "x": 0,
+        "y": -1
+      },
+      "intendedDirection": {
+        "x": -1,
+        "y": -1
+      },
+      "age": 0,
+      "maxAge": 15,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 20,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    },
+    {
+      "location": {
+        "x": 30,
+        "y": 40
+      },
+      "direction": {
+        "x": 0,
+        "y": -1
+      },
+      "intendedDirection": {
+        "x": 1,
+        "y": -1
+      },
+      "age": 0,
+      "maxAge": 15,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 30,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    },
+    {
+      "location": {
+        "x": 70,
+        "y": 40
+      },
+      "direction": {
+        "x": 0,
+        "y": -1
+      },
+      "intendedDirection": {
+        "x": -1,
+        "y": -1
+      },
+      "age": 0,
+      "maxAge": 15,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 30,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    },
+    {
+      "location": {
+        "x": 45,
+        "y": 0
+      },
+      "direction": {
+        "x": 0,
+        "y": 1
+      },
+      "intendedDirection": {
+        "x": -1,
+        "y": 1
+      },
+      "age": 0,
+      "maxAge": 10,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 30,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    },
+    {
+      "location": {
+        "x": 55,
+        "y": 0
+      },
+      "direction": {
+        "x": 0,
+        "y": 1
+      },
+      "intendedDirection": {
+        "x": 1,
+        "y": 1
+      },
+      "age": 0,
+      "maxAge": 10,
+      "generation": 2,
+      "stepLength": 4,
+      "opening": 1,
+      "corridorWidth": 7,
+      "straightSingleSpawnProbability": 0,
+      "straightDoubleSpawnProbability": 30,
+      "turnSingleSpawnProbability": 0,
+      "turnDoubleSpawnProbability": 60,
+      "changeDirectionProbability": 10
+    }
+  ],
+  "tunnelCrawlers": [
+    {
+      "location": {
+        "x": 50,
+        "y": 148
+      },
+      "direction": {
+        "x": 0,
+        "y": -1
+      },
+      "intendedDirection": {
+        "x": 0,
+        "y": -1
+      },
+      "age": 0,
+      "maxAge": 10,
+      "generation": 0,
+      "stepLength": 3,
+      "tunnelWidth": 1,
+      "straightDoubleSpawnProbability": 20,
+      "turnDoubleSpawnProbability": 100,
+      "changeDirectionProbability": 30,
+      "makeRoomsRightProbability": 80,
+      "makeRoomsLeftProbability": 80,
+      "joinPreference": 100
+    }
+  ],
+  "crawlerPairs": [],
+  "childDelayProbabilityForGenerationTunnelCrawlers": [
+    0,
+    0,
+    50,
+    0,
+    50,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "childDelayProbabilityForGenerationCrawlers": [
+    0,
+    50,
+    30,
+    20,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "childDelayProbabilityForGenerationRoomCrawlers": [
+    0,
+    0,
+    30,
+    0,
+    50,
+    20,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "roomSizeProbabilitySidewaysRooms": [
+    [
+      100,
+      0,
+      0
+    ],
+    [
+      90,
+      10,
+      0
+    ],
+    [
+      70,
+      30,
+      0
+    ],
+    [
+      50,
+      50,
+      0
+    ],
+    [
+      0,
+      50,
+      50
+    ],
+    [
+      0,
+      0,
+      100
+    ],
+    [
+      100,
+      0,
+      0
+    ],
+    [
+      70,
+      30,
+      0
+    ],
+    [
+      0,
+      10,
+      90
+    ],
+    [
+      0,
+      0,
+      100
+    ]
+  ],
+  "roomSizeProbabilityBranching": [],
+  "mutator": 20,
+  "noHeadingProbability": 30,
+  "joinDistance": 12,
+  "minRoomSize": 20,
+  "mediumRoomSize": 60,
+  "largeRoomSize": 150,
+  "maxRoomSize": 300,
+  "numSmallRoomsInLabyrinth": 0,
+  "numMediumRoomsInLabyrinth": 0,
+  "numLargeRoomsInLabyrinth": 0,
+  "numSmallRoomsInDungeon": 20,
+  "numMediumRoomsInDungeon": 10,
+  "numLargeRoomsInDungeon": 2,
+  "randCrawler": {
+    "perGeneration": [
+      0,
+      0,
+      0,
+      15,
+      30,
+      30,
+      20,
+      10,
+      0,
+      0,
+      40,
+      0,
+      0,
+      0,
+      30,
+      0,
+      0,
+      30
+    ],
+    "straightSingleSpawnProbability": 0,
+    "straightDoubleSpawnProbability": 20,
+    "turnSingleSpawnProbability": 0,
+    "turnDoubleSpawnProbability": 40,
+    "changeDirectionProbability": 40
+  },
+  "joinPreference": [
+    0,
+    0,
+    10,
+    100,
+    100
+  ],
+  "sizeUpProbability": [
+    0,
+    0,
+    20,
+    40
+  ],
+  "sizeDownProbability": [
+    0,
+    0,
+    0,
+    60
+  ],
+  "patience": 90,
+  "tunnelJoinDist": 18,
+  "sizeUpGenDelay": 1,
+  "columnsInTunnels": false,
+  "roomAspectRatio": 0.5,
+  "anteroomProbability": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "genSpeedUpOnAnteroom": 4,
+  "crawlersInTunnels": true,
+  "crawlersInAnterooms": false,
+  "seedCrawlersInTunnels": 0,
+  "tunnelCrawlerStats": {
+    "location": {
+      "x": 0,
+      "y": 0
+    },
+    "direction": {
+      "x": -1,
+      "y": 0
+    },
+    "intendedDirection": {
+      "x": -1,
+      "y": 0
+    },
+    "age": 0,
+    "maxAge": 15,
+    "generation": 0,
+    "stepLength": 3,
+    "opening": 1,
+    "corridorWidth": 1,
+    "straightSingleSpawnProbability": 10,
+    "straightDoubleSpawnProbability": 50,
+    "turnSingleSpawnProbability": 0,
+    "turnDoubleSpawnProbability": 50,
+    "changeDirectionProbability": 30
+  },
+  "seed": 1015854083,
+  "mobsInLabyrinthRooms": [],
+  "mobsInLabyrinthOpen": [],
+  "mobsInDungeonRooms": [
+    0,
+    40,
+    0,
+    25,
+    5
+  ],
+  "mobsInDungeonOpen": [
+    0,
+    20,
+    0,
+    5,
+    2
+  ],
+  "treasureInLabyrinth": [],
+  "treasureInDungeon": [
+    3,
+    0,
+    5,
+    0,
+    2
+  ],
+  "avgGroupSizeForMobsInLabyrinthRooms": 3,
+  "avgGroupSizeForMobsInDungeonRooms": 6,
+  "avgGroupSizeTreasureLabyrinth": 1,
+  "avgGroupSizeTreasureDungeon": 0,
+  "groupSizeVarianceForMobsInLabyrinthRooms": 1,
+  "groupSizeVarianceForMobsInDungeonRooms": 2,
+  "groupSizeVarianceForTreasureInLabyrinth": 2,
+  "groupSizeVarianceForTreasureInDungeon": 2,
+  "inAnteroomProbability": 80,
+  "tunnelCrawlerGeneration": -1,
+  "tunnelCrawlerClosedProbability": 100,
+  "lastChanceTunnelCrawler": {
+    "location": {
+      "x": 0,
+      "y": 0
+    },
+    "direction": {
+      "x": -1,
+      "y": 0
+    },
+    "intendedDirection": {
+      "x": -1,
+      "y": 0
+    },
+    "age": 0,
+    "maxAge": 0,
+    "generation": 0,
+    "stepLength": 1,
+    "tunnelWidth": 0,
+    "straightDoubleSpawnProbability": 10,
+    "turnDoubleSpawnProbability": 10,
+    "changeDirectionProbability": 40,
+    "makeRoomsRightProbability": 10,
+    "makeRoomsLeftProbability": 10,
+    "joinPreference": 50
+  },
+  "genDelayLastChance": 4
+}
