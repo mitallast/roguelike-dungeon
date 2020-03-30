@@ -289,38 +289,6 @@
     "changeDirectionProbability": 0
   },
   "seed": 1015945498,
-  "mobsInLabyrinthRooms": [],
-  "mobsInLabyrinthOpen": [],
-  "mobsInDungeonRooms": [
-    50,
-    20,
-    50,
-    5,
-    2
-  ],
-  "mobsInDungeonOpen": [
-    0,
-    30,
-    0,
-    20,
-    2
-  ],
-  "treasureInLabyrinth": [],
-  "treasureInDungeon": [
-    3,
-    3,
-    2,
-    2,
-    1
-  ],
-  "avgGroupSizeForMobsInLabyrinthRooms": 5,
-  "avgGroupSizeForMobsInDungeonRooms": 4,
-  "avgGroupSizeTreasureLabyrinth": 1,
-  "avgGroupSizeTreasureDungeon": 0,
-  "groupSizeVarianceForMobsInLabyrinthRooms": 3,
-  "groupSizeVarianceForMobsInDungeonRooms": 2,
-  "groupSizeVarianceForTreasureInLabyrinth": 2,
-  "groupSizeVarianceForTreasureInDungeon": 2,
   "inAnteroomProbability": 50,
   "tunnelCrawlerGeneration": -1,
   "tunnelCrawlerClosedProbability": 100,

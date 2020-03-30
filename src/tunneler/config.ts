@@ -99,23 +99,8 @@ export interface Config {
   readonly crawlersInAnterooms: boolean;
   readonly seedCrawlersInTunnels: number;
   readonly tunnelCrawlerStats: CrawlerConfig;
-  //default seed used on construction of DungeonCrawler to guarantee good first dungeon
+  //default seed used on construction of dungeon crawler to guarantee good first dungeon
   readonly seed: number;
-  readonly mobsInLabyrinthRooms: readonly number[];
-  readonly mobsInLabyrinthOpen: readonly number[];
-  readonly mobsInDungeonRooms: readonly number[];
-  readonly mobsInDungeonOpen: readonly number[]; // mobs in the open parts of the dungeon are in anterooms
-  //all treasure is in rooms
-  readonly treasureInLabyrinth: readonly number[];
-  readonly treasureInDungeon: readonly number[];
-  readonly avgGroupSizeForMobsInLabyrinthRooms: number;
-  readonly avgGroupSizeForMobsInDungeonRooms: number;
-  readonly avgGroupSizeTreasureLabyrinth: number;
-  readonly avgGroupSizeTreasureDungeon: number;
-  readonly groupSizeVarianceForMobsInLabyrinthRooms: number;
-  readonly groupSizeVarianceForMobsInDungeonRooms: number;
-  readonly groupSizeVarianceForTreasureInLabyrinth: number;
-  readonly groupSizeVarianceForTreasureInDungeon: number;
   readonly inAnteroomProbability: number;
   readonly tunnelCrawlerGeneration: number;
   readonly tunnelCrawlerClosedProbability: number;

@@ -6,6 +6,8 @@ import * as PIXI from 'pixi.js';
 window.PIXI = PIXI;
 import "pixi-layers";
 
+import {DungeonMakerTest} from "./tunneler/test";
+
 (async function () {
 
   PIXI.settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
@@ -29,4 +31,6 @@ import "pixi-layers";
 
   const controller = new SceneController(resources, app, stage);
   controller.keyBind();
+
+  await DungeonMakerTest.test();
 })();

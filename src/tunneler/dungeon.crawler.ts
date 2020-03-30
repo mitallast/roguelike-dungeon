@@ -1,4 +1,4 @@
-import {Point, CellType, Direction, RoomSize, SpawnedCell, FillRect, Room, IPoint} from "./model";
+import {Point, CellType, Direction, RoomSize, FillRect, Room, IPoint} from "./model";
 import {Config} from "./config"
 import {WallCrawler} from "./wall.crawler";
 import {TunnelCrawler} from "./tunnel.crawler";
@@ -22,9 +22,6 @@ export class DungeonCrawler {
   private currSmallRoomsDungeon: number = 0;
   private currMediumRoomsDungeon: number = 0;
   private currLargeRoomsDungeon: number = 0;
-
-  private readonly mobInfo: SpawnedCell[] = [];
-  private readonly treasInfo: SpawnedCell[] = [];
 
   private isOpen(pos: Point): boolean {
     //returns false inside-room/tunnel-open squares, for use in CreateRoom
@@ -195,30 +192,36 @@ export class DungeonCrawler {
       }
     }
 
+    const spawnRandomWallCrawler = (location: Point, direction: Point, generation: number) => {
+      this.createWallCrawler(location, direction, 0,
+        this.getMaxAgeCrawlers(generation), generation, direction,
+        this.getStepLength(generation), 1,
+        this.getCorridorWidth(generation),
+        this.mutate2(config.randCrawler.straightSingleSpawnProbability),
+        this.mutate2(config.randCrawler.straightDoubleSpawnProbability),
+        this.mutate2(config.randCrawler.turnSingleSpawnProbability),
+        this.mutate2(config.randCrawler.turnDoubleSpawnProbability),
+        this.mutate2(config.randCrawler.changeDirectionProbability)
+      );
+    };
+
     for (let generation = 0; generation < config.randCrawler.perGeneration.length; generation++) {
       let crawlersPer1000Squares: number = config.randCrawler.perGeneration[generation];
-      if (crawlersPer1000Squares > 0) {//otherwise nothing to do
+      if (crawlersPer1000Squares > 0) { // otherwise nothing to do
         let crawlersPerTopBottomWall: number = Math.floor((this.config.height * crawlersPer1000Squares) / 1000);
-        if (crawlersPerTopBottomWall === 0) {//there's less than one Crawler on the wall, use probabilities
+        if (crawlersPerTopBottomWall === 0) {
+          // there's less than one crawler on the wall, use probabilities
           if (this.rng.int % 1000 < (this.config.height * crawlersPer1000Squares))
             crawlersPerTopBottomWall = 1;
         }
         let yIndex: number = 0;
-        for (let ind: number = 0; ind < crawlersPerTopBottomWall; ind++) {//create Crawlers at the top and borrom walls, heading inwards
+        for (let ind: number = 0; ind < crawlersPerTopBottomWall; ind++) {
+          // create crawlers at the top and bottom walls, heading inwards
           yIndex = 2 + this.rng.int % (this.config.height - 4);
-          let locationNorth = new Point(0, yIndex);
-          let directionSouth = Point.SOUTH;   //going South
-          this.createWallCrawler(locationNorth, directionSouth, 0, this.getMaxAgeCrawlers(generation), generation, directionSouth, this.getStepLength(generation), 1,
-            this.getCorridorWidth(generation), this.mutate2(config.randCrawler.straightSingleSpawnProbability), this.mutate2(config.randCrawler.straightDoubleSpawnProbability),
-            this.mutate2(config.randCrawler.turnSingleSpawnProbability), this.mutate2(config.randCrawler.turnDoubleSpawnProbability), this.mutate2(config.randCrawler.changeDirectionProbability));
-          //now for the South wall
+          spawnRandomWallCrawler(new Point(0, yIndex), Point.SOUTH, generation);
           yIndex = 2 + this.rng.int % (this.config.height - 4);
-          let locationSouth = new Point(this.config.width - 1, yIndex);
-          let directionNorth = Point.NORTH;   //going North
-          this.createWallCrawler(locationSouth, directionNorth, 0, this.getMaxAgeCrawlers(generation), generation, directionNorth, this.getStepLength(generation), 1,
-            this.getCorridorWidth(generation), this.mutate2(config.randCrawler.straightSingleSpawnProbability), this.mutate2(config.randCrawler.straightDoubleSpawnProbability),
-            this.mutate2(config.randCrawler.turnSingleSpawnProbability), this.mutate2(config.randCrawler.turnDoubleSpawnProbability), this.mutate2(config.randCrawler.changeDirectionProbability));
-        }//end North and South walls
+          spawnRandomWallCrawler(new Point(this.config.width - 1, yIndex), Point.NORTH, generation);
+        }
 
         //now do the east and West walls
         let crawlersPerLeftRightWall: number = Math.floor((this.config.width * crawlersPer1000Squares) / 1000);
@@ -227,24 +230,14 @@ export class DungeonCrawler {
             crawlersPerLeftRightWall = 1;
         }
         let xIndex: number = 0;
-        for (let ind: number = 0; ind < crawlersPerLeftRightWall; ind++) {//create Crawlers at the left and right walls, heading inwards
+        for (let i: number = 0; i < crawlersPerLeftRightWall; i++) {
+          // create crawlers at the left and right walls, heading inwards
           xIndex = 2 + this.rng.int % (this.config.width - 4);
-          let locationWest = new Point(xIndex, 0);
-          let directionEast = Point.EAST;   // going East
-          let intFwd = directionEast;      // intended direction = start direction
-          this.createWallCrawler(locationWest, directionEast, 0, this.getMaxAgeCrawlers(generation), generation, intFwd, this.getStepLength(generation), 1,
-            this.getCorridorWidth(generation), this.mutate2(config.randCrawler.straightSingleSpawnProbability), this.mutate2(config.randCrawler.straightDoubleSpawnProbability),
-            this.mutate2(config.randCrawler.turnSingleSpawnProbability), this.mutate2(config.randCrawler.turnDoubleSpawnProbability), this.mutate2(config.randCrawler.changeDirectionProbability));
-          //now for the East wall
+          spawnRandomWallCrawler(new Point(xIndex, 0), Point.EAST, generation);
           xIndex = 2 + this.rng.int % (this.config.width - 4);
-          let locEast = new Point(xIndex, this.config.height - 1);
-          let directionWest = Point.WEST;   // going West
-          intFwd = directionWest;      // intended direction = start direction
-          this.createWallCrawler(locEast, directionWest, 0, this.getMaxAgeCrawlers(generation), generation, intFwd, this.getStepLength(generation), 1,
-            this.getCorridorWidth(generation), this.mutate2(config.randCrawler.straightSingleSpawnProbability), this.mutate2(config.randCrawler.straightDoubleSpawnProbability),
-            this.mutate2(config.randCrawler.turnSingleSpawnProbability), this.mutate2(config.randCrawler.turnDoubleSpawnProbability), this.mutate2(config.randCrawler.changeDirectionProbability));
-        }//end East and West walls
-      }//end creating Crawlers for this generation
+          spawnRandomWallCrawler(new Point(xIndex, this.config.height - 1), Point.EAST, generation);
+        }
+      }
     }
 
     for (const cd of config.crawlers) {
@@ -492,520 +485,6 @@ export class DungeonCrawler {
         }
       }
       return isCrawlerExists;
-    }
-  }
-
-  plonkDownStuff(): void {
-    let numRooms: number = this.rooms.length;
-    if (numRooms > 0) {
-      this.rooms.sort(Room.compare);
-    }
-
-    const mobsInDungeonRooms = [...this.config.mobsInDungeonRooms];
-    const mobsInDungeonOpen = [...this.config.mobsInDungeonOpen];
-    const mobsInLabyrinthRooms = [...this.config.mobsInLabyrinthRooms];
-    const mobsInLabyrinthOpen = [...this.config.mobsInLabyrinthOpen];
-    const treasureInDungeon = [...this.config.treasureInDungeon];
-    const treasureInLabyrinth = [...this.config.treasureInLabyrinth];
-
-    let numMomsInDungeonRooms: number = 0;
-    let numMobsInDungeonOpen: number = 0;
-    let numMobsInLabyrinthRooms: number = 0;
-    let numMobsInLabyrinthOpen: number = 0;
-    let numTreasureInDungeon: number = 0;
-    let numTreasureInLabyrinth: number = 0;
-    let numLabyrinthRooms: number = 0;
-    let numDungeonRooms: number = 0;
-    //now count'em:
-    let i: number;
-    let dimMOBsDR = mobsInDungeonRooms.length;
-    for (let i = 0; i < dimMOBsDR; i++)
-      numMomsInDungeonRooms += mobsInDungeonRooms[i];
-    let dimMOBsDO: number = mobsInDungeonOpen.length;
-    for (i = 0; i < dimMOBsDO; i++)
-      numMobsInDungeonOpen += mobsInDungeonOpen[i];
-    let dimMOBsLR: number = mobsInLabyrinthRooms.length;
-    for (i = 0; i < dimMOBsLR; i++)
-      numMobsInLabyrinthRooms += mobsInLabyrinthRooms[i];
-    let dimMobsInLabyrinthOpen: number = mobsInLabyrinthOpen.length;
-    for (i = 0; i < dimMobsInLabyrinthOpen; i++)
-      numMobsInLabyrinthOpen += mobsInLabyrinthOpen[i];
-    let dimTreasD: number = treasureInDungeon.length;
-    for (i = 0; i < dimTreasD; i++)
-      numTreasureInDungeon += treasureInDungeon[i];
-    let dimTreasL: number = treasureInLabyrinth.length;
-    for (i = 0; i < dimTreasL; i++)
-      numTreasureInLabyrinth += treasureInLabyrinth[i];
-    for (i = 0; i < this.rooms.length; i++) {
-      if (this.rooms[i].inDungeon)  //if true the room is inside the dungeon part, otherwise in the labyrinth
-        numDungeonRooms++;
-      else
-        numLabyrinthRooms++;
-    }
-    console.assert(numRooms === numLabyrinthRooms + numDungeonRooms);
-
-    //estimate how many groups we will have to plonk down
-    let numGroupsMOBsDR: number;
-    if (this.config.avgGroupSizeForMobsInDungeonRooms > 1)
-      numGroupsMOBsDR = Math.floor(numMomsInDungeonRooms / this.config.avgGroupSizeForMobsInDungeonRooms);
-    else
-      numGroupsMOBsDR = numMomsInDungeonRooms;
-    //  numGroupsMOBsDO: number = numMOBsDO/groupSizeMOBDO;
-    let numGroupsMOBsLR: number;
-    if (this.config.avgGroupSizeForMobsInLabyrinthRooms > 1)
-      numGroupsMOBsLR = Math.floor(numMobsInLabyrinthRooms / this.config.avgGroupSizeForMobsInLabyrinthRooms);
-    else
-      numGroupsMOBsLR = numMobsInLabyrinthRooms;
-    //  numGroupsMOBsLO: number = numMOBsLO/groupSizeMOBLO;
-    let numGroupsTreasD: number;
-    if (this.config.avgGroupSizeTreasureDungeon)
-      numGroupsTreasD = Math.floor(numTreasureInDungeon / this.config.avgGroupSizeTreasureDungeon);
-    else
-      numGroupsTreasD = numTreasureInDungeon;
-    let numGroupsTreasL: number;
-    if (this.config.avgGroupSizeTreasureLabyrinth > 1)
-      numGroupsTreasL = Math.floor(numTreasureInLabyrinth / this.config.avgGroupSizeTreasureLabyrinth);
-    else
-      numGroupsTreasL = numTreasureInLabyrinth;
-
-    //bail out if things don't look right:
-    if (numGroupsMOBsDR > numDungeonRooms) {
-      console.error("Design file demands more groups of MOBs in dungeon rooms than we have such rooms. Aborting plunking.");
-      return;
-    }
-    if (numGroupsMOBsLR > numLabyrinthRooms) {
-      console.error("Design file demands more groups of MOBs in labyrinth rooms than we have such rooms. Aborting plunking.");
-      return;
-    }
-    if (numGroupsTreasD > numDungeonRooms) {
-      console.error("Design file demands more groups of treasure in dungeon rooms than we have such rooms. Aborting plunking.");
-      return;
-    }
-    if (numGroupsTreasL > numLabyrinthRooms) {
-      console.error("Design file demands more groups of treasure in labyrinth rooms than we have such rooms. Aborting plunking.");
-      return;
-    }
-
-    //well, it's time to start plunking in earnest
-    //start with dungeon rooms
-    let currRoom: Room = new Room();
-    let currIndex: number = 0;
-    let firstRoom: boolean = true;
-    let gSizeM: number;
-    let gSizeT: number;
-    while ((numMomsInDungeonRooms > 0) || (numTreasureInDungeon > 0))   //in dungeon rooms
-    {
-      let mobType: number[] = [];
-      let treasureType: number[] = [];   //what types of MOBs and treasure to put into this room
-      let locations: Point[] = [];   //where to put it
-      //get the next room to plonk in to
-      let notFound: boolean = true;
-      while ((notFound) && (currIndex < numRooms)) {
-        currRoom = this.rooms[currIndex++];
-        if (currRoom.inDungeon)  //if currentRoom is a dungeon room
-          notFound = false;
-      }
-
-      //now plonk down some stuff in currRoom
-      if (firstRoom) {//make a big group
-        gSizeM = this.config.avgGroupSizeForMobsInDungeonRooms + this.config.groupSizeVarianceForMobsInDungeonRooms;
-        gSizeT = this.config.avgGroupSizeTreasureDungeon + this.config.groupSizeVarianceForTreasureInDungeon;
-      } else {//make a random size group
-        gSizeM = this.config.avgGroupSizeForMobsInDungeonRooms - this.config.groupSizeVarianceForMobsInDungeonRooms + this.rng.int % (2 * this.config.groupSizeVarianceForMobsInDungeonRooms + 1);
-        if (gSizeM < 1)
-          gSizeM = 1;
-        gSizeT = this.config.avgGroupSizeTreasureDungeon - this.config.groupSizeVarianceForTreasureInDungeon + this.rng.int % (2 * this.config.groupSizeVarianceForTreasureInDungeon + 1);
-        if (gSizeT < 1)
-          gSizeT = 1;
-      }
-
-      //get MOBtype
-      if (numMomsInDungeonRooms > 0) {
-        console.assert(dimMOBsDR > 0);   //otherwise the for loop starts at -1
-        if (firstRoom) {
-          for (i = dimMOBsDR - 1; i >= 0; i--)
-            if (mobsInDungeonRooms[i] > 0) { //we actually want a mob of type i
-              mobType.push(i);  //hold it to insert in room later
-              mobsInDungeonRooms[i]--;   //one less of this type to insert
-              numMomsInDungeonRooms--;
-              gSizeM--;              //one less to find
-              break;                 //we get the biggest MOB for the largest room, but only this once we use special case treatment
-            }
-        }
-        while (gSizeM > 0)   //we need more monster types for our group
-        {
-          i = this.rng.int % dimMOBsDR;
-          if (mobsInDungeonRooms[i] > 0) {//we actually want a MOB of type i
-            mobType.push(i);  //hold it to insert in room later
-            mobsInDungeonRooms[i]--;   //one less of this type to insert
-            numMomsInDungeonRooms--;
-            gSizeM--;              //one less to find
-          }
-          if (numMomsInDungeonRooms === 0)
-            break;   //none left to place
-        }
-      }
-
-      //get treasType
-      if (numTreasureInDungeon > 0) {
-        console.assert(dimTreasD > 0);   //otherwise the for loop starts at -1
-        if (firstRoom) {
-          for (i = dimTreasD - 1; i >= 0; i--)
-            if (treasureInDungeon[i] > 0) {//we actually want a treasure of type i
-              treasureType.push(i);  //hold it to insert in room later
-              treasureInDungeon[i]--;         //one less of this type to insert
-              numTreasureInDungeon--;
-              gSizeT--;              //one less to find
-              break;              //we get the biggest treasure for the largest room, but only this once we use special case treatment
-            }
-          firstRoom = false;
-        }
-        while (gSizeT > 0)   //we want more treasure types for our group
-        {
-          i = this.rng.int % dimTreasD;
-          if (treasureInDungeon[i] > 0) {//we actually want a treasure of type i
-            treasureType.push(i);  //hold it to insert in room later
-            treasureInDungeon[i]--;         //one less of this type to insert
-            numTreasureInDungeon--;
-            gSizeT--;              //one less to find
-          }
-          if (numTreasureInDungeon === 0)
-            break;   //we've run out of treasure
-        }
-      }
-
-      //get Locations to insert MOBs and treasure
-      let count: number = mobType.length + treasureType.length;   //number of squares in the room we need
-      if (count >= currRoom.inside.length) {
-        console.error("Too much treasure and MOBs for the size of the room, bailing out from plonking.");
-        return;
-      }
-      while (count > 0) {
-        let square: Point = currRoom.randomSquare();
-        let isUnique: boolean = true;
-        for (i = 0; i < locations.length; i++)
-          if (square === locations[i]) {
-            isUnique = false;
-            break;
-          }
-        if (isUnique) //we haven't found this square before
-        {
-          locations.push(square);
-          count--;   //we need one less
-        }
-      }//count > 0
-
-      //now we have everything assembled, MOBtypes, treasureTypes, and Locations, and we can simply assign:
-      console.assert((mobType.length + treasureType.length) === locations.length);
-      for (i = 0; i < mobType.length; i++) {
-        const spawn = new SpawnedCell(locations[i].x, locations[i].y, mobType[i]);
-        this.mobInfo.push(spawn);
-      }
-      for (i = 0; i < treasureType.length; i++) {
-        const spawn = new SpawnedCell(locations[mobType.length + i].x, locations[mobType.length + i].y, treasureType[i]);
-        this.treasInfo.push(spawn);
-      }
-
-      if (currIndex === numRooms) {
-        console.error("Ran out of rooms while plonking in dungeon, aborting plunking...");
-        return;
-      }
-    }//  while( ( numMOBsDR > 0 ) || ( numTreasD > 0 ) )
-
-    //now do the same thing for the labyrinth
-    currIndex = 0;   //start again at Rooms[0]
-    firstRoom = true;
-    while ((numMobsInLabyrinthRooms > 0) || (numTreasureInLabyrinth > 0))   //in labyrinth rooms
-    {
-      let mobType: number[] = [];
-      let treasureType: number[] = [];   //what types of MOBs and treasure to put into this room
-      let locations: Point[] = [];   //where to put it
-      //get the next room to plonk in to
-      let notFound: boolean = true;
-      while ((notFound) && (currIndex < numRooms)) {
-        currRoom = this.rooms[currIndex++];
-        if (!currRoom.inDungeon)  //if currentRoom is not a dungeon room it's a labyrinth room!
-          notFound = false;
-      }
-
-      //now plonk down some stuff in currRoom
-      if (firstRoom) {//make a big group
-        gSizeM = this.config.avgGroupSizeForMobsInLabyrinthRooms + this.config.groupSizeVarianceForMobsInLabyrinthRooms;
-        gSizeT = this.config.avgGroupSizeTreasureLabyrinth + this.config.groupSizeVarianceForTreasureInLabyrinth;
-      } else {//make a random size group
-        gSizeM = this.config.avgGroupSizeForMobsInLabyrinthRooms - this.config.groupSizeVarianceForMobsInLabyrinthRooms + this.rng.int % (2 * this.config.groupSizeVarianceForMobsInLabyrinthRooms + 1);
-        if (gSizeM < 1)
-          gSizeM = 1;
-        gSizeT = this.config.avgGroupSizeTreasureLabyrinth - this.config.groupSizeVarianceForTreasureInLabyrinth + this.rng.int % (2 * this.config.groupSizeVarianceForTreasureInLabyrinth + 1);
-        if (gSizeT < 1)
-          gSizeT = 1;
-      }
-
-      //get MOBtype
-      if (numMobsInLabyrinthRooms > 0) {
-        console.assert(dimMOBsLR > 0);   //otherwise the for loop starts at -1
-        if (firstRoom) {
-          for (i = dimMOBsLR - 1; i >= 0; i--)
-            if (mobsInLabyrinthRooms[i] > 0) {//we actually want a MOB of type i
-              mobType.push(i);  //hold it to insert in room later
-              mobsInLabyrinthRooms[i]--;   //one less of this type to insert
-              numMobsInLabyrinthRooms--;
-              gSizeM--;              //one less to find
-              break;                 //we get the biggest MOB for the largest room, but only this once we use special case treatment
-            }
-        }
-        while (gSizeM > 0)   //we need more monster types for our group
-        {
-          i = this.rng.int % dimMOBsLR;
-          if (mobsInLabyrinthRooms[i] > 0) {//we actually want a MOB of type i
-            mobType.push(i);  //hold it to insert in room later
-            mobsInLabyrinthRooms[i]--;   //one less of this type to insert
-            numMobsInLabyrinthRooms--;
-            gSizeM--;              //one less to find
-          }
-          if (numMobsInLabyrinthRooms === 0)
-            break;   //none left to place
-        }
-      }
-
-      //get treasType
-      if (numTreasureInLabyrinth > 0) {
-        console.assert(dimTreasL > 0);   //otherwise the for loop starts at -1
-        if (firstRoom) {
-          for (i = dimTreasL - 1; i >= 0; i--)
-            if (treasureInLabyrinth[i] > 0) {//we actually want a treasure of type i
-              treasureType.push(i);  //hold it to insert in room later
-              treasureInLabyrinth[i]--;         //one less of this type to insert
-              numTreasureInLabyrinth--;
-              gSizeT--;              //one less to find
-              break;                 //we get the biggest treasure for the largest room, but only this once we use special case treatment
-            }
-          firstRoom = false;
-        }
-        while (gSizeT > 0)   //we want more treasure types for our group
-        {
-          i = this.rng.int % dimTreasL;
-          if (treasureInLabyrinth[i] > 0) {//we actually want a treasure of type i
-            treasureType.push(i);  //hold it to insert in room later
-            treasureInLabyrinth[i]--;         //one less of this type to insert
-            numTreasureInLabyrinth--;
-            gSizeT--;              //one less to find
-          }
-          if (numTreasureInLabyrinth === 0)
-            break;   //we've run out of treasure
-        }
-      }
-
-      //get Locations to insert MOBs and treasure
-      let count: number = mobType.length + treasureType.length;   //number of squares in the room we need
-      if (count >= currRoom.inside.length) {
-        console.error("Too much treasure and MOBs for the size of the labyrinth room, bailing out from plonking.");
-        return;
-      }
-      while (count > 0) {
-        let square = currRoom.randomSquare();
-        let isUnique: boolean = true;
-        for (i = 0; i < locations.length; i++)
-          if (square === locations[i]) {
-            isUnique = false;
-            break;
-          }
-        if (isUnique) //we haven't found this square before
-        {
-          locations.push(square);
-          count--;   //we need one less
-        }
-      }//count > 0
-
-      //now we have everything assembled, MOBtypes, treasureTypes, and Locations, and we can simply assign:
-      console.assert((mobType.length + treasureType.length) === locations.length);
-      for (i = 0; i < mobType.length; i++) {
-        let spawn = new SpawnedCell(locations[i].x, locations[i].y, mobType[i]);
-        this.mobInfo.push(spawn);
-      }
-      for (i = 0; i < treasureType.length; i++) {
-        let spawn = new SpawnedCell(locations[mobType.length + i].x, locations[mobType.length + i].y, treasureType[i]);
-        this.treasInfo.push(spawn);
-      }
-
-      if (currIndex === numRooms) {
-        console.error("Ran out of rooms while plonking in labyrinth, aborting plunking...");
-        return;
-      }
-    }//  while( ( numMOBsLR > 0 ) || ( numTreasL > 0 ) )
-
-    //we finished placing stuff in rooms, now do it in the open:
-    //first for labyrinth
-    let mobType: number[] = [];   //what types of MOBs and treasure to plonk
-    let locations: Point[] = [];   //where to plonk it
-    let tries: number = 0;
-    while ((numMobsInLabyrinthOpen > 0) && (tries < this.config.width * this.config.height)) {
-      tries++;
-      //get candidate starting point
-      let test = new Point(1 + (this.rng.int % (this.config.width - 3)), 1 + (this.rng.int % (this.config.height - 3)));
-      //now make a starting direction
-      let startX: number = 0;
-      let startY: number = 0;
-      if ((this.rng.int % 100) < 50)
-        startX = 0;
-      else
-        startY = 0;
-      if (startX === 0) {
-        if ((this.rng.int % 100) < 50)
-          startY = -1;
-        else
-          startY = 1;
-      } else {
-        console.assert(startY === 0);
-        if ((this.rng.int % 100) < 50)
-          startX = -1;
-        else
-          startX = 1;
-      }
-      let direction = new Point(startX, startY);
-
-      //now search through the dungeon for an OPEN square, which must be inside the labyrinth part
-      //start at Start and go towards direction until we find a suitable place or reach the end of the map
-      let notFound: boolean = true;
-      while (notFound) {
-        test = test.plus(direction);
-        if ((test.x < 2) || (test.y < 2) || (test.x > this.config.width - 3) || (test.y > this.config.height - 3))
-          break;   //end the loop, we're running off the map
-
-        if (this.getMap(test) !== CellType.OPEN)
-          continue;   //not in a tunnel
-
-        let isUnique: boolean = true;
-        for (i = 0; i < locations.length; i++)
-          if (test === locations[i]) {
-            isUnique = false;
-            break;
-          }
-        if (isUnique) //we haven't found this square before
-          locations.push(test);
-        else
-          continue;  //find another test spot
-
-        notFound = false;
-
-        for (i = 0; i < mobsInLabyrinthOpen.length; i++)
-          if (mobsInLabyrinthOpen[i] > 0) {//we actually want a MOB of type i
-            mobsInLabyrinthOpen[i]--;   //one less of this type to insert
-            mobType.push(i);
-            numMobsInLabyrinthOpen--;
-            break;
-          }
-        //now they're put into MOBtype and Locations instead to avoid duplication
-// 	  SpawnInfo spawn( Test.first , Test.second , i );
-// 	  MOBInfo.push(spawn);
-
-      }//while notFound
-    }// while(numMOBsLO > 0)
-
-    //now for dungeon, in the open
-    tries = 0;
-    while ((numMobsInDungeonOpen > 0) && (tries < this.config.width * this.config.height)) {
-      tries++;
-      //get candidate starting point
-      let test = new Point(1 + (this.rng.int % (this.config.width - 3)), 1 + (this.rng.int % (this.config.height - 3)));
-      //now make a starting direction
-      let startX: number = 0;
-      let startY: number = 0;
-      if ((this.rng.int % 100) < 50)
-        startX = 0;
-      else
-        startY = 0;
-      if (startX === 0) {
-        if ((this.rng.int % 100) < 50)
-          startY = -1;
-        else
-          startY = 1;
-      } else {
-        console.assert(startY === 0);
-        if ((this.rng.int % 100) < 50)
-          startX = -1;
-        else
-          startX = 1;
-      }
-      let direction = new Point(startX, startY);
-
-      //what are we looking for, tunnel or anteroom?
-      let target: CellType;
-      if ((this.rng.int % 100) < this.config.inAnteroomProbability)
-        target = CellType.INSIDE_ANTEROOM_OPEN;
-      else
-        target = CellType.INSIDE_TUNNEL_OPEN;
-
-      //now search through the dungeon for a target square, which must be inside the dungeon part
-      //start at Start and go towards direction until we find a suitable place or reach the end of the map
-      let notFound: boolean = true;
-      while (notFound) {
-        test = test.plus(direction);
-        if ((test.x < 2) || (test.y < 2) || (test.x > this.config.width - 3) || (test.y > this.config.height - 3))
-          break;   //end the loop, we're running off the map
-
-        if (this.getMap(test) !== target)
-          continue;   //not on target
-        if ((this.getMap(test.plus(direction)) === target) && (this.getMap(test.plus(direction).plus(direction)) === target))
-          continue;   //otherwise all MOBs stand next to a wall
-
-        let isUnique: boolean = true;
-        for (i = 0; i < locations.length; i++)
-          if (test === locations[i]) {
-            isUnique = false;
-            break;
-          }
-        if (isUnique) //we haven't found this square before
-          locations.push(test);
-        else
-          continue; //find another test spot
-
-        notFound = false;  //we must'a found it!
-
-        for (i = 0; i < mobsInDungeonOpen.length; i++)
-          if (mobsInDungeonOpen[i] > 0) {//we actually want a MOB of type i
-            mobsInDungeonOpen[i]--;   //one less of this type to insert
-            mobType.push(i);
-            numMobsInDungeonOpen--;
-            break;
-          }
-
-// 	  SpawnInfo spawn( Test.first , Test.second , i );
-// 	  MOBInfo.push(spawn);
-
-      }//while notFound
-    }// while(numMOBsDO > 0)
-
-    console.assert(mobType.length === locations.length);
-    for (i = 0; i < mobType.length; i++) {
-      let spawn = new SpawnedCell(locations[i].x, locations[i].y, mobType[i]);
-      this.mobInfo.push(spawn);
-    }
-
-  }
-
-  putPlonkOnMap(): void { //this is provisional and will just show in 3 different colors for different types
-    let PROV1: number = 2;
-    let PROV2: number = 4;    //PROVISIONAL VALUES, USERS MUST CHANGE THIS
-    let i: number;
-
-    for (i = 0; i < this.mobInfo.length; i++) {
-      if (this.mobInfo[i].type < PROV1)
-        this.setMap(this.mobInfo[i], CellType.MOB1);
-      else if (this.mobInfo[i].type < PROV2)
-        this.setMap(this.mobInfo[i], CellType.MOB2);
-      else
-        this.setMap(this.mobInfo[i], CellType.MOB3);
-    }
-
-    for (i = 0; i < this.treasInfo.length; i++) {
-      console.assert(this.getMap(this.treasInfo[i]) === CellType.INSIDE_ROOM_OPEN);
-      if (this.treasInfo[i].type < PROV1)
-        this.setMap(this.treasInfo[i], CellType.TREASURE_1);
-      else if (this.treasInfo[i].type < PROV2)
-        this.setMap(this.treasInfo[i], CellType.TREASURE_2);
-      else
-        this.setMap(this.treasInfo[i], CellType.TREASURE_3);
     }
   }
 
@@ -1293,7 +772,8 @@ export class DungeonCrawler {
           (this.getMap(RoomSquaresChecked[i]) === CellType.INSIDE_TUNNEL_OPEN) || (this.getMap(RoomSquaresChecked[i]) === CellType.INSIDE_ANTEROOM_OPEN));
         this.setMap(RoomSquaresChecked[i], CellType.CLOSED);
       }
-    } else {//build a room
+    } else {
+      // build a room
       console.assert(squaresFindingMultiples === 1);
       //there's just one square left on the active list, and it's in a place where we want to build a door
       //normally, anyway ...
@@ -1355,7 +835,7 @@ export class DungeonCrawler {
         newRoom.inside.push(RoomSquaresChecked[i]);
       }
 
-      newRoom.inDungeon = false;  //this room is not in the dungeon, but in the labyrinth
+      newRoom.inDungeon = false;  // this room is not in the dungeon, but in the labyrinth
       this.rooms.push(newRoom);
     }
     return true;
@@ -1407,7 +887,7 @@ export class DungeonCrawler {
     //now create rooms inside OPEN squares that were placed in the design:
     for (let rect of this.config.design) {
       if (rect.type !== CellType.OPEN)
-        continue;   //we onlt make rooms in the labyrinth part
+        continue;   //we only make rooms in the labyrinth part
 
       counter = 0;
       number = (rect.endX - rect.startX) * (rect.endY - rect.startY);   //size of the square
@@ -1419,16 +899,6 @@ export class DungeonCrawler {
           break;
       }
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    //PlonkDownStuff is included for demo purposes to show how to access rooms and tunnels
-    //you should write your own version of this function
-    //PlonkDownStuff();
-    /////////////////////////////////HERE ATTENTION !!
-    //PutPlonkOnMap();
-    //////////////////////////////////////////////////
-    ///* ATTENTION: In this version, the method  PutPlonkOnMap() puts MOBs and treasure on the map literally, by changing the SquareData of the Map square where the stuff goes. This is just for demonstration purposes to make it easier to show stuff without having an engine for rendering objects. If you use the DungeonCrawler in your own program, you must refrain from calling this function, and instead write your own function that puts stuff on the map as objects and leaves the MapData as it is.
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   }
 
   debug(): void {
@@ -1481,24 +951,6 @@ export class DungeonCrawler {
             break;
           case CellType.V_DOOR:
             color = 'rgb(0,204,255)';
-            break;
-          case CellType.MOB1:
-            color = 'rgb(0,255,189)';
-            break;
-          case CellType.MOB2:
-            color = 'rgb(1,255,102)';
-            break;
-          case CellType.MOB3:
-            color = 'rgb(36,255,0)';
-            break;
-          case CellType.TREASURE_1:
-            color = 'rgb(130,255,0)';
-            break;
-          case CellType.TREASURE_2:
-            color = 'rgb(253,255,146)';
-            break;
-          case CellType.TREASURE_3:
-            color = 'rgb(158,210,106)';
             break;
           case CellType.COLUMN:
             color = 'rgb(138,108,46)';

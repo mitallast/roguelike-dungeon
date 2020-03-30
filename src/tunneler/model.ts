@@ -83,12 +83,6 @@ export enum CellType {
   INSIDE_ANTEROOM_OPEN = 10,
   H_DOOR = 11, // horizontal door, varies over y-axis
   V_DOOR = 12, // vertical door, over x-axis(up and down)
-  MOB1 = 13, // mobs of different level
-  MOB2 = 14,
-  MOB3 = 15,
-  TREASURE_1 = 16,
-  TREASURE_2 = 17,
-  TREASURE_3 = 19, // treasure of different value
   COLUMN = 20
 }
 
