@@ -1,4 +1,4 @@
-import {CellType, Point} from "./model";
+import {TunnelerCellType, Point} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {Crawler} from "./crawler";
 import {RNG} from "../rng";
@@ -32,23 +32,23 @@ export class WallCrawler extends Crawler {
     console.assert(corridorWidth >= 0);
   }
 
-  protected freePredicate(type: CellType): boolean {
+  protected freePredicate(type: TunnelerCellType): boolean {
     if (this.config.crawlersInTunnels && this.config.crawlersInAnterooms) {
       // here we're also allowing IT_OPEN and IA_OPEN
-      if (!this.contains(type, CellType.OPEN, CellType.NON_JOIN_OPEN, CellType.GUARANTEED_OPEN,
-        CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN, CellType.NON_JOIN_GUARANTEED_OPEN)) {
+      if (!this.contains(type, TunnelerCellType.OPEN, TunnelerCellType.NON_JOIN_OPEN, TunnelerCellType.GUARANTEED_OPEN,
+        TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN, TunnelerCellType.NON_JOIN_GUARANTEED_OPEN)) {
         // encountered a non-floor square
         return true;
       }
     } else if (this.config.crawlersInTunnels) {
       // here we're also allowing IT_OPEN but not IA_OPEN
-      if (!this.contains(type, CellType.OPEN, CellType.NON_JOIN_OPEN, CellType.GUARANTEED_OPEN,
-        CellType.INSIDE_TUNNEL_OPEN, CellType.NON_JOIN_GUARANTEED_OPEN)) {
+      if (!this.contains(type, TunnelerCellType.OPEN, TunnelerCellType.NON_JOIN_OPEN, TunnelerCellType.GUARANTEED_OPEN,
+        TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.NON_JOIN_GUARANTEED_OPEN)) {
         // encountered a non-floor square
         return true;
       }
     } else {
-      if (!this.contains(type, CellType.OPEN, CellType.NON_JOIN_OPEN, CellType.GUARANTEED_OPEN, CellType.NON_JOIN_GUARANTEED_OPEN)) {
+      if (!this.contains(type, TunnelerCellType.OPEN, TunnelerCellType.NON_JOIN_OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.NON_JOIN_GUARANTEED_OPEN)) {
         // encountered a non-floor square
         return true;
       }
@@ -102,10 +102,10 @@ export class WallCrawler extends Crawler {
       for (let i = 1; i <= tilesLaid; i++) {
         test = this.location.plus(this.direction.multiply(i));
         if (this.opening === 1) {
-          this.dungeonCrawler.setMap(test, CellType.CLOSED);
+          this.dungeonCrawler.setMap(test, TunnelerCellType.CLOSED);
         } else {
           console.assert(this.opening === 0);
-          this.dungeonCrawler.setMap(test, CellType.NON_JOIN_CLOSED);  //otherwise closed spaces can form
+          this.dungeonCrawler.setMap(test, TunnelerCellType.NON_JOIN_CLOSED);  //otherwise closed spaces can form
         }
       }
 
@@ -309,7 +309,7 @@ export class WallCrawler extends Crawler {
     }
 
     let type = this.dungeonCrawler.getMap(test);
-    if (this.contains(type, CellType.CLOSED, CellType.GUARANTEED_CLOSED)) {
+    if (this.contains(type, TunnelerCellType.CLOSED, TunnelerCellType.GUARANTEED_CLOSED)) {
       //this is a joinable wall tile
       for (let i = 1; i <= frontFree; i++) {
         const point = this.location.plus(this.direction.multiply(i));
@@ -317,11 +317,11 @@ export class WallCrawler extends Crawler {
           return false;
         }
         // these guys cannot be joined, or closed spaces are possible
-        this.dungeonCrawler.setMap(point, CellType.NON_JOIN_CLOSED);
+        this.dungeonCrawler.setMap(point, TunnelerCellType.NON_JOIN_CLOSED);
       }
       // the wall has been joined
       return true;
-    } else if (this.contains(type, CellType.NON_JOIN_CLOSED, CellType.NON_JOIN_GUARANTEED_CLOSED)) {
+    } else if (this.contains(type, TunnelerCellType.NON_JOIN_CLOSED, TunnelerCellType.NON_JOIN_GUARANTEED_CLOSED)) {
       // a non-joinable type is straight ahead, we bail out
       return false;
     }
@@ -337,7 +337,7 @@ export class WallCrawler extends Crawler {
         return false;
       }
       type = this.dungeonCrawler.getMap(point);
-      if (this.contains(type, CellType.CLOSED, CellType.GUARANTEED_CLOSED, CellType.NON_JOIN_CLOSED, CellType.NON_JOIN_GUARANTEED_CLOSED)) {
+      if (this.contains(type, TunnelerCellType.CLOSED, TunnelerCellType.GUARANTEED_CLOSED, TunnelerCellType.NON_JOIN_CLOSED, TunnelerCellType.NON_JOIN_GUARANTEED_CLOSED)) {
         wall = point;
         sidestep = i;
         break;
@@ -350,7 +350,7 @@ export class WallCrawler extends Crawler {
         return false;
       }
       type = this.dungeonCrawler.getMap(point);
-      if (this.contains(type, CellType.CLOSED, CellType.GUARANTEED_CLOSED, CellType.NON_JOIN_CLOSED, CellType.NON_JOIN_GUARANTEED_CLOSED)) {
+      if (this.contains(type, TunnelerCellType.CLOSED, TunnelerCellType.GUARANTEED_CLOSED, TunnelerCellType.NON_JOIN_CLOSED, TunnelerCellType.NON_JOIN_GUARANTEED_CLOSED)) {
         wall = point;
         sidestep = -i;
         break;
@@ -367,7 +367,7 @@ export class WallCrawler extends Crawler {
       // failed assert replaced with this
       return false;
     }
-    if (this.contains(type, CellType.NON_JOIN_CLOSED, CellType.NON_JOIN_GUARANTEED_CLOSED)) {
+    if (this.contains(type, TunnelerCellType.NON_JOIN_CLOSED, TunnelerCellType.NON_JOIN_GUARANTEED_CLOSED)) {
       // this is a grid type that we cannot connect a wall to
       return false;
     }
@@ -406,7 +406,7 @@ export class WallCrawler extends Crawler {
         // we have started outside the dungeon
         return false;
       }
-      this.dungeonCrawler.setMap(point, CellType.NON_JOIN_CLOSED);
+      this.dungeonCrawler.setMap(point, TunnelerCellType.NON_JOIN_CLOSED);
     }
     // this has built the straight section direction, now turn left or right
     for (let i = 1; i < abs_sidestep; i++) {
@@ -416,7 +416,7 @@ export class WallCrawler extends Crawler {
         return false;
       }
       // we have started outside the dungeon
-      this.dungeonCrawler.setMap(point, CellType.NON_JOIN_CLOSED);
+      this.dungeonCrawler.setMap(point, TunnelerCellType.NON_JOIN_CLOSED);
     }
 
     // the wall hath been joined !! (we hope)

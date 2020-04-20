@@ -68,7 +68,7 @@ export enum Direction {
   // XX also means "no intended direction"
 }
 
-export enum CellType {
+export enum TunnelerCellType {
   OPEN = 0,
   CLOSED = 1,
   GUARANTEED_OPEN = 2,
@@ -83,7 +83,7 @@ export enum CellType {
   INSIDE_ANTEROOM_OPEN = 10,
   H_DOOR = 11, // horizontal door, varies over y-axis
   V_DOOR = 12, // vertical door, over x-axis(up and down)
-  COLUMN = 20
+  COLUMN = 13
 }
 
 export enum RoomSize {
@@ -108,14 +108,9 @@ export class Room {
   }
 }
 
-export class SpawnedCell implements IPoint {
-  constructor(public readonly x: number = 0, public readonly y: number = 0, public readonly type: number = -1) {
-  }
-}
-
 export class FillRect {
   constructor(public readonly startX: number, public readonly startY: number,
               public readonly endX: number, public readonly endY: number,
-              public readonly type: CellType) {
+              public readonly type: TunnelerCellType) {
   }
 }

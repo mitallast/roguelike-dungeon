@@ -9,18 +9,22 @@ const TILE_SIZE = 16;
 
 export interface DungeonZIndexScheme {
   readonly character: number
+  readonly hero: number
   readonly drop: number
   readonly floor: number
   readonly wallBack: number
-  readonly wallFront: number
+  readonly wall: number
+  readonly row: number
 }
 
 export const DungeonZIndexes: DungeonZIndexScheme = {
   character: 60,
+  hero: 70,
   drop: 50,
   floor: 1,
   wallBack: 2,
-  wallFront: 100,
+  wall: 100,
+  row: 256
 };
 
 export class DungeonMap {
@@ -56,6 +60,7 @@ export class DungeonMap {
 
     this.container = new PIXI.Container();
     this.container.zIndex = 0;
+    this.container.sortableChildren = true;
     this.container.scale.set(this.scale, this.scale);
 
     this.light = new DungeonLight(this);
@@ -112,7 +117,8 @@ export class MapCell {
     this._floor?.destroy();
     this._floor = null;
     if (name) {
-      this._floor = this.sprite(name, DungeonZIndexes.floor);
+      this._floor = this.sprite(name);
+      this._floor.zIndex = DungeonZIndexes.floor;
     }
   }
 
@@ -124,38 +130,25 @@ export class MapCell {
     return !!this._floor;
   }
 
-  set wallBack(name: string | null) {
-    this._wall?.destroy();
-    this._wall = null;
-    if (name) {
-      this._wall = this.sprite(name, DungeonZIndexes.wallBack);
-    }
-  }
-
-  set wallFront(name: string | null) {
-    this._wall?.destroy();
-    this._wall = null;
-    if (name) {
-      this._wall = this.sprite(name, DungeonZIndexes.wallFront);
-    }
-  }
-
   get wall(): string | null {
     return this._wall?.name || null;
   }
 
   set wall(name: string | null) {
-    this.wallFront = name;
+    this._wall?.destroy();
+    this._wall = null;
+    if (name) {
+      this._wall = this.sprite(name);
+      this._wall.zIndex = this.zIndex + DungeonZIndexes.wall;
+    }
+  }
+
+  private get zIndex(): number {
+    return this.y * DungeonZIndexes.row;
   }
 
   get hasWall(): boolean {
     return !!this._wall;
-  }
-
-  set zIndex(zIndex: number) {
-    if (this._wall) {
-      this._wall.zIndex = zIndex;
-    }
   }
 
   set drop(drop: Drop | null) {
@@ -163,8 +156,6 @@ export class MapCell {
     this._dropSprite = null;
     this._drop = null;
     if (drop) {
-      // this.dropView = drop.dropView(this.dungeon, this.x, this.y);
-
       this._drop = drop;
       this._dropSprite = drop.sprite();
       this._dropSprite.position.set(
@@ -172,13 +163,12 @@ export class MapCell {
         this.y * TILE_SIZE + TILE_SIZE - 2
       );
       this._dropSprite.anchor.set(0, 1);
-      this._dropSprite.zIndex = DungeonZIndexes.drop;
+      this._dropSprite.zIndex = this.zIndex + DungeonZIndexes.drop;
       if (this._dropSprite instanceof PIXI.AnimatedSprite) {
         this._dropSprite.animationSpeed = 0.2;
         this._dropSprite.play();
       }
       this.dungeon.container.addChild(this._dropSprite);
-      this.dungeon.container.sortChildren();
     }
   }
 
@@ -238,7 +228,7 @@ export class MapCell {
     return this._character != null;
   }
 
-  private sprite(name: string, zIndex: number): PIXI.Sprite | PIXI.AnimatedSprite {
+  private sprite(name: string): PIXI.Sprite | PIXI.AnimatedSprite {
     let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
     if (!name.endsWith('.png')) {
       const anim = sprite = this.dungeon.controller.resources.animated(name);
@@ -248,7 +238,6 @@ export class MapCell {
       sprite = this.dungeon.controller.resources.sprite(name);
     }
     sprite.position.set(this.x * TILE_SIZE, this.y * TILE_SIZE);
-    sprite.zIndex = zIndex;
     this.dungeon.container.addChild(sprite);
     return sprite;
   }

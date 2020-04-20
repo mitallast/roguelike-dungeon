@@ -1,4 +1,4 @@
-import {DungeonMap} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {MonsterCharacter, BaseMonsterAI} from "./monster";
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
@@ -33,7 +33,8 @@ export class BossMonsterAI extends BaseMonsterAI {
       width: 2,
       height: 2,
       x: x,
-      y: y
+      y: y,
+      zIndex: DungeonZIndexes.character
     });
     this.character = character;
     this.init();

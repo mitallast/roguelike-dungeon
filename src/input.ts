@@ -1,4 +1,4 @@
-enum KeyBindState {Await = 1, Pressed = 2, Reset = 3}
+enum KeyBindState {Await = 1, Pressed = 2}
 
 export class KeyBind {
   private readonly code: string;
@@ -27,7 +27,7 @@ export class KeyBind {
   keyup(e: KeyboardEvent) {
     if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === KeyBindState.Pressed || this.state === KeyBindState.Reset) {
+      if (this.state === KeyBindState.Pressed) {
         this.triggered = false;
         this.state = KeyBindState.Await;
       }
@@ -35,7 +35,7 @@ export class KeyBind {
   }
 
   reset() {
-    this.state = KeyBindState.Reset;
+    this.state = KeyBindState.Await;
     this.triggered = false;
     this.processed = true;
   }

@@ -382,7 +382,6 @@
     "turnDoubleSpawnProbability": 0,
     "changeDirectionProbability": 0
   },
-  "seed": 1015793975,
   "inAnteroomProbability": 75,
   "tunnelCrawlerGeneration": -1,
   "tunnelCrawlerClosedProbability": 100,

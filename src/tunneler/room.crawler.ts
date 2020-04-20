@@ -1,4 +1,4 @@
-import {CellType, Point, Room, RoomSize} from "./model";
+import {TunnelerCellType, Point, Room, RoomSize} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {Crawler} from "./crawler";
 import {RNG} from "../rng";
@@ -44,31 +44,38 @@ export class RoomCrawler extends Crawler {
 
     do {
       [frontFree, leftFree, rightFree] = this.frontFree(this.location, this.direction, defaultWidth + 1, defaultWidth + 1);
+
       // we can build a room with dimensions frontFree - 2 = length; width = leftFree + rightFree - 1;
       // or inside that square - is this OK?
-      if (frontFree < 4) {
-        break; // this won't work, length at most 2
-      }
       let length = frontFree - 2;
       let width = leftFree + rightFree - 1;
-      if (width / length < this.config.roomAspectRatio) { //r oom aspect is not acceptable, length too large
+
+      if (length < 2) {
+        break;
+      }
+
+      if (width / length < this.config.roomAspectRatio) {
+        // room aspect is not acceptable, length too large
         length = Math.floor(width / this.config.roomAspectRatio);
         if (width / length < this.config.roomAspectRatio) {
           console.error("length = " + length + ", width = " + width + ", but width/length should be >= " + this.config.roomAspectRatio)
         }
       }
-      if (length / width < this.config.roomAspectRatio) { // width too large
+      if (length / width < this.config.roomAspectRatio) {
+        // width too large
         width = Math.floor(length / this.config.roomAspectRatio);
         if (length / width < this.config.roomAspectRatio) {
           console.error("length = " + length + ", width = " + width + ", but length/width should be >= " + this.config.roomAspectRatio);
         }
       }
-      if (width / length < this.config.roomAspectRatio) { // this shouldn't happen
+      if (width / length < this.config.roomAspectRatio) {
+        // this shouldn't happen
         console.error("The Emperor suggests you make your roomAspectRatio in the design file smaller...");
         return false; // we abort this room
       }
       // the aspect ratio is now acceptable, but is the room the right size?
-      while (length * width > maxSize) { // too big, we reduce the larger dimension
+      while (length * width > maxSize) {
+        // too big, we reduce the larger dimension
         if (length > width)
           length--;
         else if (width > length)
@@ -93,10 +100,10 @@ export class RoomCrawler extends Crawler {
             this.attachRoom(room, right, length, -leftFree + 1, -leftFree + width);
           }
           if (this.direction.x === 0) {
-            this.dungeonCrawler.setMap(this.location.plus(this.direction), CellType.V_DOOR);
+            this.dungeonCrawler.setMap(this.location.plus(this.direction), TunnelerCellType.V_DOOR);
           } else {
             console.assert(this.direction.y === 0);
-            this.dungeonCrawler.setMap(this.location.plus(this.direction), CellType.H_DOOR);
+            this.dungeonCrawler.setMap(this.location.plus(this.direction), TunnelerCellType.H_DOOR);
           }
         } else {
           // we be mindful of the right edge of the open area
@@ -108,10 +115,10 @@ export class RoomCrawler extends Crawler {
             this.attachRoom(room, right, length, rightFree - width, rightFree - 1);
           }
           if (this.direction.x === 0) {
-            this.dungeonCrawler.setMap(this.location.plus(this.direction), CellType.V_DOOR);
+            this.dungeonCrawler.setMap(this.location.plus(this.direction), TunnelerCellType.V_DOOR);
           } else {
             console.assert(this.direction.y === 0);
-            this.dungeonCrawler.setMap(this.location.plus(this.direction), CellType.H_DOOR);
+            this.dungeonCrawler.setMap(this.location.plus(this.direction), TunnelerCellType.H_DOOR);
           }
         }
         this.dungeonCrawler.builtRoomDungeon(this.size); // for counting
@@ -133,7 +140,7 @@ export class RoomCrawler extends Crawler {
     for (let direction = 1; direction <= length; direction++) {
       for (let sideDistance = from; sideDistance <= to; sideDistance++) {
         const point = this.location.plus(this.direction.multiply(direction + 1)).plus(right.multiply(sideDistance));
-        this.dungeonCrawler.setMap(point, CellType.INSIDE_ROOM_OPEN);
+        this.dungeonCrawler.setMap(point, TunnelerCellType.INSIDE_ROOM_OPEN);
         room.inside.push(point);
       }
     }

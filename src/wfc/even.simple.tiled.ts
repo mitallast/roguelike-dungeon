@@ -3,28 +3,52 @@ import {RNG} from "../rng";
 import {Resources} from "../resources";
 import {TunnelingAlgorithm, TunnelingOptions} from "../tunneling";
 import {Indexer} from "../indexer";
+import {Config} from "../tunneler/config";
+import {DungeonCrawler} from "../tunneler/dungeon.crawler";
 import * as PIXI from "pixi.js";
+
+export enum Direction {
+  RIGHT = 2,
+  DOWN = 1
+}
+
+export enum CellType {
+  EMPTY = 0,
+  FLOOR = 1,
+  FLOOR_WALL_TOP = 2,
+  WALL_MID = 3,
+  WALL_TOP = 4,
+  WALL_SIDE = 5,
+}
 
 export interface TilesetRules {
   readonly size: number;
-  readonly tiles: string[];
-  readonly cells: [number, number, number][];
-  readonly rules: [number, number, number][];
+  readonly tiles: readonly string[];
+  readonly cells: readonly (readonly [number, number, CellType])[];
+
+  readonly right: readonly (readonly [number, number])[];
+  readonly down: readonly (readonly [number, number])[];
 }
 
 export class TilesetRulesBuilder {
   private readonly tilesIndex: Indexer<string> = Indexer.identity();
-  private readonly cellsIndex: Indexer<[number, number, number]> = Indexer.array();
-  private readonly rulesIndex: Indexer<[number, number, number]> = Indexer.array();
+  private readonly cellsIndex: Indexer<[number, number, CellType]> = Indexer.array();
 
-  addCell(floor: string | undefined, wall: string | undefined, zIndex: number | undefined): number {
+  private readonly rightIndex: Indexer<[number, number]> = Indexer.array();
+  private readonly downIndex: Indexer<[number, number]> = Indexer.array();
+
+  addCell(floor: string | undefined, wall: string | undefined, type: CellType): number {
     const floorId = floor ? this.tilesIndex.index(floor) : -1;
     const wallId = wall ? this.tilesIndex.index(wall) : -1;
-    return this.cellsIndex.index([floorId, wallId, zIndex || 0]);
+    return this.cellsIndex.index([floorId, wallId, type]);
   }
 
-  addRule(first: number, next: number, direction: number): number {
-    return this.rulesIndex.index([first, next, direction]);
+  addRuleRight(first: number, next: number,): void {
+    this.rightIndex.index([first, next]);
+  }
+
+  addRuleDown(first: number, next: number,): void {
+    this.downIndex.index([first, next]);
   }
 
   build(): TilesetRules {
@@ -32,7 +56,8 @@ export class TilesetRulesBuilder {
       size: 16,
       tiles: this.tilesIndex.values,
       cells: this.cellsIndex.values,
-      rules: this.rulesIndex.values,
+      right: this.rightIndex.values,
+      down: this.downIndex.values,
     };
   }
 }
@@ -66,9 +91,15 @@ export class EvenSimpleTiledModel extends Model {
       }
     }
 
-    for (let [first, next, direction] of tileset.rules) {
-      const opposite = Model.opposite[direction];
-      tmpPropagator[direction][first][next] = true;
+    for (let [first, next] of tileset.right) {
+      const opposite = Model.opposite[Direction.RIGHT];
+      tmpPropagator[Direction.RIGHT][first][next] = true;
+      tmpPropagator[opposite][next][first] = true;
+    }
+
+    for (let [first, next] of tileset.down) {
+      const opposite = Model.opposite[Direction.DOWN];
+      tmpPropagator[Direction.DOWN][first][next] = true;
       tmpPropagator[opposite][next][first] = true;
     }
 
@@ -747,6 +778,126 @@ export class RoomConstraint implements Constraint {
         }
       }
     }
+  }
+
+  check(): void {
+  }
+
+  onBacktrack(_index: number, _pattern: number): void {
+  }
+
+  onBan(_index: number, _pattern: number): void {
+  }
+}
+
+export class DungeonCrawlerConstraint implements Constraint {
+  private readonly config: Config;
+
+  private model: EvenSimpleTiledModel | null = null;
+
+  constructor(config: Config) {
+    this.config = config;
+  }
+
+  init(model: EvenSimpleTiledModel): void {
+    this.model = model;
+  }
+
+  onClear(): void {
+    const model = this.model!;
+    console.time("crawler");
+    const crawler = new DungeonCrawler(this.config, model.rng);
+    crawler.generate();
+    console.timeEnd("crawler");
+
+    console.time("crawler constraint");
+
+    const isOpen = buffer(model.FMX * model.FMY, false);
+
+    for (let y = 0; y < crawler.config.height; y++) {
+      for (let x = 0; x < crawler.config.width; x++) {
+        const i = x + y * model.FMX;
+        isOpen[i] = crawler.isMapOpen({x: x, y: y});
+      }
+    }
+
+    function onlyFloorAround(i: number): boolean {
+      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      for (let dy = 0; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx !== 0 || dy !== 0) {
+            let sx = x + dx;
+            let sy = y + dy;
+            if (model.onBoundary(sx, sy)) continue;
+            if (!isOpen[sx + sy * model.FMX]) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    }
+
+    function hasFloorAround(i: number, h: number = 2): boolean {
+      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      for (let dy = -1; dy <= h; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx !== 0 || dy !== 0) {
+            let sx = x + dx;
+            let sy = y + dy;
+            if (model.onBoundary(sx, sy)) continue;
+            if (isOpen[sx + sy * model.FMX]) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function checkOpen(i: number, dx: number, dy: number): boolean | null {
+      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      let sx = x + dx;
+      let sy = y + dy;
+      if (model.onBoundary(sx, sy)) return null;
+      return isOpen[sx + sy * model.FMX];
+    }
+
+    for (let i = 0; i < isOpen.length; i++) {
+      const possibleTypes = buffer(6, false);
+
+      const bottom = checkOpen(i, 0, 1);
+
+      if (isOpen[i]) {
+        possibleTypes[CellType.EMPTY] = false;
+        possibleTypes[CellType.FLOOR] = true;
+        if (!onlyFloorAround(i)) {
+          possibleTypes[CellType.FLOOR_WALL_TOP] = true
+        }
+      } else {
+        if (hasFloorAround(i)) {
+          const top = checkOpen(i, 0, -1);
+
+          possibleTypes[CellType.EMPTY] = !(top === true || bottom === true);
+          possibleTypes[CellType.WALL_MID] = top === true || bottom === true;
+          possibleTypes[CellType.WALL_TOP] = true;
+          possibleTypes[CellType.WALL_SIDE] = true
+        } else {
+          possibleTypes[CellType.EMPTY] = true;
+        }
+      }
+
+      // console.log(`possibleTypes, {x:${i % model.FMX},y:${Math.floor(i / model.FMX)}}`, possibleTypes);
+
+      for (let t = 0; t < model.T; t++) {
+        const type = model.tileset.cells[t][2];
+        if (!possibleTypes[type]) {
+          model.ban(i, t);
+        }
+      }
+    }
+
+    console.timeEnd("crawler constraint");
   }
 
   check(): void {

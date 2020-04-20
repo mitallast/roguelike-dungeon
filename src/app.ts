@@ -6,7 +6,9 @@ import * as PIXI from 'pixi.js';
 window.PIXI = PIXI;
 import "pixi-layers";
 
-import {DungeonMakerTest} from "./tunneler/test";
+// import {DungeonDesignEditor} from "./tunneler/editor";
+// import {Editor} from "./editor";
+// import {RulesEditor} from "./wfc/rules.editor";
 
 (async function () {
 
@@ -32,5 +34,9 @@ import {DungeonMakerTest} from "./tunneler/test";
   const controller = new SceneController(resources, app, stage);
   controller.keyBind();
 
-  await DungeonMakerTest.test();
+  // RulesEditor.dungeon(resources);
+
+  // const rulesEditor = RulesEditor.dungeon(resources);
+  // new Editor(80, 200, resources, rulesEditor);
+  // await DungeonDesignEditor.run(resources, rulesEditor);
 })();

@@ -50,80 +50,91 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
         }
       }
     }
-  };
+  }
 
   protected replaceWallRandomly(dungeon: DungeonMap): void {
-    const wall_mid_top_replaces = [
-      'wall_hole_1.png',
-      'wall_hole_2.png',
+    const banners: string[] = [
       'wall_banner_red.png',
       'wall_banner_blue.png',
       'wall_banner_green.png',
       'wall_banner_yellow.png',
+    ];
+    const goo: string[] = [
       'wall_goo.png',
+    ];
+    const fountains: string[] = [
       'wall_fountain_mid_red',
       'wall_fountain_mid_blue',
     ];
-    const wall_mid_bottom_replaces = [
+    const holes: string[] = [
       'wall_hole_1.png',
       'wall_hole_2.png',
     ];
-    const percent = 0.2;
+    const percent = 0.3;
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
-        if (cell.hasWall) {
-          if (cell.wall === 'wall_mid.png') {
-            if (this.rng.nextFloat() < percent) {
-              const is_top = dungeon.cell(x, y + 1).hasFloor;
-              let replacements: string[];
-              if (is_top) {
-                replacements = wall_mid_top_replaces;
-              } else {
-                replacements = wall_mid_bottom_replaces;
-              }
-              const replacement = this.rng.choice(replacements);
-              switch (replacement) {
-                case 'wall_goo.png':
-                  dungeon.cell(x, y).wallBack = 'wall_goo.png';
-                  dungeon.cell(x, y + 1).floor = 'wall_goo_base.png';
-                  break;
-                case 'wall_fountain_mid_red':
-                  dungeon.cell(x, y - 1).wallBack = 'wall_fountain_top.png';
-                  dungeon.cell(x, y).wallBack = 'wall_fountain_mid_red';
-                  dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_red';
-                  break;
-                case 'wall_fountain_mid_blue':
-                  dungeon.cell(x, y - 1).wallBack = 'wall_fountain_top.png';
-                  dungeon.cell(x, y).wallBack = 'wall_fountain_mid_blue';
-                  dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_blue';
-                  break;
-                default:
-                  if (is_top) {
-                    dungeon.cell(x, y).wallBack = replacement;
-                  } else {
-                    dungeon.cell(x, y).wallFront = replacement;
-                  }
-                  break;
-              }
+        if (cell.wall === 'wall_mid.png') {
+          if (this.rng.nextFloat() < percent) {
+            const replacements = [...holes];
+            const has_floor = y + 1 < dungeon.height && dungeon.cell(x, y + 1).floor === 'floor_1.png';
+            if (has_floor) {
+              replacements.push(...banners);
+              replacements.push(...goo);
             }
-          } else {
+            const has_top = y > 0 && dungeon.cell(x, y - 1).wall === 'wall_top_mid.png';
+            if (has_top && has_floor) {
+              replacements.push(...fountains)
+            }
+            const replacement = this.rng.choice(replacements);
+            switch (replacement) {
+              case 'wall_goo.png':
+                dungeon.cell(x, y).wall = 'wall_goo.png';
+                dungeon.cell(x, y + 1).floor = 'wall_goo_base.png';
+                break;
+              case 'wall_fountain_mid_red':
+                dungeon.cell(x, y - 1).wall = 'wall_fountain_top.png';
+                dungeon.cell(x, y).wall = 'wall_fountain_mid_red';
+                dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_red';
+                break;
+              case 'wall_fountain_mid_blue':
+                dungeon.cell(x, y - 1).wall = 'wall_fountain_top.png';
+                dungeon.cell(x, y).wall = 'wall_fountain_mid_blue';
+                dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_blue';
+                break;
+              default:
+                dungeon.cell(x, y).wall = replacement;
+                break;
+            }
           }
         }
       }
     }
   }
 
-  protected placeHero(dungeon: DungeonMap, hero: Hero): CharacterView {
+  protected findFreePositions(dungeon: DungeonMap, width: number, height: number): [number, number][] {
     const free: [number, number][] = [];
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.height; x++) {
-        const cell = dungeon.cell(x, y);
-        if (cell.hasFloor && !cell.hasCharacter) {
-          free.push([x, y]);
+
+    for (let y = 0; y < dungeon.height - height; y++) {
+      for (let x = 0; x < dungeon.width - width; x++) {
+
+        let valid = true;
+        for (let dy = 0; dy < height && valid; dy++) {
+          for (let dx = 0; dx < width && valid; dx++) {
+            const cell = dungeon.cell(x + dx, y + dy);
+            valid = cell.hasFloor && !cell.hasCharacter;
+          }
         }
+
+        if (valid) free.push([x, y]);
       }
     }
+
+    return free;
+  }
+
+  protected placeHero(dungeon: DungeonMap, hero: Hero): CharacterView {
+    const free = this.findFreePositions(dungeon, 2, 2);
     if (free.length === 0) {
       throw "hero not placed";
     }
@@ -134,20 +145,32 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     return view;
   }
 
-  protected placeMonsters(dungeon: DungeonMap, hero: CharacterView): void {
-    const min_hero_distance = 10;
-    const free: [number, number][] = [];
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.height; x++) {
-        const cell = dungeon.cell(x, y);
-        if (cell.hasFloor && !cell.hasCharacter) {
-          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
-          if (distance > min_hero_distance) {
-            free.push([x, y]);
-          }
-        }
-      }
+  protected placeNpc(dungeon: DungeonMap, hero: CharacterView): void {
+    const max_hero_distance = 10;
+    const free = this.findFreePositions(dungeon, 2, 2).filter(point => {
+      const [x, y] = point;
+      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      return distance < max_hero_distance;
+    });
+
+    const npc_count = 5;
+    for (let n = 0; n < npc_count && free.length > 0; n++) {
+      const i = this.rng.nextRange(0, free.length);
+      let [[x, y]] = free.splice(i, 1);
+      const config = this.rng.choice(npcCharacters);
+      const npc = new NpcCharacter(config.name);
+      new NpcAI(npc, config, dungeon, x, y);
+      dungeon.cell(x, y).character = npc;
     }
+  }
+
+  protected placeMonsters(dungeon: DungeonMap, hero: CharacterView): void {
+    const min_hero_distance = 15;
+    const free: [number, number][] = this.findFreePositions(dungeon, 2, 2).filter(point => {
+      const [x, y] = point;
+      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      return distance > min_hero_distance;
+    });
 
     const monster_percent = 3;
     const monster_count = Math.floor(free.length * monster_percent / 100);
@@ -161,50 +184,14 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeNpc(dungeon: DungeonMap, hero: CharacterView): void {
-    const max_hero_distance = 10;
-
-    const free: [number, number][] = [];
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.height; x++) {
-        const cell = dungeon.cell(x, y);
-        if (cell.hasFloor && !cell.hasCharacter) {
-          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
-          if (distance < max_hero_distance) {
-            free.push([x, y]);
-          }
-        }
-      }
-    }
-
-    const npc_count = 5;
-    for (let n = 0; n < npc_count && free.length > 0; n++) {
-      const i = this.rng.nextRange(0, free.length);
-      let [[x, y]] = free.splice(i, 1);
-      const config = this.rng.choice(npcCharacters);
-      const npc = new NpcCharacter(config.name);
-      new NpcAI(npc, config, dungeon, x, y);
-      dungeon.cell(x, y).character = npc;
-    }
-  }
-
   protected placeBoss(dungeon: DungeonMap, hero: CharacterView): void {
     const min_hero_distance = 20;
+    const free = this.findFreePositions(dungeon, 2, 2).filter(point => {
+      const [x, y] = point;
+      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      return distance > min_hero_distance;
+    });
 
-    const free: [number, number][] = [];
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.height; x++) {
-        if (dungeon.cell(x, y).hasFloor &&
-          !dungeon.cell(x, y).hasCharacter && !dungeon.cell(x + 1, y).hasCharacter &&
-          !dungeon.cell(x, y - 1).hasCharacter && !dungeon.cell(x + 1, y - 1).hasCharacter
-        ) {
-          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
-          if (distance > min_hero_distance) {
-            free.push([x, y]);
-          }
-        }
-      }
-    }
     if (free.length > 0) {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);

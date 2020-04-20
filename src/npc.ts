@@ -1,5 +1,5 @@
 import {BaseCharacterAI, Character} from "./character";
-import {DungeonMap} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 
 export const npcCharacters: NpcConfig[] = [
   {name: "alchemist", width: 1, height: 1},
@@ -62,7 +62,8 @@ export class NpcAI extends BaseCharacterAI {
       width: config.width,
       height: config.height,
       x: x,
-      y: y
+      y: y,
+      zIndex: DungeonZIndexes.character
     });
     this.character = character;
     this.init();

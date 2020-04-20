@@ -1,6 +1,6 @@
 import {Inventory} from "./inventory";
 import {BaseCharacterAI, Character, HitAnimation} from "./character";
-import {DungeonMap} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {ObservableVar, Observable} from "./observable";
 import {BarView} from "./bar.view";
@@ -167,7 +167,7 @@ export class HeroAI extends BaseCharacterAI {
   readonly character: Hero;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {x: x, y: y});
+    super(dungeon, {x: x, y: y, zIndex: DungeonZIndexes.hero});
     this.character = character;
     this.init();
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);

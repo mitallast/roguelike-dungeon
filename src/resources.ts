@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 export class Resources {
-  private readonly loader: PIXI.Loader;
+  readonly loader: PIXI.Loader;
 
   private readonly _textures: Partial<Record<string, PIXI.Texture>> = {};
   private readonly _animations: Partial<Record<string, any>> = {};
@@ -16,6 +16,8 @@ export class Resources {
         .add('npc.json')
         .add('dungeon.json')
         .add('dungeon.rules.json')
+        .add('dungeon.rules.4.json')
+        .add('dungeon.design.json')
         .add('dialogs.json')
         .add('village.json')
         .add('village.rules.json')

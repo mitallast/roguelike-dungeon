@@ -1,4 +1,4 @@
-import {CellType, Direction, FillRect, IPoint} from "./model";
+import {TunnelerCellType, Direction, FillRect, IPoint} from "./model";
 
 export interface CrawlerConfig {
   readonly location: IPoint;
@@ -48,7 +48,7 @@ export interface TunnelCrawlerConfig {
 export interface Config {
   readonly width: number;
   readonly height: number;
-  readonly background: CellType;
+  readonly background: TunnelerCellType;
   readonly openings: readonly Direction[]; // openings (in edge od dungeon wall)
   readonly design: readonly FillRect[]; // design elements (pre-placed rooms, etc)
   readonly stepLengths: readonly number[];
@@ -99,8 +99,6 @@ export interface Config {
   readonly crawlersInAnterooms: boolean;
   readonly seedCrawlersInTunnels: number;
   readonly tunnelCrawlerStats: CrawlerConfig;
-  //default seed used on construction of dungeon crawler to guarantee good first dungeon
-  readonly seed: number;
   readonly inAnteroomProbability: number;
   readonly tunnelCrawlerGeneration: number;
   readonly tunnelCrawlerClosedProbability: number;

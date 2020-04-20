@@ -194,10 +194,20 @@ export abstract class Model {
   debug: boolean = false;
 
   async run(limit: number = 0, debug: boolean = false): Promise<Resolution> {
-    if (this.wave.length === 0) this.init();
+    if (this.wave.length === 0) {
+      console.time("model.init");
+      this.init();
+      console.timeEnd("model.init");
+    }
+
+    console.time("model.clear");
     this.clear();
+    console.timeEnd("model.clear");
+
+    console.time("model.run");
     this.debug = debug;
-    for (let i = 0; i < limit || limit === 0; i++) {
+    let i = 0
+    for (; i < limit || limit === 0; i++) {
       if (i % 50 === 0) {
         await yields();
       }
@@ -213,6 +223,10 @@ export abstract class Model {
         break;
       }
     }
+
+    console.timeEnd("model.run");
+
+    console.log(`complete, steps: ${i}`);
     return this.status;
   }
 
@@ -328,7 +342,7 @@ export abstract class Model {
       if (this.onBoundary(i % this.FMX, Math.floor(i / this.FMX))) continue;
 
       let amount = this.sumsOfOnes[i];
-      if (amount == 0) {
+      if (amount === 0) {
         if (this.debug) console.error(`[wave=${i}] found zero sum of ones`);
         if (this.debug) this.graphics([i]);
         this.status = Resolution.Contradiction;
@@ -402,19 +416,12 @@ export abstract class Model {
   protected abstract testObserved(index: number): void;
 
   protected propagate(): void {
-    if (this.toPropagate.length === 0) return;
-
-    const markup: number[] = [];
     while (this.toPropagate.length > 0) {
       let [i, t] = this.toPropagate.pop()!;
 
-      if (this.debug) console.log("propagate i, t", i, t);
-
-      markup.push(i);
-
       let x = i % this.FMX, y = Math.floor(i / this.FMX);
       for (let direction = 0; direction < 4; direction++) {
-        let dx = Model.DX[direction], dy = Model.DY[direction];
+        const dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
         if (this.onBoundary(sx, sy)) {
           continue;
@@ -426,8 +433,6 @@ export abstract class Model {
         else if (sy >= this.FMY) sy -= this.FMY;
 
         let s = sx + sy * this.FMX;
-
-        markup.push(s);
 
         let pattern1 = this.propagator[direction][t]; // item2
         let compat = this.compatible[s];
@@ -446,11 +451,6 @@ export abstract class Model {
       if (this.status == Resolution.Contradiction) {
         break;
       }
-    }
-
-    if (this.debug) {
-      console.log("propagated");
-      this.graphics(markup);
     }
   }
 

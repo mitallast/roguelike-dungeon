@@ -1,4 +1,4 @@
-import {CellType, IPoint, Point} from "./model";
+import {TunnelerCellType, IPoint, Point} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {Config} from "./config";
 import {RNG} from "../rng";
@@ -13,7 +13,13 @@ export abstract class Crawler {
   readonly maxAge: number;
   readonly generation: number;
 
-  protected constructor(rng: RNG, dungeonCrawler: DungeonCrawler, location: Point, direction: Point, age: number, maxAge: number, generation: number) {
+  protected constructor(rng: RNG,
+                        dungeonCrawler: DungeonCrawler,
+                        location: Point,
+                        direction: Point,
+                        age: number,
+                        maxAge: number,
+                        generation: number) {
     this.rng = rng;
     this.dungeonCrawler = dungeonCrawler;
     this.config = dungeonCrawler.config;
@@ -82,10 +88,10 @@ export abstract class Crawler {
       for (let i = -leftFree; i <= rightFree; i++) {
         const cell = position.plus(right.multiply(i)).plus(heading.multiply(frontFree));
         if (!this.valid(cell)) {
-          return frontFree - 1;
+          return Math.max(0, frontFree - 1);
         }
         if (this.freePredicate(this.dungeonCrawler.getMap(cell))) {
-          return frontFree - 1;
+          return Math.max(0, frontFree - 1);
         }
       }
     }
@@ -121,8 +127,8 @@ export abstract class Crawler {
     }
   }
 
-  protected freePredicate(type: CellType): boolean {
-    return (type !== CellType.CLOSED) && (type !== CellType.NON_JOIN_CLOSED);
+  protected freePredicate(type: TunnelerCellType): boolean {
+    return (type !== TunnelerCellType.CLOSED) && (type !== TunnelerCellType.NON_JOIN_CLOSED);
   }
 
   protected contains<T>(value: T, ...options: T[]): boolean {

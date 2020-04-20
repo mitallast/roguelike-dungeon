@@ -230,6 +230,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
       pos_y += (new_y - pos_y) * delta;
     }
     this.view.position.set(pos_x * TILE_SIZE, pos_y * TILE_SIZE);
+    this.updateZIndex(pos_y);
     this.onPositionChanged();
   }
 
@@ -255,6 +256,11 @@ export abstract class BaseCharacterAI implements CharacterAI {
     }
     this.view.new_x = x;
     this.view.new_y = y;
+    this.updateZIndex(y);
+  }
+
+  private updateZIndex(y: number): void {
+    this.view.zIndex = this.view.baseZIndex + Math.floor(y) * DungeonZIndexes.row;
   }
 
   protected scan(is_left: boolean, max_distance: number, predicate: (character: Character) => boolean): Character[] {
@@ -431,16 +437,18 @@ export class HitAnimation extends Animation {
 }
 
 export interface CharacterViewOptions {
-  width?: number
-  height?: number
-  x: number
-  y: number
+  readonly width?: number
+  readonly height?: number
+  readonly x: number
+  readonly y: number
+  readonly zIndex: number
 }
 
 export class CharacterView extends PIXI.Container {
   private readonly ai: CharacterAI;
   private readonly resources: Resources;
 
+  readonly baseZIndex: number;
   readonly grid_width: number; // grid width
   readonly grid_height: number; // grid width
   pos_x: number; // grid pos
@@ -467,13 +475,13 @@ export class CharacterView extends PIXI.Container {
     super();
     this.ai = ai;
     this.resources = resources;
+    this.baseZIndex = options.zIndex;
     this.grid_width = options.width || 1;
     this.grid_height = options.height || 1;
     this.pos_x = options.x;
     this.pos_y = options.y;
     this.new_x = options.x;
     this.new_y = options.y;
-    this.zIndex = DungeonZIndexes.character;
   }
 
   destroy(): void {

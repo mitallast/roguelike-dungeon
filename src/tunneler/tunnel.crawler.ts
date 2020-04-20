@@ -1,4 +1,4 @@
-import {CellType, Point, RoomSize} from "./model";
+import {TunnelerCellType, Point, RoomSize} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {Crawler} from "./crawler";
 import {RNG} from "../rng";
@@ -294,15 +294,15 @@ export class TunnelCrawler extends Crawler {
     const dungeonCrawler = this.dungeonCrawler;
     let anteroomPossible = false;
     console.assert(this.tunnelWidth >= 0);
-    console.assert(dungeonCrawler.getMap(this.location) === CellType.INSIDE_TUNNEL_OPEN);
+    console.assert(dungeonCrawler.getMap(this.location) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
 
     // temporary, so we can step back to see it's free in our own row
-    dungeonCrawler.setMap(this.location, CellType.CLOSED);
+    dungeonCrawler.setMap(this.location, TunnelerCellType.CLOSED);
     for (let m = 1; m <= this.tunnelWidth; m++) {
-      console.assert(dungeonCrawler.getMap(this.location.plus(right.multiply(m))) === CellType.INSIDE_TUNNEL_OPEN);
-      console.assert(dungeonCrawler.getMap(this.location.minus(right.multiply(m))) === CellType.INSIDE_TUNNEL_OPEN);
-      dungeonCrawler.setMap(this.location.plus(right.multiply(m)), CellType.CLOSED);
-      dungeonCrawler.setMap(this.location.minus(right.multiply(m)), CellType.CLOSED);
+      console.assert(dungeonCrawler.getMap(this.location.plus(right.multiply(m))) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
+      console.assert(dungeonCrawler.getMap(this.location.minus(right.multiply(m))) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
+      dungeonCrawler.setMap(this.location.plus(right.multiply(m)), TunnelerCellType.CLOSED);
+      dungeonCrawler.setMap(this.location.minus(right.multiply(m)), TunnelerCellType.CLOSED);
     }
 
     let [frontFree] = this.frontFree(this.location.minus(this.direction), this.direction, leftFree, rightFree);
@@ -310,10 +310,10 @@ export class TunnelCrawler extends Crawler {
       anteroomPossible = true;
     }
     // revert
-    dungeonCrawler.setMap(this.location, CellType.INSIDE_TUNNEL_OPEN);
+    dungeonCrawler.setMap(this.location, TunnelerCellType.INSIDE_TUNNEL_OPEN);
     for (let m = 1; m <= this.tunnelWidth; m++) {
-      dungeonCrawler.setMap(this.location.plus(right.multiply(m)), CellType.INSIDE_TUNNEL_OPEN);
-      dungeonCrawler.setMap(this.location.minus(right.multiply(m)), CellType.INSIDE_TUNNEL_OPEN);
+      dungeonCrawler.setMap(this.location.plus(right.multiply(m)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
+      dungeonCrawler.setMap(this.location.minus(right.multiply(m)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
     }
 
     return anteroomPossible;
@@ -352,8 +352,8 @@ export class TunnelCrawler extends Crawler {
     const spawnDirection = this.location;
     const spawnRight = this.location.minus(this.direction.multiply(this.tunnelWidth)).plus(right.multiply(this.tunnelWidth));
     const spawnLeft = this.location.minus(this.direction.multiply(this.tunnelWidth)).plus(left.multiply(this.tunnelWidth));
-    if (this.dungeonCrawler.getMap(spawnRight) !== CellType.INSIDE_TUNNEL_OPEN ||
-      dungeonCrawler.getMap(spawnLeft) !== CellType.INSIDE_TUNNEL_OPEN) {
+    if (this.dungeonCrawler.getMap(spawnRight) !== TunnelerCellType.INSIDE_TUNNEL_OPEN ||
+      dungeonCrawler.getMap(spawnLeft) !== TunnelerCellType.INSIDE_TUNNEL_OPEN) {
       // we didn't make a long enough step so we cannot really go back on this tunnel, bail out!
       return true;
     } else {
@@ -375,14 +375,14 @@ export class TunnelCrawler extends Crawler {
     for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
-      if (this.contains(cell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)) {
+      if (this.contains(cell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
         openAhead = true;
         count++;
-      } else if (this.contains(cell, CellType.GUARANTEED_CLOSED, CellType.NON_JOIN_GUARANTEED_CLOSED)) {
+      } else if (this.contains(cell, TunnelerCellType.GUARANTEED_CLOSED, TunnelerCellType.NON_JOIN_GUARANTEED_CLOSED)) {
         guaranteedClosedAhead = true;
         // start counting fresh, we only want consecutive OPEN squares counted
         count = 0;
-      } else if (cell === CellType.INSIDE_ROOM_OPEN) {
+      } else if (cell === TunnelerCellType.INSIDE_ROOM_OPEN) {
         roomAhead = true;
         // start counting fresh, we only want consecutive OPEN squares counted
         count = 0;
@@ -494,13 +494,13 @@ export class TunnelCrawler extends Crawler {
         //otherwise we can make adjacent doors into end-of-tunnel room
         const test = this.location.plus(this.direction.multiply(frontFree + 1));
         const cell = dungeonCrawler.getMap(test);
-        console.assert(cell === CellType.INSIDE_ROOM_OPEN);
+        console.assert(cell === TunnelerCellType.INSIDE_ROOM_OPEN);
         this.buildTunnel(frontFree - 1, 0);
         if (this.direction.x === 0)
-          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree)), CellType.V_DOOR);
+          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree)), TunnelerCellType.V_DOOR);
         else {
           console.assert(this.direction.y === 0);
-          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree)), CellType.H_DOOR);
+          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree)), TunnelerCellType.H_DOOR);
         }
         return false;
       }
@@ -533,7 +533,7 @@ export class TunnelCrawler extends Crawler {
         console.assert(isJoined);
         // treat the next row manually
         for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
-          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i)), CellType.INSIDE_TUNNEL_OPEN);
+          dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
         }
 
         // keep going while we are still in contact with another tunnel on one side
@@ -544,7 +544,7 @@ export class TunnelCrawler extends Crawler {
           for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
-            if (cell !== CellType.CLOSED) {
+            if (cell !== TunnelerCellType.CLOSED) {
               contactInNextRow = false;
               break;
             }
@@ -555,13 +555,13 @@ export class TunnelCrawler extends Crawler {
           let rightCell = dungeonCrawler.getMap(testRight);
           let leftCell = dungeonCrawler.getMap(testLeft);
           if (
-            !this.contains(rightCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN) &&
-            !this.contains(leftCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)
+            !this.contains(rightCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN) &&
+            !this.contains(leftCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)
           ) {
             contactInNextRow = false;
             break;
           }
-          if ((rightCell === CellType.INSIDE_ROOM_OPEN) || (leftCell === CellType.INSIDE_ROOM_OPEN)) {
+          if ((rightCell === TunnelerCellType.INSIDE_ROOM_OPEN) || (leftCell === TunnelerCellType.INSIDE_ROOM_OPEN)) {
             contactInNextRow = false;
             break;
           }
@@ -570,7 +570,7 @@ export class TunnelCrawler extends Crawler {
           for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
-            if (cell !== CellType.CLOSED) {
+            if (cell !== TunnelerCellType.CLOSED) {
               rowAfterIsOK = false;
             }
           }
@@ -581,20 +581,20 @@ export class TunnelCrawler extends Crawler {
           rightCell = dungeonCrawler.getMap(testRight);
           leftCell = dungeonCrawler.getMap(testLeft);
           if (
-            !this.contains(rightCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN, CellType.CLOSED) &&
-            !this.contains(leftCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN, CellType.CLOSED)
+            !this.contains(rightCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN, TunnelerCellType.CLOSED) &&
+            !this.contains(leftCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN, TunnelerCellType.CLOSED)
           ) {
             rowAfterIsOK = false;
           }
 
-          if ((rightCell === CellType.INSIDE_ROOM_OPEN) || (leftCell === CellType.INSIDE_ROOM_OPEN))
+          if ((rightCell === TunnelerCellType.INSIDE_ROOM_OPEN) || (leftCell === TunnelerCellType.INSIDE_ROOM_OPEN))
             rowAfterIsOK = false;
           //however, if the entire row after is IT_OPEN, it's also OK
           let allOpen = true;
           for (let i = -this.tunnelWidth - 1; i <= this.tunnelWidth + 1; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
-            if ((cell !== CellType.INSIDE_TUNNEL_OPEN) && (cell !== CellType.INSIDE_ANTEROOM_OPEN)) {
+            if ((cell !== TunnelerCellType.INSIDE_TUNNEL_OPEN) && (cell !== TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
               allOpen = false;
             }
           }
@@ -605,7 +605,7 @@ export class TunnelCrawler extends Crawler {
           // build another row
           if (contactInNextRow && rowAfterIsOK) {
             for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
-              dungeonCrawler.setMap(this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(i)), CellType.INSIDE_TUNNEL_OPEN);
+              dungeonCrawler.setMap(this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(i)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
             }
           }
 
@@ -615,15 +615,15 @@ export class TunnelCrawler extends Crawler {
       } // weHaveSpecialCase
       // now treat the case that a room blocks the path off center, only for tunnelWidth === 0:
       if (this.tunnelWidth === 0) {
-        if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1))) === CellType.CLOSED) {
+        if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1))) === TunnelerCellType.CLOSED) {
           //look sideways, and turn away from the room
-          if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right)) === CellType.INSIDE_ROOM_OPEN) {
+          if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right)) === TunnelerCellType.INSIDE_ROOM_OPEN) {
             this.direction = right.negative;
             if (this.direction.equals(this.intendedDirection.negative)) {
               this.direction = this.intendedDirection;   //to prevent heading off in the wrong direction
             }
             return true;
-          } else if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).minus(right)) === CellType.INSIDE_ROOM_OPEN) {
+          } else if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).minus(right)) === TunnelerCellType.INSIDE_ROOM_OPEN) {
             this.direction = right;
             if (this.direction.equals(this.intendedDirection.negative)) {
               this.direction = this.intendedDirection;   //to prevent heading off in the wrong direction
@@ -646,7 +646,7 @@ export class TunnelCrawler extends Crawler {
     for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
-      if (cell !== CellType.CLOSED) {
+      if (cell !== TunnelerCellType.CLOSED) {
         isSpecialCase = false;
         break;
       }
@@ -657,13 +657,13 @@ export class TunnelCrawler extends Crawler {
     let rightCell = dungeonCrawler.getMap(testRight);
     let leftCell = dungeonCrawler.getMap(testLeft);
     if (
-      !this.contains(rightCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN) &&
-      !this.contains(leftCell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)
+      !this.contains(rightCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN) &&
+      !this.contains(leftCell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)
     ) {
       isSpecialCase = false;
     }
 
-    if ((rightCell === CellType.INSIDE_ROOM_OPEN) || (leftCell === CellType.INSIDE_ROOM_OPEN)) {
+    if ((rightCell === TunnelerCellType.INSIDE_ROOM_OPEN) || (leftCell === TunnelerCellType.INSIDE_ROOM_OPEN)) {
       isSpecialCase = false;
     }
 
@@ -671,7 +671,7 @@ export class TunnelCrawler extends Crawler {
     for (let i = -this.tunnelWidth - 1; i <= this.tunnelWidth + 1; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 2)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
-      if (cell === CellType.INSIDE_ROOM_OPEN) {
+      if (cell === TunnelerCellType.INSIDE_ROOM_OPEN) {
         isSpecialCase = false;
         break;
       }
@@ -741,7 +741,7 @@ export class TunnelCrawler extends Crawler {
     // we join with the first OPEN square we find, and narrow the tunnel to width 1
     const test = this.location.plus(this.direction.multiply(frontFree + 1));
     const cell = dungeonCrawler.getMap(test);
-    if (this.contains(cell, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)) {
+    if (this.contains(cell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
       // small opening straight ahead
       if (!this.buildTunnel(frontFree, 0)) {
         console.error("openAhead, failed to join, frontFree = " + frontFree);
@@ -753,13 +753,13 @@ export class TunnelCrawler extends Crawler {
     for (let i = 1; i <= this.tunnelWidth; i++) {
       const testP = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cellP = dungeonCrawler.getMap(testP);
-      if (this.contains(cellP, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)) {
+      if (this.contains(cellP, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
         offset = i;
         break;
       }
       const testM = this.location.plus(this.direction.multiply(frontFree + 1)).minus(right.multiply(i));
       const cellM = dungeonCrawler.getMap(testM);
-      if (this.contains(cellM, CellType.OPEN, CellType.GUARANTEED_OPEN, CellType.INSIDE_TUNNEL_OPEN, CellType.INSIDE_ANTEROOM_OPEN)) {
+      if (this.contains(cellM, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
         offset = -i;
         break;
       }
@@ -767,7 +767,7 @@ export class TunnelCrawler extends Crawler {
     console.assert(offset !== 0); // because openAhead === true and center has been eliminated earler
     for (let i = 1; i <= frontFree; i++) { // build the narrow tunnel by hand:
       const point = this.location.plus(this.direction.multiply(i)).plus(right.multiply(offset));
-      dungeonCrawler.setMap(point, CellType.INSIDE_TUNNEL_OPEN);
+      dungeonCrawler.setMap(point, TunnelerCellType.INSIDE_TUNNEL_OPEN);
     }
     // we tunneled and joined, so:
     return false;
@@ -847,7 +847,7 @@ export class TunnelCrawler extends Crawler {
     for (let directionLength = 1; directionLength <= length; directionLength++) {
       for (let side = -width; side <= width; side++) {
         const current = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-        this.dungeonCrawler.setMap(current, CellType.INSIDE_ANTEROOM_OPEN);
+        this.dungeonCrawler.setMap(current, TunnelerCellType.INSIDE_ANTEROOM_OPEN);
       }
     }
 
@@ -877,7 +877,7 @@ export class TunnelCrawler extends Crawler {
     for (let directionLength = 1; directionLength <= length; directionLength++) {
       for (let side = -width; side <= width; side++) {
         const current = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-        this.dungeonCrawler.setMap(current, CellType.INSIDE_TUNNEL_OPEN);
+        this.dungeonCrawler.setMap(current, TunnelerCellType.INSIDE_TUNNEL_OPEN);
       }
     }
 
@@ -896,18 +896,18 @@ export class TunnelCrawler extends Crawler {
   private placeColumns(width: number, directionLength: number, right: Point) {
     let side = -width + 1;   // one before the last opened square
     let point = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-    this.dungeonCrawler.setMap(point, CellType.COLUMN);
+    this.dungeonCrawler.setMap(point, TunnelerCellType.COLUMN);
     side = width - 1;   // one before the last opened square
     point = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-    this.dungeonCrawler.setMap(point, CellType.COLUMN);
+    this.dungeonCrawler.setMap(point, TunnelerCellType.COLUMN);
 
-    directionLength = length - 1;
+    directionLength = directionLength - 1;
     side = -width + 1; // one before the last opened square
     point = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-    this.dungeonCrawler.setMap(point, CellType.COLUMN);
+    this.dungeonCrawler.setMap(point, TunnelerCellType.COLUMN);
     side = width - 1; // one before the last opened square
     point = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(side));
-    this.dungeonCrawler.setMap(point, CellType.COLUMN);
+    this.dungeonCrawler.setMap(point, TunnelerCellType.COLUMN);
   }
 
   private getChildDelayProbabilityForGenerationRoomCrawlers(generation: number): number {

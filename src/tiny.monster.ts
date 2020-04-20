@@ -1,4 +1,4 @@
-import {DungeonMap} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {MonsterCharacter, BaseMonsterAI} from "./monster";
 
 export const tinyMonsterNames = [
@@ -31,7 +31,7 @@ export class TinyMonsterAI extends BaseMonsterAI {
   readonly max_distance: number = 5;
 
   constructor(character: TinyMonster, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {x: x, y: y});
+    super(dungeon, {x: x, y: y, zIndex: DungeonZIndexes.character});
     this.character = character;
     this.init();
   }

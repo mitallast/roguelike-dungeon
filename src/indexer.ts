@@ -12,7 +12,8 @@ export class Indexer<T> {
         return i;
       }
     }
-    return this.values.push(value) - 1;
+    this.values.push(value);
+    return this.values.length - 1;
   }
 
   get(n: number): T {

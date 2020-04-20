@@ -276,11 +276,13 @@ export class SelectableMap {
       this.moveRight();
     }
     if (!joystick.hit.processed) {
-      joystick.hit.reset();
+      joystick.hit.processed = true;
       const selected = this.selected;
       if (selected) {
         let [, callback] = selected;
         callback();
+      } else {
+        console.warn("selected not found");
       }
     }
   }
