@@ -62,7 +62,10 @@ export class Dialog {
     this._expression.register("goto", 100, true, this.goto.bind(this));
     this._expression.register("exit", 100, false, this.exit.bind(this));
     this._expression.register("context", 100, false, this.context.bind(this));
-    this._expression.register("selling", 100, false, this.selling.bind(this));
+
+    this._expression.register("hasSkill", 100, false, this.hasSkill.bind(this));
+    this._expression.register("skill", 100, false, this.skill.bind(this));
+
     this._template = new Template();
     this._template.add("hero", this.hero);
     this._template.add("npc", this.npc);
@@ -72,9 +75,12 @@ export class Dialog {
     this.goto(...this._config.start);
   }
 
-  private selling(): void {
-    this.exit();
-    this.controller.showInventory(this.hero, this.npc);
+  private hasSkill(id: string): boolean {
+    return this.npc.hasSkill(id);
+  }
+
+  private skill(id: string): void {
+    this.npc.getSkill(id)?.use(this.hero);
   }
 
   private exit(): void {

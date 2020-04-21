@@ -5,7 +5,7 @@ import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {TinyMonster, TinyMonsterAI, tinyMonsterNames} from "./tiny.monster";
 import {BossMonster, BossMonsterAI, mossMonsterNames} from "./boss.monster";
-import {NpcAI, NpcCharacter, npcCharacters} from "./npc";
+import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
 import {CharacterView} from "./character";
 import * as PIXI from 'pixi.js';
@@ -158,9 +158,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
       const config = this.rng.choice(npcCharacters);
-      const npc = new NpcCharacter(config.name);
-      new NpcAI(npc, config, dungeon, x, y);
-      dungeon.cell(x, y).character = npc;
+      const ai = new NpcAI(config, dungeon, this.controller, x, y);
+      dungeon.cell(x, y).character = ai.character;
     }
   }
 

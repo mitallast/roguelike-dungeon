@@ -68,7 +68,7 @@ export class HealthFlask implements UsableDrop {
   };
 
   use(cell: InventoryCell, hero: Hero) {
-    hero.hill(this.health);
+    hero.heal(this.health);
     cell.decrease();
   };
 
@@ -106,7 +106,7 @@ export class HealthBigFlask implements UsableDrop {
   };
 
   use(cell: InventoryCell, hero: Hero) {
-    hero.hill(this.health);
+    hero.heal(this.health);
     cell.decrease();
   };
 }

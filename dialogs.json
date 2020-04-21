@@ -20,8 +20,22 @@
           },
           {
             "text": "Can I sell some stuff?",
+            "conditions": [
+              "hasSkill('selling')"
+            ],
             "commands": [
-              "selling()"
+              "exit()",
+              "skill('selling')"
+            ]
+          },
+          {
+            "text": "Can you heal me?",
+            "conditions": [
+              "hasSkill('heal')"
+            ],
+            "commands": [
+              "skill('heal')",
+              "goto('take-care')"
             ]
           },
           {
@@ -43,8 +57,39 @@
           },
           {
             "text": "Can I sell some stuff?",
+            "conditions": [
+              "hasSkill('selling')"
+            ],
             "commands": [
-              "selling()"
+              "exit()",
+              "skill('selling')"
+            ]
+          },
+          {
+            "text": "Can you heal me?",
+            "conditions": [
+              "hasSkill('heal')"
+            ],
+            "commands": [
+              "skill('heal')",
+              "goto('take-care')"
+            ]
+          },
+          {
+            "text": "Bye!",
+            "commands": [
+              "exit()"
+            ]
+          }
+        ]
+      },
+      "take-care": {
+        "text": "Take care of yourself, {{hero.name}}",
+        "answers": [
+          {
+            "text": "Thanks!",
+            "commands": [
+              "goto('hello', 'hello-again')"
             ]
           },
           {

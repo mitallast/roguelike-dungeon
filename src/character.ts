@@ -49,7 +49,7 @@ export abstract class Character {
     this._killedBy = new ObservableVar<Character | null>(null);
   }
 
-  hill(health: number): void {
+  heal(health: number): void {
     this._health.update(h => Math.min(this._healthMax.get(), h + health));
   }
 
