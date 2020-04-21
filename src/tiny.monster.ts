@@ -16,7 +16,7 @@ export class TinyMonster extends MonsterCharacter {
   constructor(name: string, level: number) {
     super({
       name: name,
-      speed: 0.2,
+      speed: 0.8,
       healthMax: 10 + Math.floor(level * 2),
       level: level,
       luck: 0.3,

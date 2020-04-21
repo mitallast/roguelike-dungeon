@@ -1,5 +1,5 @@
 import {Inventory} from "./inventory";
-import {BaseCharacterAI, Character, HitAnimation} from "./character";
+import {BaseCharacterAI, Character, HitAnimation, IdleAnimation} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {ObservableVar, Observable} from "./observable";
@@ -39,7 +39,7 @@ const defaultGlobalState: GlobalHeroState = {
   skillPoints: 0,
   xp: 0,
   healthMax: 30,
-  speed: 0.2,
+  speed: 1,
 };
 
 export class Hero extends Character {
@@ -201,12 +201,17 @@ export class HeroAI extends BaseCharacterAI {
   }
 
   action(finished: boolean): boolean {
-    if (!this.character.dead.get() && finished) {
+    if (!this.character.dead.get()) {
 
-      this.scanDrop();
+      const idle = this.animation instanceof IdleAnimation;
+
+      if (finished) {
+        this.scanDrop();
+      }
+
       const joystick = this.dungeon.controller.joystick;
 
-      if (!joystick.inventory.processed) {
+      if (idle && !joystick.inventory.processed) {
         joystick.inventory.processed = true;
         this.dungeon.controller.showInventory(this.character);
         this.idle();
@@ -217,42 +222,50 @@ export class HeroAI extends BaseCharacterAI {
         const digit = (d + 1) % 10;
         if (!joystick.digit(digit as DigitKey).processed) {
           joystick.digit(digit as DigitKey).processed = true;
-          this.character.inventory.belt.cell(d).use();
+          const cell = this.character.inventory.belt.cell(d);
+          const item = cell.item.get();
+          if (item && (item instanceof Weapon || idle)) {
+            cell.use();
+          }
         }
       }
 
-      if (!joystick.drop.processed) {
+      if (idle && !joystick.drop.processed) {
         joystick.drop.processed = true;
         this.character.inventory.equipment.weapon.drop();
       }
 
-      if (joystick.hit.triggered || !joystick.hit.processed) {
-        if (this.dungeon.cell(this.view.pos_x, this.view.pos_y).isLadder) {
-          joystick.hit.reset();
-          this.dungeon.controller.updateHero({
-            level: this.dungeon.level + 1,
-            hero: this.character,
-          });
-        } else {
-          const npc = this.scanNpc(this.view.is_left);
-          if (npc.length > 0) {
+      if (idle || finished) {
+        if (joystick.hit.triggered || !joystick.hit.processed) {
+          if (this.dungeon.cell(this.view.pos_x, this.view.pos_y).isLadder) {
             joystick.hit.reset();
-            this.dungeon.controller.showDialog(this.character, npc[0]);
-            this.idle();
+            this.dungeon.controller.updateHero({
+              level: this.dungeon.level + 1,
+              hero: this.character,
+            });
           } else {
-            joystick.hit.processed = true;
-            this.hit();
+            const npc = this.scanNpc(this.view.is_left);
+            if (npc.length > 0) {
+              joystick.hit.reset();
+              this.dungeon.controller.showDialog(this.character, npc[0]);
+              this.idle();
+            } else {
+              joystick.hit.processed = true;
+              this.hit();
+            }
           }
+          return true;
         }
-        return true;
       }
 
-      const d_x = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
-      const d_y = HeroAI.delta(joystick.moveUp, joystick.moveDown);
+      if (idle || finished) {
+        const d_x = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
+        const d_y = HeroAI.delta(joystick.moveUp, joystick.moveDown);
 
-      if (d_x !== 0 || d_y !== 0) {
-        if (this.move(d_x, d_y)) {
-          return true;
+        if (d_x !== 0 || d_y !== 0) {
+          if (this.move(d_x, d_y)) {
+            return true;
+          }
         }
       }
     }

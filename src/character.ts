@@ -82,6 +82,10 @@ export abstract class BaseCharacterAI implements CharacterAI {
     this._animation.run()
   }
 
+  get animation(): Animation {
+    return this._animation!;
+  }
+
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     this.dungeon = dungeon;
     this.view = new CharacterView(this, dungeon.controller.resources, options);
@@ -502,7 +506,7 @@ export class CharacterView extends PIXI.Container {
     this.sprite?.destroy();
     this.sprite = this.resources.animated(name, false);
     this.sprite.loop = false;
-    this.sprite.animationSpeed = speed;
+    this.sprite.animationSpeed = 0.2 * speed;
     this.sprite.anchor.set(0, 1);
     this.sprite.position.y = TILE_SIZE - 2;
     if (this.sprite.width > this.grid_width * TILE_SIZE) {

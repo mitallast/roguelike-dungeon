@@ -685,7 +685,7 @@ export class InventoryCellCardView extends PIXI.Container {
 
       const text: string[] = [];
       if (info.health) text.push(`health: ${info.health}`);
-      if (info.speed) text.push(`speed: ${info.speed}`);
+      if (info.speed) text.push(`speed: ${info.speed * 100}%`);
       if (info.distance) text.push(`distance: ${info.distance}`);
       if (info.damage) text.push(`damage: ${info.damage}`);
       if (info.price) text.push(`price: ${info.price}$`);

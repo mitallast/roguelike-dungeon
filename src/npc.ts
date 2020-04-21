@@ -100,7 +100,7 @@ export class NpcCharacter extends Character {
   constructor(name: string) {
     super({
       name: name,
-      speed: 0.2,
+      speed: 1,
       healthMax: 100
     });
   }

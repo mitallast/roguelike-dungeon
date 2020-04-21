@@ -14,7 +14,7 @@ export class BossMonster extends MonsterCharacter {
   constructor(name: string, level: number) {
     super({
       name: name,
-      speed: 0.2,
+      speed: 0.5,
       healthMax: 50 + Math.floor(level * 10),
       level: level,
       luck: 0.4,
