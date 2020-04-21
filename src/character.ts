@@ -1,8 +1,9 @@
 import {Resources} from "./resources";
 import {MapCell, DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {ObservableVar, Observable} from "./observable";
-import {UsableDrop} from "./drop";
+import {Weapon} from "./drop";
 import * as PIXI from "pixi.js";
+import {Curve, LinearCurve} from "./curves";
 
 const TILE_SIZE = 16;
 
@@ -290,6 +291,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
 interface AnimationOptions {
   readonly sprite: string;
   readonly speed: number;
+  readonly curve?: Curve<number>;
   readonly start?: (animation: Animation) => void;
   readonly update?: (animation: Animation) => void;
   readonly finish: (animation: Animation) => void;
@@ -301,6 +303,7 @@ export abstract class Animation {
 
   protected readonly sprite: string;
   protected readonly speed: number;
+  protected readonly curve: Curve<number>;
   protected readonly on_start: ((animation: Animation) => void) | null;
   protected readonly on_update: ((animation: Animation) => void) | null;
   protected readonly on_finish: ((animation: Animation) => void);
@@ -318,6 +321,7 @@ export abstract class Animation {
     this.ticker = ticker;
     this.sprite = options.sprite;
     this.speed = options.speed;
+    this.curve = options.curve || LinearCurve.line();
     this.on_start = options.start || null;
     this.on_update = options.update || null;
     this.on_finish = options.finish;
@@ -424,7 +428,8 @@ export class HitAnimation extends Animation {
     if (weapon) {
       const sprite = this.view.sprite!;
       const delta = this._spriteTime / sprite.totalFrames;
-      weapon.angle = (this.view.is_left ? -90 : 90) * delta;
+      const curveDelta = this.curve(delta);
+      weapon.angle = (this.view.is_left ? -90 : 90) * curveDelta;
     }
   }
 
@@ -527,7 +532,7 @@ export class CharacterView extends PIXI.Container {
     }
   }
 
-  setWeapon(weapon: UsableDrop | null): void {
+  setWeapon(weapon: Weapon | null): void {
     this.weaponSprite?.destroy();
     this.weaponSprite = null;
     if (weapon) {

@@ -197,7 +197,7 @@ export class HeroAI extends BaseCharacterAI {
   }
 
   private onWeaponUpdate(weapon: UsableDrop | null): void {
-    this.view.setWeapon(weapon);
+    this.view.setWeapon(weapon as Weapon);
   }
 
   action(finished: boolean): boolean {
@@ -303,6 +303,7 @@ export class HeroAI extends BaseCharacterAI {
     this.animation = new HitAnimation(this.view, this.dungeon.ticker, {
       sprite: this.character.name + '_idle',
       speed: weapon?.speed || this.character.speed,
+      curve: weapon?.curve,
       start: () => this.lookAtMonsters(),
       finish: () => {
         this.scanHit();

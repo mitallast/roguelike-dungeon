@@ -2,6 +2,7 @@ import {RNG} from "./rng";
 import {Hero} from "./hero";
 import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
+import {BezierCurve, Curve} from "./curves";
 import * as PIXI from "pixi.js";
 
 export interface Drop {
@@ -162,6 +163,7 @@ export class Weapon implements UsableDrop {
   private readonly resources: Resources;
   private readonly name: string;
   readonly speed: number;
+  readonly curve: Curve<number> = BezierCurve.line(0, -0.5, -1, 0, 1, 2, 0);
   readonly distance: number;
   readonly damage: number;
   readonly price: number;
