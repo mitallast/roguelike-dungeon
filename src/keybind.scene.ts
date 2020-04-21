@@ -53,8 +53,7 @@ export class KeyBindScene implements Scene {
   }
 
   private handleInput() {
-    if (!this.controller.joystick.hit.processed) {
-      this.controller.joystick.hit.reset();
+    if (this.controller.joystick.hit.once()) {
       this.controller.selectHero();
     }
   }

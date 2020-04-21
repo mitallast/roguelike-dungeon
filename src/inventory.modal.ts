@@ -75,8 +75,7 @@ export class InventoryModalScene implements ModalScene {
 
   private handleInput(): void {
     const joystick = this.controller.joystick;
-    if (!joystick.inventory.processed) {
-      joystick.inventory.processed = true;
+    if (joystick.inventory.once()) {
       this.controller.closeModal();
       return;
     }

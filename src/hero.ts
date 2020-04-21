@@ -211,8 +211,7 @@ export class HeroAI extends BaseCharacterAI {
 
       const joystick = this.dungeon.controller.joystick;
 
-      if (idle && !joystick.inventory.processed) {
-        joystick.inventory.processed = true;
+      if (idle && joystick.inventory.once()) {
         this.dungeon.controller.showInventory(this.character);
         this.idle();
         return true;
@@ -220,8 +219,7 @@ export class HeroAI extends BaseCharacterAI {
 
       for (let d = 0; d <= 9; d++) {
         const digit = (d + 1) % 10;
-        if (!joystick.digit(digit as DigitKey).processed) {
-          joystick.digit(digit as DigitKey).processed = true;
+        if (joystick.digit(digit as DigitKey).once()) {
           const cell = this.character.inventory.belt.cell(d);
           const item = cell.item.get();
           if (item && (item instanceof Weapon || idle)) {
@@ -230,30 +228,35 @@ export class HeroAI extends BaseCharacterAI {
         }
       }
 
-      if (idle && !joystick.drop.processed) {
-        joystick.drop.processed = true;
+      if (idle && joystick.drop.once()) {
         this.character.inventory.equipment.weapon.drop();
       }
 
       if (idle || finished) {
-        if (joystick.hit.triggered || !joystick.hit.processed) {
+        const triggered = joystick.hit.triggered;
+        const once = joystick.hit.once();
+
+        if (triggered || once) {
           if (this.dungeon.cell(this.view.pos_x, this.view.pos_y).isLadder) {
-            joystick.hit.reset();
             this.dungeon.controller.updateHero({
               level: this.dungeon.level + 1,
               hero: this.character,
             });
-          } else {
-            const npc = this.scanNpc(this.view.is_left);
-            if (npc.length > 0) {
-              joystick.hit.reset();
-              this.dungeon.controller.showDialog(this.character, npc[0]);
-              this.idle();
-            } else {
-              joystick.hit.processed = true;
-              this.hit();
-            }
+            return true;
           }
+        }
+
+        if (once) {
+          const npc = this.scanNpc(this.view.is_left);
+          if (npc.length > 0) {
+            this.dungeon.controller.showDialog(this.character, npc[0]);
+            this.idle();
+            return true;
+          }
+        }
+
+        if (triggered || once) {
+          this.hit();
           return true;
         }
       }
@@ -273,11 +276,9 @@ export class HeroAI extends BaseCharacterAI {
   }
 
   private static delta(a: KeyBind, b: KeyBind): number {
-    if (a.triggered || !a.processed) {
-      a.processed = true;
+    if (a.triggered) {
       return -1;
-    } else if (b.triggered || !b.processed) {
-      b.processed = true;
+    } else if (b.triggered) {
       return 1;
     } else {
       return 0;

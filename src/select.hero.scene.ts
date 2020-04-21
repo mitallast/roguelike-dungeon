@@ -106,17 +106,14 @@ export class SelectHeroScene implements Scene {
 
   private handleInput() {
     const joystick = this.controller.joystick;
-    if (!joystick.moveLeft.processed) {
-      joystick.moveLeft.processed = true;
+    if (joystick.moveLeft.once()) {
       if (this.selected === 0) this.selected = heroCharacterNames.length - 1;
       else this.selected--;
     }
-    if (!joystick.moveRight.processed) {
-      joystick.moveRight.processed = true;
+    if (joystick.moveRight.once()) {
       this.selected = (this.selected + 1) % heroCharacterNames.length;
     }
-    if (!joystick.hit.processed) {
-      joystick.hit.reset();
+    if (joystick.hit.once()) {
       const name = heroCharacterNames[this.selected];
       const hero = Hero.load(name, this.controller.persistent);
       const weapon = WeaponConfig.configs[0].create(this.controller.resources);

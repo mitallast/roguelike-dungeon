@@ -259,24 +259,19 @@ export class SelectableMap {
 
   handleInput(): void {
     const joystick = this.joystick;
-    if (!joystick.moveUp.processed) {
-      joystick.moveUp.processed = true;
+    if (joystick.moveUp.once()) {
       this.moveUp();
     }
-    if (!joystick.moveDown.processed) {
-      joystick.moveDown.processed = true;
+    if (joystick.moveDown.once()) {
       this.moveDown();
     }
-    if (!joystick.moveLeft.processed) {
-      joystick.moveLeft.processed = true;
+    if (joystick.moveLeft.once()) {
       this.moveLeft();
     }
-    if (!joystick.moveRight.processed) {
-      joystick.moveRight.processed = true;
+    if (joystick.moveRight.once()) {
       this.moveRight();
     }
-    if (!joystick.hit.processed) {
-      joystick.hit.processed = true;
+    if (joystick.hit.once()) {
       const selected = this.selected;
       if (selected) {
         let [, callback] = selected;

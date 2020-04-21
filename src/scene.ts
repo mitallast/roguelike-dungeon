@@ -60,6 +60,7 @@ export class SceneController {
 
   private set scene(scene: Scene) {
     this.mainScene?.destroy();
+    this.joystick.reset();
     this.mainScene = scene;
     this.mainScene.init();
   }
@@ -88,14 +89,16 @@ export class SceneController {
     this.scene = new DungeonScene(this, hero, dungeon);
   }
 
-  modal(scene: ModalScene): void {
+  private modal(scene: ModalScene): void {
     this.mainScene?.pause();
+    this.joystick.reset();
     this.modalScene = scene;
     this.modalScene.init();
   }
 
   closeModal(): void {
     this.modalScene?.destroy();
+    this.joystick.reset();
     this.mainScene?.resume();
   }
 
