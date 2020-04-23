@@ -90,6 +90,8 @@ export class SceneController {
   }
 
   private modal(scene: ModalScene): void {
+    PIXI.sound.play('text');
+
     this.mainScene?.pause();
     this.joystick.reset();
     this.modalScene = scene;

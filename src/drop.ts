@@ -134,7 +134,7 @@ export class WeaponConfig {
   }
 
   static configs: WeaponConfig[] = [
-    new WeaponConfig("weapon_knife", 1.0, 1, 3, 1, 12),
+    new WeaponConfig("weapon_knife", 1.4, 1, 1.5, 1, 12),
     new WeaponConfig("weapon_rusty_sword", 1.0, 1, 4, 1, 15),
     new WeaponConfig("weapon_regular_sword", 1.0, 1, 5, 3, 20),
     new WeaponConfig("weapon_red_gem_sword", 1.0, 1, 6, 3, 30),

@@ -288,7 +288,9 @@ export class HeroAI extends BaseCharacterAI {
   scanDrop() {
     const cell = this.dungeon.cell(this.view.pos_x, this.view.pos_y);
     if (cell.hasDrop) {
-      cell.pickedUp(this.character);
+      if (cell.pickedUp(this.character)) {
+        PIXI.sound.play('fruit_collect');
+      }
     }
   }
 
@@ -309,6 +311,11 @@ export class HeroAI extends BaseCharacterAI {
     const monsters = this.scanMonsters(this.view.is_left);
     for (let monster of monsters) {
       monster.hitDamage(this.character, this.character.damage);
+    }
+    if (monsters.length > 0) {
+      const weapon = this.character.inventory.equipment.weapon.item.get();
+      const speed = weapon ? (weapon as Weapon).speed : 1;
+      PIXI.sound.play('hit_damage', {speed: speed});
     }
   }
 

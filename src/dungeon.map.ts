@@ -172,12 +172,14 @@ export class MapCell {
     }
   }
 
-  pickedUp(hero: Hero): void {
+  pickedUp(hero: Hero): boolean {
     if (this._drop?.pickedUp(hero)) {
       this._dropSprite?.destroy();
       this._dropSprite = null;
       this._drop = null;
+      return true;
     }
+    return false;
   }
 
   get hasDrop(): boolean {

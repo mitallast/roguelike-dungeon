@@ -2,6 +2,7 @@ import {BaseCharacterAI, Character} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {Hero} from "./hero";
 import {SceneController} from "./scene";
+import * as PIXI from "pixi.js";
 
 export interface NpcConfig {
   readonly name: string;
@@ -42,6 +43,7 @@ export class HealSkill extends NpcSkill {
   }
 
   use(hero: Hero): void {
+    PIXI.sound.play('big_egg_collect');
     hero.heal(hero.healthMax.get());
   }
 }

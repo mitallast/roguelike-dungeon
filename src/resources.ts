@@ -13,6 +13,7 @@ export class Resources {
   async load(): Promise<void> {
     return await new Promise<void>((resolve => {
       this.loader
+        // configs
         .add('npc.json')
         .add('dungeon.json')
         .add('dungeon.rules.json')
@@ -21,7 +22,17 @@ export class Resources {
         .add('dialogs.json')
         .add('village.json')
         .add('village.rules.json')
+        // fonts
         .add('alagard', 'fonts/alagard.fnt')
+        // sounds
+        .add('big_egg_collect', 'sounds/big_egg_collect.{ogg,mp3}')
+        .add('fruit_collect', 'sounds/fruit_collect.{ogg,mp3}')
+        .add('select', 'sounds/select.{ogg,mp3}')
+        .add('confirm', 'sounds/confirm.{ogg,mp3}')
+        .add('cancel', 'sounds/cancel.{ogg,mp3}')
+        .add('text', 'sounds/text.{ogg,mp3}')
+        .add('boss_hit', 'sounds/boss_hit.{ogg,mp3}')
+        .add('hit_damage', 'sounds/hit_damage.{ogg,mp3}')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           this.add(resources['npc.json']!.spritesheet!);

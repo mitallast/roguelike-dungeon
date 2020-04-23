@@ -199,7 +199,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
     this.animation = new RunAnimation(this.view, this.dungeon.ticker, {
       sprite: this.character.name + '_run',
       speed: this.character.speed,
-      update: (animation) => this.updatePosition(animation.spriteTime),
+      update: animation => this.updatePosition(animation.spriteTime),
       finish: () => {
         this.resetPosition(this.view.new_x, this.view.new_y);
         if (!this.action(true)) {
@@ -298,6 +298,7 @@ interface AnimationOptions {
   readonly curve?: Curve<number>;
   readonly start?: (animation: Animation) => void;
   readonly update?: (animation: Animation) => void;
+  readonly frame?: (animation: Animation) => void;
   readonly finish: (animation: Animation) => void;
 }
 
@@ -310,6 +311,7 @@ export abstract class Animation {
   protected readonly curve: Curve<number>;
   protected readonly on_start: ((animation: Animation) => void) | null;
   protected readonly on_update: ((animation: Animation) => void) | null;
+  protected readonly on_frame: ((animation: Animation) => void) | null;
   protected readonly on_finish: ((animation: Animation) => void);
 
   protected _spriteTime: number = 0;
@@ -328,6 +330,7 @@ export abstract class Animation {
     this.curve = options.curve || LinearCurve.line();
     this.on_start = options.start || null;
     this.on_update = options.update || null;
+    this.on_frame = options.frame || null;
     this.on_finish = options.finish;
   }
 
@@ -382,6 +385,7 @@ export abstract class Animation {
       this._spritePlay = false;
     } else if (previousFrame !== currentFrame) {
       sprite.gotoAndStop(currentFrame);
+      if (this.on_frame) this.on_frame(this);
     }
   }
 }

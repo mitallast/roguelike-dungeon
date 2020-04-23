@@ -1,5 +1,5 @@
-import * as PIXI from "pixi.js";
 import {Joystick} from "./input";
+import * as PIXI from "pixi.js";
 
 export interface ColorScheme {
   readonly background: number
@@ -136,6 +136,7 @@ export class SelectableMap {
         this.selectedX = this.maxX;
       }
       this.selectedY = this.columns[this.selectedX].inRange(this.selectedY || 0);
+      PIXI.sound.play('select');
     } else {
       this.selectedX = null;
       this.selectedY = null;
@@ -157,6 +158,7 @@ export class SelectableMap {
         this.selectedX = this.minX;
       }
       this.selectedY = this.columns[this.selectedX].inRange(this.selectedY || 0);
+      PIXI.sound.play('select');
     } else {
       this.selectedX = null;
       this.selectedY = null;
@@ -168,6 +170,7 @@ export class SelectableMap {
     this.clean();
     if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
       this.selectedY = this.columns[this.selectedX].moveUp(this.selectedY || 0);
+      PIXI.sound.play('select');
     } else {
       this.selectedX = null;
       this.selectedY = null;
@@ -179,6 +182,7 @@ export class SelectableMap {
     this.clean();
     if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
       this.selectedY = this.columns[this.selectedX].moveDown(this.selectedY || 0);
+      PIXI.sound.play('select');
     } else {
       this.selectedX = null;
       this.selectedY = null;
@@ -275,8 +279,10 @@ export class SelectableMap {
       const selected = this.selected;
       if (selected) {
         let [, callback] = selected;
+        PIXI.sound.play('confirm');
         callback();
       } else {
+        PIXI.sound.play('cancel');
         console.warn("selected not found");
       }
     }
