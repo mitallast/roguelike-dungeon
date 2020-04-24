@@ -207,7 +207,7 @@ export class HeroAI extends BaseCharacterAI {
     this.view.setWeapon(weapon as Weapon);
   }
 
-  action(finished: boolean): boolean {
+  protected action(finished: boolean): boolean {
     if (!this.character.dead.get()) {
 
       const idle = this.animation instanceof IdleAnimation;
@@ -255,9 +255,10 @@ export class HeroAI extends BaseCharacterAI {
 
         if (once) {
           const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
-          const npc = this.scanNpc(direction, 1);
-          if (npc.length > 0) {
-            this.dungeon.controller.showDialog(this.character, npc[0].character);
+          const [npc] = this.scanNpc(direction, 1);
+          if (npc) {
+            npc.lookAt(this);
+            this.dungeon.controller.showDialog(this.character, npc.character);
             this.idle();
             return true;
           }
@@ -293,7 +294,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  scanDrop() {
+  private scanDrop() {
     const cell = this.dungeon.cell(this.x, this.y);
     if (cell.hasDrop) {
       if (cell.pickedUp(this.character)) {
@@ -302,7 +303,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  scanHit() {
+  private scanHit() {
     const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
     const distance = weapon?.distance || 1;
     const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
@@ -317,7 +318,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  hit(): void {
+  protected hit(): void {
     const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
     this.animation = new HitAnimation(this, this.dungeon.ticker, {
       sprite: this.character.name + '_idle',

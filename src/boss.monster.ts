@@ -1,25 +1,35 @@
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {MonsterCharacter, MonsterAI} from "./monster";
+import {MonsterAI, MonsterCategory, MonsterCharacter, MonsterType} from "./monster";
+import {TinyMonster, TinyMonsterAI, tinyMonsters} from "./tiny.monster"
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
+import {IdleAnimation} from "./character";
 import * as PIXI from 'pixi.js';
 
-export const mossMonsterNames = [
-  "ogre",
-  "big_zombie",
-  "big_demon",
+export interface BossConfig {
+  readonly name: string;
+  readonly category: MonsterCategory;
+}
+
+export const bossMonsters: BossConfig[] = [
+  {name: "big_zombie", category: MonsterCategory.ZOMBIE},
+  {name: "big_demon", category: MonsterCategory.DEMON},
+  {name: "ogre", category: MonsterCategory.ORC},
 ];
 
 export class BossMonster extends MonsterCharacter {
-  constructor(name: string, level: number) {
+  constructor(config: BossConfig, level: number) {
     super({
-      name: name,
+      name: config.name,
+      category: config.category,
+      type: MonsterType.LEADER,
       speed: 0.5,
       healthMax: 50 + Math.floor(level * 10),
       level: level,
       luck: 0.4,
       damage: 7 + 0.5 * level,
       xp: 100 + 50 * level,
+      spawn: 5,
     });
   }
 }
@@ -44,6 +54,46 @@ export class BossMonsterAI extends MonsterAI {
     healthView.zIndex = 13;
     healthView.position.set((c_w >> 1), 64);
     dungeon.controller.stage.addChild(healthView);
+  }
+
+  protected action(finished: boolean): boolean {
+    if (!this.character.dead.get()) {
+      const idle = this.animation instanceof IdleAnimation;
+
+      if (finished && this.spawnMinions()) {
+        return false;
+      }
+
+      if ((idle || finished) && this.moveToHero()) {
+        return true;
+      }
+
+      if ((idle || finished) && this.moveByPath()) {
+        return true;
+      }
+
+      if (finished && this.randomMove()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected drop(): void {
+    for (let i = 0; i < 9; i++) {
+      this.findDropCell()?.randomDrop();
+    }
+  }
+
+  protected spawnMinion(x: number, y: number): MonsterAI | null {
+    const minions = tinyMonsters.filter(c => c.category === this.character.category && c.type !== MonsterType.LEADER);
+    if (minions.length === 0) {
+      console.warn("no minion config found", this.character.category);
+      return null;
+    }
+    const config = this.dungeon.controller.rng.choice(minions);
+    const character = new TinyMonster(config, this.dungeon.level);
+    return new TinyMonsterAI(character, this.dungeon, x, y);
   }
 }
 

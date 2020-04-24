@@ -143,11 +143,11 @@ export class NpcAI extends BaseCharacterAI {
   protected onKilledBy(_by: Character): void {
   }
 
-  action(): boolean {
+  protected action(): boolean {
     return false;
   }
 
-  hit(): void {
+  protected hit(): void {
     this.idle();
   }
 }

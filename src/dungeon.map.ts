@@ -269,13 +269,18 @@ export class MapCell {
       this.drop = new Coins(rng, resources);
     }
     return this.hasDrop;
-  };
+  }
 
   get character(): CharacterAI | null {
     return this._character;
   }
 
   set character(character: CharacterAI | null) {
+    if (character && !(this._character === null || this._character === character)) {
+      console.log("current char", this._character);
+      console.log("new char", character);
+      throw "error while set char to cell";
+    }
     this._character = character;
   }
 

@@ -3,10 +3,11 @@ import {RNG} from "./rng";
 import {Hero, HeroAI} from "./hero";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {TinyMonster, TinyMonsterAI, tinyMonsterNames} from "./tiny.monster";
-import {BossMonster, BossMonsterAI, mossMonsterNames} from "./boss.monster";
+import {TinyMonster, TinyMonsterAI, tinyMonsters} from "./tiny.monster";
+import {BossConfig, BossMonster, BossMonsterAI, bossMonsters} from "./boss.monster";
 import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
+import {MonsterCategory} from "./monster";
 import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
@@ -114,13 +115,13 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   protected findFreePositions(dungeon: DungeonMap, width: number, height: number): [number, number][] {
     const free: [number, number][] = [];
 
-    for (let y = 0; y < dungeon.height - height; y++) {
+    for (let y = height; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width - width; x++) {
 
         let valid = true;
         for (let dy = 0; dy < height && valid; dy++) {
           for (let dx = 0; dx < width && valid; dx++) {
-            const cell = dungeon.cell(x + dx, y + dy);
+            const cell = dungeon.cell(x + dx, y - dy);
             valid = cell.hasFloor && !cell.hasCharacter;
           }
         }
@@ -170,11 +171,19 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
 
     const monster_percent = 3;
     const monster_count = Math.floor(free.length * monster_percent / 100);
+    const monster_category = this.bossConfig(dungeon).category;
+    const filtered_monsters = tinyMonsters.filter(config => {
+      return config.category === monster_category ||
+        (config.category != MonsterCategory.DEMON &&
+          config.category != MonsterCategory.ORC &&
+          config.category != MonsterCategory.ZOMBIE);
+    });
+
     for (let m = 0; m < monster_count && free.length > 0; m++) {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
-      const name = this.rng.choice(tinyMonsterNames);
-      const monster = new TinyMonster(name, 1);
+      const config = this.rng.choice(filtered_monsters);
+      const monster = new TinyMonster(config, 1);
       dungeon.cell(x, y).character = new TinyMonsterAI(monster, dungeon, x, y);
     }
   }
@@ -190,13 +199,16 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     if (free.length > 0) {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
-
-      const name = mossMonsterNames[Math.floor(dungeon.level / 5) % mossMonsterNames.length];
-      const boss = new BossMonster(name, dungeon.level);
+      const config = this.bossConfig(dungeon);
+      const boss = new BossMonster(config, dungeon.level);
       new BossMonsterAI(boss, dungeon, x, y);
     } else {
       console.error("boss not placed");
     }
+  }
+
+  protected bossConfig(dungeon: DungeonMap): BossConfig {
+    return bossMonsters[Math.floor(dungeon.level / 5) % bossMonsters.length];
   }
 
   protected placeDrop(dungeon: DungeonMap): void {

@@ -1,6 +1,6 @@
 import {Resources} from "./resources";
-import {MapCell, DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {ObservableVar, Observable} from "./observable";
+import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
+import {Observable, ObservableVar} from "./observable";
 import {Weapon} from "./drop";
 import {Curve, LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
@@ -78,6 +78,7 @@ export interface CharacterAI {
   animation: Animation;
 
   setPosition(x: number, y: number): void;
+  lookAt(character: CharacterAI): void
 
   destroy(): void;
 }
@@ -158,8 +159,15 @@ export abstract class BaseCharacterAI implements CharacterAI {
 
   protected abstract onDead(): void;
 
-  protected findDropCell(): (MapCell | null) {
-    const max_distance = 5;
+  protected findDropCell(max_distance: number = 5): (MapCell | null) {
+    return this.findCell(max_distance, cell => !cell.hasDrop);
+  }
+
+  protected findSpawnCell(max_distance: number = 5): (MapCell | null) {
+    return this.findCell(max_distance, cell => !cell.hasCharacter);
+  }
+
+  protected findCell(max_distance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
     const pos_x = this.x;
     const pos_y = this.y;
     const is_left = this.view.is_left;
@@ -174,11 +182,16 @@ export abstract class BaseCharacterAI implements CharacterAI {
         (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
     };
 
-    for (let x = Math.max(0, pos_x - max_distance); x < pos_x + max_distance; x++) {
-      for (let y = Math.max(0, pos_y - max_distance); y < pos_y + max_distance; y++) {
+    const min_x = Math.max(0, pos_x - max_distance);
+    const max_x = Math.min(this.dungeon.width - 1, pos_x + max_distance);
+    const min_y = Math.max(0, pos_y - max_distance);
+    const max_y = Math.min(this.dungeon.width - 1, pos_y + max_distance);
+
+    for (let x = min_x; x <= max_x; x++) {
+      for (let y = min_y; y <= max_y; y++) {
         if (!(x === pos_x && y === pos_y) || is_dead) {
           const cell = this.dungeon.cell(x, y);
-          if (cell.hasFloor && !cell.hasDrop) {
+          if (cell.hasFloor && predicate(cell)) {
             const distance = metric(cell);
             if (closestDistance === null || closestDistance > distance) {
               closestCell = cell;
@@ -205,7 +218,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
     }
   }
 
-  protected moveTo(character: CharacterAI): boolean {
+  protected findPath(character: CharacterAI): PIXI.Point[] {
     const dungeon = this.dungeon;
     const pf = new PathFinding(dungeon.width, dungeon.height);
     for (let y = 0; y < dungeon.height; y++) {
@@ -222,15 +235,7 @@ export abstract class BaseCharacterAI implements CharacterAI {
 
     const start = new PIXI.Point(this.x, this.y);
     const end = new PIXI.Point(character.x, character.y);
-    const path = pf.find(start, end);
-    if (path.length > 0) {
-      const next = path[0];
-      const d_x = next.x - this.x;
-      const d_y = next.y - this.y;
-      return this.move(d_x, d_y);
-    } else {
-      return false;
-    }
+    return pf.find(start, end);
   }
 
   protected idle(): void {
@@ -274,6 +279,11 @@ export abstract class BaseCharacterAI implements CharacterAI {
     this._y = Math.floor(y);
     this.dungeon.set(this._x, this._y, this);
     this.view.setPosition(x, y);
+  }
+
+  lookAt(character: CharacterAI): void {
+    if (character.x < this.x) this.view.is_left = true;
+    if (character.x > this.x) this.view.is_left = false;
   }
 
   protected scan(direction: ScanDirection, max_distance: number, predicate: (character: CharacterAI) => boolean): CharacterAI[] {
@@ -396,7 +406,13 @@ export abstract class Animation {
   protected abstract canceled(): void;
 
   private updateSprite(deltaTime: number): void {
-    const sprite = this.view.sprite!;
+    const sprite = this.view.sprite;
+    if (!sprite) {
+      this._spriteTime = 0;
+      this._spritePlay = false;
+      return;
+    }
+
     const elapsed = sprite.animationSpeed * deltaTime;
     const previousFrame = sprite.currentFrame;
     this._spriteTime += elapsed;
@@ -466,7 +482,7 @@ export class RunAnimation extends Animation {
     const delta = this.spriteTime / this.view.sprite!.totalFrames;
     const pos_x = this.x + (this.new_x - this.x) * delta;
     const pos_y = this.y + (this.new_y - this.y) * delta;
-    this.character.setPosition(pos_x, pos_y);
+    this.character.view.setPosition(pos_x, pos_y);
   }
 
   protected finish(): void {
