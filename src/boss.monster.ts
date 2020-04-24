@@ -1,5 +1,5 @@
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {MonsterCharacter, BaseMonsterAI} from "./monster";
+import {MonsterCharacter, MonsterAI} from "./monster";
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
 import * as PIXI from 'pixi.js';
@@ -24,7 +24,7 @@ export class BossMonster extends MonsterCharacter {
   }
 }
 
-export class BossMonsterAI extends BaseMonsterAI {
+export class BossMonsterAI extends MonsterAI {
   readonly character: BossMonster;
   readonly max_distance: number = 7;
 

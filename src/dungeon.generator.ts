@@ -7,7 +7,6 @@ import {TinyMonster, TinyMonsterAI, tinyMonsterNames} from "./tiny.monster";
 import {BossMonster, BossMonsterAI, mossMonsterNames} from "./boss.monster";
 import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
-import {CharacterView} from "./character";
 import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
@@ -133,23 +132,22 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     return free;
   }
 
-  protected placeHero(dungeon: DungeonMap, hero: Hero): CharacterView {
+  protected placeHero(dungeon: DungeonMap, hero: Hero): HeroAI {
     const free = this.findFreePositions(dungeon, 2, 2);
     if (free.length === 0) {
       throw "hero not placed";
     }
     let [x, y] = this.rng.choice(free);
     const ai = new HeroAI(hero, dungeon, x, y);
-    const view = ai.view;
-    dungeon.light.addLight(view.position, LightType.HERO);
-    return view;
+    dungeon.light.addLight(ai.view, LightType.HERO);
+    return ai;
   }
 
-  protected placeNpc(dungeon: DungeonMap, hero: CharacterView): void {
+  protected placeNpc(dungeon: DungeonMap, hero: HeroAI): void {
     const max_hero_distance = 10;
     const free = this.findFreePositions(dungeon, 2, 2).filter(point => {
       const [x, y] = point;
-      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
       return distance < max_hero_distance;
     });
 
@@ -158,16 +156,15 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = this.rng.nextRange(0, free.length);
       let [[x, y]] = free.splice(i, 1);
       const config = this.rng.choice(npcCharacters);
-      const ai = new NpcAI(config, dungeon, this.controller, x, y);
-      dungeon.cell(x, y).character = ai.character;
+      dungeon.cell(x, y).character = new NpcAI(config, dungeon, this.controller, x, y);
     }
   }
 
-  protected placeMonsters(dungeon: DungeonMap, hero: CharacterView): void {
+  protected placeMonsters(dungeon: DungeonMap, hero: HeroAI): void {
     const min_hero_distance = 15;
     const free: [number, number][] = this.findFreePositions(dungeon, 2, 2).filter(point => {
       const [x, y] = point;
-      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
       return distance > min_hero_distance;
     });
 
@@ -178,16 +175,15 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       let [[x, y]] = free.splice(i, 1);
       const name = this.rng.choice(tinyMonsterNames);
       const monster = new TinyMonster(name, 1);
-      new TinyMonsterAI(monster, dungeon, x, y);
-      dungeon.cell(x, y).character = monster;
+      dungeon.cell(x, y).character = new TinyMonsterAI(monster, dungeon, x, y);
     }
   }
 
-  protected placeBoss(dungeon: DungeonMap, hero: CharacterView): void {
+  protected placeBoss(dungeon: DungeonMap, hero: HeroAI): void {
     const min_hero_distance = 20;
     const free = this.findFreePositions(dungeon, 2, 2).filter(point => {
       const [x, y] = point;
-      const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+      const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
       return distance > min_hero_distance;
     });
 
@@ -223,7 +219,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeLadder(dungeon: DungeonMap, hero: CharacterView) {
+  protected placeLadder(dungeon: DungeonMap, hero: HeroAI) {
     const free3: [MapCell, number][] = [];
     const free1: [MapCell, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
@@ -237,7 +233,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
               c++
             }
           }
-          const distance = Math.sqrt(Math.pow(hero.pos_x - x, 2) + Math.pow(hero.pos_y - y, 2));
+          const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
           if (c === directions.length) {
             free3.push([cell, distance]);
           } else {

@@ -147,9 +147,6 @@ export class NpcAI extends BaseCharacterAI {
     return false;
   }
 
-  protected onPositionChanged(): void {
-  }
-
   hit(): void {
     this.idle();
   }

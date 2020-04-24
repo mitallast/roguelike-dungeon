@@ -1,6 +1,6 @@
 import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
 import {Hero} from "./hero";
-import {Character} from "./character";
+import {CharacterAI} from "./character";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
@@ -73,6 +73,11 @@ export class DungeonMap {
   }
 
   destroy(): void {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        this.cells[y][x].destroy();
+      }
+    }
     this.lighting.destroy();
     this.light.destroy();
     this.container.destroy({children: true});
@@ -84,6 +89,43 @@ export class DungeonMap {
 
   cell(x: number, y: number): MapCell {
     return this.cells[y][x];
+  }
+
+  remove(x: number, y: number, character: CharacterAI): void {
+    for (let dx = 0; dx < character.width; dx++) {
+      for (let dy = 0; dy < character.height; dy++) {
+        const cell = this.cell(x + dx, y - dy);
+        const c = cell.character;
+        if (c && (c === character)) {
+          cell.character = null;
+        }
+      }
+    }
+  }
+
+  set(x: number, y: number, character: CharacterAI): void {
+    for (let dx = 0; dx < character.width; dx++) {
+      for (let dy = 0; dy < character.height; dy++) {
+        this.cell(x + dx, y - dy).character = character;
+      }
+    }
+  }
+
+  available(x: number, y: number, character: CharacterAI): boolean {
+    for (let dx = 0; dx < character.width; dx++) {
+      for (let dy = 0; dy < character.height; dy++) {
+        // check is floor exists
+        if (!this.cell(x + dx, y - dy).hasFloor) {
+          return false;
+        }
+        // check is no monster
+        const m = this.cell(x + dx, y - dy).character;
+        if (m && m !== character) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   camera(x: number, y: number): void {
@@ -105,12 +147,23 @@ export class MapCell {
   private _wall: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private _dropSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private _drop: Drop | null = null;
-  private _character: Character | null = null;
+  private _character: CharacterAI | null = null;
 
   constructor(dungeon: DungeonMap, x: number, y: number) {
     this.dungeon = dungeon;
     this.x = x;
     this.y = y;
+  }
+
+  destroy(): void {
+    this._floor?.destroy();
+    this._floor = null;
+    this._wall?.destroy();
+    this._wall = null;
+    this._dropSprite?.destroy();
+    this._dropSprite = null;
+    this._character?.destroy();
+    this._character = null;
   }
 
   set floor(name: string | null) {
@@ -218,11 +271,11 @@ export class MapCell {
     return this.hasDrop;
   };
 
-  get character(): Character | null {
+  get character(): CharacterAI | null {
     return this._character;
   }
 
-  set character(character: Character | null) {
+  set character(character: CharacterAI | null) {
     this._character = character;
   }
 

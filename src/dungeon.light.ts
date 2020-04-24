@@ -4,6 +4,11 @@ import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
 
+export interface LightPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
 export class DungeonLight {
   readonly layer: PIXI.display.Layer;
   readonly container: PIXI.Container;
@@ -91,7 +96,7 @@ export class DungeonLight {
     this.shadowCaster.optimize();
   }
 
-  addLight(position: PIXI.IPoint, type: LightType): void {
+  addLight(position: LightPoint, type: LightType): void {
     switch (type) {
       case LightType.HERO:
         this.lights.push(new LightSource(
@@ -358,12 +363,12 @@ export enum LightType {
 }
 
 class LightSource {
-  readonly position: PIXI.IPoint;
+  readonly position: LightPoint;
   readonly maxDistance: number;
   readonly sprite: PIXI.Sprite;
   readonly mask: PIXI.Graphics;
 
-  constructor(position: PIXI.IPoint, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
+  constructor(position: LightPoint, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
     this.position = position;
     this.maxDistance = maxDistance;
 

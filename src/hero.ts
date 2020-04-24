@@ -1,15 +1,15 @@
 import {Inventory} from "./inventory";
-import {BaseCharacterAI, Character, HitAnimation, IdleAnimation} from "./character";
+import {BaseCharacterAI, Character, HitAnimation, IdleAnimation, ScanDirection} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
-import {ObservableVar, Observable} from "./observable";
+import {Observable, ObservableVar} from "./observable";
 import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
 import {DigitKey, KeyBind} from "./input";
 import {PersistentState} from "./persistent.state";
-import {MonsterCharacter} from "./monster";
-import {NpcCharacter} from "./npc";
 import * as PIXI from "pixi.js";
+import {MonsterAI} from "./monster";
+import {NpcAI} from "./npc";
 
 export const heroCharacterNames = [
   "elf_f",
@@ -167,7 +167,14 @@ export class HeroAI extends BaseCharacterAI {
   readonly character: Hero;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {x: x, y: y, zIndex: DungeonZIndexes.hero});
+    super(dungeon, {
+      x: x,
+      y: y,
+      width: 1,
+      height: 1,
+      zIndex: DungeonZIndexes.hero,
+      on_position: dungeon.camera.bind(dungeon),
+    });
     this.character = character;
     this.init();
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
@@ -237,7 +244,7 @@ export class HeroAI extends BaseCharacterAI {
         const once = joystick.hit.once();
 
         if (triggered || once) {
-          if (this.dungeon.cell(this.view.pos_x, this.view.pos_y).isLadder) {
+          if (this.dungeon.cell(this.x, this.y).isLadder) {
             this.dungeon.controller.updateHero({
               level: this.dungeon.level + 1,
               hero: this.character,
@@ -247,9 +254,10 @@ export class HeroAI extends BaseCharacterAI {
         }
 
         if (once) {
-          const npc = this.scanNpc(this.view.is_left);
+          const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+          const npc = this.scanNpc(direction, 1);
           if (npc.length > 0) {
-            this.dungeon.controller.showDialog(this.character, npc[0]);
+            this.dungeon.controller.showDialog(this.character, npc[0].character);
             this.idle();
             return true;
           }
@@ -286,7 +294,7 @@ export class HeroAI extends BaseCharacterAI {
   }
 
   scanDrop() {
-    const cell = this.dungeon.cell(this.view.pos_x, this.view.pos_y);
+    const cell = this.dungeon.cell(this.x, this.y);
     if (cell.hasDrop) {
       if (cell.pickedUp(this.character)) {
         PIXI.sound.play('fruit_collect');
@@ -294,23 +302,13 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  scanNpc(is_left: boolean): NpcCharacter[] {
-    return this.scan(is_left, 1, c => c instanceof NpcCharacter) as NpcCharacter[];
-  }
-
-  scanMonsters(is_left: boolean): MonsterCharacter[] {
-    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
-    return this.scan(is_left, weapon?.distance || 1, c => c instanceof MonsterCharacter) as MonsterCharacter[];
-  }
-
-  monstersHealth(is_left: boolean): number {
-    return this.scanMonsters(is_left).map(m => m.health.get()).reduce((a, b) => a + b, 0);
-  }
-
   scanHit() {
-    const monsters = this.scanMonsters(this.view.is_left);
+    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    const distance = weapon?.distance || 1;
+    const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+    const monsters = this.scanMonsters(direction, distance);
     for (let monster of monsters) {
-      monster.hitDamage(this.character, this.character.damage);
+      monster.character.hitDamage(this.character, this.character.damage);
     }
     if (monsters.length > 0) {
       const weapon = this.character.inventory.equipment.weapon.item.get();
@@ -321,7 +319,7 @@ export class HeroAI extends BaseCharacterAI {
 
   hit(): void {
     const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
-    this.animation = new HitAnimation(this.view, this.dungeon.ticker, {
+    this.animation = new HitAnimation(this, this.dungeon.ticker, {
       sprite: this.character.name + '_idle',
       speed: weapon?.speed || this.character.speed,
       curve: weapon?.curve,
@@ -335,18 +333,28 @@ export class HeroAI extends BaseCharacterAI {
     });
   }
 
-  protected onPositionChanged(): void {
-    this.dungeon.camera(this.view.position.x, this.view.position.y);
-  }
-
   protected lookAtMonsters(): void {
-    const leftHealthSum = this.monstersHealth(true);
-    const rightHealthSum = this.monstersHealth(false);
+    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    const distance = weapon?.distance || 1;
+    const leftHealthSum = this.monstersHealth(ScanDirection.LEFT, distance);
+    const rightHealthSum = this.monstersHealth(ScanDirection.RIGHT, distance);
     if (leftHealthSum > 0 && leftHealthSum > rightHealthSum) {
       this.view.is_left = true;
     } else if (rightHealthSum > 0 && rightHealthSum > leftHealthSum) {
       this.view.is_left = false;
     }
+  }
+
+  protected scanNpc(direction: ScanDirection, max_distance: number): NpcAI[] {
+    return this.scan(direction, max_distance, c => c instanceof NpcAI) as NpcAI[];
+  }
+
+  protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
+    return this.scan(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
+  }
+
+  protected monstersHealth(direction: ScanDirection, max_distance: number): number {
+    return this.scanMonsters(direction, max_distance).map(m => m.character.health.get()).reduce((a, b) => a + b, 0);
   }
 }
 
