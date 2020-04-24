@@ -1,29 +1,33 @@
 import {Scene, SceneController} from "./scene";
 import {heroCharacterNames, Hero} from "./hero";
 import {WeaponConfig} from "./drop";
-import {Colors} from "./ui";
+import {Colors, Selectable, SelectableMap} from "./ui";
 import * as PIXI from "pixi.js";
+import {Resources} from "./resources";
+
+const margin = 40;
+const title_h = 32;
+const tile_w = 16;
+const tile_h = 28;
 
 export class SelectHeroScene implements Scene {
   private readonly controller: SceneController;
-
-  private selected = 0;
   private readonly heroes: SelectHeroView[] = [];
+  private readonly selectable: SelectableMap;
 
   constructor(controller: SceneController) {
     this.controller = controller;
+    this.selectable = new SelectableMap(controller.joystick);
   }
 
   init(): void {
     this.renderTitle();
     this.renderHeroes();
-    this.controller.app.ticker.add(this.handleInput, this);
-    this.controller.app.ticker.add(this.updateHeroes, this);
+    this.controller.app.ticker.add(this.selectable.handleInput, this.selectable);
   }
 
   destroy(): void {
-    this.controller.app.ticker.remove(this.handleInput, this);
-    this.controller.app.ticker.remove(this.updateHeroes, this);
+    this.controller.app.ticker.remove(this.selectable.handleInput, this.selectable);
     this.heroes.forEach(h => h.destroy());
     this.controller.stage.removeChildren();
   }
@@ -46,14 +50,8 @@ export class SelectHeroScene implements Scene {
     const c_h = this.controller.app.screen.height;
 
     const total = heroCharacterNames.length;
-    const margin = 40;
+
     const rect_w = Math.floor((c_w - margin * (total + 1)) / total);
-
-    const tile_w = 16;
-    const tile_h = 28;
-
-    const title_h = 32;
-
     const sprite_w = rect_w - (margin << 1);
     const scale = sprite_w / tile_w;
     const sprite_h = Math.floor(tile_h * scale);
@@ -64,113 +62,92 @@ export class SelectHeroScene implements Scene {
 
       const d_x = margin * (i + 1) + rect_w * i;
       const d_y = (c_h >> 1) - (rect_h >> 1);
-      const container = new PIXI.Container();
-      container.position.set(d_x, d_y);
 
-      const selected = new PIXI.Graphics();
-      selected.beginFill(Colors.uiSelected);
-      selected.drawRect(0, 0, rect_w, rect_h);
-      selected.endFill();
-      container.addChild(selected);
+      const view = new SelectHeroView(rect_w, rect_h, heroName, this.controller.resources);
+      view.position.set(d_x, d_y);
+      this.heroes.push(view);
+      this.controller.stage.addChild(view);
 
-      const notSelected = new PIXI.Graphics();
-      notSelected.beginFill(Colors.uiNotSelected);
-      notSelected.drawRect(0, 0, rect_w, rect_h);
-      notSelected.endFill();
-      container.addChild(notSelected);
-
-      let title = new PIXI.BitmapText(heroName, {font: {name: 'alagard', size: title_h}});
-      title.anchor = 0.5;
-      title.position.set(container.width >> 1, margin);
-      title.visible = this.selected === i;
-      container.addChild(title);
-
-      const sprite = this.controller.resources.animated(heroName + "_idle");
-      sprite.animationSpeed = 0.2;
-      sprite.width = sprite_w;
-      sprite.height = sprite_h;
-      sprite.position.set(margin, margin + margin + title_h);
-      container.addChild(sprite);
-
-      this.heroes.push(new SelectHeroView(selected, notSelected, title, sprite));
-
-      this.controller.stage.addChild(container);
+      this.selectable.set(i, 0, view, () => this.select(heroName));
     }
+    this.selectable.reset();
   }
 
-  private updateHeroes() {
-    this.heroes.forEach((h, i) => {
-      h.setSelected(i == this.selected);
+  private select(name: string): void {
+    const hero = Hero.load(name, this.controller.persistent);
+    const weapon = WeaponConfig.configs[0].create(this.controller.resources);
+    hero.inventory.equipment.weapon.set(weapon);
+    this.controller.generateDungeon({
+      level: 1,
+      hero: hero
     });
-  }
-
-  private handleInput() {
-    const joystick = this.controller.joystick;
-    if (joystick.moveLeft.once()) {
-      if (this.selected === 0) this.selected = heroCharacterNames.length - 1;
-      else this.selected--;
-    }
-    if (joystick.moveRight.once()) {
-      this.selected = (this.selected + 1) % heroCharacterNames.length;
-    }
-    if (joystick.hit.once()) {
-      const name = heroCharacterNames[this.selected];
-      const hero = Hero.load(name, this.controller.persistent);
-      const weapon = WeaponConfig.configs[0].create(this.controller.resources);
-      hero.inventory.equipment.weapon.set(weapon);
-      this.controller.generateDungeon({
-        level: 1,
-        hero: hero
-      });
-    }
   }
 }
 
-class SelectHeroView {
-  private readonly selected: PIXI.Graphics;
-  private readonly notSelected: PIXI.Graphics;
+class SelectHeroView extends PIXI.Container implements Selectable {
+  private readonly selectedBg: PIXI.Graphics;
+  private readonly notSelectedBg: PIXI.Graphics;
   private readonly title: PIXI.BitmapText;
   private readonly sprite: PIXI.AnimatedSprite;
   private isSelected = false;
 
   constructor(
-    selected: PIXI.Graphics,
-    notSelected: PIXI.Graphics,
-    title: PIXI.BitmapText,
-    sprite: PIXI.AnimatedSprite
+    width: number,
+    height: number,
+    heroName: string,
+    resources: Resources
   ) {
-    this.selected = selected;
-    this.notSelected = notSelected;
-    this.title = title;
-    this.sprite = sprite;
+    super();
+    this.selectedBg = new PIXI.Graphics()
+      .beginFill(Colors.uiSelected)
+      .drawRect(0, 0, width, height)
+      .endFill();
+    this.notSelectedBg = new PIXI.Graphics()
+      .beginFill(Colors.uiNotSelected)
+      .drawRect(0, 0, width, height)
+      .endFill();
+
+    this.title = new PIXI.BitmapText(heroName, {font: {name: 'alagard', size: title_h}});
+    this.title.anchor = 0.5;
+    this.title.position.set(width >> 1, margin);
+
+    const sprite_w = width - (margin << 1);
+    const scale = sprite_w / tile_w;
+    const sprite_h = Math.floor(tile_h * scale);
+
+    this.sprite = resources.animated(heroName + "_idle");
+    this.sprite.animationSpeed = 0.2;
+    this.sprite.width = sprite_w;
+    this.sprite.height = sprite_h;
+    this.sprite.position.set(margin, margin + margin + title_h);
+
+    this.addChild(this.selectedBg, this.notSelectedBg, this.title, this.sprite);
+    this.selected = false;
   }
 
-  setSelected(isSelected: boolean): void {
-    if (this.isSelected !== isSelected) {
-      this.isSelected = isSelected;
-      if (isSelected) {
-        this.selected.visible = true;
-        this.notSelected.visible = false;
-        this.title.visible = true;
-        this.sprite.gotoAndPlay(0);
-      } else {
-        this.selected.visible = false;
-        this.notSelected.visible = true;
-        this.title.visible = false;
-        this.sprite.gotoAndStop(0);
-      }
+  get selected(): boolean {
+    return this.isSelected;
+  }
+
+  set selected(selected: boolean) {
+    this.isSelected = selected;
+    if (selected) {
+      this.selectedBg.visible = true;
+      this.notSelectedBg.visible = false;
+      this.title.visible = true;
+      this.sprite.gotoAndPlay(0);
     } else {
-      if (this.isSelected) {
-        this.sprite.play();
-      } else {
-        this.sprite.stop();
-      }
+      this.selectedBg.visible = false;
+      this.notSelectedBg.visible = true;
+      this.title.visible = false;
+      this.sprite.gotoAndStop(0);
     }
   }
 
   destroy() {
-    this.selected.destroy();
-    this.notSelected.destroy();
+    super.destroy();
+    this.selectedBg.destroy();
+    this.notSelectedBg.destroy();
     this.title.destroy();
     this.sprite.destroy();
   }

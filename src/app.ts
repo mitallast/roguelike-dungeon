@@ -44,17 +44,4 @@ import "pixi-layers";
   // const rulesEditor = RulesEditor.dungeon(resources);
   // new Editor(80, 200, resources, rulesEditor);
   // await DungeonDesignEditor.run(resources, rulesEditor);
-
-  const div = document.createElement("div");
-  div.classList.add("container");
-  document.body.append(div);
-  const p = document.createElement('p');
-  div.append(p);
-
-  for (const name of Object.keys((PIXI.sound as any)._sounds)) {
-    const button = document.createElement("button");
-    p.append(button);
-    button.append(name);
-    button.addEventListener("click", () => PIXI.sound.play(name));
-  }
 })();
