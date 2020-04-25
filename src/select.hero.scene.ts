@@ -1,7 +1,7 @@
 import {Scene, SceneController} from "./scene";
 import {heroCharacterNames, Hero} from "./hero";
 import {WeaponConfig} from "./drop";
-import {Colors, Selectable, SelectableMap} from "./ui";
+import {Colors, Selectable, SelectableGrid} from "./ui";
 import * as PIXI from "pixi.js";
 import {Resources} from "./resources";
 
@@ -13,11 +13,11 @@ const tile_h = 28;
 export class SelectHeroScene implements Scene {
   private readonly controller: SceneController;
   private readonly heroes: SelectHeroView[] = [];
-  private readonly selectable: SelectableMap;
+  private readonly selectable: SelectableGrid;
 
   constructor(controller: SceneController) {
     this.controller = controller;
-    this.selectable = new SelectableMap(controller.joystick);
+    this.selectable = new SelectableGrid(controller.joystick);
   }
 
   init(): void {

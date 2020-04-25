@@ -1,7 +1,7 @@
 import {ModalScene, SceneController} from "./scene";
 import {Hero} from "./hero";
 import {NpcCharacter} from "./npc";
-import {SelectableMap, Sizes} from "./ui";
+import {SelectableGrid, Sizes} from "./ui";
 import {
   DefaultInventoryActionsController,
   InventoryActionsController,
@@ -16,7 +16,7 @@ export class InventoryModalScene implements ModalScene {
 
   private container: PIXI.Container | null = null;
   private background: PIXI.Graphics | null = null;
-  private selectable: SelectableMap | null = null;
+  private selectable: SelectableGrid | null = null;
   private inventoryView: InventoryView | null = null;
 
   constructor(controller: SceneController, hero: Hero, npc: NpcCharacter | null) {
@@ -28,7 +28,7 @@ export class InventoryModalScene implements ModalScene {
   init(): void {
     this.background = new PIXI.Graphics();
 
-    this.selectable = new SelectableMap(this.controller.joystick);
+    this.selectable = new SelectableGrid(this.controller.joystick);
     let controller: InventoryActionsController;
     if (this.npc) {
       controller = new SellingInventoryActionsController(this.hero, this.npc);

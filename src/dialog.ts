@@ -1,7 +1,7 @@
 import {Hero} from "./hero";
 import {NpcCharacter} from "./npc";
 import {ModalScene, SceneController} from "./scene";
-import {Colors, Layout, Selectable, SelectableMap, Sizes} from "./ui";
+import {Colors, Layout, Selectable, SelectableGrid, Sizes} from "./ui";
 import {EventPublisher, Publisher} from "./observable";
 import {Expression} from "./expression";
 import {Template} from "./template";
@@ -169,7 +169,7 @@ export class DialogModalScene implements ModalScene {
 
   private container: PIXI.Container | null = null;
   private background: PIXI.Graphics | null = null;
-  private selectable: SelectableMap | null = null;
+  private selectable: SelectableGrid | null = null;
 
   private _width: number = 0;
   private _layout: Layout = new Layout();
@@ -184,7 +184,7 @@ export class DialogModalScene implements ModalScene {
   init(): void {
     this.background = new PIXI.Graphics();
 
-    this.selectable = new SelectableMap(this.controller.joystick);
+    this.selectable = new SelectableGrid(this.controller.joystick);
 
     const width = 600;
     const height = 400;
@@ -246,6 +246,7 @@ export class DialogModalScene implements ModalScene {
       answer.destroy();
       this.selectable!.remove(0, i);
     }
+    this.selectable!.reset();
     this._answers = [];
 
     const width = this._width - Sizes.uiMargin * 2;

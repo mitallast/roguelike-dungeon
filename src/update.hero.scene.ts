@@ -2,7 +2,7 @@ import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
 import {Hero, HeroStateView} from "./hero";
 import {DefaultInventoryActionsController, InventoryView} from "./inventory";
-import {Button, Colors, Layout, Sizes, SelectableMap} from "./ui";
+import {Button, Layout, SelectableGrid, Colors, Sizes} from "./ui";
 import * as PIXI from "pixi.js";
 
 export class UpdateHeroScene implements Scene {
@@ -16,7 +16,7 @@ export class UpdateHeroScene implements Scene {
   private state: HeroStateView | null = null;
   private inventory: InventoryView | null = null;
 
-  private readonly selectable: SelectableMap;
+  private readonly selectable: SelectableGrid;
 
   private readonly buttons: Button[] = [];
 
@@ -24,7 +24,7 @@ export class UpdateHeroScene implements Scene {
     this.controller = controller;
     this.hero = options.hero;
     this.options = options;
-    this.selectable = new SelectableMap(controller.joystick);
+    this.selectable = new SelectableGrid(controller.joystick);
   }
 
   init(): void {
@@ -118,6 +118,7 @@ export class UpdateHeroScene implements Scene {
     });
     button.position.set(layout.x, layout.y);
     this.selectable.set(1, 0, button, () => this.hero.increaseHealth());
+    this.selectable.merge(1, 0, 1, 12);
     this.buttons.push(button);
     this.controller.stage.addChild(button);
     layout.offset(0, 24);
@@ -131,7 +132,8 @@ export class UpdateHeroScene implements Scene {
       height: 32,
     });
     button.position.set(layout.x, layout.y);
-    this.selectable.set(0, 1, button, () => this.controller.generateDungeon(this.options));
+    this.selectable.set(0, 0, button, () => this.controller.generateDungeon(this.options));
+    this.selectable.merge(0, 0, 1, 12);
     this.buttons.push(button);
     this.controller.stage.addChild(button);
     layout.offset(0, 32);

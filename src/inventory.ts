@@ -1,7 +1,7 @@
 import {UsableDrop, Weapon} from "./drop";
 import {Hero} from "./hero";
 import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
-import {Colors, Sizes, Selectable, Layout, SelectableMap, Button} from "./ui";
+import {Colors, Sizes, Selectable, Layout, Button, SelectableGrid} from "./ui";
 import * as PIXI from "pixi.js";
 import {NpcCharacter} from "./npc";
 
@@ -329,7 +329,7 @@ export class SellingInventoryActionsController extends BaseInventoryActionsContr
 }
 
 export class InventoryView extends PIXI.Container {
-  private readonly selectable: SelectableMap;
+  private readonly selectable: SelectableGrid;
   private readonly selectableOffset: number;
 
   readonly equipment: EquipmentInventoryView;
@@ -338,7 +338,7 @@ export class InventoryView extends PIXI.Container {
   readonly card: InventoryCellCardView;
   readonly actions: InventoryCellActionsView;
 
-  constructor(inventory: Inventory, controller: InventoryActionsController, selectable: SelectableMap, selectableOffset: number) {
+  constructor(inventory: Inventory, controller: InventoryActionsController, selectable: SelectableGrid, selectableOffset: number) {
     super();
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
@@ -350,6 +350,7 @@ export class InventoryView extends PIXI.Container {
     layout.offset(0, this.equipment.height);
     layout.offset(0, Sizes.uiMargin);
     selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
+    selectable.merge(selectableOffset, 0, 10, 1);
 
     this.belt = new BeltInventoryView(inventory.belt);
     this.belt.position.set(layout.x, layout.y);
@@ -695,14 +696,14 @@ export class InventoryCellCardView extends PIXI.Container {
 }
 
 export class InventoryCellActionsView extends PIXI.Container {
-  private readonly selectable: SelectableMap;
+  private readonly selectable: SelectableGrid;
   private readonly selectableOffset: number;
   private readonly controller: InventoryActionsController;
   private readonly buttons: [Button, number, number][] = [];
 
   private _cell: InventoryCell | null = null;
 
-  constructor(selectable: SelectableMap, selectableOffset: number, controller: InventoryActionsController) {
+  constructor(selectable: SelectableGrid, selectableOffset: number, controller: InventoryActionsController) {
     super();
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
@@ -733,9 +734,11 @@ export class InventoryCellActionsView extends PIXI.Container {
 
   removeButtons(): void {
     for (let [button, x, y] of this.buttons) {
+      this.selectable.unmerge(x, y);
       this.selectable.remove(x, y);
       button.destroy();
     }
+    this.selectable!.reset();
     this.buttons.splice(0, this.buttons.length);
   }
 
@@ -744,8 +747,9 @@ export class InventoryCellActionsView extends PIXI.Container {
     const row = total >> 1;
     const cell = total % 2;
 
-    const selectableX = this.selectableOffset + cell;
-    const selectableY = 100 + row;
+    const merge_width = 5;
+    const selectableX = this.selectableOffset + (cell * merge_width);
+    const selectableY = 10 + row;
     const button = new Button({
       label: label,
       width: BUTTON_WIDTH,
@@ -758,6 +762,7 @@ export class InventoryCellActionsView extends PIXI.Container {
 
     this.buttons.push([button, selectableX, selectableY]);
     this.selectable.set(selectableX, selectableY, button, action);
+    this.selectable.merge(selectableX, selectableY, merge_width, 1);
     this.addChild(button);
   }
 }

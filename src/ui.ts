@@ -102,162 +102,306 @@ export interface Selectable {
   selected: boolean;
 }
 
-export class SelectableMap {
-  private selectedX: number | null = null;
-  private selectedY: number | null = null;
+function nextNonEmptyCount(counts: number[], from: number): number | null {
+  for (let i = from + 1; i < counts.length; i++) {
+    if (counts[i] > 0) {
+      return i;
+    }
+  }
+  return null;
+}
 
-  private minX: number | null = null;
-  private maxX: number | null = null;
-  private readonly columns: SelectableColumn[] = [];
+function prevNonEmptyCount(counts: number[], from: number): number | null {
+  for (let i = from - 1; i >= 0; i--) {
+    if (counts[i] > 0) {
+      return i;
+    }
+  }
+  return null;
+}
 
+function nonEmptyCount(counts: number[], curr: number | null): number | null {
+  const i = curr || 0;
+  if (counts[i] > 0) return i;
+  const p = prevNonEmptyCount(counts, i);
+  if (p !== null) return p;
+  const n = nextNonEmptyCount(counts, i);
+  if (n !== null) return n;
+  return null;
+}
+
+export class SelectableGrid {
   private readonly joystick: Joystick;
+  private readonly cells: SelectableCell[][] = []; // y => x => cell
+  private readonly counts_x: number[] = [];
+  private readonly counts_y: number[] = [];
+  private limit_x: number = -1;
+  private limit_y: number = -1;
+
+  private selected_x: number | null = null;
+  private selected_y: number | null = null;
 
   constructor(joystick: Joystick) {
     this.joystick = joystick;
   }
 
-  reset() {
-    this.clean();
-    this.fixSelection();
+  reset(): void {
+    this.unmark();
+    this.selected_x = nonEmptyCount(this.counts_x, this.selected_x);
+    this.selected_y = nonEmptyCount(this.counts_y, this.selected_y);
+
+    if (this.selected_x === null || this.selected_y === null) {
+      this.selected_x = null;
+      this.selected_y = null;
+    } else {
+      if (!this.cell(this.selected_x, this.selected_y).isSelectable) {
+        const y = this.selected_y;
+        const prev = (from: number): number | null => {
+          for (let x = from - 1; x >= 0; x--) {
+            if (this.cell(x, y).isSelectable) {
+              return x;
+            }
+          }
+          return null;
+        };
+        const p = prev(this.selected_x);
+        if (p !== null) {
+          this.selected_x = p;
+        } else {
+          const next = (from: number): number | null => {
+            for (let x = from + 1; x <= this.limit_x; x++) {
+              if (this.cell(x, y).isSelectable) {
+                return x;
+              }
+            }
+            return null;
+          };
+          const n = next(this.selected_x);
+          if (n !== null) {
+            this.selected_x = n;
+          } else {
+            throw "illegal state";
+          }
+        }
+      }
+    }
     this.mark();
   }
 
   moveLeft(): void {
-    this.clean();
-    if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
-      if (this.selectedX > this.minX) {
-        while (this.selectedX > this.minX) {
-          this.selectedX--;
-          if (!this.columns[this.selectedX].isEmpty) {
-            break;
-          }
+    this.unmark();
+    if (this.selected_x !== null && this.selected_y !== null) {
+      const y = this.selected_y;
+      if (this.counts_y[y] === 0) throw `illegal state: empty column ${y}`;
+      const merged = this.selectedCell?.merged;
+      const start_x = this.selected_x;
+      const prev = (x: number): number => x > 0 ? x - 1 : this.limit_x;
+      for (let x = prev(start_x); x != start_x; x = prev(x)) {
+        if (merged?.contains(x, y)) continue;
+        if (this.cell(x, y).isSelectable) {
+          this.selected_x = x;
+          break;
         }
-      } else {
-        this.selectedX = this.maxX;
       }
-      this.selectedY = this.columns[this.selectedX].inRange(this.selectedY || 0);
-      PIXI.sound.play('select');
-    } else {
-      this.selectedX = null;
-      this.selectedY = null;
     }
     this.mark();
   }
 
   moveRight(): void {
-    this.clean();
-    if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
-      if (this.selectedX < this.maxX) {
-        while (this.selectedX < this.maxX) {
-          this.selectedX++;
-          if (!this.columns[this.selectedX].isEmpty) {
-            break;
-          }
+    this.unmark();
+    if (this.selected_x !== null && this.selected_y !== null) {
+      const y = this.selected_y;
+      if (this.counts_y[y] === 0) throw `illegal state: empty column ${y}`;
+      const merged = this.selectedCell?.merged;
+      const start_x = this.selected_x;
+      const next = (x: number): number => (x + 1) % (this.limit_x + 1);
+      for (let x = next(start_x); x != start_x; x = next(x)) {
+        if (merged?.contains(x, y)) continue;
+        if (this.cell(x, y).isSelectable) {
+          this.selected_x = x;
+          break;
         }
-      } else {
-        this.selectedX = this.minX;
       }
-      this.selectedY = this.columns[this.selectedX].inRange(this.selectedY || 0);
-      PIXI.sound.play('select');
-    } else {
-      this.selectedX = null;
-      this.selectedY = null;
     }
     this.mark();
   }
 
   moveUp(): void {
-    this.clean();
-    if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
-      this.selectedY = this.columns[this.selectedX].moveUp(this.selectedY || 0);
-      PIXI.sound.play('select');
-    } else {
-      this.selectedX = null;
-      this.selectedY = null;
+    this.unmark();
+    if (this.selected_x !== null && this.selected_y !== null) {
+      const x = this.selected_x;
+      if (this.counts_x[x] === 0) throw `illegal state: empty row ${x}`;
+      const merged = this.selectedCell?.merged;
+      const start_y = this.selected_y;
+      const prev = (y: number): number => y > 0 ? y - 1 : this.limit_y;
+      for (let y = prev(start_y); y != start_y; y = prev(y)) {
+        if (merged?.contains(x, y)) continue;
+        if (this.cell(x, y).isSelectable) {
+          this.selected_y = y;
+          break;
+        }
+      }
     }
     this.mark();
   }
 
   moveDown(): void {
-    this.clean();
-    if (this.selectedX !== null && this.minX !== null && this.maxX !== null) {
-      this.selectedY = this.columns[this.selectedX].moveDown(this.selectedY || 0);
-      PIXI.sound.play('select');
-    } else {
-      this.selectedX = null;
-      this.selectedY = null;
+    this.unmark();
+    if (this.selected_x !== null && this.selected_y !== null) {
+      const x = this.selected_x;
+      if (this.counts_x[x] === 0) throw `illegal state: empty row ${x}`;
+      const merged = this.selectedCell?.merged;
+      const start_y = this.selected_y;
+      const next = (y: number): number => (y + 1) % (this.limit_y + 1);
+      for (let y = next(start_y); y != start_y; y = next(y)) {
+        if (merged?.contains(x, y)) continue;
+        if (this.cell(x, y).isSelectable) {
+          this.selected_y = y;
+          break;
+        }
+      }
     }
     this.mark();
   }
 
-  private clean(): void {
-    if (this.selectedX !== null && this.selectedY !== null) {
-      this.columns[this.selectedX].clean(this.selectedY);
-    }
+  private unmark(): void {
+    this.selectedCell?.unmark();
   }
 
   private mark(): void {
-    if (this.selectedX !== null && this.selectedY !== null) {
-      this.columns[this.selectedX].mark(this.selectedY);
-    }
+    this.selectedCell?.mark();
   }
 
   get selected(): [Selectable, () => void] | null {
-    if (this.selectedX !== null && this.selectedY !== null) {
-      return this.columns[this.selectedX].get(this.selectedY);
-    } else {
-      return null;
+    return this.selectedCell?.value || null;
+  }
+
+  private get selectedCell(): SelectableCell | null {
+    if (this.selected_x !== null && this.selected_y !== null) {
+      const cell = this.cell(this.selected_x, this.selected_y);
+      if (cell.merged && cell.isRef) {
+        return this.cell(cell.merged.from_x, cell.merged.from_y);
+      } else {
+        return cell;
+      }
     }
+    return null;
   }
 
   set(x: number, y: number, selectable: Selectable, action: () => void): void {
-    while (x > this.columns.length - 1) {
-      this.columns.push(new SelectableColumn());
+    if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
+    const cell = this.cell(x, y);
+    if (cell.isRef) throw `cell is ref: ${x}:${y}`;
+    const has_prev = cell.value !== null;
+    cell.value = [selectable, action];
+
+    if (!has_prev) {
+      if (cell.merged) {
+        const merged = cell.merged;
+        for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
+          for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
+            this.counts_x[sx]++;
+            this.counts_y[sy]++;
+          }
+        }
+      } else {
+        this.counts_x[x]++;
+        this.counts_y[y]++;
+      }
     }
-    this.minX = this.minX === null ? x : Math.min(this.minX, x);
-    this.maxX = this.maxX === null ? x : Math.max(this.maxX, x);
-    this.columns[x].set(y, selectable, action);
-    this.fixSelection();
+
+    this.reset();
+  }
+
+  merge(x: number, y: number, width: number, height: number): void {
+    if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
+    if (width < 1 || height < 1) throw `illegal size: ${width}:${height}`;
+    const merged = new MergedRegion(x, y, x + width - 1, y + height - 1);
+    const origin = this.cell(x, y);
+    if (origin.isRef) throw `cell is ref: ${x}:${y}`;
+    if (origin.merged) throw `cell is merged: ${JSON.stringify(origin.merged)}`;
+    origin.merged = merged;
+    const has_value = origin.value !== null;
+    for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
+      for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
+        if (!(sx === x && sy === y)) {
+          const cell = this.cell(sx, sy);
+          if (cell.value) throw `merging cell already has value: ${sx}:${sy}`;
+          if (cell.isRef) throw `merging cell is ref: ${sx}:${sy}`;
+          cell.merged = merged;
+          if (has_value) {
+            this.counts_x[sx]++;
+            this.counts_y[sy]++;
+          }
+        }
+      }
+    }
   }
 
   remove(x: number, y: number): void {
-    while (x > this.columns.length - 1) {
-      this.columns.push(new SelectableColumn());
-    }
-    this.columns[x].remove(y);
-    this.minX = null;
-    for (let i = 0; i < this.columns.length; i++) {
-      if (!this.columns[i].isEmpty) {
-        this.minX = i;
-        break;
+    if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
+    const cell = this.cell(x, y);
+    if (cell.isRef) throw `cell is ref: ${x}:${y}`;
+    if (cell.value) {
+      cell.value = null;
+      if (cell.merged) {
+        const merged = cell.merged;
+        for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
+          for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
+            this.counts_x[sx]--;
+            this.counts_y[sy]--;
+          }
+        }
+      } else {
+        this.counts_x[x]--;
+        this.counts_y[y]--;
       }
     }
-    this.maxX = null;
-    for (let i = this.columns.length - 1; i >= 0; i--) {
-      if (!this.columns[i].isEmpty) {
-        this.maxX = i;
-        break;
-      }
-    }
-    this.fixSelection();
   }
 
-  private fixSelection(): void {
-    if (this.minX !== null && this.maxX !== null) {
-      if (this.selectedX === null) {
-        this.selectedX = this.minX;
-      }
-      this.selectedY = this.columns[this.selectedX].inRange(this.selectedY || 0);
-      if (this.selectedY === null) {
-        if (this.selectedX < this.maxX) {
-          this.moveRight();
-        } else {
-          this.moveLeft();
+  unmerge(x: number, y: number): void {
+    if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
+    const origin = this.cell(x, y);
+    if (origin.isRef) throw `cell is ref: ${x}:${y}`;
+    if (origin.merged) {
+      const has_value = origin.value !== null;
+      const merged = origin.merged;
+      origin.merged = null;
+      for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
+        for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
+          if (!(sx === x && sy === y)) {
+            this.cell(sx, sy).merged = null;
+            if (has_value) {
+              this.counts_x[sx]--;
+              this.counts_y[sy]--;
+            }
+          }
         }
       }
-    } else {
-      this.selectedX = null;
-      this.selectedY = null;
+    }
+  }
+
+  private cell(x: number, y: number): SelectableCell {
+    if (x < 0 || y < 0) throw "illegal coordinate";
+    this.expand(x, y);
+    return this.cells[y][x];
+  }
+
+  private expand(to_x: number, to_y: number): void {
+    while (this.limit_y < to_y) {
+      this.limit_y++;
+      this.counts_y[this.limit_y] = 0;
+      this.cells[this.limit_y] = [];
+      for (let x = 0; x <= this.limit_x; x++) {
+        this.cells[this.limit_y][x] = new SelectableCell(x, this.limit_y);
+      }
+    }
+    while (this.limit_x < to_x) {
+      this.limit_x++;
+      this.counts_x[this.limit_x] = 0;
+      for (let y = 0; y <= this.limit_y; y++) {
+        this.cells[y][this.limit_x] = new SelectableCell(this.limit_x, y);
+      }
     }
   }
 
@@ -289,112 +433,40 @@ export class SelectableMap {
   }
 }
 
-class SelectableColumn {
-  private minY: number | null = null;
-  private maxY: number | null = null;
-  private readonly cells: ([Selectable, () => void] | null)[] = [];
+class SelectableCell {
+  merged: MergedRegion | null = null;
 
-  inRange(selectedY: number): number | null {
-    if (this.minY !== null && this.maxY !== null) {
-      if (selectedY < this.minY) return this.minY;
-      else if (selectedY > this.maxY) return this.maxY;
-      else return selectedY;
-    } else {
-      return null;
+  value: [Selectable, () => void] | null = null;
+
+  unmark(): void {
+    if (this.value) {
+      this.value[0].selected = false;
     }
   }
 
-  moveUp(selectedY: number): number | null {
-    if (this.minY !== null && this.maxY !== null) {
-      if (selectedY > this.minY) {
-        while (selectedY > this.minY) {
-          selectedY--;
-          if (this.cells[selectedY]) {
-            return selectedY;
-          }
-        }
-        return this.minY;
-      } else {
-        return this.maxY;
-      }
-    } else {
-      return null;
+  mark(): void {
+    if (this.value) {
+      this.value[0].selected = true;
     }
   }
 
-  moveDown(selectedY: number): number | null {
-    if (this.minY !== null && this.maxY !== null) {
-      if (selectedY < this.maxY) {
-        while (selectedY < this.maxY) {
-          selectedY++;
-          if (this.cells[selectedY]) {
-            return selectedY;
-          }
-        }
-        return this.maxY;
-      } else {
-        return this.minY;
-      }
-    } else {
-      return null;
-    }
+  get isRef(): boolean {
+    return this.merged !== null && !(this.merged.from_x === this.x && this.merged.from_y === this.y);
   }
 
-  clean(selectedY: number): void {
-    const cell = this.cells[selectedY];
-    if (cell) {
-      const [selectable] = cell;
-      if (selectable.selected) {
-        selectable.selected = false;
-      }
-    }
+  get isSelectable(): boolean {
+    return this.value !== null || this.isRef;
   }
 
-  mark(selectedY: number): void {
-    const cell = this.cells[selectedY];
-    if (cell !== null) {
-      const [selectable] = cell;
-      if (!selectable.selected) {
-        selectable.selected = true;
-      }
-    }
+  constructor(readonly x: number, readonly y: number) {
+  }
+}
+
+class MergedRegion {
+  constructor(readonly from_x: number, readonly from_y: number, readonly to_x: number, readonly to_y: number) {
   }
 
-  remove(y: number): void {
-    while (y > this.cells.length - 1) {
-      this.cells.push(null);
-    }
-    this.cells[y] = null;
-    this.minY = null;
-    for (let i = 0; i < this.cells.length; i++) {
-      if (this.cells[i]) {
-        this.minY = i;
-        break;
-      }
-    }
-    this.maxY = null;
-    for (let i = this.cells.length - 1; i >= 0; i--) {
-      if (this.cells[i]) {
-        this.maxY = i;
-        break;
-      }
-    }
-  }
-
-  set(y: number, selectable: Selectable, action: () => void): void {
-    while (y > this.cells.length - 1) {
-      this.cells.push(null);
-    }
-    this.minY = this.minY === null ? y : Math.min(this.minY, y);
-    this.maxY = this.maxY === null ? y : Math.max(this.maxY, y);
-    this.cells[y] = [selectable, action];
-  }
-
-  get(y: number): [Selectable, () => void] | null {
-    return this.cells[y];
-  }
-
-  get isEmpty(): boolean {
-    return this.minY === null;
+  contains(x: number, y: number): boolean {
+    return x >= this.from_x && x <= this.to_x && y >= this.from_y && y <= this.to_y;
   }
 }
