@@ -165,13 +165,13 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected placeMonsters(dungeon: DungeonMap, hero: HeroAI): void {
-    const min_hero_distance = 15;
-    const free = this.findFreePositions(dungeon, 1, 1).filter(cell => {
-      return this.distance(hero, cell) > min_hero_distance;
-    });
+    const total_space = dungeon.width * dungeon.height;
+    const floor_space = Math.floor(total_space * 0.4);
+    const spawn_space = Math.floor(floor_space * 0.2);
+    const monster_count = Math.floor(spawn_space * 0.07);
 
-    const monster_percent = 0.3;
-    const monster_count = Math.floor((free.length / 4) * monster_percent);
+    console.log(`floor_space: ${floor_space}`);
+    console.log(`monster_count: ${monster_count}`);
 
     for (let m = 0; m < monster_count; m++) {
       if (!this.placeMonster(dungeon, hero)) {

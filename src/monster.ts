@@ -24,6 +24,11 @@ export enum MonsterType {
   MINION = 3,
 }
 
+export enum MonsterState {
+  READY = 0,
+  ALARM = 1,
+}
+
 export abstract class MonsterCharacter extends Character {
   readonly level: number;
   readonly luck: number;
@@ -61,8 +66,8 @@ export abstract class MonsterAI extends BaseCharacterAI {
   abstract readonly character: MonsterCharacter;
   abstract readonly max_distance: number;
 
+  private _state: MonsterState = MonsterState.READY;
   private last_path: PIXI.Point[] = [];
-
   private readonly spawned: MonsterAI[] = [];
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
@@ -83,19 +88,29 @@ export abstract class MonsterAI extends BaseCharacterAI {
 
   protected abstract drop(): void;
 
+  protected ready(): void {
+    this._state = MonsterState.READY;
+  }
+
   protected sendAlarm(hero: HeroAI): void {
+    this._state = MonsterState.ALARM;
     for (const monster of this.scanMonsters(ScanDirection.AROUND, this.max_distance)) {
       monster.alarm(hero);
     }
   }
 
   alarm(hero: HeroAI): void {
-    if (!this.character.dead.get() && this.character.type !== MonsterType.LEADER) {
-      if (this.animation instanceof IdleAnimation) {
-        this.animation.cancel();
-        this.moveTo(hero);
-      }
+    if (!this.character.dead.get() &&
+      this.character.type !== MonsterType.LEADER &&
+      this._state === MonsterState.READY &&
+      this.animation instanceof IdleAnimation
+    ) {
+      this.moveTo(hero);
     }
+  }
+
+  get state(): MonsterState {
+    return this._state;
   }
 
   protected randomMove(): boolean {

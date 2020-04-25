@@ -387,6 +387,8 @@ export abstract class Animation {
       this.terminate();
       this.finish();
       if (this.on_finish) this.on_finish(this);
+
+      console.assert(this.character.animation !== this);
     }
   }
 
@@ -408,6 +410,7 @@ export abstract class Animation {
   private updateSprite(deltaTime: number): void {
     const sprite = this.view.sprite;
     if (!sprite) {
+      console.warn("no sprite found");
       this._spriteTime = 0;
       this._spritePlay = false;
       return;

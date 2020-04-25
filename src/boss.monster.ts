@@ -72,6 +72,8 @@ export class BossMonsterAI extends MonsterAI {
         return true;
       }
 
+      this.ready();
+
       if (finished && this.randomMove()) {
         return true;
       }

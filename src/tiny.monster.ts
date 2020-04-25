@@ -74,6 +74,9 @@ export class TinyMonsterAI extends MonsterAI {
         if ((idle || finished)) {
           return this.moveFromHeroOrAttack();
         }
+
+        this.ready();
+
       } else {
         if ((idle || finished) && this.moveToHero()) {
           return true;
@@ -81,6 +84,9 @@ export class TinyMonsterAI extends MonsterAI {
         if ((idle || finished) && this.moveByPath()) {
           return true;
         }
+
+        this.ready();
+
         if (finished && this.randomMove()) {
           return true;
         }
