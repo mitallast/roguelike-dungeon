@@ -1,0 +1,591 @@
+{
+  "frames": {
+    "bonfire_1.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_2.png": {
+      "frame": {
+        "x": 29,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_3.png": {
+      "frame": {
+        "x": 58,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_4.png": {
+      "frame": {
+        "x": 87,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_5.png": {
+      "frame": {
+        "x": 116,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_6.png": {
+      "frame": {
+        "x": 145,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_7.png": {
+      "frame": {
+        "x": 174,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_8.png": {
+      "frame": {
+        "x": 203,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_9.png": {
+      "frame": {
+        "x": 232,
+        "y": 0,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_1.png": {
+      "frame": {
+        "x": 0,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_2.png": {
+      "frame": {
+        "x": 29,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_3.png": {
+      "frame": {
+        "x": 58,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_4.png": {
+      "frame": {
+        "x": 87,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_5.png": {
+      "frame": {
+        "x": 116,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_6.png": {
+      "frame": {
+        "x": 145,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_7.png": {
+      "frame": {
+        "x": 174,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_8.png": {
+      "frame": {
+        "x": 203,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_lit_9.png": {
+      "frame": {
+        "x": 232,
+        "y": 51,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_1.png": {
+      "frame": {
+        "x": 0,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_2.png": {
+      "frame": {
+        "x": 29,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_3.png": {
+      "frame": {
+        "x": 58,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_4.png": {
+      "frame": {
+        "x": 87,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_5.png": {
+      "frame": {
+        "x": 116,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_6.png": {
+      "frame": {
+        "x": 145,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_7.png": {
+      "frame": {
+        "x": 174,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_8.png": {
+      "frame": {
+        "x": 203,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    },
+    "bonfire_unlit_9.png": {
+      "frame": {
+        "x": 232,
+        "y": 102,
+        "w": 29,
+        "h": 51
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 2,
+        "y": 2,
+        "w": 29,
+        "h": 51
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    }
+  },
+  "animations": {
+    "bonfire": [
+      "bonfire_1.png",
+      "bonfire_2.png",
+      "bonfire_3.png",
+      "bonfire_4.png",
+      "bonfire_5.png",
+      "bonfire_6.png",
+      "bonfire_7.png",
+      "bonfire_8.png",
+      "bonfire_9.png"
+    ],
+    "bonfire_lit": [
+      "bonfire_lit_1.png",
+      "bonfire_lit_2.png",
+      "bonfire_lit_3.png",
+      "bonfire_lit_4.png",
+      "bonfire_lit_5.png",
+      "bonfire_lit_6.png",
+      "bonfire_lit_7.png",
+      "bonfire_lit_8.png",
+      "bonfire_lit_9.png"
+    ],
+    "bonfire_unlit": [
+      "bonfire_unlit_1.png",
+      "bonfire_unlit_2.png",
+      "bonfire_unlit_3.png",
+      "bonfire_unlit_4.png",
+      "bonfire_unlit_5.png",
+      "bonfire_unlit_6.png",
+      "bonfire_unlit_7.png",
+      "bonfire_unlit_8.png",
+      "bonfire_unlit_9.png"
+    ]
+  },
+  "meta": {
+    "app": "https://www.codeandweb.com/texturepacker",
+    "version": "1.0",
+    "image": "bonfire.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 261,
+      "h": 153
+    },
+    "scale": "1",
+    "smartupdate": "$TexturePacker:SmartUpdate:5b37434dcd01f9444a4c64dbc89fba7c:708fc7de6da9bba411ab82d0c10c1dd1:3a1e562474eb4da1c889464cfd48ee41$"
+  }
+}

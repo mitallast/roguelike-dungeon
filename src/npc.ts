@@ -1,6 +1,6 @@
 import {BaseCharacterAI, Character} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {Hero} from "./hero";
+import {Hero, HeroAI} from "./hero";
 import {SceneController} from "./scene";
 import * as PIXI from "pixi.js";
 
@@ -110,6 +110,7 @@ export class NpcCharacter extends Character {
 
 export class NpcAI extends BaseCharacterAI {
   readonly character: NpcCharacter;
+  readonly interacting: boolean = true;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
     super(dungeon, {
@@ -149,5 +150,10 @@ export class NpcAI extends BaseCharacterAI {
 
   protected hit(): void {
     this.idle();
+  }
+
+  interact(hero: HeroAI): void {
+    this.lookAt(hero);
+    this.dungeon.controller.showDialog(hero.character, this.character);
   }
 }

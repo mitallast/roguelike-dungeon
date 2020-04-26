@@ -51,10 +51,10 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
         const i = x + y * model.FMX;
         const [floor, wall] = tileset.cells[observed[i]];
         if (floor >= 0) {
-          dungeon.cell(x, y).floor = tileset.tiles[floor];
+          dungeon.cell(x, y).floorName = tileset.tiles[floor];
         }
         if (wall >= 0) {
-          dungeon.cell(x, y).wall = tileset.tiles[wall];
+          dungeon.cell(x, y).wallName = tileset.tiles[wall];
         }
       }
     }
@@ -70,6 +70,12 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
 
     this.placeLadder(dungeon, hero);
     await yields();
+
+    const is_bonfire = options.level % 5 === 1
+    if (is_bonfire) {
+      this.placeBonfire(dungeon, hero);
+      await yields();
+    }
 
     this.placeNpc(dungeon, hero);
     await yields();

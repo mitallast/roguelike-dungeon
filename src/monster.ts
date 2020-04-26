@@ -65,6 +65,7 @@ export abstract class MonsterCharacter extends Character {
 export abstract class MonsterAI extends BaseCharacterAI {
   abstract readonly character: MonsterCharacter;
   abstract readonly max_distance: number;
+  readonly interacting: boolean = false;
 
   private _state: MonsterState = MonsterState.READY;
   private last_path: PIXI.Point[] = [];
@@ -72,6 +73,9 @@ export abstract class MonsterAI extends BaseCharacterAI {
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
+  }
+
+  interact(): void {
   }
 
   protected onKilledBy(by: Character): void {
@@ -196,7 +200,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
       }
       const minion = this.spawnMinion(cell.x, cell.y);
       if (minion) {
-        cell.character = minion;
+        cell.object = minion;
         this.spawned.push(minion);
         return true;
       } else {
@@ -210,10 +214,10 @@ export abstract class MonsterAI extends BaseCharacterAI {
   protected abstract spawnMinion(x: number, y: number): MonsterAI | null;
 
   protected scanHero(direction: ScanDirection, max_distance: number): HeroAI[] {
-    return this.scan(direction, max_distance, c => c instanceof HeroAI) as HeroAI[];
+    return this.scanObjects(direction, max_distance, c => c instanceof HeroAI) as HeroAI[];
   }
 
   protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
-    return this.scan(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
+    return this.scanObjects(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
   }
 }

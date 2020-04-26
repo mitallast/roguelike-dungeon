@@ -7,6 +7,7 @@ import * as PIXI from "pixi.js";
 
 export interface Drop {
   pickedUp(hero: Hero): boolean;
+  readonly spriteName: string;
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
 }
 
@@ -26,6 +27,8 @@ export interface DropInfo {
 }
 
 export class Coins implements Drop {
+  readonly spriteName: string = "coin";
+
   private readonly resources: Resources;
   private readonly coins: number;
 
@@ -40,11 +43,13 @@ export class Coins implements Drop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.animated("coin");
+    return this.resources.animated(this.spriteName);
   }
 }
 
 export class HealthFlask implements UsableDrop {
+  readonly spriteName: string = "flask_red.png";
+
   private readonly resources: Resources;
   private readonly health: number;
 
@@ -74,11 +79,13 @@ export class HealthFlask implements UsableDrop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.sprite("flask_red.png");
+    return this.resources.sprite(this.spriteName);
   }
 }
 
 export class HealthBigFlask implements UsableDrop {
+  readonly spriteName: string = "flask_big_red.png";
+
   private readonly resources: Resources;
   private readonly health: number;
 
@@ -99,7 +106,7 @@ export class HealthBigFlask implements UsableDrop {
   };
 
   sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.sprite("flask_big_red.png");
+    return this.resources.sprite(this.spriteName);
   }
 
   same(item: UsableDrop): boolean {
@@ -168,6 +175,10 @@ export class Weapon implements UsableDrop {
   readonly damage: number;
   readonly price: number;
 
+  get spriteName(): string {
+    return this.name + ".png";
+  }
+
   constructor(resources: Resources, config: WeaponConfig) {
     this.resources = resources;
     this.name = config.name;
@@ -188,7 +199,7 @@ export class Weapon implements UsableDrop {
   }
 
   sprite(): PIXI.Sprite {
-    return this.resources.sprite(this.name + ".png");
+    return this.resources.sprite(this.spriteName);
   }
 
   pickedUp(hero: Hero): boolean {

@@ -1,15 +1,14 @@
 import {Inventory} from "./inventory";
 import {BaseCharacterAI, Character, HitAnimation, IdleAnimation, ScanDirection} from "./character";
-import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {Observable, ObservableVar} from "./observable";
 import {BarView} from "./bar.view";
 import {Colors, Sizes} from "./ui";
 import {DigitKey, KeyBind} from "./input";
 import {PersistentState} from "./persistent.state";
-import * as PIXI from "pixi.js";
 import {MonsterAI} from "./monster";
-import {NpcAI} from "./npc";
+import * as PIXI from "pixi.js";
 
 export const heroCharacterNames = [
   "elf_f",
@@ -165,6 +164,7 @@ export class Hero extends Character {
 
 export class HeroAI extends BaseCharacterAI {
   readonly character: Hero;
+  readonly interacting: boolean = false;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -187,6 +187,9 @@ export class HeroAI extends BaseCharacterAI {
     this.character.inventory.drop.unsubscribe(this.onDrop, this);
   }
 
+  interact(): void {
+  }
+
   protected onKilledBy(by: Character): void {
     this.dungeon.log(`${this.character.name} killed by ${by.name}`);
   }
@@ -199,7 +202,7 @@ export class HeroAI extends BaseCharacterAI {
     let [drop] = event;
     const cell = this.findDropCell();
     if (cell) {
-      cell.drop = drop;
+      cell.dropItem = drop;
     }
   }
 
@@ -243,23 +246,12 @@ export class HeroAI extends BaseCharacterAI {
         const triggered = joystick.hit.triggered;
         const once = joystick.hit.once();
 
-        if (triggered || once) {
-          if (this.dungeon.cell(this.x, this.y).isLadder) {
-            this.dungeon.controller.updateHero({
-              level: this.dungeon.level + 1,
-              hero: this.character,
-            });
-            return true;
-          }
-        }
-
         if (once) {
           const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
-          const [npc] = this.scanNpc(direction, 1);
-          if (npc) {
-            npc.lookAt(this);
-            this.dungeon.controller.showDialog(this.character, npc.character);
+          const [object] = this.scanInteracting(direction, 1);
+          if (object) {
             this.idle();
+            object.interact(this);
             return true;
           }
         }
@@ -296,10 +288,8 @@ export class HeroAI extends BaseCharacterAI {
 
   private scanDrop() {
     const cell = this.dungeon.cell(this.x, this.y);
-    if (cell.hasDrop) {
-      if (cell.pickedUp(this.character)) {
-        PIXI.sound.play('fruit_collect');
-      }
+    if (cell.drop?.pickedUp(this.character)) {
+      PIXI.sound.play('fruit_collect');
     }
   }
 
@@ -346,12 +336,12 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected scanNpc(direction: ScanDirection, max_distance: number): NpcAI[] {
-    return this.scan(direction, max_distance, c => c instanceof NpcAI) as NpcAI[];
+  protected scanInteracting(direction: ScanDirection, max_distance: number): MapCell[] {
+    return this.scanCells(direction, max_distance, c => c.interacting);
   }
 
   protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
-    return this.scan(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
+    return this.scanObjects(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
   }
 
   protected monstersHealth(direction: ScanDirection, max_distance: number): number {

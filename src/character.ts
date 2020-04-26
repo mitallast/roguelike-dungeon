@@ -1,9 +1,10 @@
 import {Resources} from "./resources";
-import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
+import {DungeonMap, DungeonZIndexes, MapCell, DungeonObject} from "./dungeon.map";
 import {Observable, ObservableVar} from "./observable";
 import {Weapon} from "./drop";
 import {Curve, LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
+import {HeroAI} from "./hero";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -66,7 +67,7 @@ export abstract class Character {
   }
 }
 
-export interface CharacterAI {
+export interface CharacterAI extends DungeonObject {
   readonly x: number;
   readonly y: number;
 
@@ -89,17 +90,16 @@ export enum ScanDirection {
   AROUND = 4
 }
 
-export abstract class BaseCharacterAI implements CharacterAI {
+export abstract class BaseCharacterAI implements DungeonObject {
   abstract readonly character: Character;
+
+  readonly static: boolean = false;
+  abstract readonly interacting: boolean;
 
   readonly view: CharacterView;
   readonly dungeon: DungeonMap;
 
   private _animation: Animation | null = null;
-
-  readonly width: number;
-  readonly height: number;
-
   private _x: number;
   private _y: number;
 
@@ -110,6 +110,9 @@ export abstract class BaseCharacterAI implements CharacterAI {
   get y(): number {
     return this._y;
   }
+
+  readonly width: number;
+  readonly height: number;
 
   set animation(animation: Animation) {
     this._animation?.cancel();
@@ -145,6 +148,12 @@ export abstract class BaseCharacterAI implements CharacterAI {
     this.view.destroy();
   }
 
+  collide(object: DungeonObject): boolean {
+    return this !== object;
+  }
+
+  abstract interact(hero: HeroAI): void;
+
   private handleKilledBy(by: Character | null): void {
     if (by) this.onKilledBy(by);
   }
@@ -160,25 +169,25 @@ export abstract class BaseCharacterAI implements CharacterAI {
   protected abstract onDead(): void;
 
   protected findDropCell(max_distance: number = 5): (MapCell | null) {
-    return this.findCell(max_distance, cell => !cell.hasDrop);
+    return this.findCell(max_distance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
   }
 
   protected findSpawnCell(max_distance: number = 5): (MapCell | null) {
-    return this.findCell(max_distance, cell => !cell.hasCharacter);
+    return this.findCell(max_distance, cell => cell.hasFloor && !cell.hasObject);
   }
 
   protected findCell(max_distance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
     const pos_x = this.x;
     const pos_y = this.y;
     const is_left = this.view.is_left;
-    const is_dead = this.character.dead.get();
 
     let closestCell: MapCell | null = null;
     let closestDistance: number | null = null;
 
     const metric = (a: MapCell) => {
-      return Math.sqrt(Math.pow(a.x - pos_x, 2) + Math.pow(a.y - pos_y, 2)) +
+      return Math.max(Math.abs(a.x - pos_x), Math.abs(a.y - pos_y)) +
         (a.y !== pos_y ? 0.5 : 0) + // boost X
+        (a.x === pos_x && a.y === pos_y ? 0 : 1) + // boost self
         (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
     };
 
@@ -189,14 +198,12 @@ export abstract class BaseCharacterAI implements CharacterAI {
 
     for (let x = min_x; x <= max_x; x++) {
       for (let y = min_y; y <= max_y; y++) {
-        if (!(x === pos_x && y === pos_y) || is_dead) {
-          const cell = this.dungeon.cell(x, y);
-          if (cell.hasFloor && predicate(cell)) {
-            const distance = metric(cell);
-            if (closestDistance === null || closestDistance > distance) {
-              closestCell = cell;
-              closestDistance = distance;
-            }
+        const cell = this.dungeon.cell(x, y);
+        if (cell.hasFloor && predicate(cell)) {
+          const distance = metric(cell);
+          if (closestDistance === null || closestDistance > distance) {
+            closestCell = cell;
+            closestDistance = distance;
           }
         }
       }
@@ -224,11 +231,11 @@ export abstract class BaseCharacterAI implements CharacterAI {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
-        const m = cell.character;
-        if (m && m !== this && m !== character) {
-          pf.mark(x, y);
-        } else if (cell.hasFloor) {
+        const m = cell.object;
+        if (cell.hasFloor && (!cell.collide(this) || m === character)) {
           pf.clear(x, y);
+        } else {
+          pf.mark(x, y);
         }
       }
     }
@@ -286,7 +293,14 @@ export abstract class BaseCharacterAI implements CharacterAI {
     if (character.x > this.x) this.view.is_left = false;
   }
 
-  protected scan(direction: ScanDirection, max_distance: number, predicate: (character: CharacterAI) => boolean): CharacterAI[] {
+  protected scanObjects(direction: ScanDirection, max_distance: number, predicate: (object: DungeonObject) => boolean): DungeonObject[] {
+    const objects = this.scanCells(direction, max_distance, cell => cell.hasObject && predicate(cell.object!))
+      .map(cell => cell.object!);
+    const set = new Set(objects); // distinct
+    return [...set];
+  }
+
+  protected scanCells(direction: ScanDirection, max_distance: number, predicate: (cell: MapCell) => boolean): MapCell[] {
     const pos_x = this.x;
     const pos_y = this.y;
 
@@ -299,20 +313,17 @@ export abstract class BaseCharacterAI implements CharacterAI {
     const scan_y_min = Math.max(0, pos_y - max_distance);
     const scan_y_max = Math.min(this.dungeon.height - 1, pos_y + max_distance);
 
-    const set = new Set<CharacterAI>();
+    const cells: MapCell[] = [];
 
     for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
       for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
-        if (!(s_x === pos_x && s_y === pos_y)) {
-          const cell = this.dungeon.cell(s_x, s_y);
-          const character = cell.character;
-          if (character && predicate(character)) {
-            set.add(character);
-          }
+        const cell = this.dungeon.cell(s_x, s_y);
+        if (predicate(cell)) {
+          cells.push(cell);
         }
       }
     }
-    return [...set];
+    return cells;
   }
 }
 
@@ -616,10 +627,6 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
     this._sprite.animationSpeed = 0.2 * speed;
     this._sprite.anchor.set(0, 1);
     this._sprite.position.y = TILE_SIZE - 2;
-
-    if (this._sprite.width > this.grid_width * TILE_SIZE) {
-      this._sprite.position.x = 0 - (this._sprite.width - this.grid_width * TILE_SIZE) / 2;
-    }
     this._sprite.zIndex = 1;
     this.addChild(this._sprite);
     this.updateSpriteOrientation();
@@ -649,7 +656,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
       if (this._is_left) {
         this._sprite.position.x = this._sprite.width;
         if (this._sprite.width > this.grid_width * TILE_SIZE) {
-          this._sprite.position.x += (this._sprite.width - this.grid_width * TILE_SIZE) / 2;
+          this._sprite.position.x -= (this._sprite.width - this.grid_width * TILE_SIZE) / 2;
         }
         this._sprite.scale.x = -1;
       } else {

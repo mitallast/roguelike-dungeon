@@ -8,6 +8,7 @@ import {BossConfig, BossMonster, BossMonsterAI, bossMonsters} from "./boss.monst
 import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
 import {MonsterCategory} from "./monster";
+import {Bonfire} from "./bonfire";
 import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
@@ -46,7 +47,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
         if (cell.hasFloor && this.rng.nextFloat() < percent) {
-          cell.floor = this.rng.choice(replacements);
+          cell.floorName = this.rng.choice(replacements);
         }
       }
     }
@@ -74,36 +75,36 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
-        if (cell.wall === 'wall_mid.png') {
+        if (cell.wallName === 'wall_mid.png') {
           if (this.rng.nextFloat() < percent) {
             const replacements = [...holes];
-            const has_floor = y + 1 < dungeon.height && dungeon.cell(x, y + 1).floor === 'floor_1.png';
+            const has_floor = y + 1 < dungeon.height && dungeon.cell(x, y + 1).floorName === 'floor_1.png';
             if (has_floor) {
               replacements.push(...banners);
               replacements.push(...goo);
             }
-            const has_top = y > 0 && dungeon.cell(x, y - 1).wall === 'wall_top_mid.png';
+            const has_top = y > 0 && dungeon.cell(x, y - 1).wallName === 'wall_top_mid.png';
             if (has_top && has_floor) {
               replacements.push(...fountains)
             }
             const replacement = this.rng.choice(replacements);
             switch (replacement) {
               case 'wall_goo.png':
-                dungeon.cell(x, y).wall = 'wall_goo.png';
-                dungeon.cell(x, y + 1).floor = 'wall_goo_base.png';
+                dungeon.cell(x, y).wallName = 'wall_goo.png';
+                dungeon.cell(x, y + 1).floorName = 'wall_goo_base.png';
                 break;
               case 'wall_fountain_mid_red':
-                dungeon.cell(x, y - 1).wall = 'wall_fountain_top.png';
-                dungeon.cell(x, y).wall = 'wall_fountain_mid_red';
-                dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_red';
+                dungeon.cell(x, y - 1).wallName = 'wall_fountain_top.png';
+                dungeon.cell(x, y).wallName = 'wall_fountain_mid_red';
+                dungeon.cell(x, y + 1).floorName = 'wall_fountain_basin_red';
                 break;
               case 'wall_fountain_mid_blue':
-                dungeon.cell(x, y - 1).wall = 'wall_fountain_top.png';
-                dungeon.cell(x, y).wall = 'wall_fountain_mid_blue';
-                dungeon.cell(x, y + 1).floor = 'wall_fountain_basin_blue';
+                dungeon.cell(x, y - 1).wallName = 'wall_fountain_top.png';
+                dungeon.cell(x, y).wallName = 'wall_fountain_mid_blue';
+                dungeon.cell(x, y + 1).floorName = 'wall_fountain_basin_blue';
                 break;
               default:
-                dungeon.cell(x, y).wall = replacement;
+                dungeon.cell(x, y).wallName = replacement;
                 break;
             }
           }
@@ -127,7 +128,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
         for (let dy = 0; dy < height && valid; dy++) {
           for (let dx = 0; dx < width && valid; dx++) {
             const cell = dungeon.cell(x + dx, y - dy);
-            valid = cell.hasFloor && !cell.hasCharacter;
+            valid = cell.hasFloor && !cell.hasObject;
           }
         }
         if (valid) free.push(dungeon.cell(x, y));
@@ -238,7 +239,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         const cell = dungeon.cell(x, y);
-        if (cell.hasFloor && !cell.hasDrop) {
+        if (cell.hasFloor && !cell.hasDrop && !cell.hasObject) {
           free.push(cell);
         }
       }
@@ -267,7 +268,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
               c++
             }
           }
-          const distance = Math.sqrt(Math.pow(hero.x - x, 2) + Math.pow(hero.y - y, 2));
+          const distance = this.distance(hero, {x: x, y: y});
           if (c === directions.length) {
             free3.push([cell, distance]);
           } else {
@@ -286,6 +287,19 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       throw "ladder not set";
     }
 
-    this.rng.choice(free)[0].floor = 'floor_ladder.png';
+    this.rng.choice(free)[0].ladder();
+  }
+
+  protected placeBonfire(dungeon: DungeonMap, hero: HeroAI): Bonfire {
+    const max_hero_distance = 10;
+    const free = this.findFreePositions(dungeon, 2, 2).filter(cell => {
+      return this.distance(hero, cell) < max_hero_distance;
+    });
+    if (free.length > 0) {
+      const cell = this.rng.choice(free);
+      return new Bonfire(dungeon, cell.x, cell.y);
+    } else {
+      throw "bonfire not placed";
+    }
   }
 }

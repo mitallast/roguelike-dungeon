@@ -16,12 +16,11 @@ export class Resources {
         // configs
         .add('npc.json')
         .add('dungeon.json')
+        .add('bonfire.json')
         .add('dungeon.rules.json')
         .add('dungeon.rules.4.json')
         .add('dungeon.design.json')
         .add('dialogs.json')
-        .add('village.json')
-        .add('village.rules.json')
         // fonts
         .add('alagard', 'fonts/alagard.fnt')
         // sounds
@@ -37,7 +36,7 @@ export class Resources {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
           this.add(resources['npc.json']!.spritesheet!);
           this.add(resources['dungeon.json']!.spritesheet!);
-          this.add(resources['village.json']!.spritesheet!);
+          this.add(resources['bonfire.json']!.spritesheet!);
           resolve();
         });
     }));

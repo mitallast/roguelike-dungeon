@@ -1,6 +1,5 @@
 import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
-import {Hero} from "./hero";
-import {CharacterAI} from "./character";
+import {Hero, HeroAI} from "./hero";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
@@ -11,8 +10,8 @@ export interface DungeonZIndexScheme {
   readonly character: number
   readonly hero: number
   readonly drop: number
+  readonly static: number
   readonly floor: number
-  readonly wallBack: number
   readonly wall: number
   readonly row: number
 }
@@ -21,8 +20,8 @@ export const DungeonZIndexes: DungeonZIndexScheme = {
   character: 60,
   hero: 70,
   drop: 50,
+  static: 40,
   floor: 1,
-  wallBack: 2,
   wall: 100,
   row: 256
 };
@@ -91,36 +90,31 @@ export class DungeonMap {
     return this.cells[y][x];
   }
 
-  remove(x: number, y: number, character: CharacterAI): void {
-    for (let dx = 0; dx < character.width; dx++) {
-      for (let dy = 0; dy < character.height; dy++) {
+  remove(x: number, y: number, object: DungeonObject): void {
+    for (let dx = 0; dx < object.width; dx++) {
+      for (let dy = 0; dy < object.height; dy++) {
         const cell = this.cell(x + dx, y - dy);
-        const c = cell.character;
-        if (c && (c === character)) {
-          cell.character = null;
+        const c = cell.object;
+        if (c && (c === object)) {
+          cell.object = null;
         }
       }
     }
   }
 
-  set(x: number, y: number, character: CharacterAI): void {
-    for (let dx = 0; dx < character.width; dx++) {
-      for (let dy = 0; dy < character.height; dy++) {
-        this.cell(x + dx, y - dy).character = character;
+  set(x: number, y: number, object: DungeonObject): void {
+    for (let dx = 0; dx < object.width; dx++) {
+      for (let dy = 0; dy < object.height; dy++) {
+        this.cell(x + dx, y - dy).object = object;
       }
     }
   }
 
-  available(x: number, y: number, character: CharacterAI): boolean {
-    for (let dx = 0; dx < character.width; dx++) {
-      for (let dy = 0; dy < character.height; dy++) {
-        // check is floor exists
-        if (!this.cell(x + dx, y - dy).hasFloor) {
-          return false;
-        }
-        // check is no monster
-        const m = this.cell(x + dx, y - dy).character;
-        if (m && m !== character) {
+  available(x: number, y: number, object: DungeonObject): boolean {
+    for (let dx = 0; dx < object.width; dx++) {
+      for (let dy = 0; dy < object.height; dy++) {
+        const cell = this.cell(x + dx, y - dy);
+        if (!cell.hasFloor || cell.collide(object)) {
           return false;
         }
       }
@@ -137,17 +131,40 @@ export class DungeonMap {
     this.container.position.set(p_x, p_y);
     this.light.container.position.set(p_x, p_y);
   }
+
+  sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {
+    let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+    if (!name.endsWith('.png')) {
+      const animated = this.controller.resources.animated(name);
+      animated.animationSpeed = 0.2;
+      animated.play();
+      sprite = animated;
+    } else {
+      sprite = this.controller.resources.sprite(name);
+    }
+    sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
+    this.container.addChild(sprite);
+    return sprite;
+  }
+
+  animated(x: number, y: number, name: string): PIXI.AnimatedSprite {
+    const animated = this.controller.resources.animated(name);
+    animated.animationSpeed = 0.2;
+    animated.play();
+    animated.position.set(x * TILE_SIZE, y * TILE_SIZE);
+    this.container.addChild(animated);
+    return animated;
+  }
 }
 
 export class MapCell {
   private readonly dungeon: DungeonMap;
   readonly x: number;
   readonly y: number;
-  private _floor: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private _wall: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private _dropSprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
-  private _drop: Drop | null = null;
-  private _character: CharacterAI | null = null;
+  private _floor: DungeonFloor | null = null;
+  private _wall: DungeonWall | null = null;
+  private _drop: DungeonDrop | null = null;
+  private _object: DungeonObject | null = null;
 
   constructor(dungeon: DungeonMap, x: number, y: number) {
     this.dungeon = dungeon;
@@ -160,79 +177,58 @@ export class MapCell {
     this._floor = null;
     this._wall?.destroy();
     this._wall = null;
-    this._dropSprite?.destroy();
-    this._dropSprite = null;
-    this._character?.destroy();
-    this._character = null;
+    this._drop?.destroy();
+    this._drop = null;
+    this._object?.destroy();
+    this._object = null;
   }
 
-  set floor(name: string | null) {
+  set floorName(name: string | null) {
     this._floor?.destroy();
     this._floor = null;
     if (name) {
-      this._floor = this.sprite(name);
-      this._floor.zIndex = DungeonZIndexes.floor;
+      this._floor = new DefaultDungeonFloor(this.dungeon, this.x, this.y, name);
     }
   }
 
-  get floor(): string | null {
+  get floorName(): string | null {
     return this._floor?.name || null;
+  }
+
+  get floor(): DungeonFloor | null {
+    return this._floor;
   }
 
   get hasFloor(): boolean {
     return !!this._floor;
   }
 
-  get wall(): string | null {
+  get wallName(): string | null {
     return this._wall?.name || null;
   }
 
-  set wall(name: string | null) {
+  set wallName(name: string | null) {
     this._wall?.destroy();
     this._wall = null;
     if (name) {
-      this._wall = this.sprite(name);
-      this._wall.zIndex = this.zIndex + DungeonZIndexes.wall;
+      this._wall = new DungeonWall(this.dungeon, this.x, this.y, name);
     }
   }
 
-  private get zIndex(): number {
-    return this.y * DungeonZIndexes.row;
+  get wall(): DungeonWall | null {
+    return this._wall;
   }
 
-  get hasWall(): boolean {
-    return !!this._wall;
-  }
-
-  set drop(drop: Drop | null) {
-    this._dropSprite?.destroy();
-    this._dropSprite = null;
+  set dropItem(drop: Drop | null) {
+    this._drop?.destroy();
     this._drop = null;
     if (drop) {
-      this._drop = drop;
-      this._dropSprite = drop.sprite();
-      this._dropSprite.position.set(
-        this.x * TILE_SIZE + (TILE_SIZE >> 1) - (this._dropSprite.width >> 1),
-        this.y * TILE_SIZE + TILE_SIZE - 2
-      );
-      this._dropSprite.anchor.set(0, 1);
-      this._dropSprite.zIndex = this.zIndex + DungeonZIndexes.drop;
-      if (this._dropSprite instanceof PIXI.AnimatedSprite) {
-        this._dropSprite.animationSpeed = 0.2;
-        this._dropSprite.play();
-      }
-      this.dungeon.container.addChild(this._dropSprite);
+      this._drop = new DungeonDrop(this.dungeon, this.x, this.y, drop);
     }
   }
 
-  pickedUp(hero: Hero): boolean {
-    if (this._drop?.pickedUp(hero)) {
-      this._dropSprite?.destroy();
-      this._dropSprite = null;
-      this._drop = null;
-      return true;
-    }
-    return false;
+  get drop(): DungeonDrop | null {
+    return this._drop;
   }
 
   get hasDrop(): boolean {
@@ -260,50 +256,225 @@ export class MapCell {
     let remaining_distance = rng.nextFloat() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
       const available = WeaponConfig.configs.filter(c => c.level <= this.dungeon.level);
-      this.drop = rng.choice(available).create(this.dungeon.controller.resources);
+      this.dropItem = rng.choice(available).create(this.dungeon.controller.resources);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
-      this.drop = new HealthBigFlask(resources);
+      this.dropItem = new HealthBigFlask(resources);
     } else if ((remaining_distance -= weight_health_flask) <= 0) {
-      this.drop = new HealthFlask(resources);
+      this.dropItem = new HealthFlask(resources);
     } else if ((remaining_distance - weight_coins) <= 0) {
-      this.drop = new Coins(rng, resources);
+      this.dropItem = new Coins(rng, resources);
     }
     return this.hasDrop;
   }
 
-  get character(): CharacterAI | null {
-    return this._character;
+  get object(): DungeonObject | null {
+    return this._object;
   }
 
-  set character(character: CharacterAI | null) {
-    if (character && !(this._character === null || this._character === character)) {
-      console.log("current char", this._character);
-      console.log("new char", character);
+  set object(object: DungeonObject | null) {
+    if (object && !(this._object === null || this._object === object)) {
+      console.log("current char", this._object);
+      console.log("new char", object);
       throw "error while set char to cell";
     }
-    this._character = character;
+    this._object = object;
   }
 
-  get hasCharacter(): boolean {
-    return this._character != null;
+  get hasObject(): boolean {
+    return this._object != null;
   }
 
-  private sprite(name: string): PIXI.Sprite | PIXI.AnimatedSprite {
-    let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
-    if (!name.endsWith('.png')) {
-      const anim = sprite = this.dungeon.controller.resources.animated(name);
-      anim.animationSpeed = 0.2;
-      anim.play();
-    } else {
-      sprite = this.dungeon.controller.resources.sprite(name);
+  ladder(): void {
+    this._floor?.destroy();
+    this._floor = new DungeonLadder(this.dungeon, this.x, this.y);
+  }
+
+  get interacting(): boolean {
+    return this._floor?.interacting ||
+      this._wall?.interacting ||
+      this._drop?.interacting ||
+      this._object?.interacting || false;
+  }
+
+  interact(hero: HeroAI): void {
+    if (this._object && this._object.interacting) {
+      this._object.interact(hero);
+    } else if (this._drop && this._drop.interacting) {
+      this._drop.interact(hero);
+    } else if (this._wall && this._wall.interacting) {
+      this._wall.interact(hero);
+    } else if (this._floor && this._floor.interacting) {
+      this._floor.interact(hero);
     }
-    sprite.position.set(this.x * TILE_SIZE, this.y * TILE_SIZE);
-    this.dungeon.container.addChild(sprite);
-    return sprite;
   }
 
-  get isLadder(): boolean {
-    return this.floor === 'floor_ladder.png';
+  collide(object: DungeonObject): boolean {
+    return (this._object && this._object.collide(object)) ||
+      // (this._drop && this._drop.collide(object)) || // wall can't collide
+      (this._wall && this._wall.collide(object)) ||
+      // (this._floor && this._floor.collide(object)) || // floor can't collide
+      false;
+  }
+}
+
+export interface DungeonObject {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+
+  readonly static: boolean;
+  readonly interacting: boolean;
+
+  interact(hero: HeroAI): void;
+  collide(object: DungeonObject): boolean;
+
+  destroy(): void;
+}
+
+export abstract class DungeonFloor implements DungeonObject {
+  readonly dungeon: DungeonMap;
+
+  readonly x: number;
+  readonly y: number;
+  readonly height: number = 1;
+  readonly width: number = 1;
+
+  readonly static: boolean = true;
+  abstract readonly interacting: boolean;
+
+  readonly name: string;
+  protected readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+
+  protected constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
+    this.dungeon = dungeon;
+    this.x = x;
+    this.y = y;
+    this.name = name;
+    this.sprite = dungeon.sprite(x, y, name);
+    this.sprite.zIndex = DungeonZIndexes.floor;
+  }
+
+  abstract interact(hero: HeroAI): void;
+
+  collide(_: DungeonObject): boolean {
+    return false;
+  }
+
+  destroy(): void {
+    this.sprite.destroy();
+  }
+}
+
+export class DefaultDungeonFloor extends DungeonFloor {
+  readonly interacting: boolean = false;
+
+  constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
+    super(dungeon, x, y, name);
+  }
+
+  interact(_: HeroAI): void {
+  }
+}
+
+export class DungeonLadder extends DungeonFloor {
+  readonly interacting: boolean = true;
+
+  constructor(dungeon: DungeonMap, x: number, y: number) {
+    super(dungeon, x, y, 'floor_ladder.png');
+  }
+
+  interact(hero: HeroAI): void {
+    this.dungeon.controller.updateHero({
+      level: this.dungeon.level + 1,
+      hero: hero.character,
+    });
+  }
+}
+
+export class DungeonWall implements DungeonObject {
+  readonly dungeon: DungeonMap;
+
+  readonly x: number;
+  readonly y: number;
+  readonly height: number = 1;
+  readonly width: number = 1;
+
+  readonly static: boolean = true;
+  readonly interacting: boolean = false;
+
+  readonly name: string;
+  protected readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+
+  constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
+    this.dungeon = dungeon;
+    this.x = x;
+    this.y = y;
+    this.name = name;
+    this.sprite = dungeon.sprite(x, y, name);
+    this.sprite.zIndex = DungeonZIndexes.wall + y * DungeonZIndexes.row;
+  }
+
+  interact(_: HeroAI): void {
+  }
+
+  collide(_: DungeonObject): boolean {
+    return !this.dungeon.cell(this.x, this.y).hasFloor;
+  }
+
+  destroy(): void {
+    this.sprite.destroy();
+  }
+}
+
+export class DungeonDrop implements DungeonObject {
+  readonly dungeon: DungeonMap;
+  readonly drop: Drop;
+
+  readonly x: number;
+  readonly y: number;
+  readonly height: number = 1;
+  readonly width: number = 1;
+
+  readonly static: boolean = true;
+  readonly interacting: boolean = true;
+
+  private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+
+  constructor(dungeon: DungeonMap, x: number, y: number, drop: Drop) {
+    this.dungeon = dungeon;
+    this.x = x;
+    this.y = y;
+    this.drop = drop;
+    this.sprite = dungeon.sprite(x, y, drop.spriteName);
+    this.sprite.zIndex = DungeonZIndexes.drop + y * DungeonZIndexes.row;
+    this.sprite.x += (TILE_SIZE >> 1);
+    this.sprite.y += TILE_SIZE - 2;
+    this.sprite.anchor.set(0.5, 1);
+    if (this.sprite instanceof PIXI.AnimatedSprite) {
+      this.sprite.animationSpeed = 0.2;
+      this.sprite.play();
+    }
+  }
+
+  pickedUp(hero: Hero): boolean {
+    if (this.drop.pickedUp(hero)) {
+      this.dungeon.cell(this.x, this.y).dropItem = null;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  interact(_: HeroAI): void {
+  }
+
+  collide(_: DungeonObject): boolean {
+    return false;
+  }
+
+  destroy(): void {
+    this.sprite.destroy();
   }
 }
 

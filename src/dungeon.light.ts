@@ -17,6 +17,7 @@ export class DungeonLight {
   private readonly heroLightTexture: PIXI.Texture;
   private readonly fountainRedTexture: PIXI.Texture;
   private readonly fountainBlueTexture: PIXI.Texture;
+  private readonly bonfireTexture: PIXI.Texture;
   private readonly shadowCaster: ShadowCaster;
 
   private readonly lights: LightSource[] = [];
@@ -36,6 +37,7 @@ export class DungeonLight {
     this.heroLightTexture = DungeonLight.gradient("white", 150);
     this.fountainRedTexture = DungeonLight.gradient("rgb(211,78,56)", 50);
     this.fountainBlueTexture = DungeonLight.gradient("rgb(86,152,204)", 50);
+    this.bonfireTexture = DungeonLight.gradient("rgb(255,239,204)", 100);
 
     this.shadowCaster = new ShadowCaster();
 
@@ -48,6 +50,7 @@ export class DungeonLight {
     this.heroLightTexture.destroy();
     this.fountainBlueTexture.destroy();
     this.fountainRedTexture.destroy();
+    this.bonfireTexture.destroy();
     this.container.destroy();
     this.layer.destroy();
   }
@@ -60,7 +63,7 @@ export class DungeonLight {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
         if (cell.hasFloor) {
-          switch (cell.floor) {
+          switch (cell.floorName) {
             case 'wall_fountain_basin_red':
               this.addLight(new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE), LightType.RED_BASIN);
               break;
@@ -78,7 +81,7 @@ export class DungeonLight {
           const has_right = x + 1 < dungeon.width && dungeon.cell(x + 1, y).hasFloor;
 
           let config: WallConfig;
-          const cellWall = cell.wall;
+          const cellWall = cell.wallName;
           if (cellWall && this.config[cellWall]) {
             config = this.config[cellWall] || this.wall_default;
           } else {
@@ -119,6 +122,14 @@ export class DungeonLight {
           position,
           150,
           this.fountainBlueTexture,
+          this.container
+        ));
+        break;
+      case LightType.BONFIRE:
+        this.lights.push(new LightSource(
+          position,
+          250,
+          this.bonfireTexture,
           this.container
         ));
         break;
@@ -359,7 +370,8 @@ interface WallSegment {
 export enum LightType {
   HERO = 0,
   RED_BASIN = 1,
-  BLUE_BASIN = 2
+  BLUE_BASIN = 2,
+  BONFIRE = 3,
 }
 
 class LightSource {
