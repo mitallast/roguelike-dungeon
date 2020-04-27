@@ -3,6 +3,7 @@ import {Hero, HeroAI} from "./hero";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
+import {RNG} from "./rng";
 
 const TILE_SIZE = 16;
 
@@ -29,7 +30,9 @@ export const DungeonZIndexes: DungeonZIndexScheme = {
 export class DungeonMap {
   readonly controller: SceneController;
   readonly ticker: PIXI.Ticker;
+  readonly rng: RNG;
 
+  readonly seed: number;
   readonly level: number;
 
   readonly width: number;
@@ -42,9 +45,11 @@ export class DungeonMap {
   readonly lighting: PIXI.Sprite;
   readonly scale: number = 2;
 
-  constructor(controller: SceneController, ticker: PIXI.Ticker, level: number, width: number, height: number) {
+  constructor(controller: SceneController, ticker: PIXI.Ticker, rng: RNG, seed: number, level: number, width: number, height: number) {
     this.controller = controller;
     this.ticker = ticker;
+    this.rng = rng;
+    this.seed = seed;
     this.level = level;
     this.width = width;
     this.height = height;
@@ -244,7 +249,7 @@ export class MapCell {
     //         if remaining_distance < 0:
     //             return i
 
-    const rng = this.dungeon.controller.rng;
+    const rng = this.dungeon.rng;
     const resources = this.dungeon.controller.resources;
 
     const weight_coins = 20;
@@ -385,10 +390,7 @@ export class DungeonLadder extends DungeonFloor {
   }
 
   interact(hero: HeroAI): void {
-    this.dungeon.controller.updateHero({
-      level: this.dungeon.level + 1,
-      hero: hero.character,
-    });
+    this.dungeon.controller.updateHero(hero.character, this.dungeon.level + 1);
   }
 }
 

@@ -93,7 +93,7 @@ export class BossMonsterAI extends MonsterAI {
       console.warn("no minion config found", this.character.category);
       return null;
     }
-    const config = this.dungeon.controller.rng.choice(minions);
+    const config = this.dungeon.rng.choice(minions);
     const character = new TinyMonster(config, this.dungeon.level);
     return new TinyMonsterAI(character, this.dungeon, x, y);
   }

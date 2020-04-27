@@ -32,6 +32,7 @@ export const Sizes: SizeScheme = {
 export class Button extends PIXI.Container implements Selectable {
   private readonly _width: number;
   private readonly _height: number;
+  private readonly _textSize: number;
   private readonly _text: PIXI.BitmapText;
   private readonly _bg: PIXI.Graphics;
   private _selected: boolean = false;
@@ -41,12 +42,14 @@ export class Button extends PIXI.Container implements Selectable {
     selected?: boolean,
     width?: number
     height?: number
+    textSize?: number
   }) {
     super();
     this._width = options.width || 200;
     this._height = options.height || 24;
+    this._textSize = options.textSize || 16;
     this._bg = new PIXI.Graphics();
-    this._text = new PIXI.BitmapText(options.label, {font: {name: "alagard", size: 16}});
+    this._text = new PIXI.BitmapText(options.label, {font: {name: "alagard", size: this._textSize}});
     this._text.anchor = new PIXI.Point(0.5, 0.5);
     this._text.position.set(this._width >> 1, this._height >> 1);
     this.selected = options.selected || false;

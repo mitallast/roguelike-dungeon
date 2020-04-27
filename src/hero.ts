@@ -67,6 +67,9 @@ export class Hero extends Character {
   private readonly _skillPoints: ObservableVar<number>;
   private readonly _xp: ObservableVar<number>;
 
+  readonly dungeonSeeds = new Map<number, number>();
+  readonly bonfires = new Set<number>();
+
   get level(): Observable<number> {
     return this._level;
   }

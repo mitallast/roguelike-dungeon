@@ -15,6 +15,7 @@ import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
 import {NpcCharacter} from "./npc";
 import * as PIXI from "pixi.js";
+import {BonfireDialogModal} from "./bonfire";
 
 export interface Scene {
   init(): void;
@@ -73,8 +74,11 @@ export class SceneController {
     this.scene = new SelectHeroScene(this);
   }
 
-  updateHero(options: GenerateOptions): void {
-    this.scene = new UpdateHeroScene(this, options);
+  updateHero(hero: Hero, level: number): void {
+    this.scene = new UpdateHeroScene(this, {
+      level: level,
+      hero: hero
+    });
   }
 
   dead(): void {
@@ -111,5 +115,9 @@ export class SceneController {
   showDialog(hero: Hero, npc: NpcCharacter): void {
     const dialog = this.dialogs.dialog(hero, npc);
     this.modal(new DialogModalScene(this, dialog));
+  }
+
+  showBonfire(hero: Hero): void {
+    this.modal(new BonfireDialogModal(this, hero));
   }
 }

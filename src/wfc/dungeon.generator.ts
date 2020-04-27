@@ -5,6 +5,7 @@ import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "./ev
 import {Resolution} from "./model";
 import {Config} from "../tunneler/config";
 import {yields} from "../concurency";
+import {RNG} from "../rng";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
   private model: EvenSimpleTiledModel | null = null;
@@ -21,17 +22,28 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     const tileset: TilesetRules = this.controller.app.loader.resources['dungeon.rules.4.json'].data;
     const config: Config = this.controller.app.loader.resources['dungeon.design.json'].data;
 
+    const hero = options.hero;
+    let seed: number;
+    if (hero.dungeonSeeds.has(options.level)) {
+      seed = hero.dungeonSeeds.get(options.level)!;
+      console.log(`dungeon level ${options.level} exists seed: ${seed}`);
+    } else {
+      seed = this.controller.rng.nextInt();
+      console.log(`dungeon level ${options.level} new seed: ${seed}`);
+      hero.dungeonSeeds.set(options.level, seed);
+    }
+    const rng = new RNG(seed);
+
     await yields(10);
 
-    const model = this.model = new EvenSimpleTiledModel(this.resources, tileset, this.rng, config.width, config.height, [
-      new DungeonCrawlerConstraint(config)
-    ]);
+    const crawler = new DungeonCrawlerConstraint(config);
+    this.model = new EvenSimpleTiledModel(this.resources, tileset, rng, config.width, config.height, [crawler]);
 
     console.time("model loop run");
     let state;
     while (true) {
       console.time("model run");
-      state = await model.run(10000);
+      state = await this.model.run(10000);
       console.timeEnd("model run");
       if (state !== Resolution.Decided) {
         console.error("failed run model");
@@ -43,12 +55,12 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    const dungeon = this.createDungeon(options, model.FMX, model.FMY);
+    const dungeon = this.createDungeon(rng, seed, options.level, this.model.FMX, this.model.FMY);
 
-    const observed = model.observed!;
-    for (let y = 0; y < model.FMY; y++) {
-      for (let x = 0; x < model.FMX; x++) {
-        const i = x + y * model.FMX;
+    const observed = this.model.observed!;
+    for (let y = 0; y < this.model.FMY; y++) {
+      for (let x = 0; x < this.model.FMX; x++) {
+        const i = x + y * this.model.FMX;
         const [floor, wall] = tileset.cells[observed[i]];
         if (floor >= 0) {
           dungeon.cell(x, y).floorName = tileset.tiles[floor];
@@ -60,36 +72,36 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     }
 
     await yields();
-    this.replaceFloorRandomly(dungeon);
+    this.replaceFloorRandomly(rng, dungeon);
 
     await yields();
-    this.replaceWallRandomly(dungeon);
+    this.replaceWallRandomly(rng, dungeon);
 
-    const hero = this.placeHero(dungeon, options.hero);
+    const heroAI = this.placeHero(rng, dungeon, options.hero);
     await yields();
 
-    this.placeLadder(dungeon, hero);
+    this.placeLadder(rng, dungeon, heroAI);
     await yields();
 
     const is_bonfire = options.level % 5 === 1
     if (is_bonfire) {
-      this.placeBonfire(dungeon, hero);
+      this.placeBonfire(rng, dungeon, heroAI);
       await yields();
     }
 
-    this.placeNpc(dungeon, hero);
+    this.placeNpc(rng, dungeon, heroAI);
     await yields();
 
-    this.placeMonsters(dungeon, hero);
+    this.placeMonsters(rng, dungeon, heroAI);
     await yields();
 
     const is_boss = options.level % 5 === 0;
     if (is_boss) {
-      this.placeBoss(dungeon, hero);
+      this.placeBoss(rng, dungeon, heroAI);
       await yields();
     }
 
-    this.placeDrop(dungeon);
+    this.placeDrop(rng, dungeon);
     await yields();
 
     dungeon.light.loadMap();
