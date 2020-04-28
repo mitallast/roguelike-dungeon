@@ -20,8 +20,8 @@ export class Bonfire implements DungeonObject {
 
   readonly x: number;
   readonly y: number;
-  readonly width: number = 2;
-  readonly height: number = 2;
+  readonly width: number = 1;
+  readonly height: number = 1;
 
   readonly static: boolean = true;
   readonly interacting: boolean = true;
@@ -37,7 +37,6 @@ export class Bonfire implements DungeonObject {
     this._state = BonfireState.UNLIT;
     this._sprite = this.dungeon.animated(this.x, this.y, `bonfire_unlit`);
     this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
-    this._sprite.anchor.set(0, 0.75);
     this.dungeon.set(this.x, this.y, this);
 
     if (light) this.light();
@@ -69,9 +68,8 @@ export class Bonfire implements DungeonObject {
     if (this._state === BonfireState.UNLIT) {
       this._state = BonfireState.LIGHT;
       this._sprite.destroy();
-      this._sprite = this.dungeon.animated(this.x, this.y, "bonfire_lit");
+      this._sprite = this.dungeon.animated(this.x, this.y, "bonfire_light");
       this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
-      this._sprite.anchor.set(0, 0.75);
       this._sprite.loop = false;
       this._sprite.onComplete = () => this.lit();
       this.dungeon.light.addLight(
@@ -87,9 +85,8 @@ export class Bonfire implements DungeonObject {
   private lit(): void {
     this._state = BonfireState.LIT;
     this._sprite?.destroy();
-    this._sprite = this.dungeon.animated(this.x, this.y, "bonfire");
+    this._sprite = this.dungeon.animated(this.x, this.y, "bonfire_lit");
     this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
-    this._sprite.anchor.set(0, 0.75);
   }
 }
 
