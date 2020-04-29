@@ -17,8 +17,13 @@ export class ObservableVar<T> implements Observable<T> {
 
   set(value: T) {
     this.value = value;
-    for (let listener of this.listeners) {
-      listener.send(this.value);
+    for (let i = this.listeners.length - 1; i >= 0; i--) {
+      let listener = this.listeners[i];
+      if (listener.gc) {
+        this.listeners.splice(i, 1);
+      } else {
+        listener.send(this.value);
+      }
     }
   }
 
@@ -37,10 +42,7 @@ export class ObservableVar<T> implements Observable<T> {
   }
 
   unsubscribe(callback: (value: T) => void, context: any): void {
-    const index = this.listeners.findIndex(l => l.matches(callback, context));
-    if (index >= 0) {
-      this.listeners.splice(index, 1);
-    }
+    this.listeners.find(l => l.matches(callback, context))?.unsubscribe();
   }
 }
 
@@ -48,8 +50,13 @@ export class EventPublisher<T> implements Publisher<T> {
   private readonly listeners: Listener<T>[] = [];
 
   send(value: T): void {
-    for (let listener of this.listeners) {
-      listener.send(value);
+    for (let i = this.listeners.length - 1; i >= 0; i--) {
+      let listener = this.listeners[i];
+      if (listener.gc) {
+        this.listeners.splice(i, 1);
+      } else {
+        listener.send(value);
+      }
     }
   }
 
@@ -59,16 +66,18 @@ export class EventPublisher<T> implements Publisher<T> {
   }
 
   unsubscribe(callback: (value: T) => void, context: any): void {
-    const index = this.listeners.findIndex(l => l.matches(callback, context));
-    if (index >= 0) {
-      this.listeners.splice(index, 1);
-    }
+    this.listeners.find(l => l.matches(callback, context))?.unsubscribe();
   }
 }
 
 class Listener<T> {
   private readonly callback: (value: T) => void;
   private readonly context: any;
+  private _gc: boolean = false;
+
+  get gc(): boolean {
+    return this._gc;
+  }
 
   constructor(callback: (value: T) => void, context: any) {
     this.callback = callback;
@@ -85,5 +94,9 @@ class Listener<T> {
     } else {
       this.callback(value);
     }
+  }
+
+  unsubscribe(): void {
+    this._gc = true;
   }
 }
