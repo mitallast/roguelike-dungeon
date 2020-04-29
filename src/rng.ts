@@ -42,7 +42,7 @@ export class RNG {
     return start + Math.floor(randomUnder1 * rangeSize);
   }
 
-  choice<T>(array: T[]): T {
+  choice<T>(array: readonly T[]): T {
     return array[this.nextRange(0, array.length)];
   }
 

@@ -2,6 +2,7 @@ import {BaseCharacterAI, Character} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
 import {SceneController} from "./scene";
+import {Weapon} from "./drop";
 import * as PIXI from "pixi.js";
 
 export interface NpcConfig {
@@ -48,7 +49,7 @@ export class HealSkill extends NpcSkill {
   }
 }
 
-export const npcCharacters: NpcConfig[] = [
+export const npcCharacters: readonly NpcConfig[] = [
   {name: "alchemist", width: 1, height: 1, skills: [SellingSkill.id]},
   {name: "archer", width: 1, height: 1, skills: [SellingSkill.id]},
   {name: "bishop", width: 1, height: 2, skills: []},
@@ -99,6 +100,9 @@ export class NpcCharacter extends Character {
     this._skill[id] = skill;
   }
 
+  readonly damage: number = 1;
+  readonly weapon: Weapon | null = null;
+
   constructor(name: string) {
     super({
       name: name,
@@ -148,8 +152,8 @@ export class NpcAI extends BaseCharacterAI {
     return false;
   }
 
-  protected hit(): void {
-    this.idle();
+  protected scanHit(): void {
+
   }
 
   interact(hero: HeroAI): void {

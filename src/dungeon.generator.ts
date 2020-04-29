@@ -3,8 +3,8 @@ import {RNG} from "./rng";
 import {Hero, HeroAI} from "./hero";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {TinyMonster, TinyMonsterAI, tinyMonsters} from "./tiny.monster";
-import {BossConfig, BossMonster, BossMonsterAI, bossMonsters} from "./boss.monster";
+import {TinyMonsterAI, tinyMonsters} from "./tiny.monster";
+import {BossConfig, BossMonsterAI, bossMonsters} from "./boss.monster";
 import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
 import {MonsterCategory} from "./monster";
@@ -206,8 +206,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const i = rng.nextRange(0, free.length);
     let [cell] = free.splice(i, 1);
     const config = rng.choice(filtered_monsters);
-    const monster = new TinyMonster(config, 1);
-    new TinyMonsterAI(monster, dungeon, cell.x, cell.y);
+    new TinyMonsterAI(config, dungeon, cell.x, cell.y);
     return true;
   }
 
@@ -221,8 +220,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = rng.nextRange(0, free.length);
       let [cell] = free.splice(i, 1);
       const config = this.bossConfig(dungeon);
-      const boss = new BossMonster(config, dungeon.level);
-      new BossMonsterAI(boss, dungeon, cell.x, cell.y);
+      new BossMonsterAI(config, dungeon, cell.x, cell.y);
     } else {
       console.error("boss not placed");
     }

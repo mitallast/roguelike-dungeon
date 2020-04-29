@@ -1,9 +1,9 @@
 import {Scene, SceneController} from "./scene";
 import {heroCharacterNames, Hero} from "./hero";
-import {WeaponConfig} from "./drop";
+import {Weapon, weapons} from "./drop";
 import {Colors, Selectable, SelectableGrid} from "./ui";
-import * as PIXI from "pixi.js";
 import {Resources} from "./resources";
+import * as PIXI from "pixi.js";
 
 const margin = 40;
 const title_h = 32;
@@ -75,7 +75,7 @@ export class SelectHeroScene implements Scene {
 
   private select(name: string): void {
     const hero = Hero.load(name, this.controller.persistent);
-    const weapon = WeaponConfig.configs[0].create(this.controller.resources);
+    const weapon = new Weapon(this.controller.resources, weapons.knife);
     hero.inventory.equipment.weapon.set(weapon);
     this.controller.generateDungeon({
       level: 1,

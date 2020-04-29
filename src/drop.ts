@@ -119,52 +119,76 @@ export class HealthBigFlask implements UsableDrop {
   };
 }
 
-export class WeaponConfig {
+export interface WeaponConfig {
   readonly name: string;
   readonly speed: number;
   readonly distance: number;
   readonly damage: number;
   readonly level: number;
   readonly price: number;
-
-  constructor(name: string, speed: number, distance: number, damage: number, level: number, price: number) {
-    this.name = name;
-    this.speed = speed;
-    this.distance = distance;
-    this.damage = damage;
-    this.level = level;
-    this.price = price;
-  }
-
-  create(resources: Resources): Weapon {
-    return new Weapon(resources, this);
-  }
-
-  static configs: WeaponConfig[] = [
-    new WeaponConfig("weapon_knife", 1.4, 1, 1.5, 1, 12),
-    new WeaponConfig("weapon_rusty_sword", 1.0, 1, 4, 1, 15),
-    new WeaponConfig("weapon_regular_sword", 1.0, 1, 5, 3, 20),
-    new WeaponConfig("weapon_red_gem_sword", 1.0, 1, 6, 3, 30),
-
-    new WeaponConfig("weapon_hammer", 0.7, 1, 7, 5, 38),
-    new WeaponConfig("weapon_big_hammer", 0.5, 2, 10, 5, 40),
-    new WeaponConfig("weapon_baton_with_spikes", 0.6, 1, 7, 5, 42),
-    new WeaponConfig("weapon_mace", 0.6, 1, 7, 5, 45),
-
-    new WeaponConfig("weapon_katana", 1.5, 1, 8, 7, 100),
-    new WeaponConfig("weapon_saw_sword", 1.5, 1, 9, 7, 110),
-    new WeaponConfig("weapon_anime_sword", 0.7, 1, 12, 7, 130),
-    new WeaponConfig("weapon_axe", 0.8, 1, 12, 7, 115),
-
-    new WeaponConfig("weapon_machete", 1, 1, 11, 9, 150),
-    new WeaponConfig("weapon_cleaver", 1, 1, 12, 9, 160),
-    new WeaponConfig("weapon_duel_sword", 1.5, 1, 13, 9, 170),
-    new WeaponConfig("weapon_knight_sword", 1.5, 1, 14, 9, 180),
-
-    new WeaponConfig("weapon_golden_sword", 1.5, 1, 15, 11, 220),
-    new WeaponConfig("weapon_lavish_sword", 1.5, 1, 16, 11, 240),
-  ];
 }
+
+export interface Weapons extends Record<string, WeaponConfig> {
+  readonly knife: WeaponConfig;
+  readonly rusty_sword: WeaponConfig;
+  readonly regular_sword: WeaponConfig;
+  readonly red_gem_sword: WeaponConfig;
+  readonly hammer: WeaponConfig;
+  readonly big_hammer: WeaponConfig;
+  readonly baton_with_spikes: WeaponConfig;
+  readonly mace: WeaponConfig;
+  readonly katana: WeaponConfig;
+  readonly saw_sword: WeaponConfig;
+  readonly anime_sword: WeaponConfig;
+  readonly axe: WeaponConfig;
+  readonly machete: WeaponConfig;
+  readonly cleaver: WeaponConfig;
+  readonly duel_sword: WeaponConfig;
+  readonly knight_sword: WeaponConfig;
+  readonly golden_sword: WeaponConfig;
+  readonly lavish_sword: WeaponConfig;
+}
+
+export const weapons: Weapons = {
+  knife: {name: "weapon_knife", speed: 1.4, distance: 1, damage: 2, level: 1, price: 12},
+  rusty_sword: {name: "weapon_rusty_sword", speed: 1.0, distance: 1, damage: 4, level: 1, price: 15},
+  regular_sword: {name: "weapon_regular_sword", speed: 1.0, distance: 1, damage: 5, level: 3, price: 20},
+  red_gem_sword: {name: "weapon_red_gem_sword", speed: 1.0, distance: 1, damage: 6, level: 3, price: 30},
+  hammer: {name: "weapon_hammer", speed: 0.7, distance: 1, damage: 7, level: 5, price: 38},
+  big_hammer: {name: "weapon_big_hammer", speed: 0.5, distance: 2, damage: 10, level: 5, price: 40},
+  baton_with_spikes: {name: "weapon_baton_with_spikes", speed: 0.6, distance: 1, damage: 7, level: 5, price: 42},
+  mace: {name: "weapon_mace", speed: 0.6, distance: 1, damage: 7, level: 5, price: 45},
+  katana: {name: "weapon_katana", speed: 1.5, distance: 1, damage: 8, level: 7, price: 100},
+  saw_sword: {name: "weapon_saw_sword", speed: 1.5, distance: 1, damage: 9, level: 7, price: 110},
+  anime_sword: {name: "weapon_anime_sword", speed: 0.7, distance: 1, damage: 12, level: 7, price: 130},
+  axe: {name: "weapon_axe", speed: 0.8, distance: 1, damage: 12, level: 7, price: 115},
+  machete: {name: "weapon_machete", speed: 1.0, distance: 1, damage: 11, level: 9, price: 150},
+  cleaver: {name: "weapon_cleaver", speed: 1.0, distance: 1, damage: 12, level: 9, price: 160},
+  duel_sword: {name: "weapon_duel_sword", speed: 1.5, distance: 1, damage: 13, level: 9, price: 170},
+  knight_sword: {name: "weapon_knight_sword", speed: 1.5, distance: 1, damage: 14, level: 9, price: 180},
+  golden_sword: {name: "weapon_golden_sword", speed: 1.5, distance: 1, damage: 15, level: 11, price: 220},
+  lavish_sword: {name: "weapon_lavish_sword", speed: 1.5, distance: 1, damage: 16, level: 11, price: 240},
+};
+
+export interface MonsterWeapons extends Record<string, WeaponConfig> {
+  readonly knife: WeaponConfig;
+  readonly baton_with_spikes: WeaponConfig;
+  readonly anime_sword: WeaponConfig;
+  readonly big_hammer: WeaponConfig;
+  readonly mace: WeaponConfig;
+  readonly cleaver: WeaponConfig;
+}
+
+export const monsterWeapons: MonsterWeapons = {
+  knife: {name: "weapon_knife", speed: 0.7, distance: 1, damage: 0.5, level: 1, price: 0},
+  baton_with_spikes: {name: "weapon_baton_with_spikes", speed: 0.3, distance: 1, damage: 3, level: 5, price: 0},
+  anime_sword: {name: "weapon_anime_sword", speed: 0.4, distance: 1, damage: 4, level: 10, price: 0},
+  big_hammer: {name: "weapon_big_hammer", speed: 0.3, distance: 2, damage: 5, level: 15, price: 0},
+  mace: {name: "weapon_mace", speed: 0.6, distance: 1, damage: 6, level: 20, price: 0},
+  cleaver: {name: "weapon_cleaver", speed: 0.5, distance: 1, damage: 7, level: 25, price: 0},
+};
+
+export const weaponConfigs: readonly WeaponConfig[] = Object.getOwnPropertyNames(weapons).map(w => weapons[w]);
 
 export class Weapon implements UsableDrop {
   private readonly resources: Resources;
@@ -217,6 +241,25 @@ export class Weapon implements UsableDrop {
     cell.clear();
     if (prev) {
       cell.set(prev);
+    }
+  }
+
+  static create(resources: Resources, rng: RNG, level: number): Weapon | null {
+    const available = weaponConfigs.filter(c => c.level <= level);
+    if (available.length > 0) {
+      const config = rng.choice(available);
+      return new Weapon(resources, config);
+    } else {
+      return null;
+    }
+  }
+
+  static select(resources: Resources, rng: RNG, weapons: readonly WeaponConfig[]): Weapon | null {
+    if (weapons.length > 0) {
+      const config = rng.choice(weapons);
+      return new Weapon(resources, config);
+    } else {
+      return null;
     }
   }
 }

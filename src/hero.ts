@@ -1,5 +1,5 @@
 import {Inventory} from "./inventory";
-import {BaseCharacterAI, Character, HitAnimation, IdleAnimation, ScanDirection} from "./character";
+import {BaseCharacterAI, Character, IdleAnimation, ScanDirection} from "./character";
 import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {Observable, ObservableVar} from "./observable";
@@ -56,8 +56,11 @@ export class Hero extends Character {
   private readonly _baseDamage: ObservableVar<number>;
 
   get damage(): number {
-    const weapon = this.inventory.equipment.weapon.item.get() as Weapon;
-    return this._baseDamage.get() + (weapon?.damage || 0);
+    return this._baseDamage.get() + (this.weapon?.damage || 0);
+  }
+
+  get weapon(): Weapon | null {
+    return this.inventory.equipment.weapon.item.get() as Weapon || null;
   }
 
   readonly inventory: Inventory = new Inventory(this);
@@ -260,6 +263,7 @@ export class HeroAI extends BaseCharacterAI {
         }
 
         if (triggered || once) {
+          this.lookAtMonsters();
           this.hit();
           return true;
         }
@@ -296,8 +300,8 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  private scanHit() {
-    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+  protected scanHit(): void {
+    const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
     const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const monsters = this.scanMonsters(direction, distance);
@@ -305,30 +309,12 @@ export class HeroAI extends BaseCharacterAI {
       monster.character.hitDamage(this.character, this.character.damage);
     }
     if (monsters.length > 0) {
-      const weapon = this.character.inventory.equipment.weapon.item.get();
-      const speed = weapon ? (weapon as Weapon).speed : 1;
-      PIXI.sound.play('hit_damage', {speed: speed});
+      PIXI.sound.play('hit_damage', {speed: weapon?.speed || 1});
     }
   }
 
-  protected hit(): void {
-    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
-    this.animation = new HitAnimation(this, this.dungeon.ticker, {
-      sprite: this.character.name + '_idle',
-      speed: weapon?.speed || this.character.speed,
-      curve: weapon?.curve,
-      start: () => this.lookAtMonsters(),
-      finish: () => {
-        this.scanHit();
-        if (!this.action(true)) {
-          this.idle();
-        }
-      },
-    });
-  }
-
   protected lookAtMonsters(): void {
-    const weapon = this.character.inventory.equipment.weapon.item.get() as Weapon;
+    const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
     const leftHealthSum = this.monstersHealth(ScanDirection.LEFT, distance);
     const rightHealthSum = this.monstersHealth(ScanDirection.RIGHT, distance);

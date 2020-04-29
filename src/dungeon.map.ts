@@ -1,4 +1,4 @@
-import {Coins, Drop, HealthBigFlask, HealthFlask, WeaponConfig} from "./drop";
+import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "./drop";
 import {Hero, HeroAI} from "./hero";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
@@ -260,8 +260,7 @@ export class MapCell {
 
     let remaining_distance = rng.nextFloat() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
-      const available = WeaponConfig.configs.filter(c => c.level <= this.dungeon.level);
-      this.dropItem = rng.choice(available).create(this.dungeon.controller.resources);
+      this.dropItem = Weapon.create(resources, rng, this.dungeon.level);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
       this.dropItem = new HealthBigFlask(resources);
     } else if ((remaining_distance -= weight_health_flask) <= 0) {

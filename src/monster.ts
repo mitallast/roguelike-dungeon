@@ -1,14 +1,7 @@
 import {DungeonMap} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
-import {
-  BaseCharacterAI,
-  Character,
-  CharacterAI,
-  CharacterViewOptions,
-  HitAnimation,
-  IdleAnimation,
-  ScanDirection
-} from "./character";
+import {BaseCharacterAI, Character, CharacterAI, CharacterViewOptions, IdleAnimation, ScanDirection} from "./character";
+import {Weapon} from "./drop";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -32,12 +25,18 @@ export enum MonsterState {
 export abstract class MonsterCharacter extends Character {
   readonly level: number;
   readonly luck: number;
-  readonly damage: number;
+  readonly baseDamage: number;
   readonly xp: number;
 
   readonly category: MonsterCategory;
   readonly type: MonsterType;
   readonly spawn: number;
+
+  readonly weapon: Weapon | null;
+
+  get damage(): number {
+    return this.baseDamage + (this.weapon?.damage || 0);
+  }
 
   protected constructor(options: {
     name: string,
@@ -45,20 +44,22 @@ export abstract class MonsterCharacter extends Character {
     healthMax: number,
     level: number,
     luck: number,
-    damage: number,
+    baseDamage: number,
     xp: number,
     category: MonsterCategory,
     type: MonsterType,
-    spawn: number
+    spawn: number,
+    weapon: Weapon | null,
   }) {
     super(options);
     this.level = options.level;
     this.luck = options.luck;
-    this.damage = options.damage;
+    this.baseDamage = options.baseDamage;
     this.xp = options.xp;
     this.category = options.category;
     this.type = options.type;
     this.spawn = options.spawn;
+    this.weapon = options.weapon
   }
 }
 
@@ -132,12 +133,13 @@ export abstract class MonsterAI extends BaseCharacterAI {
   protected moveToHero(): boolean {
     const [hero] = this.scanHero(ScanDirection.AROUND, this.max_distance);
     if (hero) {
+      this.lookAt(hero);
       this.sendAlarm(hero);
       const dist_x = Math.abs(this.x - hero.x);
       const dist_y = Math.abs(this.y - hero.y);
       if (dist_x > this.width || dist_y > this.height) {
         return this.moveTo(hero);
-      } else {
+      } else if (this.character.luck < this.dungeon.rng.nextFloat()) {
         this.hit();
         return true;
       }
@@ -167,20 +169,14 @@ export abstract class MonsterAI extends BaseCharacterAI {
     }
   }
 
-  protected hit(): void {
-    this.animation = new HitAnimation(this, this.dungeon.ticker, {
-      sprite: this.character.name + '_idle',
-      speed: this.character.speed,
-      finish: () => {
-        const [hero] = this.scanHero(ScanDirection.AROUND, 1);
-        if (hero && Math.random() < this.character.luck) {
-          hero.character.hitDamage(this.character, this.character.damage);
-        }
-        if (!this.action(true)) {
-          this.idle();
-        }
-      }
-    });
+  protected scanHit(): void {
+    const weapon = this.character.weapon;
+    const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+    const distance = weapon?.distance || 1;
+    const heroes = this.scanHero(direction, distance);
+    for (const hero of heroes) {
+      hero.character.hitDamage(this.character, this.character.damage);
+    }
   }
 
   protected spawnMinions(): boolean {

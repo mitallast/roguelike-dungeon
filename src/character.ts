@@ -39,6 +39,9 @@ export abstract class Character {
     return this._killedBy;
   }
 
+  abstract readonly weapon: Weapon | null;
+  abstract readonly damage: number;
+
   protected constructor(options: {
     name: string,
     speed: number,
@@ -276,7 +279,22 @@ export abstract class BaseCharacterAI implements DungeonObject {
     });
   }
 
-  protected abstract hit(): void;
+  protected abstract scanHit(): void;
+
+  protected hit(): void {
+    const weapon = this.character.weapon;
+    this.animation = new HitAnimation(this, this.dungeon.ticker, {
+      sprite: this.character.name + '_idle',
+      speed: weapon?.speed || this.character.speed,
+      curve: weapon?.curve,
+      finish: () => {
+        this.scanHit();
+        if (!this.action(true)) {
+          this.idle();
+        }
+      },
+    });
+  }
 
   protected abstract action(finished: boolean): boolean;
 
@@ -337,8 +355,6 @@ export abstract class BaseCharacterAI implements DungeonObject {
     const sy = y0 < y1 ? 1 : -1;
 
     let err = (dx > dy ? dx : -dy) / 2;
-
-    console.log(`raycast is visible: ${x0}:${y0} to ${x1}:${y1}, dx=${dx} dy=${dy} err=${err}`);
 
     while (true) {
       if (x0 === x1 && y0 === y1) break;

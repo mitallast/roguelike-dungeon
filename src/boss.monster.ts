@@ -1,24 +1,41 @@
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {MonsterAI, MonsterCategory, MonsterCharacter, MonsterType} from "./monster";
-import {TinyMonster, TinyMonsterAI, tinyMonsters} from "./tiny.monster"
+import {TinyMonsterAI, tinyMonsters} from "./tiny.monster"
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
-import {IdleAnimation} from "./character";
+import {WeaponConfig, monsterWeapons, Weapon} from "./drop";
 import * as PIXI from 'pixi.js';
 
 export interface BossConfig {
   readonly name: string;
   readonly category: MonsterCategory;
+  readonly weapons: readonly WeaponConfig[];
 }
 
 export const bossMonsters: BossConfig[] = [
-  {name: "big_zombie", category: MonsterCategory.ZOMBIE},
-  {name: "big_demon", category: MonsterCategory.DEMON},
-  {name: "ogre", category: MonsterCategory.ORC},
+  {
+    name: "big_zombie", category: MonsterCategory.ZOMBIE, weapons: [
+      monsterWeapons.anime_sword,
+      monsterWeapons.baton_with_spikes,
+      monsterWeapons.big_hammer,
+      monsterWeapons.cleaver,
+      monsterWeapons.mace,
+    ]
+  },
+  {name: "big_demon", category: MonsterCategory.DEMON, weapons: []},
+  {
+    name: "ogre", category: MonsterCategory.ORC, weapons: [
+      monsterWeapons.anime_sword,
+      monsterWeapons.baton_with_spikes,
+      monsterWeapons.big_hammer,
+      monsterWeapons.cleaver,
+      monsterWeapons.mace,
+    ]
+  },
 ];
 
 export class BossMonster extends MonsterCharacter {
-  constructor(config: BossConfig, level: number) {
+  constructor(config: BossConfig, level: number, weapon: Weapon | null) {
     super({
       name: config.name,
       category: config.category,
@@ -27,9 +44,10 @@ export class BossMonster extends MonsterCharacter {
       healthMax: 50 + Math.floor(level * 10),
       level: level,
       luck: 0.4,
-      damage: 7 + 0.5 * level,
+      baseDamage: 5 + 0.5 * level,
       xp: 100 + 50 * level,
       spawn: 5,
+      weapon: weapon,
     });
   }
 }
@@ -38,7 +56,7 @@ export class BossMonsterAI extends MonsterAI {
   readonly character: BossMonster;
   readonly max_distance: number = 7;
 
-  constructor(character: BossMonster, dungeon: DungeonMap, x: number, y: number) {
+  constructor(config: BossConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
       width: 2,
       height: 2,
@@ -46,7 +64,9 @@ export class BossMonsterAI extends MonsterAI {
       y: y,
       zIndex: DungeonZIndexes.character
     });
-    this.character = character;
+    const weapon = Weapon.select(this.dungeon.controller.resources, this.dungeon.rng, config.weapons);
+    this.character = new BossMonster(config, dungeon.level, weapon);
+    this.view.setWeapon(this.character.weapon);
     this.init();
 
     const c_w = dungeon.controller.app.screen.width;
@@ -57,24 +77,22 @@ export class BossMonsterAI extends MonsterAI {
   }
 
   protected action(finished: boolean): boolean {
-    if (!this.character.dead.get()) {
-      const idle = this.animation instanceof IdleAnimation;
-
-      if (finished && this.spawnMinions()) {
+    if (!this.character.dead.get() && finished) {
+      if (this.spawnMinions()) {
         return false;
       }
 
-      if ((idle || finished) && this.moveToHero()) {
+      if (this.moveToHero()) {
         return true;
       }
 
-      if ((idle || finished) && this.moveByPath()) {
+      if (this.moveByPath()) {
         return true;
       }
 
       this.ready();
 
-      if (finished && this.randomMove()) {
+      if (this.randomMove()) {
         return true;
       }
     }
@@ -94,8 +112,7 @@ export class BossMonsterAI extends MonsterAI {
       return null;
     }
     const config = this.dungeon.rng.choice(minions);
-    const character = new TinyMonster(config, this.dungeon.level);
-    return new TinyMonsterAI(character, this.dungeon, x, y);
+    return new TinyMonsterAI(config, this.dungeon, x, y);
   }
 }
 
@@ -114,9 +131,9 @@ export class BossHealthView extends PIXI.Container {
 
     const HEALTH_MAX_WIDTH = 500;
     const HEALTH_WIDTH = 4;
-    this.pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / boss.healthMax.get()));
+    this.pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / this.boss.healthMax.get()));
 
-    this.widthMax = this.pointWidth * boss.healthMax.get();
+    this.widthMax = this.pointWidth * this.boss.healthMax.get();
 
     this.health = new BarView({
       color: Colors.uiRed,
@@ -126,16 +143,17 @@ export class BossHealthView extends PIXI.Container {
     this.health.position.set(-(this.widthMax >> 1), 0);
     this.addChild(this.health);
 
-    boss.health.subscribe(this.updateHealth, this);
-    boss.dead.subscribe(this.updateDead, this);
+    this.boss.health.subscribe(this.updateHealth, this);
+    this.boss.dead.subscribe(this.updateDead, this);
   }
 
   destroy(): void {
     if (!this.destroyed) {
-      super.destroy({children: true});
       this.destroyed = true;
       this.boss.health.unsubscribe(this.updateHealth, this);
       this.boss.dead.unsubscribe(this.updateDead, this);
+      this.health.destroy();
+      super.destroy();
     }
   }
 
