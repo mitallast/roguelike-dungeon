@@ -95,7 +95,7 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     this.placeMonsters(rng, dungeon, heroAI);
     await yields();
 
-    const is_boss = true; // options.level % 5 === 0;
+    const is_boss = options.level % 5 === 0;
     if (is_boss) {
       this.placeBoss(rng, dungeon, heroAI);
       await yields();
