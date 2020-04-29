@@ -214,7 +214,8 @@ export abstract class MonsterAI extends BaseCharacterAI {
   protected abstract spawnMinion(x: number, y: number): MonsterAI | null;
 
   protected scanHero(direction: ScanDirection, max_distance: number): HeroAI[] {
-    return this.scanObjects(direction, max_distance, c => c instanceof HeroAI) as HeroAI[];
+    return this.scanObjects(direction, max_distance, c => c instanceof HeroAI)
+      .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroAI[];
   }
 
   protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
