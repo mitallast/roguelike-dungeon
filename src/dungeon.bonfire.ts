@@ -13,7 +13,7 @@ export enum BonfireState {
   LIT = 2
 }
 
-export class Bonfire implements DungeonObject {
+export class DungeonBonfire implements DungeonObject {
   private readonly dungeon: DungeonMap;
   private _sprite: PIXI.AnimatedSprite;
   private _state: BonfireState;
@@ -90,7 +90,7 @@ export class Bonfire implements DungeonObject {
   }
 }
 
-export class BonfireDialogModal implements ModalScene {
+export class DungeonBonfireDialogModal implements ModalScene {
   private readonly controller: SceneController;
   private readonly hero: Hero;
 

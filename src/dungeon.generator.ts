@@ -8,7 +8,7 @@ import {BossConfig, BossMonsterAI, bossMonsters} from "./boss.monster";
 import {NpcAI, npcCharacters} from "./npc";
 import {LightType} from "./dungeon.light";
 import {MonsterCategory} from "./monster";
-import {Bonfire} from "./bonfire";
+import {DungeonBonfire} from "./dungeon.bonfire";
 import * as PIXI from 'pixi.js';
 
 export interface GenerateOptions {
@@ -286,7 +286,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     rng.choice(free)[0].ladder();
   }
 
-  protected placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroAI): Bonfire {
+  protected placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroAI): DungeonBonfire {
     const max_hero_distance = 10;
     const free = this.findFreePositions(dungeon, 2, 2).filter(cell => {
       return this.distance(hero, cell) < max_hero_distance;
@@ -294,7 +294,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     if (free.length > 0) {
       const cell = rng.choice(free);
       const light = hero.character.bonfires.has(dungeon.level);
-      return new Bonfire(dungeon, cell.x, cell.y, light);
+      return new DungeonBonfire(dungeon, cell.x, cell.y, light);
     } else {
       throw "bonfire not placed";
     }

@@ -15,7 +15,7 @@ import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
 import {NpcCharacter} from "./npc";
 import * as PIXI from "pixi.js";
-import {BonfireDialogModal} from "./bonfire";
+import {DungeonBonfireDialogModal} from "./dungeon.bonfire";
 
 export interface Scene {
   init(): void;
@@ -118,6 +118,6 @@ export class SceneController {
   }
 
   showBonfire(hero: Hero): void {
-    this.modal(new BonfireDialogModal(this, hero));
+    this.modal(new DungeonBonfireDialogModal(this, hero));
   }
 }
