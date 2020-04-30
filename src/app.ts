@@ -1,21 +1,16 @@
+import "pixi.js";
+import "pixi-layers";
+import "pixi-sound";
+
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
 import {Colors} from "./ui";
-import * as PIXI from 'pixi.js';
-import * as sound from "pixi-sound";
-
-// @ts-ignore
-PIXI.sound = sound;
-
-window.PIXI = PIXI;
-import "pixi-layers";
 
 // import {DungeonDesignEditor} from "./tunneler/editor";
 // import {Editor} from "./editor";
 // import {RulesEditor} from "./wfc/rules.editor";
 
 (async function () {
-
   PIXI.settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
   PIXI.sound.volumeAll = 0.5;
 
