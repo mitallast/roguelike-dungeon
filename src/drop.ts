@@ -34,7 +34,7 @@ export class Coins implements Drop {
 
   constructor(rng: RNG, resources: Resources) {
     this.resources = resources;
-    this.coins = rng.nextRange(1, 30)
+    this.coins = rng.range(1, 30);
   }
 
   pickedUp(hero: Hero): boolean {
@@ -247,7 +247,7 @@ export class Weapon implements UsableDrop {
   static create(resources: Resources, rng: RNG, level: number): Weapon | null {
     const available = weaponConfigs.filter(c => c.level <= level);
     if (available.length > 0) {
-      const config = rng.choice(available);
+      const config = rng.select(available)!;
       return new Weapon(resources, config);
     } else {
       return null;
@@ -256,7 +256,7 @@ export class Weapon implements UsableDrop {
 
   static select(resources: Resources, rng: RNG, weapons: readonly WeaponConfig[]): Weapon | null {
     if (weapons.length > 0) {
-      const config = rng.choice(weapons);
+      const config = rng.select(weapons)!;
       return new Weapon(resources, config);
     } else {
       return null;

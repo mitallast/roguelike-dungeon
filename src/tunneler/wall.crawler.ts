@@ -114,7 +114,7 @@ export class WallCrawler extends Crawler {
       this.location = test;
 
       //now creating parameters needed for making children
-      let diceRoll = this.rng.int % 100;
+      let diceRoll = this.rng.range(0, 100);
       let childGeneration = this.generation + 1;   //default
       let summedProbability = 0;
       for (let i = 0; i <= 10; i++) {
@@ -133,21 +133,21 @@ export class WallCrawler extends Crawler {
         changeDirectionProbability: this.dungeonCrawler.mutate(this.changeDirectionProbability),
       };
 
-      if ((this.rng.int % 100) < this.changeDirectionProbability) {   //roll of the dice
+      if (this.rng.range(0, 100) < this.changeDirectionProbability) {   //roll of the dice
         // change the direction
         // keep the old direction for future reference
         let oldDirection = this.direction;
         // first compare the current heading to the intended heading to see where we can go
         if (((this.intendedDirection.x === 0) && (this.intendedDirection.y === 0)) ||   //we can go anywhere
           ((this.intendedDirection.x === this.direction.x) && (this.intendedDirection.y === this.direction.y))) {//we can go left or right as we choose,  and go randomly in 50% of the cases
-          let random = this.rng.int % 4;
+          let random = this.rng.range(0, 4);
           if (random === 0) {
             this.direction = right;
           } else if (random === 1) {
             this.direction = left;
           } else {
             // we go where there is more room
-            if ((rightFree > leftFree) || ((rightFree === leftFree) && this.rng.boolean)) {
+            if ((rightFree > leftFree) || ((rightFree === leftFree) && this.rng.boolean())) {
               this.direction = right;
             } else {
               this.direction = left;
@@ -166,10 +166,10 @@ export class WallCrawler extends Crawler {
         }
 
         // make children now
-        if ((this.rng.int % 100) < this.turnDoubleSpawnProbability) {
+        if (this.rng.range(0, 100) < this.turnDoubleSpawnProbability) {
           this.spawnWallCrawler(this.direction.negative, this.direction.negative, childGeneration, options);
           this.spawnWallCrawler(oldDirection, oldDirection, childGeneration, options);
-        } else if ((this.rng.int % 100) < this.turnSingleSpawnProbability) {
+        } else if (this.rng.range(0, 100) < this.turnSingleSpawnProbability) {
           // create a child looking the other way
           this.spawnWallCrawler(this.direction.negative, this.direction.negative, childGeneration, options);
         }
@@ -177,18 +177,18 @@ export class WallCrawler extends Crawler {
         // we keep going straight on
 
         // create child if appropriate
-        if ((this.rng.int % 100) < this.straightDoubleSpawnProbability) {
+        if (this.rng.range(0, 100) < this.straightDoubleSpawnProbability) {
           // create two children
           this.spawnWallCrawler(right, right, childGeneration, options);
           this.spawnWallCrawler(left, left, childGeneration, options);
-        } else if ((this.rng.int % 100) < this.straightSingleSpawnProbability) {
+        } else if (this.rng.range(0, 100) < this.straightSingleSpawnProbability) {
           // create a child looking sideways
-          if (leftFree > rightFree || leftFree === rightFree && this.rng.boolean) {
+          if (leftFree > rightFree || leftFree === rightFree && this.rng.boolean()) {
             test = left;
           } else {
             test = right;
           }
-          if ((this.rng.int % 3) === 0) {
+          if (this.rng.range(0, 3) === 0) {
             //however, in a third of all cases, we choose the other side:
             test = test.negative;
           }
@@ -213,7 +213,7 @@ export class WallCrawler extends Crawler {
           // rightFree or leftFree must be > corridorWidth
 
           // lots of room on both sides, we choose randomly
-          if (this.rng.boolean) {
+          if (this.rng.boolean()) {
             this.direction = right;
           } else {
             this.direction = left;
@@ -222,7 +222,7 @@ export class WallCrawler extends Crawler {
           this.direction = right;
         else if (leftFree > rightFree)
           this.direction = left;
-        else if (this.rng.boolean) { //rightFree === leftFree , we go randomly after all
+        else if (this.rng.boolean()) { //rightFree === leftFree , we go randomly after all
           this.direction = right;
         } else {
           this.direction = left;
@@ -274,7 +274,7 @@ export class WallCrawler extends Crawler {
                            }
   ): void {
 
-    if ((this.rng.int % 100) < this.config.noHeadingProbability) {
+    if (this.rng.range(0, 100) < this.config.noHeadingProbability) {
       intendedDirection = Point.ZERO;  //set to (0 , 0) to indicate no intended heading
     }
 

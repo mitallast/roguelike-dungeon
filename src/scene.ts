@@ -16,6 +16,7 @@ import {DialogManager, DialogModalScene} from "./dialog";
 import {NpcCharacter} from "./npc";
 import * as PIXI from "pixi.js";
 import {DungeonBonfireDialogModal} from "./dungeon.bonfire";
+import {SceneBanner, DungeonBannerOptions} from "./scene.banner";
 
 export interface Scene {
   init(): void;
@@ -41,6 +42,7 @@ export class SceneController {
 
   private mainScene: Scene | null = null;
   private modalScene: ModalScene | null = null;
+  private banner: SceneBanner | null = null;
 
   constructor(
     resources: Resources,
@@ -119,5 +121,15 @@ export class SceneController {
 
   showBonfire(hero: Hero): void {
     this.modal(new DungeonBonfireDialogModal(this, hero));
+  }
+
+  showBanner(options: DungeonBannerOptions): void {
+    this.closeBanner();
+    this.banner = new SceneBanner(this, options);
+  }
+
+  closeBanner(): void {
+    this.banner?.destroy();
+    this.banner = null;
   }
 }

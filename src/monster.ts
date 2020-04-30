@@ -86,13 +86,6 @@ export abstract class MonsterAI extends BaseCharacterAI {
     }
   }
 
-  protected onDead(): void {
-    this.drop();
-    this.destroy();
-  }
-
-  protected abstract drop(): void;
-
   protected ready(): void {
     this._state = MonsterState.READY;
   }
@@ -139,7 +132,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
       const dist_y = Math.abs(this.y - hero.y);
       if (dist_x > this.width || dist_y > this.height) {
         return this.moveTo(hero);
-      } else if (this.character.luck < this.dungeon.rng.nextFloat()) {
+      } else if (this.character.luck < this.dungeon.rng.float()) {
         this.hit();
         return true;
       }

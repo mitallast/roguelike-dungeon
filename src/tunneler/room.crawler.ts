@@ -80,7 +80,7 @@ export class RoomCrawler extends Crawler {
           length--;
         else if (width > length)
           width--;
-        else if ((this.rng.int % 100) < 50)
+        else if (this.rng.range(0, 100) < 50)
           length--;
         else
           width--;

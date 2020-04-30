@@ -123,8 +123,8 @@ export class TunnelingAlgorithm {
   }
 
   private generateFirstRoom(): boolean {
-    const room_w = this.rng.nextRange(this.room_min_w, this.room_max_w);
-    const room_h = this.rng.nextRange(this.room_min_h, this.room_max_h);
+    const room_w = this.rng.range(this.room_min_w, this.room_max_w);
+    const room_h = this.rng.range(this.room_min_h, this.room_max_h);
 
     const min_x = Math.max(this.room_min_x, (this.width >> 1) - room_w);
     const min_y = Math.max(this.room_min_y, (this.height >> 1) - room_h);
@@ -197,7 +197,7 @@ export class TunnelingAlgorithm {
     if (this.debug) console.log("corridorsH", [...this.corridorsH]);
 
     while (this.possible.length > 0) {
-      const i = this.rng.nextRange(0, this.possible.length);
+      const i = this.rng.range(0, this.possible.length);
       const possible = this.possible[i];
       this.possible.splice(i, 1);
 
@@ -806,7 +806,7 @@ export class TunnelingAlgorithm {
   }
 
   private nextRange(min: number, max: number): number {
-    return Math.round(this.rng.nextNormal(min, max, this.skew));
+    return Math.round(this.rng.skewNormal(min, max, this.skew));
   }
 }
 

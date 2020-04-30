@@ -233,30 +233,30 @@ export class DungeonCrawler {
         let crawlersPerTopBottomWall: number = Math.floor((this.config.height * crawlersPer1000Squares) / 1000);
         if (crawlersPerTopBottomWall === 0) {
           // there's less than one crawler on the wall, use probabilities
-          if (this.rng.int % 1000 < (this.config.height * crawlersPer1000Squares))
+          if (this.rng.range(0, 1000) < (this.config.height * crawlersPer1000Squares))
             crawlersPerTopBottomWall = 1;
         }
         let yIndex: number = 0;
         for (let ind: number = 0; ind < crawlersPerTopBottomWall; ind++) {
           // create crawlers at the top and bottom walls, heading inwards
-          yIndex = 2 + this.rng.int % (this.config.height - 4);
+          yIndex = 2 + this.rng.range(0, this.config.height - 4);
           spawnRandomWallCrawler(new Point(0, yIndex), Point.SOUTH, generation);
-          yIndex = 2 + this.rng.int % (this.config.height - 4);
+          yIndex = 2 + this.rng.range(0, this.config.height - 4);
           spawnRandomWallCrawler(new Point(this.config.width - 1, yIndex), Point.NORTH, generation);
         }
 
         //now do the east and West walls
         let crawlersPerLeftRightWall: number = Math.floor((this.config.width * crawlersPer1000Squares) / 1000);
         if (crawlersPerLeftRightWall === 0) {//there's less than one Crawler on the wall, use probabilities
-          if (this.rng.int % 1000 < (this.config.width * crawlersPer1000Squares))
+          if (this.rng.range(0, 1000) < (this.config.width * crawlersPer1000Squares))
             crawlersPerLeftRightWall = 1;
         }
         let xIndex: number = 0;
         for (let i: number = 0; i < crawlersPerLeftRightWall; i++) {
           // create crawlers at the left and right walls, heading inwards
-          xIndex = 2 + this.rng.int % (this.config.width - 4);
+          xIndex = 2 + this.rng.range(0, this.config.width - 4);
           spawnRandomWallCrawler(new Point(xIndex, 0), Point.EAST, generation);
-          xIndex = 2 + this.rng.int % (this.config.width - 4);
+          xIndex = 2 + this.rng.range(0, this.config.width - 4);
           spawnRandomWallCrawler(new Point(xIndex, this.config.height - 1), Point.EAST, generation);
         }
       }
@@ -270,7 +270,7 @@ export class DungeonCrawler {
 
     for (let [first, second] of config.crawlerPairs) {
       let firstIsOpen: boolean = true;
-      if (this.rng.boolean)
+      if (this.rng.boolean())
         firstIsOpen = false;
       this.createWallCrawler(first.location, first.direction, -first.age, first.maxAge, first.generation, first.intendedDirection, first.stepLength, (firstIsOpen ? 1 : 0), first.corridorWidth, first.straightSingleSpawnProbability, first.straightDoubleSpawnProbability,
         first.turnSingleSpawnProbability, first.turnDoubleSpawnProbability, first.changeDirectionProbability);
@@ -356,7 +356,7 @@ export class DungeonCrawler {
   }
 
   mutate(input: number): number {
-    let output: number = input - this.config.mutator + (this.rng.int % (2 * this.config.mutator + 1));
+    let output: number = input - this.config.mutator + this.rng.range(0, 2 * this.config.mutator + 1);
     if (output < 0)
       return 0;
     else
@@ -368,12 +368,12 @@ export class DungeonCrawler {
       if (input < 0)
         return 0;
       else
-        return (this.rng.int % (2 * input + 1));
+        return this.rng.range(0, 2 * input + 1);
     } else {
       if (input > 100)
         return 100;
       else
-        return (2 * input - 100 + this.rng.int % (200 - 2 * input + 1));
+        return 2 * input - 100 + this.rng.range(0, 200 - 2 * input + 1);
     }
   }
 
@@ -387,23 +387,23 @@ export class DungeonCrawler {
 
     while ((numberFound < this.config.seedCrawlersInTunnels) && (tries < this.config.width * this.config.height)) {
       tries++;   //no I will NOT put this in the conditional above!
-      let startX: number = 1 + this.rng.int % (this.config.width - 4);     // [1 , ... , dimX-2]
-      let startY: number = 1 + this.rng.int % (this.config.height - 4);    // [1 , ... , dimY-2]
+      let startX: number = 1 + this.rng.range(0, this.config.width - 4);     // [1 , ... , dimX-2]
+      let startY: number = 1 + this.rng.range(0, this.config.height - 4);    // [1 , ... , dimY-2]
       let test = new Point(startX, startY);
 
       //now make a starting direction
-      if ((this.rng.int % 100) < 50)
+      if (this.rng.range(0, 100) < 50)
         startX = 0;
       else
         startY = 0;
       if (startX === 0) {
-        if ((this.rng.int % 100) < 50)
+        if (this.rng.range(0, 100) < 50)
           startY = -1;
         else
           startY = 1;
       } else {
         console.assert(startY === 0);
-        if ((this.rng.int % 100) < 50)
+        if (this.rng.range(0, 100) < 50)
           startX = -1;
         else
           startX = 1;
@@ -448,7 +448,7 @@ export class DungeonCrawler {
           1, 1, this.config.tunnelCrawlerStats.straightSingleSpawnProbability, this.config.tunnelCrawlerStats.straightDoubleSpawnProbability, this.config.tunnelCrawlerStats.turnSingleSpawnProbability,
           this.config.tunnelCrawlerStats.turnDoubleSpawnProbability, this.config.tunnelCrawlerStats.changeDirectionProbability);
         // if we want a closed crawler in here, we let it look back to where it camne from, because it can close there fast and reliably
-        if ((this.rng.int % 100) < this.config.tunnelCrawlerClosedProbability)
+        if (this.rng.range(0, 100) < this.config.tunnelCrawlerClosedProbability)
           this.createWallCrawler(test, direction.negative, 0, this.config.tunnelCrawlerStats.maxAge, this.activeGeneration + 1, direction,
             this.config.tunnelCrawlerStats.stepLength, 0, 1, this.config.tunnelCrawlerStats.straightSingleSpawnProbability, this.config.tunnelCrawlerStats.straightDoubleSpawnProbability,
             this.config.tunnelCrawlerStats.turnSingleSpawnProbability, this.config.tunnelCrawlerStats.turnDoubleSpawnProbability, this.config.tunnelCrawlerStats.changeDirectionProbability);
@@ -519,8 +519,8 @@ export class DungeonCrawler {
     if ((rect.endY - rect.startY) <= 5)
       return false;   //too small to mess with, see next lines
 
-    let startX: number = rect.startX + 1 + this.rng.int % (rect.endX - rect.startX - 3);     // [startX + 1 , ... , endX - 1]
-    let startY: number = rect.startY + 1 + this.rng.int % (rect.endY - rect.startY - 3);     // [startY + 1 ,     , endY - 1]
+    let startX: number = rect.startX + 1 + this.rng.range(0, rect.endX - rect.startX - 3);     // [startX + 1 , ... , endX - 1]
+    let startY: number = rect.startY + 1 + this.rng.range(0, rect.endY - rect.startY - 3);     // [startY + 1 ,     , endY - 1]
     let start = new Point(startX, startY);
 
     if (!this.isOpen(start))

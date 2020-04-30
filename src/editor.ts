@@ -594,7 +594,7 @@ class SimpleTiledWFC {
       sum += t ? 1 : 0;
     }
 
-    let rnd_sum = this.rng.nextRange(0, sum);
+    let rnd_sum = this.rng.range(0, sum);
     let rnd_t = 0;
     for (let t = 0; t < T; t++) {
       rnd_sum -= w[t] ? 1 : 0;

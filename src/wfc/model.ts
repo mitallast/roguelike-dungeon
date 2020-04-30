@@ -351,7 +351,7 @@ export abstract class Model {
 
       let entropy = this.entropies[i];
       if (amount > 1 && entropy <= min) {
-        let noise = 1E-6 * this.rng.nextFloat();
+        let noise = 1E-6 * this.rng.float();
         if (entropy + noise < min) {
           min = entropy + noise;
           argmin = i;
@@ -387,7 +387,7 @@ export abstract class Model {
       distribution_sum += distribution[t];
     }
 
-    let rnd = this.rng.nextFloat() * distribution_sum;
+    let rnd = this.rng.float() * distribution_sum;
     let r = 0;
     for (let weight of distribution) {
       rnd -= weight;

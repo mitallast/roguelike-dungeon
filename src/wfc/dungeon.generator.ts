@@ -28,7 +28,7 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
       seed = hero.dungeonSeeds.get(options.level)!;
       console.log(`dungeon level ${options.level} exists seed: ${seed}`);
     } else {
-      seed = this.controller.rng.nextInt();
+      seed = this.controller.rng.int();
       console.log(`dungeon level ${options.level} new seed: ${seed}`);
       hero.dungeonSeeds.set(options.level, seed);
     }

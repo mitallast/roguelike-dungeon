@@ -258,7 +258,7 @@ export class MapCell {
     const weight_weapon = 10;
     const sum = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
 
-    let remaining_distance = rng.nextFloat() * sum;
+    let remaining_distance = rng.float() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
       this.dropItem = Weapon.create(resources, rng, this.dungeon.level);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {

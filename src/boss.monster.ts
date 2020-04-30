@@ -99,10 +99,15 @@ export class BossMonsterAI extends MonsterAI {
     return false;
   }
 
-  protected drop(): void {
+  protected onDead(): void {
+    this.dungeon.controller.showBanner({
+      text: this.dungeon.rng.boolean() ? "VICTORY ACHIEVED" : "YOU DEFEATED",
+      tint: Colors.uiYellow
+    });
     for (let i = 0; i < 9; i++) {
       this.findDropCell()?.randomDrop();
     }
+    this.destroy();
   }
 
   protected spawnMinion(x: number, y: number): MonsterAI | null {
@@ -111,7 +116,7 @@ export class BossMonsterAI extends MonsterAI {
       console.warn("no minion config found", this.character.category);
       return null;
     }
-    const config = this.dungeon.rng.choice(minions);
+    const config = this.dungeon.rng.select(minions)!;
     return new TinyMonsterAI(config, this.dungeon, x, y);
   }
 }

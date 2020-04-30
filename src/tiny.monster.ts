@@ -109,7 +109,7 @@ export class TinyMonsterAI extends MonsterAI {
       height: 1,
       zIndex: DungeonZIndexes.character
     });
-    const weapon = config.luck < this.dungeon.rng.nextFloat() ?
+    const weapon = config.luck < this.dungeon.rng.float() ?
       Weapon.select(this.dungeon.controller.resources, this.dungeon.rng, config.weapons) : null;
     this.character = new TinyMonster(config, dungeon.level, weapon);
     this.view.setWeapon(this.character.weapon);
@@ -155,7 +155,7 @@ export class TinyMonsterAI extends MonsterAI {
         const dy = Math.min(1, Math.max(-1, this.y - hero.y));
         console.log("move from hero");
         return this.move(dx, dy) || this.move(dx, 0) || this.move(0, dy);
-      } else if (this.character.luck < this.dungeon.rng.nextFloat()) {
+      } else if (this.character.luck < this.dungeon.rng.float()) {
         console.log("attack hero");
         this.hit();
         return true;
@@ -164,10 +164,12 @@ export class TinyMonsterAI extends MonsterAI {
     return false;
   }
 
-  protected drop(): void {
+
+  protected onDead(): void {
     if (Math.random() < this.character.luck) {
       this.findDropCell()?.randomDrop();
     }
+    this.destroy();
   }
 
   protected spawnMinion(x: number, y: number): MonsterAI | null {
@@ -176,7 +178,7 @@ export class TinyMonsterAI extends MonsterAI {
       console.warn("no minion config found", this.character.category);
       return null;
     }
-    const config = this.dungeon.rng.choice(minions);
+    const config = this.dungeon.rng.select(minions)!;
     return new TinyMonsterAI(config, this.dungeon, x, y);
   }
 }

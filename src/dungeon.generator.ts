@@ -44,8 +44,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
-        if (cell.hasFloor && rng.nextFloat() < percent) {
-          cell.floorName = rng.choice(replacements);
+        if (cell.hasFloor && rng.float() < percent) {
+          cell.floorName = rng.select(replacements);
         }
       }
     }
@@ -74,7 +74,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
         if (cell.wallName === 'wall_mid.png') {
-          if (rng.nextFloat() < percent) {
+          if (rng.float() < percent) {
             const replacements = [...holes];
             const has_floor = y + 1 < dungeon.height && dungeon.cell(x, y + 1).floorName === 'floor_1.png';
             if (has_floor) {
@@ -85,7 +85,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
             if (has_top && has_floor) {
               replacements.push(...fountains)
             }
-            const replacement = rng.choice(replacements);
+            const replacement = rng.select(replacements);
             switch (replacement) {
               case 'wall_goo.png':
                 dungeon.cell(x, y).wallName = 'wall_goo.png';
@@ -140,7 +140,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     if (free.length === 0) {
       throw "hero not placed";
     }
-    const cell = rng.choice(free);
+    const cell = rng.select(free)!;
     const ai = new HeroAI(hero, dungeon, cell.x, cell.y);
     dungeon.light.addLight(ai.view, LightType.HERO);
     return ai;
@@ -156,9 +156,9 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       if (free.length === 0) {
         console.warn("no free place for npc");
       }
-      const i = rng.nextRange(0, free.length);
+      const i = rng.range(0, free.length);
       const [cell] = free.splice(i, 1);
-      const config = rng.choice(npcCharacters);
+      const config = rng.select(npcCharacters)!;
       new NpcAI(config, dungeon, this.controller, cell.x, cell.y);
     }
   }
@@ -203,9 +203,9 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       return false;
     }
 
-    const i = rng.nextRange(0, free.length);
+    const i = rng.range(0, free.length);
     let [cell] = free.splice(i, 1);
-    const config = rng.choice(filtered_monsters);
+    const config = rng.select(filtered_monsters)!;
     new TinyMonsterAI(config, dungeon, cell.x, cell.y);
     return true;
   }
@@ -217,7 +217,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     });
 
     if (free.length > 0) {
-      const i = rng.nextRange(0, free.length);
+      const i = rng.range(0, free.length);
       let [cell] = free.splice(i, 1);
       const config = this.bossConfig(dungeon);
       new BossMonsterAI(config, dungeon, cell.x, cell.y);
@@ -245,7 +245,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const drop_count = Math.floor(free.length * drop_percent / 100.0);
 
     for (let d = 0; d < drop_count && free.length > 0; d++) {
-      const i = rng.nextRange(0, free.length);
+      const i = rng.range(0, free.length);
       free.splice(i, 1)[0].randomDrop();
     }
   }
@@ -283,7 +283,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       throw "ladder not set";
     }
 
-    rng.choice(free)[0].ladder();
+    rng.select(free)![0].ladder();
   }
 
   protected placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroAI): DungeonBonfire {
@@ -292,7 +292,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       return this.distance(hero, cell) < max_hero_distance;
     });
     if (free.length > 0) {
-      const cell = rng.choice(free);
+      const cell = rng.select(free)!;
       const light = hero.character.bonfires.has(dungeon.level);
       return new DungeonBonfire(dungeon, cell.x, cell.y, light);
     } else {

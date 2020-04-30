@@ -2,7 +2,7 @@ import {DungeonMap, DungeonObject, DungeonZIndexes} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
 import {LightType} from "./dungeon.light";
 import {ModalScene, SceneController} from "./scene";
-import {Button, Layout, SelectableGrid, Sizes} from "./ui";
+import {Button, Colors, Layout, SelectableGrid, Sizes} from "./ui";
 import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
@@ -51,6 +51,10 @@ export class DungeonBonfire implements DungeonObject {
     switch (this._state) {
       case BonfireState.UNLIT:
         hero.character.bonfires.add(this.dungeon.level);
+        this.dungeon.controller.showBanner({
+          text: 'BONFIRE LIT',
+          tint: Colors.uiYellow
+        });
         this.light();
         break;
       case BonfireState.LIGHT:
