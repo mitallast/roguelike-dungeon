@@ -53,7 +53,7 @@ export class DungeonBonfire implements DungeonObject {
         hero.character.bonfires.add(this.dungeon.level);
         this.dungeon.controller.showBanner({
           text: 'BONFIRE LIT',
-          tint: Colors.uiYellow
+          color: Colors.uiYellow
         });
         this.light();
         break;

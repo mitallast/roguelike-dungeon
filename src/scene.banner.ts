@@ -1,14 +1,15 @@
-import {SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
+import {SceneController} from "./scene";
 
 export interface DungeonBannerOptions {
   readonly text: string;
-  readonly tint: number;
+  readonly color: number;
 }
 
 export class SceneBanner extends PIXI.Container {
   private readonly controller: SceneController;
   private readonly text: PIXI.BitmapText;
+  private readonly textShadow: PIXI.BitmapText;
   private readonly background: PIXI.TilingSprite;
   private readonly texture: PIXI.Texture;
 
@@ -21,21 +22,39 @@ export class SceneBanner extends PIXI.Container {
     this.controller = controller;
 
     const size = 64;
-    const height = size + 24;
+    const height = size << 1;
     const screen = this.controller.app.screen;
     const y = Math.floor(screen.height * 0.7);
 
     this.text = new PIXI.BitmapText(options.text, {
       font: {name: "alagard", size: size},
       align: "center",
-      tint: options.tint
+      tint: options.color
     });
     this.text.anchor = new PIXI.Point(0.5, 0.5);
     this.text.position.set(screen.width >> 1, y);
+
+    const blur = new PIXI.filters.BlurFilter();
+    blur.blurY = 1;
+    blur.blurX = 10;
+    blur.quality = 4;
+
+    this.textShadow = new PIXI.BitmapText(options.text, {
+      font: {name: "alagard", size: size},
+      align: "center",
+      tint: options.color
+    });
+    this.textShadow.anchor = new PIXI.Point(0.5, 0.5);
+    this.textShadow.position.set(screen.width >> 1, y);
+    this.textShadow.width += size * 0.7;
+    this.textShadow.alpha = 0.5;
+    this.textShadow.filters = [blur];
+    this.textShadow.filterArea = this.textShadow.getBounds().clone().pad(50, 0);
+
     this.texture = SceneBanner.gradient(1, height);
     this.background = new PIXI.TilingSprite(this.texture, screen.width, height);
     this.background.position.set(0, y - (height >> 1));
-    this.addChild(this.background, this.text);
+    this.addChild(this.background, this.textShadow, this.text);
     this.controller.stage.addChild(this);
     this.controller.app.ticker.add(this.update, this);
   }

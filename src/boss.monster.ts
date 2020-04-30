@@ -102,7 +102,7 @@ export class BossMonsterAI extends MonsterAI {
   protected onDead(): void {
     this.dungeon.controller.showBanner({
       text: this.dungeon.rng.boolean() ? "VICTORY ACHIEVED" : "YOU DEFEATED",
-      tint: Colors.uiYellow
+      color: Colors.uiYellow
     });
     for (let i = 0; i < 9; i++) {
       this.findDropCell()?.randomDrop();
