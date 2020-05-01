@@ -75,7 +75,7 @@ export class SelectHeroScene implements Scene {
 
   private select(name: string): void {
     const hero = Hero.load(name, this.controller.persistent);
-    const weapon = new Weapon(this.controller.resources, weapons.knife);
+    const weapon = new Weapon(weapons.knife);
     hero.inventory.equipment.weapon.set(weapon);
     this.controller.generateDungeon({
       level: 1,
@@ -116,7 +116,6 @@ class SelectHeroView extends PIXI.Container implements Selectable {
     const sprite_h = Math.floor(tile_h * scale);
 
     this.sprite = resources.animated(heroName + "_idle");
-    this.sprite.animationSpeed = 0.2;
     this.sprite.width = sprite_w;
     this.sprite.height = sprite_h;
     this.sprite.position.set(margin, margin + margin + title_h);

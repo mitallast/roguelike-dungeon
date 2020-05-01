@@ -109,8 +109,7 @@ export class TinyMonsterAI extends MonsterAI {
       height: 1,
       zIndex: DungeonZIndexes.character
     });
-    const weapon = config.luck < this.dungeon.rng.float() ?
-      Weapon.select(this.dungeon.controller.resources, this.dungeon.rng, config.weapons) : null;
+    const weapon = config.luck < this.dungeon.rng.float() ? Weapon.select(this.dungeon.rng, config.weapons) : null;
     this.character = new TinyMonster(config, dungeon.level, weapon);
     this.view.setWeapon(this.character.weapon);
     this.init();
@@ -163,7 +162,6 @@ export class TinyMonsterAI extends MonsterAI {
     }
     return false;
   }
-
 
   protected onDead(): void {
     if (Math.random() < this.character.luck) {

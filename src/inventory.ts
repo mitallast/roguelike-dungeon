@@ -2,8 +2,9 @@ import {UsableDrop, Weapon} from "./drop";
 import {Hero} from "./hero";
 import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
 import {Colors, Sizes, Selectable, Layout, Button, SelectableGrid} from "./ui";
-import * as PIXI from "pixi.js";
 import {NpcCharacter} from "./npc";
+import {Resources} from "./resources";
+import * as PIXI from "pixi.js";
 
 const CELL_SIZE = 32;
 
@@ -338,13 +339,19 @@ export class InventoryView extends PIXI.Container {
   readonly card: InventoryCellCardView;
   readonly actions: InventoryCellActionsView;
 
-  constructor(inventory: Inventory, controller: InventoryActionsController, selectable: SelectableGrid, selectableOffset: number) {
+  constructor(
+    resources: Resources,
+    inventory: Inventory,
+    controller: InventoryActionsController,
+    selectable: SelectableGrid,
+    selectableOffset: number
+  ) {
     super();
     this.selectable = selectable;
     this.selectableOffset = selectableOffset;
 
     const layout = new Layout();
-    this.equipment = new EquipmentInventoryView(inventory.equipment);
+    this.equipment = new EquipmentInventoryView(resources, inventory.equipment);
     this.equipment.position.set(layout.x, layout.y);
     this.equipment.calculateBounds();
     layout.offset(0, this.equipment.height);
@@ -352,7 +359,7 @@ export class InventoryView extends PIXI.Container {
     selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
     selectable.merge(selectableOffset, 0, 10, 1);
 
-    this.belt = new BeltInventoryView(inventory.belt);
+    this.belt = new BeltInventoryView(resources, inventory.belt);
     this.belt.position.set(layout.x, layout.y);
     this.belt.calculateBounds();
     layout.offset(0, this.belt.height);
@@ -362,7 +369,7 @@ export class InventoryView extends PIXI.Container {
       this.selectable.set(selectableOffset + i, 1, this.belt.cell(i), () => this.show(cell));
     }
 
-    this.backpack = new BackpackInventoryView(inventory.backpack);
+    this.backpack = new BackpackInventoryView(resources, inventory.backpack);
     this.backpack.position.set(layout.x, layout.y);
     this.backpack.calculateBounds();
     layout.offset(0, this.backpack.height);
@@ -387,7 +394,7 @@ export class InventoryView extends PIXI.Container {
     layout.offset(this.backpack.width, 0);
     layout.offset(Sizes.uiMargin, 0);
 
-    this.card = new InventoryCellCardView({
+    this.card = new InventoryCellCardView(resources, {
       width: 400,
       height: totalHeight
     });
@@ -417,7 +424,7 @@ export class EquipmentInventoryView extends PIXI.Container {
 
   readonly weapon: InventoryCellView;
 
-  constructor(equipment: EquipmentInventory) {
+  constructor(resources: Resources, equipment: EquipmentInventory) {
     super();
 
     this.equipment = equipment;
@@ -432,7 +439,7 @@ export class EquipmentInventoryView extends PIXI.Container {
       .endFill();
     super.addChild(background);
 
-    this.weapon = new InventoryCellView({
+    this.weapon = new InventoryCellView(resources, {
       item: this.equipment.weapon.item,
       count: new ObservableVar(null)
     });
@@ -445,7 +452,7 @@ export class BeltInventoryView extends PIXI.Container {
   private readonly inventory: BeltInventory;
   private readonly cells: InventoryCellView[];
 
-  constructor(inventory: BeltInventory) {
+  constructor(resources: Resources, inventory: BeltInventory) {
     super();
     this.inventory = inventory;
 
@@ -462,7 +469,7 @@ export class BeltInventoryView extends PIXI.Container {
     this.cells = [];
     for (let i = 0; i < inventory.length; i++) {
       const cell = inventory.cell(i);
-      const view = new InventoryCellView({
+      const view = new InventoryCellView(resources, {
         item: cell.item,
         count: cell.count,
       });
@@ -487,7 +494,7 @@ export class BeltInventoryView extends PIXI.Container {
 export class BackpackInventoryView extends PIXI.Container {
   private readonly cells: InventoryCellView[][];
 
-  constructor(inventory: BackpackInventory) {
+  constructor(resources: Resources, inventory: BackpackInventory) {
     super();
     const background = new PIXI.Graphics()
       .beginFill(Colors.uiBackground, 0.3)
@@ -504,7 +511,7 @@ export class BackpackInventoryView extends PIXI.Container {
       this.cells.push([]);
       for (let x = 0; x < inventory.width; x++) {
         const cell = inventory.cell(x, y);
-        const view = new InventoryCellView({
+        const view = new InventoryCellView(resources, {
           item: cell.item,
           count: cell.count,
         });
@@ -527,6 +534,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
   private readonly _item: Observable<UsableDrop | null>;
   private readonly _count: Observable<number | null>;
 
+  private readonly resources: Resources;
   private readonly background: PIXI.Graphics;
   private readonly counter: PIXI.BitmapText;
   private sprite: PIXI.Sprite | null = null;
@@ -534,7 +542,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
   private readonly _alpha: number;
   private _selected: boolean = false;
 
-  constructor(options: {
+  constructor(resources: Resources, options: {
     item: Observable<UsableDrop | null>,
     count: Observable<number | null>,
     alpha?: number
@@ -543,6 +551,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     this._item = options.item;
     this._count = options.count;
     this._alpha = options.alpha || 0.3;
+    this.resources = resources;
     this.background = new PIXI.Graphics();
     this.selected = false;
 
@@ -587,7 +596,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     this.sprite?.destroy();
     this.sprite = null;
     if (item) {
-      this.sprite = item.sprite();
+      this.sprite = this.resources.sprite(item.spriteName);
       const max = CELL_SIZE - (Sizes.uiBorder << 1);
       const scale = max / Math.max(this.sprite.width, this.sprite.height);
       this.sprite.scale.set(scale, scale);
@@ -599,6 +608,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
 }
 
 export class InventoryCellCardView extends PIXI.Container {
+  private readonly resources: Resources;
   private readonly _width: number;
   private readonly _height: number;
   private readonly _sprite_size: number;
@@ -609,12 +619,12 @@ export class InventoryCellCardView extends PIXI.Container {
 
   private _publisher: Publisher<UsableDrop | null> | null = null;
 
-  constructor(options: {
+  constructor(resources: Resources, options: {
     width?: number,
     height?: number,
   }) {
     super();
-
+    this.resources = resources;
     this._width = options.width || 400;
     this._height = options.height || 400;
     this._sprite_size = 128 + (Sizes.uiMargin << 1);
@@ -662,8 +672,7 @@ export class InventoryCellCardView extends PIXI.Container {
     this._description.text = "";
 
     if (drop) {
-      const sprite = this._sprite = drop.sprite();
-      super.addChild(sprite);
+      const sprite = this._sprite = this.resources.sprite(drop.spriteName);
       sprite.anchor = new PIXI.Point(0.5, 0.5);
       sprite.position.set(
         Sizes.uiMargin + (this._sprite_size >> 1),

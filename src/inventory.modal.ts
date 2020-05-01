@@ -36,7 +36,7 @@ export class InventoryModalScene implements ModalScene {
       controller = new DefaultInventoryActionsController(this.hero.inventory);
     }
 
-    this.inventoryView = new InventoryView(this.hero.inventory, controller, this.selectable, 0);
+    this.inventoryView = new InventoryView(this.controller.resources, this.hero.inventory, controller, this.selectable, 0);
     this.inventoryView.position.set(Sizes.uiMargin, Sizes.uiMargin);
     this.inventoryView.calculateBounds();
     this.inventoryView.zIndex = 1;

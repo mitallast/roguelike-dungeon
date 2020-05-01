@@ -15,7 +15,7 @@ export class DungeonScene implements Scene {
     this.dungeon = dungeon;
 
     this.titleView = new DungeonTitle();
-    this.inventoryView = new BeltInventoryView(hero.inventory.belt);
+    this.inventoryView = new BeltInventoryView(this.controller.resources, hero.inventory.belt);
     this.healthView = new HeroStateView(hero, {fixedHPSize: false});
   }
 

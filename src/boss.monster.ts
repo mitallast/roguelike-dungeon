@@ -64,7 +64,7 @@ export class BossMonsterAI extends MonsterAI {
       y: y,
       zIndex: DungeonZIndexes.character
     });
-    const weapon = Weapon.select(this.dungeon.controller.resources, this.dungeon.rng, config.weapons);
+    const weapon = Weapon.select(this.dungeon.rng, config.weapons);
     this.character = new BossMonster(config, dungeon.level, weapon);
     this.view.setWeapon(this.character.weapon);
     this.init();

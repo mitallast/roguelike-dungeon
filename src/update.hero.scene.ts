@@ -89,8 +89,6 @@ export class UpdateHeroScene implements Scene {
 
   private renderIcon(layout: Layout) {
     this.sprite = this.controller.resources.animated(this.hero.name + "_idle");
-    this.sprite.play();
-    this.sprite.animationSpeed = 0.2;
     const w = this.sprite.width;
     const h = this.sprite.height;
     this.sprite.width = 256 - (Sizes.uiMargin << 1);
@@ -141,7 +139,7 @@ export class UpdateHeroScene implements Scene {
 
   private renderInventory(layout: Layout): void {
     const controller = new DefaultInventoryActionsController(this.hero.inventory);
-    this.inventory = new InventoryView(this.hero.inventory, controller, this.selectable, 2);
+    this.inventory = new InventoryView(this.controller.resources, this.hero.inventory, controller, this.selectable, 2);
     this.inventory.position.set(layout.x, layout.y);
     this.controller.stage.addChild(this.inventory);
   }

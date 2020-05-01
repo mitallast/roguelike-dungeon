@@ -2,8 +2,8 @@ import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "./drop";
 import {Hero, HeroAI} from "./hero";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
-import * as PIXI from 'pixi.js';
 import {RNG} from "./rng";
+import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
 
@@ -138,15 +138,7 @@ export class DungeonMap {
   }
 
   sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {
-    let sprite: PIXI.Sprite | PIXI.AnimatedSprite;
-    if (!name.endsWith('.png')) {
-      const animated = this.controller.resources.animated(name);
-      animated.animationSpeed = 0.2;
-      animated.play();
-      sprite = animated;
-    } else {
-      sprite = this.controller.resources.sprite(name);
-    }
+    const sprite = this.controller.resources.sprite(name);
     sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
     this.container.addChild(sprite);
     return sprite;
@@ -154,9 +146,8 @@ export class DungeonMap {
 
   animated(x: number, y: number, name: string): PIXI.AnimatedSprite {
     const animated = this.controller.resources.animated(name);
-    animated.animationSpeed = 0.2;
-    animated.play();
     animated.position.set(x * TILE_SIZE, y * TILE_SIZE);
+    animated.play();
     this.container.addChild(animated);
     return animated;
   }
@@ -250,7 +241,6 @@ export class MapCell {
     //             return i
 
     const rng = this.dungeon.rng;
-    const resources = this.dungeon.controller.resources;
 
     const weight_coins = 20;
     const weight_health_flask = 10;
@@ -260,13 +250,13 @@ export class MapCell {
 
     let remaining_distance = rng.float() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
-      this.dropItem = Weapon.create(resources, rng, this.dungeon.level);
+      this.dropItem = Weapon.create(rng, this.dungeon.level);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
-      this.dropItem = new HealthBigFlask(resources);
+      this.dropItem = new HealthBigFlask();
     } else if ((remaining_distance -= weight_health_flask) <= 0) {
-      this.dropItem = new HealthFlask(resources);
+      this.dropItem = new HealthFlask();
     } else if ((remaining_distance - weight_coins) <= 0) {
-      this.dropItem = new Coins(rng, resources);
+      this.dropItem = new Coins(rng);
     }
     return this.hasDrop;
   }
@@ -314,9 +304,7 @@ export class MapCell {
 
   collide(object: DungeonObject): boolean {
     return (this._object && this._object.collide(object)) ||
-      // (this._drop && this._drop.collide(object)) || // wall can't collide
       (this._wall && this._wall.collide(object)) ||
-      // (this._floor && this._floor.collide(object)) || // floor can't collide
       false;
   }
 }
@@ -452,10 +440,6 @@ export class DungeonDrop implements DungeonObject {
     this.sprite.x += (TILE_SIZE >> 1);
     this.sprite.y += TILE_SIZE - 2;
     this.sprite.anchor.set(0.5, 1);
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.sprite.animationSpeed = 0.2;
-      this.sprite.play();
-    }
   }
 
   pickedUp(hero: Hero): boolean {

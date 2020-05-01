@@ -202,8 +202,6 @@ export class DialogModalScene implements ModalScene {
     const layout = this._layout;
     layout.offset(Sizes.uiMargin, Sizes.uiMargin);
     const icon = this.controller.resources.animated(this.dialog.npc.name + "_idle");
-    icon.animationSpeed = 0.2;
-    icon.play();
     icon.width = icon.width * 4;
     icon.height = icon.height * 4;
     icon.position.set(layout.x + Sizes.uiBorder, layout.y + Sizes.uiBorder);

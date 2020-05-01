@@ -675,9 +675,11 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
 
   setSprite(name: string, speed: number): void {
     this._sprite?.destroy();
-    this._sprite = this.resources.animated(name, false);
-    this._sprite.loop = false;
-    this._sprite.animationSpeed = 0.2 * speed;
+    this._sprite = this.resources.animated(name, {
+      autoUpdate: false,
+      loop: false,
+      animationSpeed: 0.2 * speed,
+    });
     this._sprite.anchor.set(0, 1);
     this._sprite.position.y = TILE_SIZE - 2;
     this._sprite.zIndex = 1;
@@ -690,7 +692,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
     this._weaponSprite?.destroy();
     this._weaponSprite = null;
     if (weapon) {
-      this._weaponSprite = weapon.sprite();
+      this._weaponSprite = this.resources.sprite(weapon.spriteName);
       this._weaponSprite.zIndex = 2;
       this._weaponSprite.position.x = TILE_SIZE;
       this._weaponSprite.position.y = TILE_SIZE - 4;

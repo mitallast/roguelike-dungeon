@@ -1,9 +1,16 @@
 import * as PIXI from 'pixi.js';
 
+export interface AnimatedSpriteOptions {
+  readonly autoUpdate?: boolean; // default true
+  readonly animationSpeed?: number; // default 0.2
+  readonly loop?: boolean; // default true
+  readonly play?: boolean; // default true
+}
+
 export class Resources {
   readonly loader: PIXI.Loader;
 
-  private readonly _textures: Partial<Record<string, PIXI.Texture>> = {};
+  private readonly _sprites: Partial<Record<string, PIXI.Texture>> = {};
   private readonly _animations: Partial<Record<string, any>> = {};
 
   constructor(loader: PIXI.Loader) {
@@ -45,36 +52,44 @@ export class Resources {
   private add(spritesheet: PIXI.Spritesheet): void {
     spritesheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     for (let name of Object.keys(spritesheet.textures)) {
-      this._textures[name] = spritesheet.textures[name];
+      this._sprites[name] = spritesheet.textures[name];
     }
     for (let name of Object.keys(spritesheet.animations)) {
       this._animations[name] = spritesheet.animations[name];
     }
   }
 
-  get textures(): string[] {
-    return Object.keys(this._textures);
+  sprite(name: string, options: AnimatedSpriteOptions = {}): PIXI.Sprite | PIXI.AnimatedSprite {
+    if (this._sprites[name]) {
+      return this.fixed(name);
+    } else if (this._animations[name]) {
+      return this.animated(name, options);
+    } else {
+      throw `sprite or animation not found: ${name}`;
+    }
   }
 
-  get animations(): string[] {
-    return Object.keys(this._animations);
-  }
-
-  sprite(name: string): PIXI.Sprite {
-    if (!this._textures[name]) {
+  fixed(name: string): PIXI.Sprite {
+    if (!this._sprites[name]) {
       throw `sprite not found: ${name}`;
     }
-    const sprite = new PIXI.Sprite(this._textures[name]);
+    const sprite = new PIXI.Sprite(this._sprites[name]);
     sprite.name = name;
     return sprite;
   }
 
-  animated(name: string, autoUpdate: boolean = true): PIXI.AnimatedSprite {
+  animated(name: string, options: AnimatedSpriteOptions = {}): PIXI.AnimatedSprite {
     if (!this._animations[name]) {
       throw `animation not found: ${name}`;
     }
-    const sprite = new PIXI.AnimatedSprite(this._animations[name], autoUpdate);
+    const sprite = new PIXI.AnimatedSprite(this._animations[name]);
     sprite.name = name;
+    sprite.autoUpdate = options.autoUpdate !== undefined ? options.autoUpdate : true;
+    sprite.animationSpeed = options.animationSpeed !== undefined ? options.animationSpeed : 0.2;
+    sprite.loop = options.loop !== undefined ? options.loop : true;
+    if (options.play !== undefined ? options.play : true) {
+      sprite.play();
+    }
     return sprite;
   }
 }

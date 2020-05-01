@@ -8,7 +8,7 @@ module.exports = merge(common, {
   performance: {
     hints: false,
   },
-  devtool: 'cheap-eval-source-map',
+  devtool: 'source-map',
   module: {
     rules: [
       {

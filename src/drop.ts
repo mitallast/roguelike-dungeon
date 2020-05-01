@@ -1,14 +1,11 @@
 import {RNG} from "./rng";
 import {Hero} from "./hero";
-import {Resources} from "./resources";
 import {InventoryCell} from "./inventory";
 import {BezierCurve, Curve} from "./curves";
-import * as PIXI from "pixi.js";
 
 export interface Drop {
-  pickedUp(hero: Hero): boolean;
   readonly spriteName: string;
-  sprite(): PIXI.Sprite | PIXI.AnimatedSprite;
+  pickedUp(hero: Hero): boolean;
 }
 
 export interface UsableDrop extends Drop {
@@ -18,45 +15,33 @@ export interface UsableDrop extends Drop {
 }
 
 export interface DropInfo {
-  name: string;
-  health?: number;
-  speed?: number;
-  distance?: number;
-  damage?: number;
-  price?: number;
+  readonly name: string;
+  readonly health?: number;
+  readonly speed?: number;
+  readonly distance?: number;
+  readonly damage?: number;
+  readonly price?: number;
 }
 
 export class Coins implements Drop {
-  readonly spriteName: string = "coin";
+  readonly spriteName: string = "coin"; // @animated
 
-  private readonly resources: Resources;
   private readonly coins: number;
 
-  constructor(rng: RNG, resources: Resources) {
-    this.resources = resources;
+  constructor(rng: RNG) {
     this.coins = rng.range(1, 30);
   }
 
   pickedUp(hero: Hero): boolean {
     hero.addCoins(this.coins);
     return true;
-  };
-
-  sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.animated(this.spriteName);
   }
 }
 
 export class HealthFlask implements UsableDrop {
   readonly spriteName: string = "flask_red.png";
 
-  private readonly resources: Resources;
-  private readonly health: number;
-
-  constructor(resources: Resources) {
-    this.resources = resources;
-    this.health = 2;
-  }
+  private readonly health: number = 2;
 
   info(): DropInfo {
     return {
@@ -67,32 +52,22 @@ export class HealthFlask implements UsableDrop {
 
   pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
-  };
+  }
 
   same(item: UsableDrop): boolean {
     return item instanceof HealthFlask;
-  };
+  }
 
   use(cell: InventoryCell, hero: Hero) {
     hero.heal(this.health);
     cell.decrease();
-  };
-
-  sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.sprite(this.spriteName);
   }
 }
 
 export class HealthBigFlask implements UsableDrop {
   readonly spriteName: string = "flask_big_red.png";
 
-  private readonly resources: Resources;
-  private readonly health: number;
-
-  constructor(resources: Resources) {
-    this.resources = resources;
-    this.health = 5;
-  }
+  private readonly health: number = 5;
 
   info(): DropInfo {
     return {
@@ -103,20 +78,16 @@ export class HealthBigFlask implements UsableDrop {
 
   pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
-  };
-
-  sprite(): PIXI.Sprite | PIXI.AnimatedSprite {
-    return this.resources.sprite(this.spriteName);
   }
 
   same(item: UsableDrop): boolean {
     return item instanceof HealthBigFlask;
-  };
+  }
 
   use(cell: InventoryCell, hero: Hero) {
     hero.heal(this.health);
     cell.decrease();
-  };
+  }
 }
 
 export interface WeaponConfig {
@@ -170,6 +141,8 @@ export const weapons: Weapons = {
   lavish_sword: {name: "weapon_lavish_sword", speed: 1.5, distance: 1, damage: 16, level: 11, price: 240},
 };
 
+export const weaponConfigs: readonly WeaponConfig[] = Object.getOwnPropertyNames(weapons).map(w => weapons[w]);
+
 export interface MonsterWeapons extends Record<string, WeaponConfig> {
   readonly knife: WeaponConfig;
   readonly baton_with_spikes: WeaponConfig;
@@ -188,10 +161,7 @@ export const monsterWeapons: MonsterWeapons = {
   cleaver: {name: "weapon_cleaver", speed: 0.5, distance: 1, damage: 7, level: 25, price: 0},
 };
 
-export const weaponConfigs: readonly WeaponConfig[] = Object.getOwnPropertyNames(weapons).map(w => weapons[w]);
-
 export class Weapon implements UsableDrop {
-  private readonly resources: Resources;
   private readonly name: string;
   readonly speed: number;
   readonly curve: Curve<number> = BezierCurve.line(0, -0.5, -1, 0, 1, 2, 0);
@@ -203,8 +173,7 @@ export class Weapon implements UsableDrop {
     return this.name + ".png";
   }
 
-  constructor(resources: Resources, config: WeaponConfig) {
-    this.resources = resources;
+  constructor(config: WeaponConfig) {
     this.name = config.name;
     this.speed = config.speed;
     this.distance = config.distance;
@@ -222,10 +191,6 @@ export class Weapon implements UsableDrop {
     };
   }
 
-  sprite(): PIXI.Sprite {
-    return this.resources.sprite(this.spriteName);
-  }
-
   pickedUp(hero: Hero): boolean {
     return hero.inventory.add(this);
   }
@@ -234,30 +199,24 @@ export class Weapon implements UsableDrop {
     return false;
   }
 
-  use(cell: InventoryCell, hero: Hero): void {
-    const prev = hero.inventory.equipment.weapon.item.get();
-    hero.inventory.equipment.weapon.clear();
-    hero.inventory.equipment.weapon.set(this);
-    cell.clear();
-    if (prev) {
-      cell.set(prev);
-    }
+  use(cell: InventoryCell, _: Hero): void {
+    cell.equip();
   }
 
-  static create(resources: Resources, rng: RNG, level: number): Weapon | null {
+  static create(rng: RNG, level: number): Weapon | null {
     const available = weaponConfigs.filter(c => c.level <= level);
     if (available.length > 0) {
       const config = rng.select(available)!;
-      return new Weapon(resources, config);
+      return new Weapon(config);
     } else {
       return null;
     }
   }
 
-  static select(resources: Resources, rng: RNG, weapons: readonly WeaponConfig[]): Weapon | null {
+  static select(rng: RNG, weapons: readonly WeaponConfig[]): Weapon | null {
     if (weapons.length > 0) {
       const config = rng.select(weapons)!;
-      return new Weapon(resources, config);
+      return new Weapon(config);
     } else {
       return null;
     }
