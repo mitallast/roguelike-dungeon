@@ -1,7 +1,6 @@
 import {DungeonMap} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
 import {BaseCharacterAI, Character, CharacterAI, CharacterViewOptions, IdleAnimation, ScanDirection} from "./character";
-import {Weapon} from "./drop";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -25,18 +24,11 @@ export enum MonsterState {
 export abstract class MonsterCharacter extends Character {
   readonly level: number;
   readonly luck: number;
-  readonly baseDamage: number;
   readonly xp: number;
 
   readonly category: MonsterCategory;
   readonly type: MonsterType;
   readonly spawn: number;
-
-  readonly weapon: Weapon | null;
-
-  get damage(): number {
-    return this.baseDamage + (this.weapon?.damage || 0);
-  }
 
   protected constructor(options: {
     name: string,
@@ -49,17 +41,20 @@ export abstract class MonsterCharacter extends Character {
     category: MonsterCategory,
     type: MonsterType,
     spawn: number,
-    weapon: Weapon | null,
   }) {
-    super(options);
+    super({
+      name: options.name,
+      speed: options.speed,
+      healthMax: options.healthMax,
+      baseDamage: options.baseDamage,
+      coins: 0,
+    });
     this.level = options.level;
     this.luck = options.luck;
-    this.baseDamage = options.baseDamage;
     this.xp = options.xp;
     this.category = options.category;
     this.type = options.type;
     this.spawn = options.spawn;
-    this.weapon = options.weapon
   }
 }
 

@@ -1,4 +1,3 @@
-import {Inventory} from "./inventory";
 import {BaseCharacterAI, Character, IdleAnimation, ScanDirection} from "./character";
 import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
@@ -43,27 +42,6 @@ const defaultGlobalState: GlobalHeroState = {
 
 export class Hero extends Character {
   private readonly persistent: PersistentState;
-  private readonly _coins: ObservableVar<number>;
-
-  get coins(): Observable<number> {
-    return this._coins;
-  }
-
-  addCoins(coins: number): void {
-    this._coins.update(c => c + coins);
-  }
-
-  private readonly _baseDamage: ObservableVar<number>;
-
-  get damage(): number {
-    return this._baseDamage.get() + (this.weapon?.damage || 0);
-  }
-
-  get weapon(): Weapon | null {
-    return this.inventory.equipment.weapon.item.get() as Weapon || null;
-  }
-
-  readonly inventory: Inventory = new Inventory(this);
 
   private readonly _level: ObservableVar<number>;
   private readonly _levelXp: ObservableVar<number>;
@@ -122,11 +100,11 @@ export class Hero extends Character {
     super({
       name: name,
       speed: state.speed,
-      healthMax: state.healthMax
+      healthMax: state.healthMax,
+      baseDamage: state.baseDamage,
+      coins: state.coins,
     });
     this.persistent = persistent;
-    this._coins = new ObservableVar(state.coins);
-    this._baseDamage = new ObservableVar<number>(state.baseDamage);
     this._level = new ObservableVar(state.level);
     this._levelXp = new ObservableVar(state.levelXp);
     this._skillPoints = new ObservableVar(state.skillPoints);
@@ -183,13 +161,11 @@ export class HeroAI extends BaseCharacterAI {
     });
     this.character = character;
     this.init();
-    this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this.character.inventory.drop.subscribe(this.onDrop, this);
   }
 
   destroy(): void {
     super.destroy();
-    this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this.character.inventory.drop.unsubscribe(this.onDrop, this);
   }
 
@@ -210,10 +186,6 @@ export class HeroAI extends BaseCharacterAI {
     if (cell) {
       cell.dropItem = drop;
     }
-  }
-
-  private onWeaponUpdate(weapon: UsableDrop | null): void {
-    this.view.setWeapon(weapon as Weapon);
   }
 
   protected action(finished: boolean): boolean {

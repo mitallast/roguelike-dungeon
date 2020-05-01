@@ -1,10 +1,11 @@
 import {Resources} from "./resources";
 import {DungeonMap, DungeonZIndexes, MapCell, DungeonObject} from "./dungeon.map";
 import {Observable, ObservableVar} from "./observable";
-import {Weapon} from "./drop";
+import {UsableDrop, Weapon} from "./drop";
 import {Curve, LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
 import {HeroAI} from "./hero";
+import {Inventory} from "./inventory";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -13,39 +14,68 @@ export abstract class Character {
   readonly name: string;
 
   protected readonly _speed: ObservableVar<number>;
-
   get speed(): number {
     return this._speed.get();
   }
 
   protected readonly _healthMax: ObservableVar<number>;
-  protected readonly _health: ObservableVar<number>;
-  private readonly _dead: ObservableVar<boolean>;
-  private readonly _killedBy: ObservableVar<Character | null>;
-
   get healthMax(): Observable<number> {
     return this._healthMax;
   }
 
+  protected readonly _health: ObservableVar<number>;
   get health(): Observable<number> {
     return this._health;
   }
 
+  protected readonly _dead: ObservableVar<boolean>;
   get dead(): Observable<boolean> {
     return this._dead;
   }
 
+  protected readonly _killedBy: ObservableVar<Character | null>;
   get killedBy(): Observable<Character | null> {
     return this._killedBy;
   }
 
-  abstract readonly weapon: Weapon | null;
-  abstract readonly damage: number;
+  protected readonly _coins: ObservableVar<number>;
+
+  get coins(): Observable<number> {
+    return this._coins;
+  }
+
+  addCoins(coins: number): void {
+    this._coins.update(c => c + coins);
+  }
+
+  decreaseCoins(coins: number): boolean {
+    const current = this._coins.get();
+    if (current >= coins) {
+      this._coins.set(current - coins);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  protected readonly _baseDamage: ObservableVar<number>;
+
+  readonly inventory: Inventory = new Inventory(this);
+
+  get weapon(): Weapon | null {
+    return this.inventory.equipment.weapon.item.get() as Weapon || null;
+  }
+
+  get damage(): number {
+    return this._baseDamage.get() + (this.weapon?.damage || 0);
+  }
 
   protected constructor(options: {
-    name: string,
-    speed: number,
-    healthMax: number,
+    readonly name: string;
+    readonly speed: number;
+    readonly healthMax: number;
+    readonly baseDamage: number;
+    readonly coins: number;
   }) {
     this.name = options.name;
     this._speed = new ObservableVar(options.speed);
@@ -53,6 +83,8 @@ export abstract class Character {
     this._health = new ObservableVar(options.healthMax);
     this._dead = new ObservableVar<boolean>(false);
     this._killedBy = new ObservableVar<Character | null>(null);
+    this._baseDamage = new ObservableVar<number>(options.baseDamage);
+    this._coins = new ObservableVar(options.coins);
   }
 
   heal(health: number): void {
@@ -140,6 +172,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.setPosition(this._x, this._y);
     this.character.killedBy.subscribe(this.handleKilledBy, this);
     this.character.dead.subscribe(this.handleDead, this);
+    this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this.idle();
   }
 
@@ -147,6 +180,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this._animation?.cancel();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
+    this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this.dungeon.remove(this._x, this._y, this);
     this.view.destroy();
   }
@@ -165,6 +199,10 @@ export abstract class BaseCharacterAI implements DungeonObject {
     if (dead) {
       this.onDead();
     }
+  }
+
+  private onWeaponUpdate(weapon: UsableDrop | null): void {
+    this.view.setWeapon(weapon as Weapon);
   }
 
   protected abstract onKilledBy(by: Character): void;
@@ -730,7 +768,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
         this._weaponSprite.position.x = 0;
         this._weaponSprite.scale.x = -1;
       } else {
-        this._weaponSprite.position.x = TILE_SIZE;
+        this._weaponSprite.position.x = TILE_SIZE * this.grid_width;
         this._weaponSprite.scale.x = 1;
       }
     }

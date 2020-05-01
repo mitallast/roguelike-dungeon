@@ -941,7 +941,7 @@ class ApplyRulesPaletteCell extends NamedPaletteCell {
   constructor(resources: Resources, editor: Editor, rulesEditor: RulesEditor) {
     super("AP RL", "Apply rules", resources, editor);
 
-    this.wfc = new SimpleTiledWFC(rulesEditor, new RNG(), resources, editor.width, editor.height);
+    this.wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
   }
 
   action(_cell: EditorMapCell): void {
@@ -965,7 +965,7 @@ class FindRulesErrorPaletteCell extends NamedPaletteCell {
   constructor(resources: Resources, editor: Editor, rulesEditor: RulesEditor) {
     super("FN ER", "Find rules error", resources, editor);
 
-    this.wfc = new SimpleTiledWFC(rulesEditor, new RNG(), resources, editor.width, editor.height);
+    this.wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
   }
 
   action(_cell: EditorMapCell): void {
@@ -976,7 +976,7 @@ class FindRulesErrorPaletteCell extends NamedPaletteCell {
     config.width = this.editor.width;
     config.height = this.editor.height;
 
-    const rng = new RNG();
+    const rng = RNG.create();
     let crawler: DungeonCrawler | null = null;
 
     for (let i = 0; i < 1000; i++) {
@@ -1028,7 +1028,7 @@ class ApplyTunnelerDesignPaletteCell extends NamedPaletteCell {
     const config: any = this.resources.loader.resources['dungeon.design.json'].data;
     config.width = this.editor.width;
     config.height = this.editor.height;
-    const crawler = new DungeonCrawler(config, new RNG());
+    const crawler = new DungeonCrawler(config, RNG.create());
     crawler.generate();
     for (let x = 0; x < this.editor.width; x++) {
       for (let y = 0; y < this.editor.height; y++) {

@@ -33,7 +33,7 @@ export class DungeonMakerTest {
     console.log("config", config);
 
     console.time("crawler");
-    const dungeonCrawler = new DungeonCrawler(config, new RNG());
+    const dungeonCrawler = new DungeonCrawler(config, RNG.create());
     dungeonCrawler.generate();
     console.timeEnd("crawler");
 

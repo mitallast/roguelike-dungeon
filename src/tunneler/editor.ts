@@ -73,7 +73,7 @@ export class DungeonDesignEditor {
     console.log("config", config);
 
     console.time("crawler");
-    const crawler = new DungeonCrawler(config, new RNG());
+    const crawler = new DungeonCrawler(config, RNG.create());
     crawler.generate();
     console.timeEnd("crawler");
 
@@ -86,7 +86,7 @@ export class DungeonDesignEditor {
 
     const tileset: TilesetRules = this.rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, new RNG(),
+    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
       config.width,
       config.height,
       [
@@ -122,7 +122,7 @@ export class DungeonDesignEditor {
 
     const tileset: TilesetRules = this.rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, new RNG(),
+    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
       config.width,
       config.height,
       [
@@ -141,7 +141,7 @@ export class DungeonDesignEditor {
 
     const tileset: TilesetRules = this.rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, new RNG(),
+    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
       config.width,
       config.height,
       [

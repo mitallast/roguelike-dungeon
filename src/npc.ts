@@ -2,21 +2,14 @@ import {BaseCharacterAI, Character} from "./character";
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
 import {SceneController} from "./scene";
-import {Weapon} from "./drop";
+import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "./drop";
 import * as PIXI from "pixi.js";
 
-export interface NpcConfig {
-  readonly name: string;
-  readonly width: number;
-  readonly height: number;
-  readonly skills: readonly string[];
-}
-
 export abstract class NpcSkill {
-  protected readonly npc: NpcCharacter;
+  protected readonly npc: Npc;
   protected readonly controller: SceneController;
 
-  protected constructor(npc: NpcCharacter, controller: SceneController) {
+  protected constructor(npc: Npc, controller: SceneController) {
     this.npc = npc;
     this.controller = controller;
   }
@@ -27,19 +20,31 @@ export abstract class NpcSkill {
 export class SellingSkill extends NpcSkill {
   static readonly id: string = 'selling';
 
-  constructor(npc: NpcCharacter, controller: SceneController) {
+  constructor(npc: Npc, controller: SceneController) {
     super(npc, controller);
   }
 
   use(hero: Hero): void {
-    this.controller.showInventory(hero, this.npc);
+    this.controller.sellInventory(hero, this.npc);
+  }
+}
+
+export class BuyingSkill extends NpcSkill {
+  static readonly id: string = 'buying';
+
+  constructor(npc: Npc, controller: SceneController) {
+    super(npc, controller);
+  }
+
+  use(hero: Hero): void {
+    this.controller.buyInventory(hero, this.npc);
   }
 }
 
 export class HealSkill extends NpcSkill {
   static readonly id: string = 'heal';
 
-  constructor(npc: NpcCharacter, controller: SceneController) {
+  constructor(npc: Npc, controller: SceneController) {
     super(npc, controller);
   }
 
@@ -49,34 +54,277 @@ export class HealSkill extends NpcSkill {
   }
 }
 
-export const npcCharacters: readonly NpcConfig[] = [
-  {name: "alchemist", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "archer", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "bishop", width: 1, height: 2, skills: []},
-  {name: "blacksmith", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "butcher", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "elite_knight", width: 1, height: 1, skills: []},
-  {name: "executioner", width: 2, height: 2, skills: []},
-  {name: "fat_nun", width: 1, height: 1, skills: [HealSkill.id]},
-  {name: "heavy_knight", width: 1, height: 1, skills: []},
-  {name: "herald", width: 1, height: 1, skills: []},
-  {name: "king", width: 1, height: 1, skills: []},
-  {name: "knight", width: 1, height: 1, skills: []},
-  {name: "large_elite_knight", width: 2, height: 2, skills: []},
-  {name: "large_knight", width: 2, height: 2, skills: []},
-  {name: "mage", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "magic_shop_keeper", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "merchant", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "mountain_king", width: 1, height: 1, skills: []},
-  {name: "normal_nun", width: 1, height: 1, skills: [HealSkill.id]},
-  {name: "princess", width: 1, height: 1, skills: []},
-  {name: "queen", width: 1, height: 1, skills: []},
-  {name: "skinny_nun", width: 1, height: 1, skills: [HealSkill.id]},
-  {name: "thief", width: 1, height: 1, skills: [SellingSkill.id]},
-  {name: "townsfolk_f", width: 1, height: 1, skills: []},
+export enum TradingType {
+  POTIONS = 1,
+  WEAPONS = 2,
+}
+
+export interface NpcConfig {
+  readonly name: string;
+  readonly width: number;
+  readonly height: number;
+  readonly baseDamage: number;
+  readonly coins: number;
+
+  readonly skills: readonly string[];
+  readonly weapons: readonly WeaponConfig[];
+  readonly trading: readonly TradingType[];
+}
+
+export const NPCs: readonly NpcConfig[] = [
+  {
+    name: "alchemist",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: [TradingType.POTIONS],
+  },
+  {
+    name: "archer",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [],
+    weapons: [],
+    trading: [],
+  },
+  {
+    name: "bishop",
+    width: 1,
+    height: 2,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: [],
+  },
+  {
+    name: "blacksmith",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [npcWeapons.hammer],
+    trading: [TradingType.WEAPONS]
+  },
+  {
+    name: "butcher",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "executioner",
+    width: 2,
+    height: 2,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.axe],
+    trading: []
+  },
+  {
+    name: "herald",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "king",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "knight",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.regular_sword],
+    trading: []
+  },
+  {
+    name: "knight_elite",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.regular_sword],
+    trading: []
+  },
+  {
+    name: "knight_heavy",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.regular_sword],
+    trading: []
+  },
+  {
+    name: "large_knight",
+    width: 2,
+    height: 2,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.knight_sword],
+    trading: []
+  },
+  {
+    name: "large_knight_elite",
+    width: 2,
+    height: 2,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [npcWeapons.knight_sword],
+    trading: []
+  },
+  {
+    name: "mage",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: [TradingType.POTIONS]
+  },
+  {
+    name: "magic_shop_keeper",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: [TradingType.POTIONS]
+  },
+  {
+    name: "merchant",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 10000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: [TradingType.POTIONS]
+  },
+  {
+    name: "mountain_king",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "nun",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [HealSkill.id],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "nun_fat",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [HealSkill.id],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "nun_tall",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [HealSkill.id],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "princess",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "queen",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 0,
+    skills: [],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "thief",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 1000,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [npcWeapons.knife],
+    trading: []
+  },
+  {
+    name: "townsfolk_f",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 100,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: []
+  },
+  {
+    name: "townsfolk_m",
+    width: 1,
+    height: 1,
+    baseDamage: 0,
+    coins: 100,
+    skills: [SellingSkill.id, BuyingSkill.id],
+    weapons: [],
+    trading: []
+  },
 ];
 
-export class NpcCharacter extends Character {
+export class Npc extends Character {
   private _context: Partial<Record<string, any>> = {};
   private _skill: Partial<Record<string, NpcSkill>> = {};
 
@@ -100,20 +348,23 @@ export class NpcCharacter extends Character {
     this._skill[id] = skill;
   }
 
-  readonly damage: number = 1;
-  readonly weapon: Weapon | null = null;
-
-  constructor(name: string) {
+  constructor(options: {
+    readonly name: string;
+    readonly baseDamage: number;
+    readonly coins: number;
+  }) {
     super({
-      name: name,
+      name: options.name,
       speed: 1,
-      healthMax: 100
+      healthMax: 1000,
+      baseDamage: options.baseDamage,
+      coins: options.coins,
     });
   }
 }
 
 export class NpcAI extends BaseCharacterAI {
-  readonly character: NpcCharacter;
+  readonly character: Npc;
   readonly interacting: boolean = true;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
@@ -124,16 +375,43 @@ export class NpcAI extends BaseCharacterAI {
       y: y,
       zIndex: DungeonZIndexes.character
     });
-    this.character = new NpcCharacter(config.name);
-    this.initSkills(controller, config.skills);
+    this.character = new Npc(config);
+    const weapon = Weapon.select(this.dungeon.rng, config.weapons);
+    if (weapon) {
+      this.character.inventory.equipment.weapon.set(weapon);
+    }
+    this.initSkills(controller, config);
     this.init();
   }
 
-  protected initSkills(controller: SceneController, skills: readonly string[]): void {
-    for (const id of skills) {
+  protected initSkills(controller: SceneController, config: NpcConfig): void {
+    for (const id of config.skills) {
       switch (id) {
         case SellingSkill.id:
           this.character.addSkill(id, new SellingSkill(this.character, controller));
+          break;
+        case BuyingSkill.id:
+          this.character.addSkill(id, new BuyingSkill(this.character, controller));
+          const backpack = this.character.inventory.backpack;
+          for (const trading of config.trading) {
+            switch (trading) {
+              case TradingType.POTIONS:
+                for (let x = 0; x < 10; x++) {
+                  backpack.cell(x, 0).set(new HealthFlask(), 3);
+                }
+                for (let x = 0; x < 10; x++) {
+                  backpack.cell(x, 1).set(new HealthBigFlask(), 3);
+                }
+                break;
+              case TradingType.WEAPONS:
+                for (const config of weaponConfigs) {
+                  if (config.level <= this.dungeon.level + 2) {
+                    backpack.add(new Weapon(config));
+                  }
+                }
+                break;
+            }
+          }
           break;
         case HealSkill.id:
           this.character.addSkill(id, new HealSkill(this.character, controller));
@@ -153,7 +431,6 @@ export class NpcAI extends BaseCharacterAI {
   }
 
   protected scanHit(): void {
-
   }
 
   interact(hero: HeroAI): void {

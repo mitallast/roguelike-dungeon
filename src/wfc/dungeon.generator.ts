@@ -32,7 +32,7 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
       console.log(`dungeon level ${options.level} new seed: ${seed}`);
       hero.dungeonSeeds.set(options.level, seed);
     }
-    const rng = new RNG(seed);
+    const rng = RNG.seeded(seed);
 
     await yields(10);
 

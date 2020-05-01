@@ -35,7 +35,7 @@ export const bossMonsters: BossConfig[] = [
 ];
 
 export class BossMonster extends MonsterCharacter {
-  constructor(config: BossConfig, level: number, weapon: Weapon | null) {
+  constructor(config: BossConfig, level: number) {
     super({
       name: config.name,
       category: config.category,
@@ -47,7 +47,6 @@ export class BossMonster extends MonsterCharacter {
       baseDamage: 5 + 0.5 * level,
       xp: 100 + 50 * level,
       spawn: 5,
-      weapon: weapon,
     });
   }
 }
@@ -64,9 +63,11 @@ export class BossMonsterAI extends MonsterAI {
       y: y,
       zIndex: DungeonZIndexes.character
     });
+    this.character = new BossMonster(config, dungeon.level);
     const weapon = Weapon.select(this.dungeon.rng, config.weapons);
-    this.character = new BossMonster(config, dungeon.level, weapon);
-    this.view.setWeapon(this.character.weapon);
+    if (weapon) {
+      this.character.inventory.equipment.weapon.set(weapon);
+    }
     this.init();
 
     const c_w = dungeon.controller.app.screen.width;

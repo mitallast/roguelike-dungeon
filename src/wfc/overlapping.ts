@@ -914,7 +914,7 @@ export class TestOverlappingModel {
       [w, w, r, w, w],
     ];
 
-    let model = new OverlappingModel(sample, N, new RNG(), width, height, periodicInput, periodicOutput, symmetry, ground, []);
+    let model = new OverlappingModel(sample, N, RNG.create(), width, height, periodicInput, periodicOutput, symmetry, ground, []);
     if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {
@@ -973,7 +973,7 @@ export class TestOverlappingModel {
 
     let border = new BorderConstraint(w);
     let path = new PathConstraint([r]);
-    let model = new OverlappingModel(sample, N, new RNG(), width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
+    let model = new OverlappingModel(sample, N, RNG.create(), width, height, periodicInput, periodicOutput, symmetry, ground, [border, path]);
     if (await model.run() !== Resolution.Decided) {
       console.log("fail");
     } else {

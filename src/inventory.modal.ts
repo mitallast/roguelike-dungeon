@@ -1,42 +1,28 @@
 import {ModalScene, SceneController} from "./scene";
-import {Hero} from "./hero";
-import {NpcCharacter} from "./npc";
 import {SelectableGrid, Sizes} from "./ui";
-import {
-  DefaultInventoryActionsController,
-  InventoryActionsController,
-  InventoryView,
-  SellingInventoryActionsController
-} from "./inventory";
+import {InventoryController, InventoryView} from "./inventory";
 
 export class InventoryModalScene implements ModalScene {
   private readonly controller: SceneController;
-  private readonly hero: Hero;
-  private readonly npc: NpcCharacter | null;
+  private readonly actionsController: InventoryController;
 
   private container: PIXI.Container | null = null;
   private background: PIXI.Graphics | null = null;
   private selectable: SelectableGrid | null = null;
   private inventoryView: InventoryView | null = null;
 
-  constructor(controller: SceneController, hero: Hero, npc: NpcCharacter | null) {
+  constructor(controller: SceneController, actionsController: InventoryController) {
     this.controller = controller;
-    this.hero = hero;
-    this.npc = npc;
+    this.actionsController = actionsController;
   }
 
   init(): void {
     this.background = new PIXI.Graphics();
 
     this.selectable = new SelectableGrid(this.controller.joystick);
-    let controller: InventoryActionsController;
-    if (this.npc) {
-      controller = new SellingInventoryActionsController(this.hero, this.npc);
-    } else {
-      controller = new DefaultInventoryActionsController(this.hero.inventory);
-    }
 
-    this.inventoryView = new InventoryView(this.controller.resources, this.hero.inventory, controller, this.selectable, 0);
+
+    this.inventoryView = new InventoryView(this.controller.resources, this.actionsController, this.selectable, 0);
     this.inventoryView.position.set(Sizes.uiMargin, Sizes.uiMargin);
     this.inventoryView.calculateBounds();
     this.inventoryView.zIndex = 1;

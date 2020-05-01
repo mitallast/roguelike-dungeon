@@ -1,18 +1,28 @@
+const FRAC = 2.3283064365386963e-10; /* 2^-32 */
+
 /**
  * This code is an implementation of Alea algorithm; (C) 2010 Johannes Baagøe.
  * Alea is licensed according to the http://en.wikipedia.org/wiki/MIT_License.
  */
-
-const FRAC = 2.3283064365386963e-10; /* 2^-32 */
-
 export class RNG {
   private _s0: number;
   private _s1: number;
   private _s2: number;
   private _c: number;
 
-  constructor(seed: number = Math.random()) {
-    seed = (seed < 1 ? 1 / seed : seed);
+  static create(): RNG {
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    console.log(`SRG generated seed: ${seed}`);
+    return new RNG(seed);
+  }
+
+  static seeded(seed: number): RNG {
+    return new RNG(seed);
+  }
+
+  private constructor(seed: number) {
+    if (seed <= 1) throw "Illegal seed number";
+    // seed = (seed < 1 ? seed * 0x10000000000000 : seed);
     this._s0 = (seed >>> 0) * FRAC;
     seed = (seed * 69069 + 1) >>> 0;
     this._s1 = seed * FRAC;

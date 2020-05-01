@@ -936,7 +936,7 @@ export class EvenSimpleTiledModelTest {
     console.log("pathCells", pathCells);
     console.log("roomCells", roomCells);
 
-    const model = new EvenSimpleTiledModel(resources, tileset, new RNG(), 50, 50, [
+    const model = new EvenSimpleTiledModel(resources, tileset, RNG.create(), 50, 50, [
       new BorderConstraint(borderCells),
       new RoomConstraint(roomCells, true, {
         room_max_w: 7,

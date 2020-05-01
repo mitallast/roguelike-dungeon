@@ -2,6 +2,7 @@ import {RNG} from "./rng";
 import {Hero} from "./hero";
 import {InventoryCell} from "./inventory";
 import {BezierCurve, Curve} from "./curves";
+import {Character} from "./character";
 
 export interface Drop {
   readonly spriteName: string;
@@ -11,7 +12,7 @@ export interface Drop {
 export interface UsableDrop extends Drop {
   info(): DropInfo;
   same(item: UsableDrop): boolean;
-  use(cell: InventoryCell, hero: Hero): void;
+  use(cell: InventoryCell, character: Character): void;
 }
 
 export interface DropInfo {
@@ -20,7 +21,10 @@ export interface DropInfo {
   readonly speed?: number;
   readonly distance?: number;
   readonly damage?: number;
-  readonly price?: number;
+
+  price?: number;
+  readonly sellPrice?: number;
+  readonly buyPrice?: number;
 }
 
 export class Coins implements Drop {
@@ -46,7 +50,8 @@ export class HealthFlask implements UsableDrop {
   info(): DropInfo {
     return {
       name: "Health flask",
-      health: this.health
+      health: this.health,
+      buyPrice: 100,
     };
   }
 
@@ -58,8 +63,8 @@ export class HealthFlask implements UsableDrop {
     return item instanceof HealthFlask;
   }
 
-  use(cell: InventoryCell, hero: Hero) {
-    hero.heal(this.health);
+  use(cell: InventoryCell, character: Character) {
+    character.heal(this.health);
     cell.decrease();
   }
 }
@@ -72,7 +77,8 @@ export class HealthBigFlask implements UsableDrop {
   info(): DropInfo {
     return {
       name: "Big health flask",
-      health: this.health
+      health: this.health,
+      buyPrice: 300,
     };
   }
 
@@ -84,8 +90,8 @@ export class HealthBigFlask implements UsableDrop {
     return item instanceof HealthBigFlask;
   }
 
-  use(cell: InventoryCell, hero: Hero) {
-    hero.heal(this.health);
+  use(cell: InventoryCell, character: Character) {
+    character.heal(this.health);
     cell.decrease();
   }
 }
@@ -161,13 +167,31 @@ export const monsterWeapons: MonsterWeapons = {
   cleaver: {name: "weapon_cleaver", speed: 0.5, distance: 1, damage: 7, level: 25, price: 0},
 };
 
+export interface NpcWeapons extends Record<string, WeaponConfig> {
+  readonly knife: WeaponConfig;
+  readonly hammer: WeaponConfig;
+  readonly cleaver: WeaponConfig;
+  readonly axe: WeaponConfig;
+  readonly regular_sword: WeaponConfig;
+  readonly knight_sword: WeaponConfig;
+}
+
+export const npcWeapons: NpcWeapons = {
+  knife: {name: "weapon_knife", speed: 1.4, distance: 1, damage: 2, level: 1, price: 12},
+  hammer: {name: "weapon_hammer", speed: 0.7, distance: 1, damage: 7, level: 5, price: 38},
+  cleaver: {name: "weapon_cleaver", speed: 1.0, distance: 1, damage: 12, level: 9, price: 160},
+  axe: {name: "weapon_axe", speed: 0.8, distance: 1, damage: 12, level: 7, price: 115},
+  regular_sword: {name: "weapon_regular_sword", speed: 1.0, distance: 1, damage: 5, level: 3, price: 20},
+  knight_sword: {name: "weapon_knight_sword", speed: 1.5, distance: 1, damage: 14, level: 9, price: 180},
+}
+
 export class Weapon implements UsableDrop {
   private readonly name: string;
   readonly speed: number;
   readonly curve: Curve<number> = BezierCurve.line(0, -0.5, -1, 0, 1, 2, 0);
   readonly distance: number;
   readonly damage: number;
-  readonly price: number;
+  private readonly price: number;
 
   get spriteName(): string {
     return this.name + ".png";
@@ -187,7 +211,8 @@ export class Weapon implements UsableDrop {
       speed: this.speed,
       distance: this.distance,
       damage: this.damage,
-      price: this.price
+      sellPrice: this.price,
+      buyPrice: this.price * 10,
     };
   }
 
@@ -199,7 +224,7 @@ export class Weapon implements UsableDrop {
     return false;
   }
 
-  use(cell: InventoryCell, _: Hero): void {
+  use(cell: InventoryCell): void {
     cell.equip();
   }
 

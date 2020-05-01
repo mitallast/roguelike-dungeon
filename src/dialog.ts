@@ -1,5 +1,5 @@
 import {Hero} from "./hero";
-import {NpcCharacter} from "./npc";
+import {Npc} from "./npc";
 import {ModalScene, SceneController} from "./scene";
 import {Colors, Layout, Selectable, SelectableGrid, Sizes} from "./ui";
 import {EventPublisher, Publisher} from "./observable";
@@ -33,7 +33,7 @@ export class DialogManager {
     this.config = controller.app.loader.resources['dialogs.json'].data;
   }
 
-  dialog(hero: Hero, npc: NpcCharacter): Dialog {
+  dialog(hero: Hero, npc: Npc): Dialog {
     const config = this.config[npc.name] || this.config["default"]!;
     return new Dialog(this.controller, hero, npc, config);
   }
@@ -42,7 +42,7 @@ export class DialogManager {
 export class Dialog {
   private readonly controller: SceneController;
   readonly hero: Hero;
-  readonly npc: NpcCharacter;
+  readonly npc: Npc;
 
   private readonly _config: NpcDialogConfig;
   private readonly _question: EventPublisher<DialogQuestion> = new EventPublisher<DialogQuestion>();
@@ -53,7 +53,7 @@ export class Dialog {
     return this._question;
   }
 
-  constructor(controller: SceneController, hero: Hero, npc: NpcCharacter, config: NpcDialogConfig) {
+  constructor(controller: SceneController, hero: Hero, npc: Npc, config: NpcDialogConfig) {
     this.controller = controller;
     this.hero = hero;
     this.npc = npc;

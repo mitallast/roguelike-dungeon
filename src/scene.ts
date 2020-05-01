@@ -13,10 +13,15 @@ import {InventoryModalScene} from "./inventory.modal";
 import {Hero} from "./hero";
 import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
-import {NpcCharacter} from "./npc";
+import {Npc} from "./npc";
 import * as PIXI from "pixi.js";
 import {DungeonBonfireDialogModal} from "./dungeon.bonfire";
 import {SceneBanner, DungeonBannerOptions} from "./scene.banner";
+import {
+  BuyingInventoryActionsController,
+  DefaultInventoryActionsController,
+  SellingInventoryActionsController
+} from "./inventory";
 
 export interface Scene {
   init(): void;
@@ -50,7 +55,7 @@ export class SceneController {
     stage: PIXI.display.Stage,
   ) {
     this.persistent = new SessionPersistentState();
-    this.rng = new RNG();
+    this.rng = RNG.create();
     this.joystick = new Joystick();
     this.resources = resources;
     this.app = app;
@@ -110,11 +115,22 @@ export class SceneController {
     this.mainScene?.resume();
   }
 
-  showInventory(hero: Hero, npc?: NpcCharacter): void {
-    this.modal(new InventoryModalScene(this, hero, npc || null));
+  showInventory(hero: Hero): void {
+    const actions = new DefaultInventoryActionsController(hero.inventory);
+    this.modal(new InventoryModalScene(this, actions));
   }
 
-  showDialog(hero: Hero, npc: NpcCharacter): void {
+  sellInventory(hero: Hero, npc: Npc): void {
+    const actions = new SellingInventoryActionsController(hero, npc);
+    this.modal(new InventoryModalScene(this, actions));
+  }
+
+  buyInventory(hero: Hero, npc: Npc): void {
+    const actions = new BuyingInventoryActionsController(hero, npc);
+    this.modal(new InventoryModalScene(this, actions));
+  }
+
+  showDialog(hero: Hero, npc: Npc): void {
     const dialog = this.dialogs.dialog(hero, npc);
     this.modal(new DialogModalScene(this, dialog));
   }

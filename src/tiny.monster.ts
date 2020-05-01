@@ -80,7 +80,7 @@ export const tinyMonsters: TinyMonsterConfig[] = [
 ];
 
 export class TinyMonster extends MonsterCharacter {
-  constructor(config: TinyMonsterConfig, level: number, weapon: Weapon | null) {
+  constructor(config: TinyMonsterConfig, level: number) {
     super({
       name: config.name,
       category: config.category,
@@ -92,7 +92,6 @@ export class TinyMonster extends MonsterCharacter {
       baseDamage: 1 + 0.5 * level,
       xp: 35 + 5 * level,
       spawn: 3,
-      weapon: weapon,
     });
   }
 }
@@ -109,9 +108,11 @@ export class TinyMonsterAI extends MonsterAI {
       height: 1,
       zIndex: DungeonZIndexes.character
     });
+    this.character = new TinyMonster(config, dungeon.level);
     const weapon = config.luck < this.dungeon.rng.float() ? Weapon.select(this.dungeon.rng, config.weapons) : null;
-    this.character = new TinyMonster(config, dungeon.level, weapon);
-    this.view.setWeapon(this.character.weapon);
+    if (weapon) {
+      this.character.inventory.equipment.weapon.set(weapon);
+    }
     this.init();
   }
 

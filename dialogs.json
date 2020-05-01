@@ -29,6 +29,16 @@
             ]
           },
           {
+            "text": "Can I buy something?",
+            "conditions": [
+              "hasSkill('buying')"
+            ],
+            "commands": [
+              "exit()",
+              "skill('buying')"
+            ]
+          },
+          {
             "text": "Can you heal me?",
             "conditions": [
               "hasSkill('heal')"
@@ -63,6 +73,16 @@
             "commands": [
               "exit()",
               "skill('selling')"
+            ]
+          },
+          {
+            "text": "Can I buy something?",
+            "conditions": [
+              "hasSkill('buying')"
+            ],
+            "commands": [
+              "exit()",
+              "skill('buying')"
             ]
           },
           {

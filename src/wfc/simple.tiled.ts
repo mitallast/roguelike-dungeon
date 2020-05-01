@@ -328,7 +328,7 @@ export class SimpleTiledModelTest {
     const tileset: Tileset = loader.resources["dungeon.json"].data!;
     console.log(tileset);
 
-    const model = new SimpleTiledModel(loader, tileset, new RNG(), 20, 20, false);
+    const model = new SimpleTiledModel(loader, tileset, RNG.create(), 20, 20, false);
     if (await model.run() !== Resolution.Decided) {
       console.log("success");
     } else {
