@@ -450,13 +450,44 @@ export class ShadowCaster {
         }
       }
     }
-    return output;
+
+    // optimize
+    const queue = [...output];
+    const deduplicated: PIXI.Point[] = [];
+    while (queue.length > 0) {
+      if (queue.length >= 2) {
+        const [a, b,] = queue;
+        if (a.equals(b)) {
+          queue.shift();
+          continue;
+        }
+      }
+      const point = queue.shift()!;
+      deduplicated.push(point);
+    }
+    const optimized: PIXI.Point[] = [];
+    while (deduplicated.length > 0) {
+      if (deduplicated.length >= 3) {
+        const [a, b, c,] = deduplicated;
+        if (a.x === b.x && a.x === c.x) {
+          deduplicated.splice(1, 1);
+          continue;
+        }
+      }
+      const point = deduplicated.shift()!;
+      optimized.push(point);
+    }
+    return optimized;
   }
 
-  private static lineIntersection(p1: PIXI.Point, p2: PIXI.Point, p3: PIXI.Point, p4: PIXI.Point): PIXI.Point {
+  private static lineIntersection(p1: PIXI.Point, p2: PIXI.Point, p3: PIXI.Point, p4: PIXI.Point): PIXI.Point | null {
     // From http://paulbourke.net/geometry/lineline2d/
-    const s = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x))
-      / ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
+    const numerator = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x));
+    const denominator = ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
+    if (denominator === 0) {
+      return null;
+    }
+    const s = numerator / denominator;
     return new PIXI.Point(p1.x + s * (p2.x - p1.x), p1.y + s * (p2.y - p1.y));
   }
 
@@ -487,12 +518,14 @@ export class ShadowCaster {
     }
 
     let pBegin = ShadowCaster.lineIntersection(p3, p4, p1, p2);
+    if (pBegin === null) return;
     pBegin.x = Math.round(pBegin.x); // round for pixel perfect
     pBegin.y = Math.round(pBegin.y); // round for pixel perfect
 
     p2.x = this.light.x + angle2cos;
     p2.y = this.light.y + angle2sin;
     let pEnd = ShadowCaster.lineIntersection(p3, p4, p1, p2);
+    if (pEnd === null) return;
     pEnd.x = Math.round(pEnd.x); // round for pixel perfect
     pEnd.y = Math.round(pEnd.y); // round for pixel perfect
 

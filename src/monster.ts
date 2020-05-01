@@ -159,7 +159,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
 
   protected scanHit(): void {
     const weapon = this.character.weapon;
-    const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+    const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const distance = weapon?.distance || 1;
     const heroes = this.scanHero(direction, distance);
     for (const hero of heroes) {

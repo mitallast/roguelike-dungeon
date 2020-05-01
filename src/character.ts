@@ -220,7 +220,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
   protected findCell(max_distance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
     const pos_x = this.x;
     const pos_y = this.y;
-    const is_left = this.view.is_left;
+    const is_left = this.view.isLeft;
 
     let closestCell: MapCell | null = null;
     let closestDistance: number | null = null;
@@ -254,8 +254,8 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 
   protected move(mx: number, my: number): boolean {
-    if (mx > 0) this.view.is_left = false;
-    if (mx < 0) this.view.is_left = true;
+    if (mx > 0) this.view.isLeft = false;
+    if (mx < 0) this.view.isLeft = true;
     const new_x = this.x + mx;
     const new_y = this.y + my;
     if (this.dungeon.available(new_x, new_y, this)) {
@@ -345,8 +345,8 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 
   lookAt(character: CharacterAI): void {
-    if (character.x < this.x) this.view.is_left = true;
-    if (character.x > this.x) this.view.is_left = false;
+    if (character.x < this.x) this.view.isLeft = true;
+    if (character.x > this.x) this.view.isLeft = false;
   }
 
   protected scanObjects(direction: ScanDirection, max_distance: number, predicate: (object: DungeonObject) => boolean): DungeonObject[] {
@@ -618,7 +618,7 @@ export class HitAnimation extends Animation {
       const sprite = this.view.sprite!;
       const delta = this._spriteTime / sprite.totalFrames;
       const curveDelta = this.curve(delta);
-      weapon.angle = (this.view.is_left ? -90 : 90) * curveDelta;
+      weapon.angle = (this.view.isLeft ? -90 : 90) * curveDelta;
     }
   }
 
@@ -646,7 +646,7 @@ export interface CharacterView {
   readonly x: number;
   readonly y: number;
 
-  is_left: boolean;
+  isLeft: boolean;
 
   readonly sprite: PIXI.AnimatedSprite | null;
   readonly weaponSprite: PIXI.Sprite | null;
@@ -661,19 +661,19 @@ export interface CharacterView {
 export class BaseCharacterView extends PIXI.Container implements CharacterView {
   private readonly resources: Resources;
 
-  private readonly base_zIndex: number;
-  private readonly grid_width: number;
-  private _is_left: boolean = false;
+  private readonly _baseZIndex: number;
+  private readonly _gridWidth: number;
+  private _isLeft: boolean = false;
   private _sprite: PIXI.AnimatedSprite | null = null;
   private _weaponSprite: PIXI.Sprite | null = null;
-  private readonly on_position: ((x: number, y: number) => void) | null;
+  private readonly onPosition: ((x: number, y: number) => void) | null;
 
-  get is_left(): boolean {
-    return this._is_left;
+  get isLeft(): boolean {
+    return this._isLeft;
   }
 
-  set is_left(is_left: boolean) {
-    this._is_left = is_left;
+  set isLeft(is_left: boolean) {
+    this._isLeft = is_left;
     this.updateSpriteOrientation();
     this.updateWeaponOrientation();
   }
@@ -689,9 +689,9 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
   constructor(dungeon: DungeonMap, zIndex: number, grid_width: number, on_position?: (x: number, y: number) => void) {
     super();
     this.resources = dungeon.controller.resources;
-    this.base_zIndex = zIndex;
-    this.grid_width = grid_width;
-    this.on_position = on_position || null;
+    this._baseZIndex = zIndex;
+    this._gridWidth = grid_width;
+    this.onPosition = on_position || null;
     dungeon.container.addChild(this);
   }
 
@@ -704,10 +704,13 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
   }
 
   setPosition(x: number, y: number): void {
-    this.position.set(x * TILE_SIZE, y * TILE_SIZE);
-    this.zIndex = this.base_zIndex + Math.floor(y) * DungeonZIndexes.row;
-    if (this.on_position) {
-      this.on_position(x * TILE_SIZE, y * TILE_SIZE);
+    // pixel perfect
+    const t_x = Math.floor(x * TILE_SIZE);
+    const t_y = Math.floor(y * TILE_SIZE);
+    this.position.set(t_x, t_y);
+    this.zIndex = this._baseZIndex + Math.floor(y) * DungeonZIndexes.row;
+    if (this.onPosition) {
+      this.onPosition(t_x, t_y);
     }
   }
 
@@ -734,7 +737,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
       this._weaponSprite.zIndex = 2;
       this._weaponSprite.position.x = TILE_SIZE;
       this._weaponSprite.position.y = TILE_SIZE - 4;
-      if (this.is_left) {
+      if (this.isLeft) {
         this._weaponSprite.position.x = 0;
         this._weaponSprite.scale.x = -1;
       }
@@ -746,16 +749,16 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
 
   private updateSpriteOrientation(): void {
     if (this._sprite) {
-      if (this._is_left) {
+      if (this._isLeft) {
         this._sprite.position.x = this._sprite.width;
-        if (this._sprite.width > this.grid_width * TILE_SIZE) {
-          this._sprite.position.x -= (this._sprite.width - this.grid_width * TILE_SIZE) / 2;
+        if (this._sprite.width > this._gridWidth * TILE_SIZE) {
+          this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
         }
         this._sprite.scale.x = -1;
       } else {
         this._sprite.position.x = 0;
-        if (this._sprite.width > this.grid_width * TILE_SIZE) {
-          this._sprite.position.x -= (this._sprite.width - this.grid_width * TILE_SIZE) / 2;
+        if (this._sprite.width > this._gridWidth * TILE_SIZE) {
+          this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
         }
         this._sprite.scale.x = 1;
       }
@@ -764,11 +767,11 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
 
   private updateWeaponOrientation(): void {
     if (this._weaponSprite) {
-      if (this.is_left) {
+      if (this.isLeft) {
         this._weaponSprite.position.x = 0;
         this._weaponSprite.scale.x = -1;
       } else {
-        this._weaponSprite.position.x = TILE_SIZE * this.grid_width;
+        this._weaponSprite.position.x = TILE_SIZE * this._gridWidth;
         this._weaponSprite.scale.x = 1;
       }
     }

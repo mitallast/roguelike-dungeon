@@ -63,12 +63,13 @@ export class DungeonLight {
       for (let x = 0; x < dungeon.width; x++) {
         const cell = dungeon.cell(x, y);
         if (cell.hasFloor) {
+          const position = new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE);
           switch (cell.floorName) {
             case 'wall_fountain_basin_red':
-              this.addLight(new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE), LightType.RED_BASIN);
+              this.addLight(position, LightType.RED_BASIN);
               break;
             case 'wall_fountain_basin_blue':
-              this.addLight(new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE), LightType.BLUE_BASIN);
+              this.addLight(position, LightType.BLUE_BASIN);
               break;
             default:
               break;
@@ -97,43 +98,34 @@ export class DungeonLight {
     }
 
     this.shadowCaster.optimize();
+    this.update();
   }
 
   addLight(position: LightPoint, type: LightType): void {
+    let texture: PIXI.Texture;
+    let maxDistance: number;
     switch (type) {
       case LightType.HERO:
-        this.lights.push(new LightSource(
-          position,
-          350,
-          this.heroLightTexture,
-          this.container
-        ));
+        texture = this.heroLightTexture;
+        maxDistance = 350;
         break;
       case LightType.RED_BASIN:
-        this.lights.push(new LightSource(
-          position,
-          150,
-          this.fountainRedTexture,
-          this.container
-        ));
+        texture = this.fountainRedTexture;
+        maxDistance = 150;
         break;
       case LightType.BLUE_BASIN:
-        this.lights.push(new LightSource(
-          position,
-          150,
-          this.fountainBlueTexture,
-          this.container
-        ));
+        texture = this.fountainBlueTexture;
+        maxDistance = 150;
         break;
       case LightType.BONFIRE:
-        this.lights.push(new LightSource(
-          position,
-          250,
-          this.bonfireTexture,
-          this.container
-        ));
+        texture = this.bonfireTexture;
+        maxDistance = 250;
         break;
     }
+
+    const light = new LightSource(position, maxDistance, texture, this.container);
+    this.lights.push(light);
+    this.renderLight(light);
   }
 
   private add(x: number, y: number, segments: WallSegment[]): void {
@@ -149,16 +141,24 @@ export class DungeonLight {
   }
 
   private update(): void {
-    this.lights.forEach((light) => {
-      const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
-      this.shadowCaster.setLightLocation(start.x, start.y, light.maxDistance);
-      const output = this.shadowCaster.sweep();
-      light.sprite.position.set(start.x, start.y);
-      light.mask.clear()
-        .beginFill(0xFFFFFF, 1)
-        .drawPolygon(output)
-        .endFill()
-    });
+    for (const light of this.lights) {
+      if (light.dirty) {
+        this.renderLight(light);
+        light.rendered();
+      }
+    }
+  }
+
+  private renderLight(light: LightSource): void {
+    const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
+    this.shadowCaster.setLightLocation(start.x, start.y, light.maxDistance);
+    const output = this.shadowCaster.sweep();
+
+    light.sprite.position.set(start.x, start.y);
+    light.mask.clear()
+      .beginFill(0xFFFFFF, 1)
+      .drawPolygon(output)
+      .endFill();
   }
 
   private static gradient(color: string, radius: number): PIXI.Texture {
@@ -380,6 +380,8 @@ class LightSource {
   readonly sprite: PIXI.Sprite;
   readonly mask: PIXI.Graphics;
 
+  private _rendered: LightPoint | null = null;
+
   constructor(position: LightPoint, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
     this.position = position;
     this.maxDistance = maxDistance;
@@ -394,6 +396,14 @@ class LightSource {
 
     container.addChild(this.mask);
     container.addChild(this.sprite);
+  }
+
+  get dirty(): boolean {
+    return this._rendered === null || this.position.x !== this._rendered.x || this.position.y !== this._rendered.y;
+  }
+
+  rendered(): void {
+    this._rendered = {x: this.position.x, y: this.position.y};
   }
 
   destroy() {

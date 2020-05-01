@@ -9,18 +9,6 @@ module.exports = merge(common, {
     hints: false,
   },
   devtool: 'source-map',
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        loader: 'ts-loader',
-        options: {
-          transpileOnly: true,
-          experimentalWatchApi: true,
-        },
-      }
-    ]
-  },
   optimization: {
     concatenateModules: true,
     minimize: false,

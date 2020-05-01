@@ -225,7 +225,7 @@ export class HeroAI extends BaseCharacterAI {
         const once = joystick.hit.once();
 
         if (once) {
-          const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+          const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
           const [object] = this.scanInteracting(direction, 1);
           if (object) {
             this.idle();
@@ -275,7 +275,7 @@ export class HeroAI extends BaseCharacterAI {
   protected scanHit(): void {
     const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
-    const direction = this.view.is_left ? ScanDirection.LEFT : ScanDirection.RIGHT;
+    const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const monsters = this.scanMonsters(direction, distance);
     for (let monster of monsters) {
       monster.character.hitDamage(this.character, this.character.damage);
@@ -291,9 +291,9 @@ export class HeroAI extends BaseCharacterAI {
     const leftHealthSum = this.monstersHealth(ScanDirection.LEFT, distance);
     const rightHealthSum = this.monstersHealth(ScanDirection.RIGHT, distance);
     if (leftHealthSum > 0 && leftHealthSum > rightHealthSum) {
-      this.view.is_left = true;
+      this.view.isLeft = true;
     } else if (rightHealthSum > 0 && rightHealthSum > leftHealthSum) {
-      this.view.is_left = false;
+      this.view.isLeft = false;
     }
   }
 
