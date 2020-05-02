@@ -20,6 +20,14 @@ export class LinearCurve {
   static line(): Curve<number> {
     return t => t;
   }
+
+  static matrix<Point extends number[]>(size: number): Curve<Point> {
+    return t => {
+      const m = [];
+      for (let i = 0; i < size; i++) m[i] = t;
+      return m as Point;
+    };
+  }
 }
 
 export class BezierCurve {

@@ -1,4 +1,4 @@
-import {BaseCharacterAI, Character, IdleAnimation, ScanDirection} from "./character";
+import {BaseCharacterAI, Character, HitAnimationController, IdleAnimationController, ScanDirection} from "./character";
 import {DungeonMap, DungeonZIndexes, MapCell} from "./dungeon.map";
 import {UsableDrop, Weapon} from "./drop";
 import {Observable, ObservableVar} from "./observable";
@@ -188,12 +188,16 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected action(finished: boolean): boolean {
+  action(finished: boolean): boolean {
     if (!this.character.dead.get()) {
 
-      const idle = this.animation instanceof IdleAnimation;
+      const idle = this.animation instanceof IdleAnimationController;
+      const hit = this.animation instanceof HitAnimationController;
 
       if (finished) {
+        if (hit) {
+          this.scanHit();
+        }
         this.scanDrop();
       }
 
@@ -272,7 +276,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected scanHit(): void {
+  private scanHit(): void {
     const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;

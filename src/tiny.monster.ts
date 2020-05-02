@@ -1,6 +1,6 @@
 import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
 import {MonsterAI, MonsterCategory, MonsterCharacter, MonsterType} from "./monster";
-import {ScanDirection} from "./character";
+import {HitAnimationController, ScanDirection} from "./character";
 import {monsterWeapons, Weapon, WeaponConfig} from "./drop";
 
 export interface TinyMonsterConfig {
@@ -116,8 +116,13 @@ export class TinyMonsterAI extends MonsterAI {
     this.init();
   }
 
-  protected action(finished: boolean): boolean {
+  action(finished: boolean): boolean {
     if (!this.character.dead.get() && finished) {
+      const hit = this.animation instanceof HitAnimationController;
+      if (hit) {
+        this.scanHit();
+      }
+
       const leader = this.character.type === MonsterType.LEADER;
       if (leader) {
         if (this.spawnMinions()) {

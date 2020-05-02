@@ -426,11 +426,8 @@ export class NpcAI extends BaseCharacterAI {
   protected onKilledBy(_by: Character): void {
   }
 
-  protected action(): boolean {
+  action(): boolean {
     return false;
-  }
-
-  protected scanHit(): void {
   }
 
   interact(hero: HeroAI): void {

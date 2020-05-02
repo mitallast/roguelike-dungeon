@@ -2,10 +2,11 @@ import {Resources} from "./resources";
 import {DungeonMap, DungeonZIndexes, MapCell, DungeonObject} from "./dungeon.map";
 import {Observable, ObservableVar} from "./observable";
 import {UsableDrop, Weapon} from "./drop";
-import {Curve, LinearCurve} from "./curves";
+import {LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
 import {HeroAI} from "./hero";
 import {Inventory} from "./inventory";
+import {Animation, AnimationClip, AnimationCurveClip, SpriteAnimationClip} from "./animation";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -108,13 +109,14 @@ export interface CharacterAI extends DungeonObject {
 
   readonly width: number;
   readonly height: number;
+  readonly character: Character;
   readonly view: CharacterView;
   readonly dungeon: DungeonMap;
 
-  animation: Animation;
+  readonly animation: AnimationController;
 
   setPosition(x: number, y: number): void;
-  lookAt(character: CharacterAI): void
+  lookAt(character: CharacterAI): void;
 
   destroy(): void;
 }
@@ -134,7 +136,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
   readonly view: CharacterView;
   readonly dungeon: DungeonMap;
 
-  private _animation: Animation | null = null;
+  private _animation: AnimationController | null = null;
   private _x: number;
   private _y: number;
 
@@ -149,13 +151,13 @@ export abstract class BaseCharacterAI implements DungeonObject {
   readonly width: number;
   readonly height: number;
 
-  set animation(animation: Animation) {
+  set animation(animation: AnimationController) {
     this._animation?.cancel();
     this._animation = animation;
-    this._animation.run()
+    this._animation.start();
   }
 
-  get animation(): Animation {
+  get animation(): AnimationController {
     return this._animation!;
   }
 
@@ -174,9 +176,11 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.character.dead.subscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this.idle();
+    this.dungeon.ticker.add(this.update, this);
   }
 
   destroy(): void {
+    this.dungeon.ticker.remove(this.update, this);
     this._animation?.cancel();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
@@ -287,54 +291,27 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 
   protected idle(): void {
-    this.animation = new IdleAnimation(this, this.dungeon.ticker, {
-      sprite: this.character.name + '_idle',
-      speed: this.character.speed,
-      update: (animation) => {
-        if (this.action(false)) {
-          animation.cancel();
-        }
-      },
-      finish: () => {
-        if (!this.action(true)) {
-          this.idle();
-        }
-      }
-    });
+    this.animation = new IdleAnimationController(this);
   }
 
   protected run(new_x: number, new_y: number): void {
-    this.animation = new RunAnimation(this, this.dungeon.ticker, {
-      new_x: new_x,
-      new_y: new_y,
-      sprite: this.character.name + '_run',
-      speed: this.character.speed,
-      finish: () => {
-        if (!this.action(true)) {
-          this.idle();
-        }
-      }
-    });
+    this.animation = new RunAnimationController(this, new_x, new_y);
   }
-
-  protected abstract scanHit(): void;
 
   protected hit(): void {
-    const weapon = this.character.weapon;
-    this.animation = new HitAnimation(this, this.dungeon.ticker, {
-      sprite: this.character.name + '_idle',
-      speed: weapon?.speed || this.character.speed,
-      curve: weapon?.curve,
-      finish: () => {
-        this.scanHit();
-        if (!this.action(true)) {
-          this.idle();
-        }
-      },
-    });
+    this.animation = new HitAnimationController(this);
   }
 
-  protected abstract action(finished: boolean): boolean;
+  abstract action(finished: boolean): boolean;
+
+  private update(deltaTime: number): void {
+    const animation = this._animation!;
+    animation.update(deltaTime);
+    const finished = !animation.isPlaying;
+    if (!this.action(finished) && finished) {
+      this.idle();
+    }
+  }
 
   setPosition(x: number, y: number): void {
     this.dungeon.remove(this._x, this._y, this);
@@ -418,218 +395,183 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 }
 
-interface AnimationOptions {
-  readonly sprite: string;
-  readonly speed: number;
-  readonly curve?: Curve<number>;
-  readonly start?: (animation: Animation) => void;
-  readonly update?: (animation: Animation) => void;
-  readonly frame?: (animation: Animation) => void;
-  readonly finish: (animation: Animation) => void;
-  readonly cancel?: (animation: Animation) => void;
+interface AnimationController {
+  readonly isPlaying: boolean;
+  start(): void;
+  update(deltaTime: number): void;
+  cancel(): void;
+  finish(): void;
 }
 
-export abstract class Animation {
-  protected readonly character: CharacterAI;
-  protected readonly view: CharacterView;
-  protected readonly ticker: PIXI.Ticker;
+export class IdleAnimationController implements AnimationController {
+  private readonly ai: CharacterAI;
+  private readonly view: CharacterView;
+  private readonly spriteName: string;
 
-  protected readonly sprite: string;
-  protected readonly speed: number;
-  protected readonly curve: Curve<number>;
-  protected readonly on_start: ((animation: Animation) => void) | null;
-  protected readonly on_update: ((animation: Animation) => void) | null;
-  protected readonly on_frame: ((animation: Animation) => void) | null;
-  protected readonly on_cancel: ((animation: Animation) => void) | null;
-  protected readonly on_finish: (animation: Animation) => void;
+  private readonly animation: Animation
 
-  protected _spriteTime: number = 0;
-  protected _spritePlay: boolean = false;
-  protected _terminated: boolean = false;
+  constructor(ai: CharacterAI) {
+    this.ai = ai;
+    this.view = ai.view;
+    this.spriteName = this.ai.character.name + '_idle';
 
-  get spriteTime(): number {
-    return this._spriteTime;
+    this.animation = new Animation();
   }
 
-  protected constructor(character: CharacterAI, ticker: PIXI.Ticker, options: AnimationOptions) {
-    this.character = character;
-    this.view = character.view;
-    this.ticker = ticker;
-    this.sprite = options.sprite;
-    this.speed = options.speed;
-    this.curve = options.curve || LinearCurve.line();
-    this.on_start = options.start || null;
-    this.on_update = options.update || null;
-    this.on_frame = options.frame || null;
-    this.on_cancel = options.cancel || null;
-    this.on_finish = options.finish;
+  get isPlaying(): boolean {
+    return this.animation.isPlaying;
   }
 
-  run(): void {
-    this._spritePlay = true;
-    this._terminated = false;
-    this.start();
-    this.ticker.add(this.tick, this);
-    if (this.on_start) this.on_start(this);
+  start(): void {
+    this.animation.clear();
+    this.animation.add(this.view.setSprite(this.spriteName, this.ai.character.speed));
+    this.animation.start();
+  }
+
+  update(deltaTime: number): void {
+    this.animation.update(deltaTime);
+    if (!this.animation.isPlaying) {
+      this.finish();
+    }
   }
 
   cancel(): void {
-    if (!this._terminated) {
-      this.terminate();
-      this.canceled();
-      if (this.on_cancel) this.on_cancel(this);
-    }
+    this.animation.stop();
   }
 
-  private tick(deltaTime: number): void {
-    this.updateSprite(deltaTime);
-    this.update();
-    if (this.on_update) this.on_update(this);
-    if (!this._terminated && !this._spritePlay) {
-      this.terminate();
-      this.finish();
-      if (this.on_finish) this.on_finish(this);
-
-      console.assert(this.character.animation !== this);
-    }
-  }
-
-  private terminate(): void {
-    if (!this._terminated) {
-      this._terminated = true;
-      this.ticker.remove(this.tick, this);
-    }
-  }
-
-  protected abstract start(): void;
-
-  protected abstract update(): void;
-
-  protected abstract finish(): void;
-
-  protected abstract canceled(): void;
-
-  private updateSprite(deltaTime: number): void {
-    const sprite = this.view.sprite;
-    if (!sprite) {
-      console.warn("no sprite found");
-      this._spriteTime = 0;
-      this._spritePlay = false;
-      return;
-    }
-
-    const elapsed = sprite.animationSpeed * deltaTime;
-    const previousFrame = sprite.currentFrame;
-    this._spriteTime += elapsed;
-
-    let currentFrame = Math.floor(this._spriteTime) % sprite.totalFrames;
-    if (currentFrame < 0) {
-      currentFrame += sprite.totalFrames;
-    }
-
-    if (this._spriteTime < 0) {
-      this._spriteTime = 0;
-      this._spritePlay = false;
-    } else if (this._spriteTime >= sprite.totalFrames) {
-      this._spriteTime = sprite.totalFrames - 1;
-      this._spritePlay = false;
-    } else if (previousFrame !== currentFrame) {
-      sprite.gotoAndStop(currentFrame);
-      if (this.on_frame) this.on_frame(this);
-    }
+  finish(): void {
+    this.animation.stop();
   }
 }
 
-export class IdleAnimation extends Animation {
-  constructor(character: CharacterAI, ticker: PIXI.Ticker, options: AnimationOptions) {
-    super(character, ticker, options);
-  }
+export class RunAnimationController implements AnimationController {
+  private readonly ai: CharacterAI;
+  private readonly view: CharacterView;
+  private readonly spriteName: string
 
-  protected start(): void {
-    this.view.setSprite(this.sprite, this.speed);
-  }
-
-  protected update(): void {
-  }
-
-  protected finish(): void {
-  }
-
-  protected canceled(): void {
-  }
-}
-
-export interface RunAnimationOptions extends AnimationOptions {
-  readonly new_x: number;
-  readonly new_y: number;
-}
-
-export class RunAnimation extends Animation {
   private readonly x: number;
   private readonly y: number;
   private readonly new_x: number;
   private readonly new_y: number;
 
-  constructor(character: CharacterAI, ticker: PIXI.Ticker, options: RunAnimationOptions) {
-    super(character, ticker, options);
-    this.x = character.x;
-    this.y = character.y;
-    this.new_x = options.new_x;
-    this.new_y = options.new_y;
+  private readonly animation: Animation
+
+  get isPlaying(): boolean {
+    return this.animation.isPlaying;
   }
 
-  protected start(): void {
-    this.view.setSprite(this.sprite, this.speed);
-    this.character.dungeon.set(this.new_x, this.new_y, this.character);
+  constructor(ai: CharacterAI, new_x: number, new_y: number) {
+    this.ai = ai;
+    this.view = ai.view;
+    this.spriteName = ai.character.name + '_run';
+
+    this.x = this.ai.x;
+    this.y = this.ai.y;
+    this.new_x = new_x;
+    this.new_y = new_y;
+
+    this.animation = new Animation();
   }
 
-  protected update(): void {
-    const delta = this.spriteTime / this.view.sprite!.totalFrames;
-    const pos_x = this.x + (this.new_x - this.x) * delta;
-    const pos_y = this.y + (this.new_y - this.y) * delta;
-    this.character.view.setPosition(pos_x, pos_y);
+  start(): void {
+    const speed = this.ai.character.speed;
+    this.ai.dungeon.set(this.new_x, this.new_y, this.ai);
+    this.animation.clear();
+    this.animation.add(this.view.setSprite(this.spriteName, speed));
+    this.animation.add(new AnimationCurveClip(
+      [this.x, this.y],
+      [this.new_x, this.new_y],
+      LinearCurve.matrix(2),
+      this.view.sprite!.totalFrames,
+      this.view.sprite!.animationSpeed,
+      this.view.setPosition,
+      this.view
+    ));
+    this.animation.start();
   }
 
-  protected finish(): void {
-    this.character.dungeon.remove(this.x, this.y, this.character);
-    this.character.dungeon.remove(this.new_x, this.new_y, this.character);
-    this.character.setPosition(this.new_x, this.new_y);
-  }
-
-  protected canceled(): void {
-    this.character.dungeon.remove(this.x, this.y, this.character);
-    this.character.dungeon.remove(this.new_x, this.new_y, this.character);
-    this.character.setPosition(this.character.x, this.character.y);
-  }
-}
-
-export class HitAnimation extends Animation {
-  constructor(character: CharacterAI, ticker: PIXI.Ticker, options: AnimationOptions) {
-    super(character, ticker, options);
-  }
-
-  protected start(): void {
-    this.view.setSprite(this.sprite, this.speed);
-  }
-
-  protected update(): void {
-    const weapon = this.view.weaponSprite;
-    if (weapon) {
-      const sprite = this.view.sprite!;
-      const delta = this._spriteTime / sprite.totalFrames;
-      const curveDelta = this.curve(delta);
-      weapon.angle = (this.view.isLeft ? -90 : 90) * curveDelta;
+  update(deltaTime: number): void {
+    this.animation.update(deltaTime);
+    if (!this.animation.isPlaying) {
+      this.finish();
     }
   }
 
-  protected finish(): void {
-    const weapon = this.view.weaponSprite;
+  cancel(): void {
+    this.animation.stop();
+    this.ai.dungeon.remove(this.x, this.y, this.ai);
+    this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
+    this.ai.setPosition(this.ai.x, this.ai.y);
+  }
+
+  finish(): void {
+    this.animation.stop();
+    this.ai.dungeon.remove(this.x, this.y, this.ai);
+    this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
+    this.ai.setPosition(this.new_x, this.new_y);
+  }
+}
+
+export class HitAnimationController implements AnimationController {
+  private readonly ai: CharacterAI;
+  private readonly view: CharacterView;
+  private readonly spriteName: string;
+
+  private readonly animation: Animation
+
+  get isPlaying(): boolean {
+    return this.animation.isPlaying;
+  }
+
+  constructor(ai: CharacterAI) {
+    this.ai = ai;
+    this.view = ai.view;
+    this.spriteName = ai.character.name + '_idle';
+
+    this.animation = new Animation();
+  }
+
+  start(): void {
+    const weapon = this.ai.character.weapon;
+    const speed = weapon ? weapon.speed : this.ai.character.speed;
+
+    this.animation.clear();
+    this.animation.add(this.view.setSprite(this.spriteName, speed));
+    if (weapon) {
+      const weaponSprite = this.view.weaponSprite!;
+      this.animation.add(new AnimationCurveClip(
+        [0], [this.view.isLeft ? -90 : 90],
+        t => [weapon.curve(t)],
+        this.view.sprite!.totalFrames,
+        this.view.sprite!.animationSpeed,
+        (angle) => weaponSprite.angle = angle,
+        this
+      ));
+    }
+    this.animation.start();
+  }
+
+  update(deltaTime: number): void {
+    this.animation.update(deltaTime);
+    if (!this.animation.isPlaying) {
+      this.finish();
+    }
+  }
+
+  cancel(): void {
+    this.animation.stop();
+    let weapon = this.view.weaponSprite;
     if (weapon) {
       weapon.angle = 0;
     }
   }
 
-  protected canceled(): void {
+  finish(): void {
+    this.animation.stop();
+    let weapon = this.view.weaponSprite;
+    if (weapon) {
+      weapon.angle = 0;
+    }
   }
 }
 
@@ -652,7 +594,7 @@ export interface CharacterView {
   readonly weaponSprite: PIXI.Sprite | null;
 
   setPosition(x: number, y: number): void;
-  setSprite(name: string, speed: number): void
+  setSprite(name: string, speed: number): AnimationClip;
   setWeapon(weapon: Weapon | null): void;
 
   destroy(): void
@@ -714,7 +656,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
     }
   }
 
-  setSprite(name: string, speed: number): void {
+  setSprite(name: string, speed: number): AnimationClip {
     this._sprite?.destroy();
     this._sprite = this.resources.animated(name, {
       autoUpdate: false,
@@ -727,6 +669,7 @@ export class BaseCharacterView extends PIXI.Container implements CharacterView {
     this.addChild(this._sprite);
     this.updateSpriteOrientation();
     this.updateWeaponOrientation();
+    return new SpriteAnimationClip(this._sprite);
   }
 
   setWeapon(weapon: Weapon | null): void {

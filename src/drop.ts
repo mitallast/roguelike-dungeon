@@ -185,6 +185,22 @@ export const npcWeapons: NpcWeapons = {
   knight_sword: {name: "weapon_knight_sword", speed: 1.5, distance: 1, damage: 14, level: 9, price: 180},
 }
 
+// Анимация Алебарды
+
+// Анимация рубящего удара:
+// 1) замах с нацеливанием - 9 кадров
+// 2) окончательный замах  - 3 кадра
+// 3) рубящий удар         - 4 кадра
+// 4) возврат на изготовку - 9 кадров
+
+// Анимация колящего удара
+// 1) отвод с нацеливанием - 4 кадра
+// 2) ожидание             - 4 кадра
+// 3) окончательный замах  - 1 кадр
+// 4) удар с шлейфом       - 2 кадра
+// 5) отвод                - 6 кадров
+// 6) возврат на изготовку - 3 кадра
+
 export class Weapon implements UsableDrop {
   private readonly name: string;
   readonly speed: number;

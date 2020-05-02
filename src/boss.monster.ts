@@ -4,6 +4,7 @@ import {TinyMonsterAI, tinyMonsters} from "./tiny.monster"
 import {Colors} from "./ui";
 import {BarView} from "./bar.view";
 import {WeaponConfig, monsterWeapons, Weapon} from "./drop";
+import {HitAnimationController} from "./character";
 import * as PIXI from 'pixi.js';
 
 export interface BossConfig {
@@ -77,8 +78,14 @@ export class BossMonsterAI extends MonsterAI {
     dungeon.controller.stage.addChild(healthView);
   }
 
-  protected action(finished: boolean): boolean {
+  action(finished: boolean): boolean {
     if (!this.character.dead.get() && finished) {
+      const hit = this.animation instanceof HitAnimationController;
+
+      if (finished && hit) {
+        this.scanHit();
+      }
+
       if (this.spawnMinions()) {
         return false;
       }

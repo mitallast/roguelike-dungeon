@@ -1,6 +1,13 @@
 import {DungeonMap} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
-import {BaseCharacterAI, Character, CharacterAI, CharacterViewOptions, IdleAnimation, ScanDirection} from "./character";
+import {
+  BaseCharacterAI,
+  Character,
+  CharacterAI,
+  CharacterViewOptions,
+  IdleAnimationController,
+  ScanDirection
+} from "./character";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -96,7 +103,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
     if (!this.character.dead.get() &&
       this.character.type !== MonsterType.LEADER &&
       this._state === MonsterState.READY &&
-      this.animation instanceof IdleAnimation
+      this.animation instanceof IdleAnimationController
     ) {
       this.moveTo(hero);
     }
