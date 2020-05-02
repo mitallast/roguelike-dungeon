@@ -11,6 +11,7 @@ import {Colors} from "./ui";
 // import {RulesEditor} from "./wfc/rules.editor";
 
 (async function () {
+  PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
   PIXI.settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
   PIXI.sound.volumeAll = 0.5;
 

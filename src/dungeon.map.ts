@@ -41,6 +41,7 @@ export class DungeonMap {
   private readonly cells: MapCell[][];
 
   readonly container: PIXI.Container;
+  readonly floorContainer: PIXI.Container;
   readonly light: DungeonLight;
   readonly lighting: PIXI.Sprite;
   readonly scale: number = 2;
@@ -66,6 +67,12 @@ export class DungeonMap {
     this.container.zIndex = 0;
     this.container.sortableChildren = true;
     this.container.scale.set(this.scale, this.scale);
+
+    this.floorContainer = new PIXI.Container();
+    this.floorContainer.zIndex = DungeonZIndexes.floor;
+    this.floorContainer.sortableChildren = false;
+    this.floorContainer.cacheAsBitmap = true;
+    this.container.addChild(this.floorContainer);
 
     this.light = new DungeonLight(this);
     this.light.layer.zIndex = 1;
@@ -343,8 +350,14 @@ export abstract class DungeonFloor implements DungeonObject {
     this.x = x;
     this.y = y;
     this.name = name;
-    this.sprite = dungeon.sprite(x, y, name);
+    this.sprite = this.dungeon.controller.resources.sprite(name);
     this.sprite.zIndex = DungeonZIndexes.floor;
+    this.sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
+    if (this.sprite instanceof PIXI.AnimatedSprite) {
+      this.dungeon.container.addChild(this.sprite);
+    } else {
+      this.dungeon.floorContainer.addChild(this.sprite);
+    }
   }
 
   abstract interact(hero: HeroAI): void;
