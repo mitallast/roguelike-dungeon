@@ -156,7 +156,7 @@ export class DungeonLight {
 
     light.sprite.position.set(start.x, start.y);
     light.mask.clear()
-      .beginFill(0xFFFFFF, 1)
+      .beginFill(0xFFFFFF)
       .drawPolygon(output)
       .endFill();
   }

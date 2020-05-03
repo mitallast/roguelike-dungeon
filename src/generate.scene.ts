@@ -63,11 +63,11 @@ export class GenerateDungeonScene implements Scene {
     const w_p = Math.floor((w - border - border) * this.generator.percent / 100);
 
     this.progressBar.clear();
-    this.progressBar.beginFill(Colors.uiBackground, 0.3);
+    this.progressBar.beginFill(Colors.uiBackground);
     this.progressBar.drawRect(margin, c_h - margin - h - border - border, w, h);
     this.progressBar.endFill();
 
-    this.progressBar.beginFill(Colors.uiSelected, 0.3);
+    this.progressBar.beginFill(Colors.uiSelected);
     this.progressBar.drawRect(margin + border, c_h - margin - h - border, w_p, h - border - border);
     this.progressBar.endFill();
   }

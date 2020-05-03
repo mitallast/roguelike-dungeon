@@ -291,7 +291,7 @@ class DialogQuestionView extends PIXI.Container {
     this._background = new PIXI.Graphics();
     this._background
       .clear()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(0, 0, width, height)
       .endFill();
 

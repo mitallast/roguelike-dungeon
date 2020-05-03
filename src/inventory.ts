@@ -1,7 +1,7 @@
 import {DropInfo, UsableDrop, Weapon} from "./drop";
 import {Hero} from "./hero";
 import {ObservableVar, Observable, EventPublisher, Publisher} from "./observable";
-import {Colors, Sizes, Selectable, Layout, Button, SelectableGrid} from "./ui";
+import {Colors, Sizes, Selectable, Button, SelectableGrid, VStack, HStack} from "./ui";
 import {Npc} from "./npc";
 import {Resources} from "./resources";
 import {Character} from "./character";
@@ -293,6 +293,7 @@ export class InventoryCell {
 }
 
 export interface InventoryController {
+  readonly title: string;
   readonly inventory: Inventory;
 
   handleActions(view: InventoryCellActionsView, drop: UsableDrop | null): void;
@@ -301,10 +302,12 @@ export interface InventoryController {
 }
 
 export abstract class BaseInventoryActionsController implements InventoryController {
+  readonly title: string;
   readonly inventory: Inventory;
 
-  protected constructor(inventory: Inventory) {
+  protected constructor(inventory: Inventory, title: string) {
     this.inventory = inventory;
+    this.title = title;
   }
 
   handleActions(view: InventoryCellActionsView, drop: UsableDrop | null): void {
@@ -320,8 +323,8 @@ export abstract class BaseInventoryActionsController implements InventoryControl
 }
 
 export abstract class BaseHeroInventoryActionsController extends BaseInventoryActionsController {
-  protected constructor(inventory: Inventory) {
-    super(inventory);
+  protected constructor(inventory: Inventory, title: string) {
+    super(inventory, title);
   }
 
   protected basicButtons(view: InventoryCellActionsView, item: UsableDrop): void {
@@ -341,7 +344,7 @@ export abstract class BaseHeroInventoryActionsController extends BaseInventoryAc
 
 export class DefaultInventoryActionsController extends BaseHeroInventoryActionsController {
   constructor(inventory: Inventory) {
-    super(inventory);
+    super(inventory, "Inventory");
   }
 
   protected buttons(view: InventoryCellActionsView, item: UsableDrop): void {
@@ -360,7 +363,7 @@ export class SellingInventoryActionsController extends BaseHeroInventoryActionsC
   private readonly npc: Npc;
 
   constructor(hero: Hero, npc: Npc) {
-    super(hero.inventory);
+    super(hero.inventory, "Selling");
     this.hero = hero;
     this.npc = npc;
   }
@@ -400,7 +403,7 @@ export class BuyingInventoryActionsController extends BaseInventoryActionsContro
   private readonly npc: Npc;
 
   constructor(hero: Hero, npc: Npc) {
-    super(npc.inventory);
+    super(npc.inventory, "Buying");
     this.hero = hero;
     this.npc = npc;
   }
@@ -438,77 +441,64 @@ export class BuyingInventoryActionsController extends BaseInventoryActionsContro
 
 export class InventoryView extends PIXI.Container {
   private readonly selectable: SelectableGrid;
-  private readonly selectableOffset: number;
+  private readonly selectableOffsetX: number;
+  private readonly selectableOffsetY: number;
 
-  readonly equipment: EquipmentInventoryView;
-  readonly belt: BeltInventoryView;
-  readonly backpack: BackpackInventoryView;
-  readonly card: InventoryCellCardView;
-  readonly actions: InventoryCellActionsView;
+  private readonly equipment: EquipmentInventoryView;
+  private readonly belt: BeltInventoryView;
+  private readonly backpack: BackpackInventoryView;
+  private readonly card: InventoryCellCardView;
+  private readonly actions: InventoryCellActionsView;
 
   constructor(
     resources: Resources,
     controller: InventoryController,
     selectable: SelectableGrid,
-    selectableOffset: number
+    selectableOffsetX: number,
+    selectableOffsetY: number,
   ) {
     super();
     this.selectable = selectable;
-    this.selectableOffset = selectableOffset;
+    this.selectableOffsetX = selectableOffsetX;
+    this.selectableOffsetY = selectableOffsetY;
 
     const inventory = controller.inventory;
-    const layout = new Layout();
+
+    const viewStack = new HStack({padding: 0});
+    this.addChild(viewStack);
+    const inventoryStack = new VStack({padding: 0});
+    viewStack.addChild(inventoryStack);
+
     this.equipment = new EquipmentInventoryView(resources, inventory.equipment);
-    this.equipment.position.set(layout.x, layout.y);
-    this.equipment.calculateBounds();
-    layout.offset(0, this.equipment.height);
-    layout.offset(0, Sizes.uiMargin);
-    selectable.set(selectableOffset, 0, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
-    selectable.merge(selectableOffset, 0, 10, 1);
+    inventoryStack.addChild(this.equipment);
+    selectable.set(selectableOffsetX, selectableOffsetY, this.equipment.weapon, () => this.show(inventory.equipment.weapon));
+    selectable.merge(selectableOffsetX, selectableOffsetY, 10, 1);
 
     this.belt = new BeltInventoryView(resources, inventory.belt);
-    this.belt.position.set(layout.x, layout.y);
-    this.belt.calculateBounds();
-    layout.offset(0, this.belt.height);
-    layout.offset(0, Sizes.uiMargin);
+    inventoryStack.addChild(this.belt);
     for (let i = 0; i < this.belt.length; i++) {
       const cell = inventory.belt.cell(i);
-      this.selectable.set(selectableOffset + i, 1, this.belt.cell(i), () => this.show(cell));
+      this.selectable.set(selectableOffsetX + i, selectableOffsetY + 1, this.belt.cell(i), () => this.show(cell));
     }
 
     this.backpack = new BackpackInventoryView(resources, inventory.backpack);
-    this.backpack.position.set(layout.x, layout.y);
-    this.backpack.calculateBounds();
-    layout.offset(0, this.backpack.height);
-    layout.offset(0, Sizes.uiMargin);
+    inventoryStack.addChild(this.backpack);
 
     for (let x = 0; x < inventory.backpack.width; x++) {
       for (let y = 0; y < inventory.backpack.height; y++) {
         const cell = inventory.backpack.cell(x, y);
-        this.selectable.set(selectableOffset + x, y + 2, this.backpack.cell(x, y), () => this.show(cell));
+        this.selectable.set(selectableOffsetX + x, selectableOffsetY + y + 2, this.backpack.cell(x, y), () => this.show(cell));
       }
     }
 
-    this.actions = new InventoryCellActionsView(this.selectable, this.selectableOffset, controller);
-    this.actions.position.set(layout.x, layout.y);
-
-    layout.offset(0, BUTTON_HEIGHT);
-    layout.offset(0, Sizes.uiMargin); // two rows of buttons
-    layout.offset(0, BUTTON_HEIGHT);
-    const totalHeight = layout.y;
-
-    layout.reset();
-    layout.offset(this.backpack.width, 0);
-    layout.offset(Sizes.uiMargin, 0);
+    this.actions = new InventoryCellActionsView(this.selectable, this.selectableOffsetX, this.selectableOffsetY, controller);
+    inventoryStack.addChild(this.actions);
 
     this.card = new InventoryCellCardView(resources, controller, {
       width: 400,
-      height: totalHeight
+      height: 400,
     });
-    this.card.position.set(layout.x, layout.y);
-    this.card.calculateBounds();
-
-    this.addChild(this.equipment, this.belt, this.backpack, this.card, this.actions);
+    viewStack.addChild(this.card);
   }
 
   destroy(): void {
@@ -537,21 +527,21 @@ export class EquipmentInventoryView extends PIXI.Container {
     this.equipment = equipment;
 
     const background = new PIXI.Graphics()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(
         0, 0,
         CELL_SIZE + (Sizes.uiBorder << 1),
         CELL_SIZE + (Sizes.uiBorder << 1)
       )
       .endFill();
-    super.addChild(background);
+    this.addChild(background);
 
     this.weapon = new InventoryCellView(resources, {
       item: this.equipment.weapon.item,
       count: new ObservableVar(null)
     });
     this.weapon.position.set(Sizes.uiBorder, Sizes.uiBorder);
-    super.addChild(this.weapon);
+    this.addChild(this.weapon);
   }
 }
 
@@ -564,14 +554,14 @@ export class BeltInventoryView extends PIXI.Container {
     this.inventory = inventory;
 
     const background = new PIXI.Graphics()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(
         0, 0,
         Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.length,
         CELL_SIZE + (Sizes.uiBorder << 1)
       )
       .endFill();
-    super.addChild(background);
+    this.addChild(background);
 
     this.cells = [];
     for (let i = 0; i < inventory.length; i++) {
@@ -585,7 +575,7 @@ export class BeltInventoryView extends PIXI.Container {
         Sizes.uiBorder
       );
       this.cells.push(view);
-      super.addChild(view);
+      this.addChild(view);
     }
   }
 
@@ -604,14 +594,14 @@ export class BackpackInventoryView extends PIXI.Container {
   constructor(resources: Resources, inventory: BackpackInventory) {
     super();
     const background = new PIXI.Graphics()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(
         0, 0,
         Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.width,
         Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * inventory.height,
       )
       .endFill();
-    super.addChild(background);
+    this.addChild(background);
 
     this.cells = [];
     for (let y = 0; y < inventory.height; y++) {
@@ -627,7 +617,7 @@ export class BackpackInventoryView extends PIXI.Container {
           Sizes.uiBorder + (CELL_SIZE + Sizes.uiBorder) * y
         );
         this.cells[y][x] = view;
-        super.addChild(view);
+        this.addChild(view);
       }
     }
   }
@@ -646,18 +636,15 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
   private readonly counter: PIXI.BitmapText;
   private sprite: PIXI.Sprite | null = null;
 
-  private readonly _alpha: number;
   private _selected: boolean = false;
 
   constructor(resources: Resources, options: {
     item: Observable<UsableDrop | null>,
     count: Observable<number | null>,
-    alpha?: number
   }) {
     super();
     this._item = options.item;
     this._count = options.count;
-    this._alpha = options.alpha || 0.3;
     this.resources = resources;
     this.background = new PIXI.Graphics();
     this.selected = false;
@@ -666,7 +653,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     this.counter.anchor = new PIXI.Point(1, 0);
     this.counter.position.set(CELL_SIZE - Sizes.uiBorder, 0);
 
-    super.addChild(this.background, this.counter);
+    this.addChild(this.background, this.counter);
 
     this._item.subscribe(this.updateItem, this);
     this._count.subscribe(this.updateCounter, this);
@@ -686,7 +673,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
     this._selected = selected;
     this.background
       .clear()
-      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected, this._alpha)
+      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
       .drawRect(0, 0, CELL_SIZE, CELL_SIZE)
       .endFill();
   }
@@ -709,7 +696,7 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
       this.sprite.scale.set(scale, scale);
       this.sprite.anchor.set(0.5, 0);
       this.sprite.position.set(CELL_SIZE >> 1, Sizes.uiBorder);
-      super.addChild(this.sprite);
+      this.addChild(this.sprite);
     }
   }
 }
@@ -739,10 +726,10 @@ export class InventoryCellCardView extends PIXI.Container {
     this._sprite_size = 128 + (Sizes.uiMargin << 1);
 
     const background = new PIXI.Graphics()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(0, 0, this._width, this._height)
       .endFill()
-      .beginFill(Colors.uiNotSelected, 0.3)
+      .beginFill(Colors.uiNotSelected)
       .drawRect(Sizes.uiMargin, Sizes.uiMargin + 32 + Sizes.uiMargin, this._sprite_size, this._sprite_size)
       .endFill();
 
@@ -756,7 +743,7 @@ export class InventoryCellCardView extends PIXI.Container {
       Sizes.uiMargin + 32 + Sizes.uiMargin
     );
 
-    super.addChild(background, this._title, this._description);
+    this.addChild(background, this._title, this._description);
   }
 
 
@@ -816,16 +803,18 @@ export class InventoryCellCardView extends PIXI.Container {
 
 export class InventoryCellActionsView extends PIXI.Container {
   private readonly selectable: SelectableGrid;
-  private readonly selectableOffset: number;
+  private readonly selectableOffsetX: number;
+  private readonly selectableOffsetY: number;
   private readonly controller: InventoryController;
   private readonly buttons: [Button, number, number][] = [];
 
   private _cell: InventoryCell | null = null;
 
-  constructor(selectable: SelectableGrid, selectableOffset: number, controller: InventoryController) {
+  constructor(selectable: SelectableGrid, selectableOffsetX: number, selectableOffsetY: number, controller: InventoryController) {
     super();
     this.selectable = selectable;
-    this.selectableOffset = selectableOffset;
+    this.selectableOffsetX = selectableOffsetX;
+    this.selectableOffsetY = selectableOffsetY;
     this.controller = controller;
   }
 
@@ -867,8 +856,8 @@ export class InventoryCellActionsView extends PIXI.Container {
     const cell = total % 2;
 
     const merge_width = 5;
-    const selectableX = this.selectableOffset + (cell * merge_width);
-    const selectableY = 10 + row;
+    const selectableX = this.selectableOffsetX + (cell * merge_width);
+    const selectableY = this.selectableOffsetY + 10 + row;
     const button = new Button({
       label: label,
       width: BUTTON_WIDTH,

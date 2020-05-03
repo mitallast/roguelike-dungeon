@@ -52,14 +52,14 @@ export class BarView extends PIXI.Container {
 
   private updateRect() {
     this._rect.clear()
-      .beginFill(Colors.uiBackground, 0.3)
+      .beginFill(Colors.uiBackground)
       .drawRect(
         0, 0,
         this._widthMax + (Sizes.uiBorder << 1),
         BAR_HEIGHT + (Sizes.uiBorder << 1)
       )
       .endFill()
-      .beginFill(this._color, 0.3)
+      .beginFill(this._color)
       .drawRect(
         Sizes.uiBorder,
         Sizes.uiBorder,

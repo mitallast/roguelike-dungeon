@@ -139,7 +139,7 @@ export class UpdateHeroScene implements Scene {
 
   private renderInventory(layout: Layout): void {
     const controller = new DefaultInventoryActionsController(this.hero.inventory);
-    this.inventory = new InventoryView(this.controller.resources, controller, this.selectable, 2);
+    this.inventory = new InventoryView(this.controller.resources, controller, this.selectable, 2, 0);
     this.inventory.position.set(layout.x, layout.y);
     this.controller.stage.addChild(this.inventory);
   }

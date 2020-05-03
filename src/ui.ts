@@ -11,12 +11,12 @@ export interface ColorScheme {
 }
 
 export const Colors: ColorScheme = {
-  background: 0x202020,
-  uiBackground: 0x505050,
-  uiSelected: 0x909090,
-  uiNotSelected: 0x505050,
+  background: 0x101010,
+  uiBackground: 0x202020,
+  uiSelected: 0x505050,
+  uiNotSelected: 0x404040,
   uiRed: 0xFF0000,
-  uiYellow: 0xFFD300,
+  uiYellow: 0xBF9E00,
 };
 
 export interface SizeScheme {
@@ -64,8 +64,11 @@ export class Button extends PIXI.Container implements Selectable {
     this._selected = selected;
     this._bg
       .clear()
-      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
+      .beginFill(Colors.uiBackground)
       .drawRect(0, 0, this._width, this._height)
+      .endFill()
+      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
+      .drawRect(Sizes.uiBorder, Sizes.uiBorder, this._width - Sizes.uiBorder * 2, this._height - Sizes.uiBorder * 2)
       .endFill();
   }
 }
@@ -471,5 +474,152 @@ class MergedRegion {
 
   contains(x: number, y: number): boolean {
     return x >= this.from_x && x <= this.to_x && y >= this.from_y && y <= this.to_y;
+  }
+}
+
+export class VStack extends PIXI.Container {
+  private _width: number = 0;
+  private _height: number = 0;
+
+  private _dirtyLayout: boolean = false;
+  private readonly _padding: number;
+  private readonly _spacing: number;
+  private readonly _background: PIXI.Container;
+
+  constructor(options: {
+    spacing?: number;
+    padding?: number;
+    background?: {
+      color: number;
+    }
+  } = {}) {
+    super();
+    this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
+    this._padding = options.padding !== undefined ? options.padding : Sizes.uiMargin;
+    if (options.background) {
+      this._background = new PIXI.Graphics()
+        .beginFill(options.background.color)
+        .drawRect(0, 0, 1, 1)
+        .endFill()
+    } else {
+      this._background = new PIXI.Container();
+    }
+    this.addChild(this._background);
+  }
+
+  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }) {
+    super.destroy(options);
+    this._background?.destroy();
+  }
+
+  protected onChildrenChange() {
+    this._dirtyLayout = true;
+  }
+
+  protected _calculateBounds() {
+    this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
+  }
+
+  updateTransform() {
+    if (this._dirtyLayout) {
+      this.updateLayout();
+    }
+    super.updateTransform();
+  }
+
+  private updateLayout(): void {
+    let max_width = 0;
+    let y = this._padding;
+    let x = this._padding;
+    let first = true;
+    for (let child of this.children) {
+      if (child === this._background) continue;
+      if (!first) y += this._spacing;
+      first = false;
+      child.position.set(x, y);
+      const bounds = child.getBounds();
+      y += bounds.height;
+      max_width = Math.max(max_width, bounds.width);
+    }
+    this._height = y + this._padding;
+    this._width = max_width + this._padding * 2;
+    this._background.width = this._width;
+    this._background.height = this._height;
+    this._calculateBounds();
+    this._dirtyLayout = false;
+  }
+}
+
+export class HStack extends PIXI.Container {
+  private _width: number = 0;
+  private _height: number = 0;
+
+  private _dirtyLayout: boolean = false;
+  private readonly _padding: number;
+  private readonly _spacing: number;
+  private readonly _background: PIXI.Container;
+
+  constructor(options: {
+    spacing?: number;
+    padding?: number;
+    background?: {
+      color: number;
+      alpha?: number;
+    }
+  } = {}) {
+    super();
+    this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
+    this._padding = options.padding !== undefined ? options.padding : Sizes.uiMargin;
+    if (options.background) {
+      this._background = new PIXI.Graphics()
+        .beginFill(options.background.color, options.background.alpha || 1)
+        .drawRect(0, 0, 1, 1)
+        .endFill();
+    } else {
+      this._background = new PIXI.Container();
+    }
+    this.addChild(this._background);
+  }
+
+  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }) {
+    super.destroy(options);
+    this._background?.destroy();
+  }
+
+  protected onChildrenChange() {
+    this._dirtyLayout = true;
+  }
+
+  protected _calculateBounds() {
+    this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
+  }
+
+  updateTransform() {
+    if (this._dirtyLayout) {
+      this.updateLayout();
+    }
+    super.updateTransform();
+  }
+
+  private updateLayout(): void {
+    let max_height = 0;
+    let y = this._padding;
+    let x = this._padding;
+    let first = true;
+    for (let child of this.children) {
+      if (child === this._background) continue;
+      if (!first) x += this._spacing;
+      first = false;
+      child.position.set(x, y);
+      const bounds = child.getBounds();
+      x += bounds.width;
+      max_height = Math.max(max_height, bounds.height);
+    }
+    this._width = x + this._padding;
+    this._height = max_height + this._padding * 2;
+    this._background.width = this._width;
+    this._background.height = this._height;
+    this._calculateBounds();
+    this._dirtyLayout = false;
   }
 }
