@@ -232,6 +232,7 @@ export class HeroAI extends BaseCharacterAI {
           const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
           const [object] = this.scanInteracting(direction, 1);
           if (object) {
+            joystick.hit.reset();
             this.idle();
             object.interact(this);
             return true;
