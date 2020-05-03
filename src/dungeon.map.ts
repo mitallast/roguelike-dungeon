@@ -439,7 +439,7 @@ export class DungeonDrop implements DungeonObject {
   readonly width: number = 1;
 
   readonly static: boolean = true;
-  readonly interacting: boolean = true;
+  readonly interacting: boolean = false;
 
   private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
 

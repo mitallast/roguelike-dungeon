@@ -2,7 +2,7 @@ import {RNG} from "./rng";
 import {Hero} from "./hero";
 import {InventoryCell} from "./inventory";
 import {Character} from "./character";
-import {AnimationEvent} from "./animation";
+import {AnimationEvent, AnimationKeyFrame} from "./animation";
 
 export interface Drop {
   readonly spriteName: string;
@@ -97,7 +97,7 @@ export class HealthBigFlask implements UsableDrop {
 }
 
 export interface WeaponAnimation {
-  readonly angle: number[];
+  readonly angle: AnimationKeyFrame<[number]>[];
   readonly pos: AnimationEvent<[number, number]>[];
 }
 
@@ -130,7 +130,9 @@ interface WeaponAnimations {
 
 const basic: WeaponAnimationSet = {
   idle: {
-    angle: [0, 0],
+    angle: [
+      {time: 0, args: [0]},
+    ],
     pos: [
       {time: 0, args: [-1, 0]},
       {time: 1, args: [-1, 1]},
@@ -139,7 +141,9 @@ const basic: WeaponAnimationSet = {
     ]
   },
   run: {
-    angle: [0, 0],
+    angle: [
+      {time: 0, args: [0]}
+    ],
     pos: [
       {time: 0, args: [-1, -1]},
       {time: 1, args: [-1, -2]},
@@ -148,7 +152,13 @@ const basic: WeaponAnimationSet = {
     ]
   },
   hit: {
-    angle: [0, -10, -20, -30, -40, -40, 0, 400, 100, 100, 0],
+    angle: [
+      {time: 0, args: [0]},
+      {time: 1.5, args: [-30]},
+      {time: 2, args: [120]},
+      {time: 3, args: [90]},
+      {time: 4, args: [0]},
+    ],
     pos: [
       {time: 0, args: [-1, 0]},
       {time: 1, args: [-1, 0]},
@@ -163,7 +173,9 @@ const weaponAnimations: WeaponAnimations = {
     idle: basic.idle,
     run: basic.run,
     hit: {
-      angle: [90, 90],
+      angle: [
+        {time: 0, args: [90]},
+      ],
       pos: [
         {time: 0, args: [-8, -4]},
         {time: 1, args: [-4, -4]},
@@ -176,19 +188,7 @@ const weaponAnimations: WeaponAnimations = {
   regular_sword: basic,
   red_gem_sword: basic,
   hammer: basic,
-  big_hammer: {
-    idle: basic.idle,
-    run: basic.run,
-    hit: {
-      angle: [0, -30, -30, -30, -30, -30, 0, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 60, 40, 20, 10],
-      pos: [
-        {time: 0, args: [-1, 0]},
-        {time: 1, args: [-1, 0]},
-        {time: 2, args: [-1, 0]},
-        {time: 3, args: [-1, 0]},
-      ]
-    },
-  },
+  big_hammer: basic,
   baton_with_spikes: basic,
   mace: basic,
   katana: basic,

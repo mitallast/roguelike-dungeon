@@ -2,11 +2,18 @@ import {Resources} from "./resources";
 import {DungeonMap, DungeonZIndexes, MapCell, DungeonObject} from "./dungeon.map";
 import {Observable, ObservableVar} from "./observable";
 import {UsableDrop, Weapon, WeaponAnimation} from "./drop";
-import {BezierCurve, LinearCurve} from "./curves";
+import {LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
 import {HeroAI} from "./hero";
 import {Inventory} from "./inventory";
-import {Animation, AnimationClip, AnimationCurveClip, AnimationEventClip, SpriteAnimationClip} from "./animation";
+import {
+  Animation,
+  AnimationClip,
+  AnimationCurveClip,
+  AnimationEventClip,
+  AnimationKeyFrameClip,
+  SpriteAnimationClip
+} from "./animation";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -423,18 +430,13 @@ export abstract class BaseAnimationController implements AnimationController {
 
   abstract start(): void;
 
-  protected animateWeapon(animation: WeaponAnimation, animationSpeed: number, duration: number): void {
+  protected animateWeapon(animation: WeaponAnimation, animationSpeed: number): void {
     const positionClip = new AnimationEventClip(animationSpeed, this.view.weapon.setPosition, this.view.weapon);
     positionClip.addEvents(animation.pos);
     this.animation.add(positionClip);
 
-    const angleClip = new AnimationCurveClip<[number]>(
-      BezierCurve.matrix<[number]>(...animation.angle.map(a => [a] as [number])),
-      duration,
-      animationSpeed,
-      this.view.weapon.setAngle,
-      this.view.weapon
-    );
+    const angleClip = new AnimationKeyFrameClip<[number]>(animationSpeed, this.view.weapon.setAngle, this.view.weapon);
+    angleClip.addFrames(animation.angle);
     this.animation.add(angleClip);
   }
 
@@ -464,7 +466,7 @@ export class IdleAnimationController extends BaseAnimationController {
     this.animation.add(clip);
     const weapon = this.ai.character.weapon;
     if (weapon) {
-      this.animateWeapon(weapon.animations.idle, clip.animationSpeed, clip.duration);
+      this.animateWeapon(weapon.animations.idle, clip.animationSpeed);
     }
     this.animation.start();
   }
@@ -502,7 +504,7 @@ export class RunAnimationController extends BaseAnimationController {
 
     const weapon = this.ai.character.weapon;
     if (weapon) {
-      this.animateWeapon(weapon.animations.run, clip.animationSpeed, clip.duration);
+      this.animateWeapon(weapon.animations.run, clip.animationSpeed);
     }
     this.animation.start();
   }
@@ -534,7 +536,7 @@ export class HitAnimationController extends BaseAnimationController {
     this.animation.add(clip);
 
     if (weapon) {
-      this.animateWeapon(weapon.animations.hit, clip.animationSpeed, clip.duration);
+      this.animateWeapon(weapon.animations.hit, clip.animationSpeed);
     }
     this.animation.start();
   }
