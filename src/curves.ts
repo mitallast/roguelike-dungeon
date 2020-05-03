@@ -17,15 +17,17 @@ function factorial(n: number): number {
 export type Curve<Point> = (t: number) => Point;
 
 export class LinearCurve {
-  static line(): Curve<number> {
-    return t => t;
+  static line(start: number, end: number): Curve<number> {
+    return t => start * (1 - t) + end * t;
   }
 
-  static matrix<Point extends number[]>(size: number): Curve<Point> {
+  static matrix<Point extends number[]>(start: Point, end: Point): Curve<Point> {
     return t => {
-      const m = [];
-      for (let i = 0; i < size; i++) m[i] = t;
-      return m as Point;
+      let m = [] as number[] as Point;
+      for (let i = 0; i < start.length; i++) {
+        m[i] = start[i] * (1 - t) + end[i] * t;
+      }
+      return m;
     };
   }
 }

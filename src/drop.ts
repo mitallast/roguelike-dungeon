@@ -1,8 +1,8 @@
 import {RNG} from "./rng";
 import {Hero} from "./hero";
 import {InventoryCell} from "./inventory";
-import {BezierCurve, Curve} from "./curves";
 import {Character} from "./character";
+import {AnimationEvent} from "./animation";
 
 export interface Drop {
   readonly spriteName: string;
@@ -96,6 +96,113 @@ export class HealthBigFlask implements UsableDrop {
   }
 }
 
+export interface WeaponAnimation {
+  readonly angle: number[];
+  readonly pos: AnimationEvent<[number, number]>[];
+}
+
+export interface WeaponAnimationSet {
+  readonly idle: WeaponAnimation;
+  readonly run: WeaponAnimation;
+  readonly hit: WeaponAnimation;
+}
+
+interface WeaponAnimations {
+  readonly knife: WeaponAnimationSet;
+  readonly rusty_sword: WeaponAnimationSet;
+  readonly regular_sword: WeaponAnimationSet;
+  readonly red_gem_sword: WeaponAnimationSet;
+  readonly hammer: WeaponAnimationSet;
+  readonly big_hammer: WeaponAnimationSet;
+  readonly baton_with_spikes: WeaponAnimationSet;
+  readonly mace: WeaponAnimationSet;
+  readonly katana: WeaponAnimationSet;
+  readonly saw_sword: WeaponAnimationSet;
+  readonly anime_sword: WeaponAnimationSet;
+  readonly axe: WeaponAnimationSet;
+  readonly machete: WeaponAnimationSet;
+  readonly cleaver: WeaponAnimationSet;
+  readonly duel_sword: WeaponAnimationSet;
+  readonly knight_sword: WeaponAnimationSet;
+  readonly golden_sword: WeaponAnimationSet;
+  readonly lavish_sword: WeaponAnimationSet;
+}
+
+const basic: WeaponAnimationSet = {
+  idle: {
+    angle: [0, 0],
+    pos: [
+      {time: 0, args: [-1, 0]},
+      {time: 1, args: [-1, 1]},
+      {time: 2, args: [-1, 2]},
+      {time: 3, args: [-1, 1]},
+    ]
+  },
+  run: {
+    angle: [0, 0],
+    pos: [
+      {time: 0, args: [-1, -1]},
+      {time: 1, args: [-1, -2]},
+      {time: 2, args: [-1, -1]},
+      {time: 3, args: [-1, 0]},
+    ]
+  },
+  hit: {
+    angle: [0, -10, -20, -30, -40, -40, 0, 400, 100, 100, 0],
+    pos: [
+      {time: 0, args: [-1, 0]},
+      {time: 1, args: [-1, 0]},
+      {time: 2, args: [-1, 0]},
+      {time: 3, args: [-1, 0]},
+    ]
+  },
+};
+
+const weaponAnimations: WeaponAnimations = {
+  knife: {
+    idle: basic.idle,
+    run: basic.run,
+    hit: {
+      angle: [90, 90],
+      pos: [
+        {time: 0, args: [-8, -4]},
+        {time: 1, args: [-4, -4]},
+        {time: 2, args: [4, -4]},
+        {time: 3, args: [-2, -4]},
+      ]
+    },
+  },
+  rusty_sword: basic,
+  regular_sword: basic,
+  red_gem_sword: basic,
+  hammer: basic,
+  big_hammer: {
+    idle: basic.idle,
+    run: basic.run,
+    hit: {
+      angle: [0, -30, -30, -30, -30, -30, 0, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 60, 40, 20, 10],
+      pos: [
+        {time: 0, args: [-1, 0]},
+        {time: 1, args: [-1, 0]},
+        {time: 2, args: [-1, 0]},
+        {time: 3, args: [-1, 0]},
+      ]
+    },
+  },
+  baton_with_spikes: basic,
+  mace: basic,
+  katana: basic,
+  saw_sword: basic,
+  anime_sword: basic,
+  axe: basic,
+  machete: basic,
+  cleaver: basic,
+  duel_sword: basic,
+  knight_sword: basic,
+  golden_sword: basic,
+  lavish_sword: basic,
+};
+
 export interface WeaponConfig {
   readonly name: string;
   readonly speed: number;
@@ -103,6 +210,7 @@ export interface WeaponConfig {
   readonly damage: number;
   readonly level: number;
   readonly price: number;
+  readonly animations: WeaponAnimationSet;
 }
 
 export interface Weapons extends Record<string, WeaponConfig> {
@@ -127,24 +235,168 @@ export interface Weapons extends Record<string, WeaponConfig> {
 }
 
 export const weapons: Weapons = {
-  knife: {name: "weapon_knife", speed: 1.4, distance: 1, damage: 2, level: 1, price: 12},
-  rusty_sword: {name: "weapon_rusty_sword", speed: 1.0, distance: 1, damage: 4, level: 1, price: 15},
-  regular_sword: {name: "weapon_regular_sword", speed: 1.0, distance: 1, damage: 5, level: 3, price: 20},
-  red_gem_sword: {name: "weapon_red_gem_sword", speed: 1.0, distance: 1, damage: 6, level: 3, price: 30},
-  hammer: {name: "weapon_hammer", speed: 0.7, distance: 1, damage: 7, level: 5, price: 38},
-  big_hammer: {name: "weapon_big_hammer", speed: 0.5, distance: 2, damage: 10, level: 5, price: 40},
-  baton_with_spikes: {name: "weapon_baton_with_spikes", speed: 0.6, distance: 1, damage: 7, level: 5, price: 42},
-  mace: {name: "weapon_mace", speed: 0.6, distance: 1, damage: 7, level: 5, price: 45},
-  katana: {name: "weapon_katana", speed: 1.5, distance: 1, damage: 8, level: 7, price: 100},
-  saw_sword: {name: "weapon_saw_sword", speed: 1.5, distance: 1, damage: 9, level: 7, price: 110},
-  anime_sword: {name: "weapon_anime_sword", speed: 0.7, distance: 1, damage: 12, level: 7, price: 130},
-  axe: {name: "weapon_axe", speed: 0.8, distance: 1, damage: 12, level: 7, price: 115},
-  machete: {name: "weapon_machete", speed: 1.0, distance: 1, damage: 11, level: 9, price: 150},
-  cleaver: {name: "weapon_cleaver", speed: 1.0, distance: 1, damage: 12, level: 9, price: 160},
-  duel_sword: {name: "weapon_duel_sword", speed: 1.5, distance: 1, damage: 13, level: 9, price: 170},
-  knight_sword: {name: "weapon_knight_sword", speed: 1.5, distance: 1, damage: 14, level: 9, price: 180},
-  golden_sword: {name: "weapon_golden_sword", speed: 1.5, distance: 1, damage: 15, level: 11, price: 220},
-  lavish_sword: {name: "weapon_lavish_sword", speed: 1.5, distance: 1, damage: 16, level: 11, price: 240},
+  knife: {
+    name: "weapon_knife",
+    speed: 1.4,
+    distance: 1,
+    damage: 2,
+    level: 1,
+    price: 12,
+    animations: weaponAnimations.knife
+  },
+  rusty_sword: {
+    name: "weapon_rusty_sword",
+    speed: 1.0,
+    distance: 1,
+    damage: 4,
+    level: 1,
+    price: 15,
+    animations: weaponAnimations.rusty_sword
+  },
+  regular_sword: {
+    name: "weapon_regular_sword",
+    speed: 1.0,
+    distance: 1,
+    damage: 5,
+    level: 3,
+    price: 20,
+    animations: weaponAnimations.regular_sword
+  },
+  red_gem_sword: {
+    name: "weapon_red_gem_sword",
+    speed: 1.0,
+    distance: 1,
+    damage: 6,
+    level: 3,
+    price: 30,
+    animations: weaponAnimations.red_gem_sword
+  },
+  hammer: {
+    name: "weapon_hammer",
+    speed: 0.7,
+    distance: 1,
+    damage: 7,
+    level: 5,
+    price: 38,
+    animations: weaponAnimations.hammer
+  },
+  big_hammer: {
+    name: "weapon_big_hammer",
+    speed: 0.5,
+    distance: 2,
+    damage: 10,
+    level: 5,
+    price: 40,
+    animations: weaponAnimations.big_hammer
+  },
+  baton_with_spikes: {
+    name: "weapon_baton_with_spikes",
+    speed: 0.6,
+    distance: 1,
+    damage: 7,
+    level: 5,
+    price: 42,
+    animations: weaponAnimations.baton_with_spikes
+  },
+  mace: {
+    name: "weapon_mace",
+    speed: 0.6,
+    distance: 1,
+    damage: 7,
+    level: 5,
+    price: 45,
+    animations: weaponAnimations.mace
+  },
+  katana: {
+    name: "weapon_katana",
+    speed: 1.5,
+    distance: 1,
+    damage: 8,
+    level: 7,
+    price: 100,
+    animations: weaponAnimations.katana
+  },
+  saw_sword: {
+    name: "weapon_saw_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 9,
+    level: 7,
+    price: 110,
+    animations: weaponAnimations.saw_sword
+  },
+  anime_sword: {
+    name: "weapon_anime_sword",
+    speed: 0.7,
+    distance: 1,
+    damage: 12,
+    level: 7,
+    price: 130,
+    animations: weaponAnimations.anime_sword
+  },
+  axe: {
+    name: "weapon_axe",
+    speed: 0.8,
+    distance: 1,
+    damage: 12,
+    level: 7,
+    price: 115,
+    animations: weaponAnimations.axe
+  },
+  machete: {
+    name: "weapon_machete",
+    speed: 1.0,
+    distance: 1,
+    damage: 11,
+    level: 9,
+    price: 150,
+    animations: weaponAnimations.machete
+  },
+  cleaver: {
+    name: "weapon_cleaver",
+    speed: 1.0,
+    distance: 1,
+    damage: 12,
+    level: 9,
+    price: 160,
+    animations: weaponAnimations.cleaver
+  },
+  duel_sword: {
+    name: "weapon_duel_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 13,
+    level: 9,
+    price: 170,
+    animations: weaponAnimations.duel_sword
+  },
+  knight_sword: {
+    name: "weapon_knight_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 14,
+    level: 9,
+    price: 180,
+    animations: weaponAnimations.knight_sword
+  },
+  golden_sword: {
+    name: "weapon_golden_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 15,
+    level: 11,
+    price: 220,
+    animations: weaponAnimations.golden_sword
+  },
+  lavish_sword: {
+    name: "weapon_lavish_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 16,
+    level: 11,
+    price: 240,
+    animations: weaponAnimations.lavish_sword
+  },
 };
 
 export const weaponConfigs: readonly WeaponConfig[] = Object.getOwnPropertyNames(weapons).map(w => weapons[w]);
@@ -159,12 +411,60 @@ export interface MonsterWeapons extends Record<string, WeaponConfig> {
 }
 
 export const monsterWeapons: MonsterWeapons = {
-  knife: {name: "weapon_knife", speed: 0.7, distance: 1, damage: 0.5, level: 1, price: 0},
-  baton_with_spikes: {name: "weapon_baton_with_spikes", speed: 0.3, distance: 1, damage: 3, level: 5, price: 0},
-  anime_sword: {name: "weapon_anime_sword", speed: 0.4, distance: 1, damage: 4, level: 10, price: 0},
-  big_hammer: {name: "weapon_big_hammer", speed: 0.3, distance: 2, damage: 5, level: 15, price: 0},
-  mace: {name: "weapon_mace", speed: 0.6, distance: 1, damage: 6, level: 20, price: 0},
-  cleaver: {name: "weapon_cleaver", speed: 0.5, distance: 1, damage: 7, level: 25, price: 0},
+  knife: {
+    name: "weapon_knife",
+    speed: 0.7,
+    distance: 1,
+    damage: 0.5,
+    level: 1,
+    price: 0,
+    animations: weaponAnimations.knife
+  },
+  baton_with_spikes: {
+    name: "weapon_baton_with_spikes",
+    speed: 0.3,
+    distance: 1,
+    damage: 3,
+    level: 5,
+    price: 0,
+    animations: weaponAnimations.baton_with_spikes
+  },
+  anime_sword: {
+    name: "weapon_anime_sword",
+    speed: 0.4,
+    distance: 1,
+    damage: 4,
+    level: 10,
+    price: 0,
+    animations: weaponAnimations.anime_sword
+  },
+  big_hammer: {
+    name: "weapon_big_hammer",
+    speed: 0.3,
+    distance: 2,
+    damage: 5,
+    level: 15,
+    price: 0,
+    animations: weaponAnimations.big_hammer
+  },
+  mace: {
+    name: "weapon_mace",
+    speed: 0.6,
+    distance: 1,
+    damage: 6,
+    level: 20,
+    price: 0,
+    animations: weaponAnimations.mace
+  },
+  cleaver: {
+    name: "weapon_cleaver",
+    speed: 0.5,
+    distance: 1,
+    damage: 7,
+    level: 25,
+    price: 0,
+    animations: weaponAnimations.cleaver
+  },
 };
 
 export interface NpcWeapons extends Record<string, WeaponConfig> {
@@ -177,12 +477,60 @@ export interface NpcWeapons extends Record<string, WeaponConfig> {
 }
 
 export const npcWeapons: NpcWeapons = {
-  knife: {name: "weapon_knife", speed: 1.4, distance: 1, damage: 2, level: 1, price: 12},
-  hammer: {name: "weapon_hammer", speed: 0.7, distance: 1, damage: 7, level: 5, price: 38},
-  cleaver: {name: "weapon_cleaver", speed: 1.0, distance: 1, damage: 12, level: 9, price: 160},
-  axe: {name: "weapon_axe", speed: 0.8, distance: 1, damage: 12, level: 7, price: 115},
-  regular_sword: {name: "weapon_regular_sword", speed: 1.0, distance: 1, damage: 5, level: 3, price: 20},
-  knight_sword: {name: "weapon_knight_sword", speed: 1.5, distance: 1, damage: 14, level: 9, price: 180},
+  knife: {
+    name: "weapon_knife",
+    speed: 1.4,
+    distance: 1,
+    damage: 2,
+    level: 1,
+    price: 12,
+    animations: weaponAnimations.knife
+  },
+  hammer: {
+    name: "weapon_hammer",
+    speed: 0.7,
+    distance: 1,
+    damage: 7,
+    level: 5,
+    price: 38,
+    animations: weaponAnimations.hammer
+  },
+  cleaver: {
+    name: "weapon_cleaver",
+    speed: 1.0,
+    distance: 1,
+    damage: 12,
+    level: 9,
+    price: 160,
+    animations: weaponAnimations.cleaver
+  },
+  axe: {
+    name: "weapon_axe",
+    speed: 0.8,
+    distance: 1,
+    damage: 12,
+    level: 7,
+    price: 115,
+    animations: weaponAnimations.axe
+  },
+  regular_sword: {
+    name: "weapon_regular_sword",
+    speed: 1.0,
+    distance: 1,
+    damage: 5,
+    level: 3,
+    price: 20,
+    animations: weaponAnimations.regular_sword
+  },
+  knight_sword: {
+    name: "weapon_knight_sword",
+    speed: 1.5,
+    distance: 1,
+    damage: 14,
+    level: 9,
+    price: 180,
+    animations: weaponAnimations.knight_sword
+  },
 }
 
 // Анимация Алебарды
@@ -204,7 +552,7 @@ export const npcWeapons: NpcWeapons = {
 export class Weapon implements UsableDrop {
   private readonly name: string;
   readonly speed: number;
-  readonly curve: Curve<number> = BezierCurve.line(0, -0.5, -1, 0, 1, 2, 0);
+  readonly animations: WeaponAnimationSet;
   readonly distance: number;
   readonly damage: number;
   private readonly price: number;
@@ -219,6 +567,7 @@ export class Weapon implements UsableDrop {
     this.distance = config.distance;
     this.damage = config.damage;
     this.price = config.price;
+    this.animations = config.animations;
   }
 
   info(): DropInfo {

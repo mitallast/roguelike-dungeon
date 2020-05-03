@@ -142,7 +142,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
     const cell = rng.select(free)!;
     const ai = new HeroAI(hero, dungeon, cell.x, cell.y);
-    dungeon.light.addLight(ai.view, LightType.HERO);
+    dungeon.light.addLight(ai.view.point, LightType.HERO);
     return ai;
   }
 

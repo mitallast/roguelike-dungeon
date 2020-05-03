@@ -46,7 +46,8 @@ export class Animation {
 }
 
 export abstract class AnimationClip {
-  protected readonly animationSpeed: number;
+  readonly animationSpeed: number;
+  abstract readonly duration: number;
   protected _time: number = 0;
   protected _playing: boolean = false;
 
@@ -81,6 +82,10 @@ export abstract class AnimationClip {
 export class SpriteAnimationClip extends AnimationClip {
   private readonly _sprite: PIXI.AnimatedSprite;
 
+  get duration(): number {
+    return this._sprite.totalFrames;
+  }
+
   constructor(sprite: PIXI.AnimatedSprite) {
     super(sprite.animationSpeed);
     this._sprite = sprite;
@@ -106,24 +111,22 @@ export class SpriteAnimationClip extends AnimationClip {
 
 export class AnimationCurveClip<Args extends number[]> extends AnimationClip {
   private readonly _duration: number;
-  private readonly _start: Args;
-  private readonly _finish: Args;
   private readonly _curve: Curve<Args>;
   private readonly _method: (...args: any[]) => void;
   private readonly _context: any;
 
+  get duration(): number {
+    return this._duration;
+  }
+
   constructor(
-    start: Args,
-    finish: Args,
     curve: Curve<Args>,
     duration: number,
     animationSpeed: number,
     method: (...args: any[]) => void,
-    context: any
+    context?: any
   ) {
     super(animationSpeed);
-    this._start = start;
-    this._finish = finish;
     this._curve = curve;
     this._duration = duration;
     this._method = method;
@@ -132,30 +135,30 @@ export class AnimationCurveClip<Args extends number[]> extends AnimationClip {
 
   protected play(): void {
     let t = this._time / this._duration;
-    if (t === 0) {
-      this._method.call(this._context, ...this._start);
-    } else if (t >= 1) {
-      t = 1;
+    if (t >= 1) {
       this._playing = false;
-      this._method.call(this._context, ...this._finish);
+      this._method.call(this._context, ...this._curve(1));
     } else {
-      const delta = this._curve(t);
-      const args = [] as number[] as Args;
-      for (let i = 0; i < delta.length; i++) {
-        args[i] = this._start[i] + (this._finish[i] - this._start[i]) * delta[i];
-      }
-      this._method.call(this._context, ...args);
+      this._method.call(this._context, ...this._curve(t));
     }
   }
 }
 
-export class AnimationEventClip<Args extends []> extends AnimationClip {
+export class AnimationEventClip<Args extends any[]> extends AnimationClip {
   private readonly _method: (...args: Args) => void;
   private readonly _context: any;
   private readonly _events: AnimationEvent<Args>[] = [];
   private _event: number | null = null;
 
-  constructor(animationSpeed: number, method: (...args: Args) => void, context: any) {
+  get duration(): number {
+    if (this._events.length > 0) {
+      return this._events[this._events.length - 1].time;
+    } else {
+      return 0;
+    }
+  }
+
+  constructor(animationSpeed: number, method: (...args: Args) => void, context?: any) {
     super(animationSpeed);
     this._method = method;
     this._context = context;
@@ -164,12 +167,12 @@ export class AnimationEventClip<Args extends []> extends AnimationClip {
   protected play(): void {
     while (this._playing) {
       let next = this._event === null ? 0 : this._event + 1;
-      if (next <= this._events.length) {
+      if (next < this._events.length) {
         if (this._events[next].time <= this._time) {
           this._event = next;
           this._method.call(this._context, ...this._events[next].args);
         } else {
-          this._playing = true;
+          break;
         }
       } else {
         this._playing = false;
@@ -177,9 +180,18 @@ export class AnimationEventClip<Args extends []> extends AnimationClip {
     }
   }
 
-  add(time: number, ...args: Args): void {
-    this._events.push(new AnimationEvent(time, args));
+  addEvent(event: AnimationEvent<Args>): void {
+    this._events.push(event);
     this._events.sort(this.compare);
+  }
+
+  addEvents(event: AnimationEvent<Args>[]): void {
+    this._events.push(...event);
+    this._events.sort(this.compare);
+  }
+
+  add(time: number, ...args: Args): void {
+    this.addEvent({time, args});
   }
 
   private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {
@@ -187,12 +199,7 @@ export class AnimationEventClip<Args extends []> extends AnimationClip {
   }
 }
 
-export class AnimationEvent<Args extends []> {
+export interface AnimationEvent<Args extends any[]> {
   readonly time: number;
   readonly args: Args;
-
-  constructor(time: number, args: Args) {
-    this.time = time;
-    this.args = args;
-  }
 }

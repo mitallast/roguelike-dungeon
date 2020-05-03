@@ -1,12 +1,12 @@
 import {Resources} from "./resources";
 import {DungeonMap, DungeonZIndexes, MapCell, DungeonObject} from "./dungeon.map";
 import {Observable, ObservableVar} from "./observable";
-import {UsableDrop, Weapon} from "./drop";
-import {LinearCurve} from "./curves";
+import {UsableDrop, Weapon, WeaponAnimation} from "./drop";
+import {BezierCurve, LinearCurve} from "./curves";
 import {PathFinding} from "./pathfinding";
 import {HeroAI} from "./hero";
 import {Inventory} from "./inventory";
-import {Animation, AnimationClip, AnimationCurveClip, SpriteAnimationClip} from "./animation";
+import {Animation, AnimationClip, AnimationCurveClip, AnimationEventClip, SpriteAnimationClip} from "./animation";
 import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 16;
@@ -167,7 +167,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.height = options.height;
     this._x = options.x;
     this._y = options.y;
-    this.view = new BaseCharacterView(dungeon, options.zIndex, options.width, options.on_position);
+    this.view = new DefaultCharacterView(dungeon, options.zIndex, options.width, options.on_position);
   }
 
   init(): void {
@@ -206,7 +206,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 
   private onWeaponUpdate(weapon: UsableDrop | null): void {
-    this.view.setWeapon(weapon as Weapon);
+    this.view.weapon.setWeapon(weapon as (Weapon | null));
   }
 
   protected abstract onKilledBy(by: Character): void;
@@ -395,7 +395,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
   }
 }
 
-interface AnimationController {
+export interface AnimationController {
   readonly isPlaying: boolean;
   start(): void;
   update(deltaTime: number): void;
@@ -403,18 +403,17 @@ interface AnimationController {
   finish(): void;
 }
 
-export class IdleAnimationController implements AnimationController {
-  private readonly ai: CharacterAI;
-  private readonly view: CharacterView;
-  private readonly spriteName: string;
+export abstract class BaseAnimationController implements AnimationController {
+  protected readonly ai: CharacterAI;
+  protected readonly view: CharacterView;
+  protected readonly spriteName: string;
 
-  private readonly animation: Animation
+  protected readonly animation: Animation
 
-  constructor(ai: CharacterAI) {
+  protected constructor(ai: CharacterAI, spriteName: string) {
     this.ai = ai;
     this.view = ai.view;
-    this.spriteName = this.ai.character.name + '_idle';
-
+    this.spriteName = spriteName;
     this.animation = new Animation();
   }
 
@@ -422,10 +421,21 @@ export class IdleAnimationController implements AnimationController {
     return this.animation.isPlaying;
   }
 
-  start(): void {
-    this.animation.clear();
-    this.animation.add(this.view.setSprite(this.spriteName, this.ai.character.speed));
-    this.animation.start();
+  abstract start(): void;
+
+  protected animateWeapon(animation: WeaponAnimation, animationSpeed: number, duration: number): void {
+    const positionClip = new AnimationEventClip(animationSpeed, this.view.weapon.setPosition, this.view.weapon);
+    positionClip.addEvents(animation.pos);
+    this.animation.add(positionClip);
+
+    const angleClip = new AnimationCurveClip<[number]>(
+      BezierCurve.matrix<[number]>(...animation.angle.map(a => [a] as [number])),
+      duration,
+      animationSpeed,
+      this.view.weapon.setAngle,
+      this.view.weapon
+    );
+    this.animation.add(angleClip);
   }
 
   update(deltaTime: number): void {
@@ -444,109 +454,87 @@ export class IdleAnimationController implements AnimationController {
   }
 }
 
-export class RunAnimationController implements AnimationController {
-  private readonly ai: CharacterAI;
-  private readonly view: CharacterView;
-  private readonly spriteName: string
+export class IdleAnimationController extends BaseAnimationController {
+  constructor(ai: CharacterAI) {
+    super(ai, ai.character.name + '_idle');
+  }
 
+  start(): void {
+    const clip = this.view.animation(this.spriteName, this.ai.character.speed * 0.2);
+    this.animation.add(clip);
+    const weapon = this.ai.character.weapon;
+    if (weapon) {
+      this.animateWeapon(weapon.animations.idle, clip.animationSpeed, clip.duration);
+    }
+    this.animation.start();
+  }
+}
+
+export class RunAnimationController extends BaseAnimationController {
   private readonly x: number;
   private readonly y: number;
   private readonly new_x: number;
   private readonly new_y: number;
 
-  private readonly animation: Animation
-
-  get isPlaying(): boolean {
-    return this.animation.isPlaying;
-  }
-
   constructor(ai: CharacterAI, new_x: number, new_y: number) {
-    this.ai = ai;
-    this.view = ai.view;
-    this.spriteName = ai.character.name + '_run';
-
+    super(ai, ai.character.name + '_run');
     this.x = this.ai.x;
     this.y = this.ai.y;
     this.new_x = new_x;
     this.new_y = new_y;
-
-    this.animation = new Animation();
   }
 
   start(): void {
-    const speed = this.ai.character.speed;
+    const clip = this.view.animation(this.spriteName, this.ai.character.speed * 0.2);
     this.ai.dungeon.set(this.new_x, this.new_y, this.ai);
     this.animation.clear();
-    this.animation.add(this.view.setSprite(this.spriteName, speed));
+    this.animation.add(clip);
     this.animation.add(new AnimationCurveClip(
-      [this.x, this.y],
-      [this.new_x, this.new_y],
-      LinearCurve.matrix(2),
-      this.view.sprite!.totalFrames,
-      this.view.sprite!.animationSpeed,
+      LinearCurve.matrix(
+        [this.x, this.y],
+        [this.new_x, this.new_y],
+      ),
+      clip.duration,
+      clip.animationSpeed,
       this.view.setPosition,
       this.view
     ));
+
+    const weapon = this.ai.character.weapon;
+    if (weapon) {
+      this.animateWeapon(weapon.animations.run, clip.animationSpeed, clip.duration);
+    }
     this.animation.start();
   }
 
-  update(deltaTime: number): void {
-    this.animation.update(deltaTime);
-    if (!this.animation.isPlaying) {
-      this.finish();
-    }
-  }
-
   cancel(): void {
-    this.animation.stop();
+    super.cancel();
     this.ai.dungeon.remove(this.x, this.y, this.ai);
     this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
     this.ai.setPosition(this.ai.x, this.ai.y);
   }
 
   finish(): void {
-    this.animation.stop();
+    super.finish();
     this.ai.dungeon.remove(this.x, this.y, this.ai);
     this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
     this.ai.setPosition(this.new_x, this.new_y);
   }
 }
 
-export class HitAnimationController implements AnimationController {
-  private readonly ai: CharacterAI;
-  private readonly view: CharacterView;
-  private readonly spriteName: string;
-
-  private readonly animation: Animation
-
-  get isPlaying(): boolean {
-    return this.animation.isPlaying;
-  }
-
+export class HitAnimationController extends BaseAnimationController {
   constructor(ai: CharacterAI) {
-    this.ai = ai;
-    this.view = ai.view;
-    this.spriteName = ai.character.name + '_idle';
-
-    this.animation = new Animation();
+    super(ai, ai.character.name + '_idle');
   }
 
   start(): void {
     const weapon = this.ai.character.weapon;
-    const speed = weapon ? weapon.speed : this.ai.character.speed;
-
+    const clip = this.view.animation(this.spriteName, (weapon ? weapon.speed : this.ai.character.speed) * 0.2);
     this.animation.clear();
-    this.animation.add(this.view.setSprite(this.spriteName, speed));
+    this.animation.add(clip);
+
     if (weapon) {
-      const weaponSprite = this.view.weaponSprite!;
-      this.animation.add(new AnimationCurveClip(
-        [0], [this.view.isLeft ? -90 : 90],
-        t => [weapon.curve(t)],
-        this.view.sprite!.totalFrames,
-        this.view.sprite!.animationSpeed,
-        (angle) => weaponSprite.angle = angle,
-        this
-      ));
+      this.animateWeapon(weapon.animations.hit, clip.animationSpeed, clip.duration);
     }
     this.animation.start();
   }
@@ -560,18 +548,10 @@ export class HitAnimationController implements AnimationController {
 
   cancel(): void {
     this.animation.stop();
-    let weapon = this.view.weaponSprite;
-    if (weapon) {
-      weapon.angle = 0;
-    }
   }
 
   finish(): void {
     this.animation.stop();
-    let weapon = this.view.weaponSprite;
-    if (weapon) {
-      weapon.angle = 0;
-    }
   }
 }
 
@@ -585,138 +565,133 @@ export interface CharacterViewOptions {
 }
 
 export interface CharacterView {
-  readonly x: number;
-  readonly y: number;
-
+  readonly point: PIXI.IPoint;
   isLeft: boolean;
 
-  readonly sprite: PIXI.AnimatedSprite | null;
-  readonly weaponSprite: PIXI.Sprite | null;
+  readonly weapon: WeaponView;
 
   setPosition(x: number, y: number): void;
-  setSprite(name: string, speed: number): AnimationClip;
-  setWeapon(weapon: Weapon | null): void;
-
+  animation(spriteName: string, speed: number): AnimationClip;
   destroy(): void
 }
 
-export class BaseCharacterView extends PIXI.Container implements CharacterView {
+export class DefaultCharacterView extends PIXI.Container implements CharacterView {
   private readonly resources: Resources;
 
   private readonly _baseZIndex: number;
   private readonly _gridWidth: number;
   private _isLeft: boolean = false;
   private _sprite: PIXI.AnimatedSprite | null = null;
-  private _weaponSprite: PIXI.Sprite | null = null;
-  private readonly onPosition: ((x: number, y: number) => void) | null;
+  private readonly _weapon: DefaultWeaponView;
+
+  readonly point: PIXI.IPoint = new PIXI.Point(0, 0);
+  private readonly _onPosition: ((x: number, y: number) => void) | null;
 
   get isLeft(): boolean {
     return this._isLeft;
   }
 
-  set isLeft(is_left: boolean) {
-    this._isLeft = is_left;
-    this.updateSpriteOrientation();
-    this.updateWeaponOrientation();
+  set isLeft(isLeft: boolean) {
+    this._isLeft = isLeft;
+    this.updatePosition();
   }
 
-  get sprite() {
-    return this._sprite;
+  get weapon(): WeaponView {
+    return this._weapon;
   }
 
-  get weaponSprite() {
-    return this._weaponSprite;
-  }
-
-  constructor(dungeon: DungeonMap, zIndex: number, grid_width: number, on_position?: (x: number, y: number) => void) {
+  constructor(dungeon: DungeonMap, zIndex: number, gridWidth: number, onPosition?: (x: number, y: number) => void) {
     super();
     this.resources = dungeon.controller.resources;
     this._baseZIndex = zIndex;
-    this._gridWidth = grid_width;
-    this.onPosition = on_position || null;
+    this._gridWidth = gridWidth;
+    this._onPosition = onPosition || null;
+    this._weapon = new DefaultWeaponView(this.resources);
+    this._weapon.zIndex = 2;
+    this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
+    this.addChild(this._weapon);
     dungeon.container.addChild(this);
-  }
-
-  destroy(): void {
-    this._sprite?.destroy();
-    this._sprite = null;
-    this._weaponSprite?.destroy();
-    this._weaponSprite = null;
-    super.destroy();
   }
 
   setPosition(x: number, y: number): void {
     // pixel perfect
-    const t_x = Math.floor(x * TILE_SIZE);
-    const t_y = Math.floor(y * TILE_SIZE);
-    this.position.set(t_x, t_y);
+    const tx = Math.round(x * TILE_SIZE * 2) / 2;
+    const ty = Math.round(y * TILE_SIZE * 2) / 2;
+    this.point.set(tx, ty);
+    this.updatePosition();
     this.zIndex = this._baseZIndex + Math.floor(y) * DungeonZIndexes.row;
-    if (this.onPosition) {
-      this.onPosition(t_x, t_y);
+    if (this._onPosition) {
+      this._onPosition(tx, ty);
     }
   }
 
-  setSprite(name: string, speed: number): AnimationClip {
+  private updatePosition() {
+    // process left/right direction
+    this.scale.set(this._isLeft ? -1 : 1, 1);
+    // if left, add offset x
+    this.position.set(this.point.x + (this._isLeft ? this._gridWidth * TILE_SIZE : 0), this.point.y);
+  }
+
+  animation(spriteName: string, speed: number): AnimationClip {
     this._sprite?.destroy();
-    this._sprite = this.resources.animated(name, {
+    this._sprite = this.resources.animated(spriteName, {
       autoUpdate: false,
       loop: false,
-      animationSpeed: 0.2 * speed,
+      animationSpeed: speed,
     });
     this._sprite.anchor.set(0, 1);
     this._sprite.position.y = TILE_SIZE - 2;
+    this._sprite.position.x = 0;
+    if (this._sprite.width > this._gridWidth * TILE_SIZE) {
+      this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
+    }
     this._sprite.zIndex = 1;
     this.addChild(this._sprite);
-    this.updateSpriteOrientation();
-    this.updateWeaponOrientation();
     return new SpriteAnimationClip(this._sprite);
+  }
+}
+
+export interface WeaponView {
+  setWeapon(weapon: Weapon | null): void;
+  setPosition(x: number, y: number): void;
+  setAngle(angle: number): void;
+  destroy(): void;
+}
+
+export class DefaultWeaponView extends PIXI.Container implements WeaponView {
+  private readonly resources: Resources;
+  private _sprite: PIXI.Sprite | null = null;
+
+  constructor(resources: Resources) {
+    super();
+    this.resources = resources;
+  }
+
+  destroy() {
+    this._sprite?.destroy();
+    this._sprite = null;
+    super.destroy();
   }
 
   setWeapon(weapon: Weapon | null): void {
-    this._weaponSprite?.destroy();
-    this._weaponSprite = null;
+    this._sprite?.destroy();
+    this._sprite = null;
     if (weapon) {
-      this._weaponSprite = this.resources.sprite(weapon.spriteName);
-      this._weaponSprite.zIndex = 2;
-      this._weaponSprite.position.x = TILE_SIZE;
-      this._weaponSprite.position.y = TILE_SIZE - 4;
-      if (this.isLeft) {
-        this._weaponSprite.position.x = 0;
-        this._weaponSprite.scale.x = -1;
-      }
-      this._weaponSprite.anchor.set(0.5, 1);
-      this.addChild(this._weaponSprite);
-      this.sortChildren();
+      this._sprite = this.resources.sprite(weapon.spriteName);
+      this._sprite.anchor.set(0.5, 1);
+      this.addChild(this._sprite);
     }
   }
 
-  private updateSpriteOrientation(): void {
+  setAngle(angle: number): void {
     if (this._sprite) {
-      if (this._isLeft) {
-        this._sprite.position.x = this._sprite.width;
-        if (this._sprite.width > this._gridWidth * TILE_SIZE) {
-          this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
-        }
-        this._sprite.scale.x = -1;
-      } else {
-        this._sprite.position.x = 0;
-        if (this._sprite.width > this._gridWidth * TILE_SIZE) {
-          this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
-        }
-        this._sprite.scale.x = 1;
-      }
+      this._sprite.angle = angle;
     }
   }
 
-  private updateWeaponOrientation(): void {
-    if (this._weaponSprite) {
-      if (this.isLeft) {
-        this._weaponSprite.position.x = 0;
-        this._weaponSprite.scale.x = -1;
-      } else {
-        this._weaponSprite.position.x = TILE_SIZE * this._gridWidth;
-        this._weaponSprite.scale.x = 1;
-      }
+  setPosition(x: number, y: number): void {
+    if (this._sprite) {
+      this._sprite.position.set(x, y);
     }
   }
 }
