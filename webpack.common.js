@@ -20,6 +20,12 @@ module.exports = {
     maxEntrypointSize: 200000,
     hints: "warning"
   },
+  stats: {
+    // Examine all modules
+    maxModules: Infinity,
+    // Display bailout reasons
+    optimizationBailout: true
+  },
   module: {
     rules: [
       {
@@ -36,10 +42,6 @@ module.exports = {
     {"pixi-sound": "PIXI.sound"},
   ],
   plugins: [
-    new webpack.ProvidePlugin({
-      PIXI: 'pixi.js',
-      sound: 'pixi-sound',
-    }),
     new CopyPlugin([
       'node_modules/pixi.js/dist/pixi.min.js',
       'node_modules/pixi.js/dist/pixi.min.js.map',

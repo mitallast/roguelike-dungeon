@@ -7,75 +7,75 @@ export interface DungeonBannerOptions {
 }
 
 export class SceneBanner extends PIXI.Container {
-  private readonly controller: SceneController;
-  private readonly text: PIXI.BitmapText;
-  private readonly textShadow: PIXI.BitmapText;
-  private readonly background: PIXI.TilingSprite;
-  private readonly texture: PIXI.Texture;
+  private readonly _controller: SceneController;
+  private readonly _text: PIXI.BitmapText;
+  private readonly _textShadow: PIXI.BitmapText;
+  private readonly _background: PIXI.TilingSprite;
+  private readonly _texture: PIXI.Texture;
 
-  private show: number = 120;
-  private fadeOut: number = 60;
+  private _show: number = 120;
+  private _fadeOut: number = 60;
 
   constructor(controller: SceneController, options: DungeonBannerOptions) {
     super();
 
-    this.controller = controller;
+    this._controller = controller;
 
     const size = 64;
     const height = size << 1;
-    const screen = this.controller.app.screen;
+    const screen = this._controller.app.screen;
     const y = Math.floor(screen.height * 0.7);
 
-    this.text = new PIXI.BitmapText(options.text, {
+    this._text = new PIXI.BitmapText(options.text, {
       font: {name: "alagard", size: size},
       align: "center",
       tint: options.color
     });
-    this.text.anchor = new PIXI.Point(0.5, 0.5);
-    this.text.position.set(screen.width >> 1, y);
+    this._text.anchor = new PIXI.Point(0.5, 0.5);
+    this._text.position.set(screen.width >> 1, y);
 
     const blur = new PIXI.filters.BlurFilter();
     blur.blurY = 1;
     blur.blurX = 10;
     blur.quality = 4;
 
-    this.textShadow = new PIXI.BitmapText(options.text, {
+    this._textShadow = new PIXI.BitmapText(options.text, {
       font: {name: "alagard", size: size},
       align: "center",
       tint: options.color
     });
-    this.textShadow.anchor = new PIXI.Point(0.5, 0.5);
-    this.textShadow.position.set(screen.width >> 1, y);
-    this.textShadow.width += size * 0.7;
-    this.textShadow.alpha = 0.5;
-    this.textShadow.filters = [blur];
-    this.textShadow.filterArea = this.textShadow.getBounds().clone().pad(50, 0);
+    this._textShadow.anchor = new PIXI.Point(0.5, 0.5);
+    this._textShadow.position.set(screen.width >> 1, y);
+    this._textShadow.width += size * 0.7;
+    this._textShadow.alpha = 0.5;
+    this._textShadow.filters = [blur];
+    this._textShadow.filterArea = this._textShadow.getBounds().clone().pad(50, 0);
 
-    this.texture = SceneBanner.gradient(1, height);
-    this.background = new PIXI.TilingSprite(this.texture, screen.width, height);
-    this.background.position.set(0, y - (height >> 1));
-    this.addChild(this.background, this.textShadow, this.text);
-    this.controller.stage.addChild(this);
-    this.controller.app.ticker.add(this.update, this);
+    this._texture = SceneBanner.gradient(1, height);
+    this._background = new PIXI.TilingSprite(this._texture, screen.width, height);
+    this._background.position.set(0, y - (height >> 1));
+    this.addChild(this._background, this._textShadow, this._text);
+    this._controller.stage.addChild(this);
+    this._controller.app.ticker.add(this.update, this);
   }
 
   private update(deltaTime: number): void {
-    if (this.show > 0) {
-      this.show -= deltaTime;
-    } else if (this.fadeOut > 0) {
-      this.fadeOut -= deltaTime;
-      this.alpha = this.fadeOut / 60;
+    if (this._show > 0) {
+      this._show -= deltaTime;
+    } else if (this._fadeOut > 0) {
+      this._fadeOut -= deltaTime;
+      this.alpha = this._fadeOut / 60;
     } else {
-      this.controller.closeBanner();
+      this._controller.closeBanner();
     }
   }
 
   destroy(): void {
     super.destroy();
-    this.controller.app.ticker.remove(this.update, this);
-    this.text.destroy();
-    this.background.destroy();
-    this.texture.destroy(true);
+    this._controller.app.ticker.remove(this.update, this);
+    this._text.destroy();
+    this._background.destroy();
+    this._texture.destroy(true);
   }
 
   private static gradient(width: number, height: number): PIXI.Texture {

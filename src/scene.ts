@@ -15,7 +15,7 @@ import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
 import {Npc} from "./npc";
 import * as PIXI from "pixi.js";
-import {DungeonBonfireDialogModal} from "./dungeon.bonfire";
+import {DungeonBonfireModal} from "./dungeon.bonfire";
 import {SceneBanner, DungeonBannerOptions} from "./scene.banner";
 import {
   BuyingInventoryActionsController,
@@ -45,19 +45,18 @@ export class SceneController {
   readonly app: PIXI.Application;
   readonly stage: PIXI.display.Stage;
 
-  private mainScene: Scene | null = null;
-  private modalScene: ModalScene | null = null;
-  private banner: SceneBanner | null = null;
+  private _mainScene: Scene | null = null;
+  private _modalScene: ModalScene | null = null;
+  private _banner: SceneBanner | null = null;
 
   constructor(
-    resources: Resources,
     app: PIXI.Application,
     stage: PIXI.display.Stage,
   ) {
     this.persistent = new SessionPersistentState();
     this.rng = RNG.create();
     this.joystick = new Joystick();
-    this.resources = resources;
+    this.resources = new Resources(app.loader);
     this.app = app;
     this.stage = stage;
     this.dialogs = new DialogManager(this);
@@ -66,11 +65,15 @@ export class SceneController {
     this.app.ticker.add(this.persistent.session.commit, this.persistent.session, PIXI.UPDATE_PRIORITY.LOW);
   }
 
+  async init(): Promise<void> {
+    await this.resources.load();
+  }
+
   private set scene(scene: Scene) {
-    this.mainScene?.destroy();
+    this._mainScene?.destroy();
     this.joystick.reset();
-    this.mainScene = scene;
-    this.mainScene.init();
+    this._mainScene = scene;
+    this._mainScene.init();
   }
 
   keyBind(): void {
@@ -103,16 +106,16 @@ export class SceneController {
   private modal(scene: ModalScene): void {
     PIXI.sound.play('text');
 
-    this.mainScene?.pause();
+    this._mainScene?.pause();
     this.joystick.reset();
-    this.modalScene = scene;
-    this.modalScene.init();
+    this._modalScene = scene;
+    this._modalScene.init();
   }
 
   closeModal(): void {
-    this.modalScene?.destroy();
+    this._modalScene?.destroy();
     this.joystick.reset();
-    this.mainScene?.resume();
+    this._mainScene?.resume();
   }
 
   showInventory(hero: Hero): void {
@@ -136,16 +139,16 @@ export class SceneController {
   }
 
   showBonfire(hero: Hero): void {
-    this.modal(new DungeonBonfireDialogModal(this, hero));
+    this.modal(new DungeonBonfireModal(this, hero));
   }
 
   showBanner(options: DungeonBannerOptions): void {
     this.closeBanner();
-    this.banner = new SceneBanner(this, options);
+    this._banner = new SceneBanner(this, options);
   }
 
   closeBanner(): void {
-    this.banner?.destroy();
-    this.banner = null;
+    this._banner?.destroy();
+    this._banner = null;
   }
 }

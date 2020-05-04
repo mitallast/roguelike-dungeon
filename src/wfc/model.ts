@@ -55,16 +55,16 @@ export class Color {
 export class Tile<T> {
   readonly value: T;
   readonly color: Color;
-  private readonly equal: (a: T, b: T) => boolean;
+  private readonly _equal: (a: T, b: T) => boolean;
 
   constructor(value: T, color: Color, equal: (a: T, b: T) => boolean = (a, b) => a === b) {
     this.value = value;
     this.color = color;
-    this.equal = equal;
+    this._equal = equal;
   }
 
   equals(that: Tile<T>): boolean {
-    return that.equal(this.value, that.value);
+    return that._equal(this.value, that.value);
   }
 }
 
@@ -80,6 +80,7 @@ export enum Resolution {
   Contradiction = -2,
 }
 
+// @todo refactor 
 export abstract class Model {
   wave: boolean[][] = []; // wave => pattern map
 
@@ -90,9 +91,9 @@ export abstract class Model {
   toPropagate: [number, number][] = [];
 
   backtrackItems: [number, number][] = []; // wave, pattern
-  private backtrackItemsLengths: number[] = [];
-  private prevChoices: [number, number][] = [];
-  private droppedBacktrackItemsCount: number = 0;
+  private _backtrackItemsLengths: number[] = [];
+  private _prevChoices: [number, number][] = [];
+  private _droppedBacktrackItemsCount: number = 0;
 
   readonly rng: RNG;
   FMX: number;
@@ -184,9 +185,9 @@ export abstract class Model {
     this.toPropagate = [];
 
     this.backtrackItems = [];
-    this.backtrackItemsLengths = [0];
-    this.droppedBacktrackItemsCount = 0;
-    this.prevChoices = [];
+    this._backtrackItemsLengths = [0];
+    this._droppedBacktrackItemsCount = 0;
+    this._prevChoices = [];
 
     this.status = Resolution.Undecided;
   }
@@ -252,7 +253,7 @@ export abstract class Model {
     if (!restart) {
       // Record state before making a choice
       console.assert(this.toPropagate.length == 0);
-      this.backtrackItemsLengths.push(this.droppedBacktrackItemsCount + this.backtrackItems.length);
+      this._backtrackItemsLengths.push(this._droppedBacktrackItemsCount + this.backtrackItems.length);
 
       // Pick a tile and Select a pattern from it.
       [index, pattern] = this.observe();
@@ -261,7 +262,7 @@ export abstract class Model {
       // Record what was selected for backtracking purposes
       if (index !== -1) {
         if (this.debug) console.log("push to prev choices");
-        this.prevChoices.push([index, pattern]);
+        this._prevChoices.push([index, pattern]);
       }
     }
 
@@ -292,14 +293,14 @@ export abstract class Model {
         while (true) {
           if (this.debug) console.log("while backtrack");
 
-          if (this.backtrackItemsLengths.length == 1) {
+          if (this._backtrackItemsLengths.length == 1) {
             if (this.debug) console.log("We've backtracked as much as we can, but, it's still not possible. That means it is impossible");
             // We've backtracked as much as we can, but
             // it's still not possible. That means it is impossible
             return Resolution.Contradiction;
           }
           this.backtrack();
-          let item = this.prevChoices.pop()!;
+          let item = this._prevChoices.pop()!;
           this.toPropagate = [];
           this.status = Resolution.Undecided;
           // Mark the given choice as impossible
@@ -321,8 +322,8 @@ export abstract class Model {
             if (this.debug) console.log("// Include the last ban as part of the previous backtrack");
             // Include the last ban as part of the previous backtrack
             console.assert(this.toPropagate.length === 0);
-            this.backtrackItemsLengths.pop();
-            this.backtrackItemsLengths.push(this.droppedBacktrackItemsCount + this.backtrackItems.length);
+            this._backtrackItemsLengths.pop();
+            this._backtrackItemsLengths.push(this._droppedBacktrackItemsCount + this.backtrackItems.length);
           }
           if (this.debug) console.log("restart = true and break");
           restart = true;
@@ -498,7 +499,7 @@ export abstract class Model {
   }
 
   protected backtrack(): void {
-    const targetLength = this.backtrackItemsLengths.pop()! - this.droppedBacktrackItemsCount;
+    const targetLength = this._backtrackItemsLengths.pop()! - this._droppedBacktrackItemsCount;
     if (this.debug) console.warn("backtrack", targetLength);
 
     const markup: number[] = [];

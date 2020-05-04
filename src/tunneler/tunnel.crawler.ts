@@ -4,22 +4,22 @@ import {Crawler} from "./crawler";
 import {RNG} from "../rng";
 
 export class TunnelCrawler extends Crawler {
-  private readonly intendedDirection: Point;    // intended Direction, the direction the tunnel crawler should be heading
+  private readonly _intendedDirection: Point;    // intended Direction, the direction the tunnel crawler should be heading
   // (0 , 0) <==> can head anywhere
-  private readonly stepLength: number;                // maximal length of tunnel for one iteration
-  private readonly tunnelWidth: number;               // actual width is 1 + 2*tunnelWidth, ensuring all width's are uneven numbers
+  private readonly _stepLength: number;                // maximal length of tunnel for one iteration
+  private readonly _tunnelWidth: number;               // actual width is 1 + 2*tunnelWidth, ensuring all width's are uneven numbers
   //with a well defined center where the tunnel crawler resideth
-  private readonly straightDoubleSpawnProbability: number;   //probability to make two children when going straight
-  private readonly turnDoubleSpawnProbability: number;       //probability to make two children when turning (=changing direction)
+  private readonly _straightDoubleSpawnProbability: number;   //probability to make two children when going straight
+  private readonly _turnDoubleSpawnProbability: number;       //probability to make two children when turning (=changing direction)
   //in both the above cases an anteroom is produced, and one or both of the spawns can be room crawlers
   //whether room crawlers are produced is governed by the dungeon crawler class based on need for rooms and the "patience"-param
-  private readonly changeDirectionProbability: number;
+  private readonly _changeDirectionProbability: number;
 
-  private readonly makeRoomsRightProbability: number; // prob to make a small room off to the right side IN THE MIDDLE OF ONE STEP
-  private readonly makeRoomsLeftProbability: number;  // prob to make a small room off to the left side IN THE MIDDLE OF ONE STEP
+  private readonly _makeRoomsRightProbability: number; // prob to make a small room off to the right side IN THE MIDDLE OF ONE STEP
+  private readonly _makeRoomsLeftProbability: number;  // prob to make a small room off to the left side IN THE MIDDLE OF ONE STEP
   // these are small rooms that at high probabilities typically follow each other like rooms on a corridor
 
-  private readonly joinPreference: number; // when time comes to join another tunnel or to make a terminating room, this preference decides
+  private readonly _joinPreference: number; // when time comes to join another tunnel or to make a terminating room, this preference decides
   // 0 <==> make room always;   100 <==> join always; joinPreference is probability to call Join-method
 
   constructor(rng: RNG, dungeonCrawler: DungeonCrawler, location: Point, direction: Point, age: number, maxAge: number, generation: number,
@@ -27,15 +27,15 @@ export class TunnelCrawler extends Crawler {
               changeDirectionProbability: number, makeRoomsRightProbability: number, makeRoomsLeftProbability: number, joinPreference: number) {
     super(rng, dungeonCrawler, location, direction, age, maxAge, generation);
 
-    this.intendedDirection = intendedDirection;
-    this.stepLength = stepLength;
-    this.tunnelWidth = tunnelWidth;
-    this.straightDoubleSpawnProbability = straightDoubleSpawnProbability;
-    this.turnDoubleSpawnProbability = turnDoubleSpawnProbability;
-    this.changeDirectionProbability = changeDirectionProbability;
-    this.makeRoomsRightProbability = makeRoomsRightProbability;
-    this.makeRoomsLeftProbability = makeRoomsLeftProbability;
-    this.joinPreference = joinPreference;
+    this._intendedDirection = intendedDirection;
+    this._stepLength = stepLength;
+    this._tunnelWidth = tunnelWidth;
+    this._straightDoubleSpawnProbability = straightDoubleSpawnProbability;
+    this._turnDoubleSpawnProbability = turnDoubleSpawnProbability;
+    this._changeDirectionProbability = changeDirectionProbability;
+    this._makeRoomsRightProbability = makeRoomsRightProbability;
+    this._makeRoomsLeftProbability = makeRoomsLeftProbability;
+    this._joinPreference = joinPreference;
   }
 
   stepAhead(): boolean {
@@ -54,8 +54,8 @@ export class TunnelCrawler extends Crawler {
     else if (this.age < 0)
       return true;
 
-    console.assert(this.tunnelWidth >= 0);
-    let [frontFree, leftFree, rightFree] = this.frontFree(this.location, this.direction, this.tunnelWidth + 1, this.tunnelWidth + 1);
+    console.assert(this._tunnelWidth >= 0);
+    let [frontFree, leftFree, rightFree] = this.frontFree(this.location, this.direction, this._tunnelWidth + 1, this._tunnelWidth + 1);
     if (frontFree === 0) {
       return false; // can't do a thing, eliminate this tunnel crawler
     }
@@ -69,34 +69,34 @@ export class TunnelCrawler extends Crawler {
     const roomGeneration = this.roomGeneration();
 
     // if room is running out, or maxAge is reached, join or build terminating room
-    if ((frontFree < (2 * this.stepLength)) || ((this.maxAge - 1) === this.age)) {
+    if ((frontFree < (2 * this._stepLength)) || ((this.maxAge - 1) === this.age)) {
       return this.joinOrBuildTerminatingRoom(sizeBranching, frontFree, leftFree, rightFree, right, left);
     }
 
     // if we get here, we must have:
-    console.assert(frontFree >= 2 * this.stepLength);
+    console.assert(frontFree >= 2 * this._stepLength);
 
-    console.assert(this.stepLength > 0);
-    this.buildTunnel(this.stepLength, this.tunnelWidth);
+    console.assert(this._stepLength > 0);
+    this.buildTunnel(this._stepLength, this._tunnelWidth);
     // build side rooms if desired
-    if (this.rng.range(0, 100) < this.makeRoomsRightProbability) {
-      let spawnPoint = this.location.plus(this.direction.multiply((this.stepLength >> 1 + 1))).plus(right.multiply(this.tunnelWidth));
+    if (this.rng.range(0, 100) < this._makeRoomsRightProbability) {
+      let spawnPoint = this.location.plus(this.direction.multiply((this._stepLength >> 1 + 1))).plus(right.multiply(this._tunnelWidth));
       // use this and right in room crawler;
       // let it execute with one step delay, to let the tunnel crawler get ahead, possibly going sideways and blocking room
       this.spawnRoomCrawler(spawnPoint, right, -1, 2, roomGeneration, sizeSideways, false);
     }
-    if (this.rng.range(0, 100) < this.makeRoomsLeftProbability) {
-      let spawnPoint = this.location.plus(this.direction.multiply((this.stepLength >> 1 + 1))).plus(left.multiply(this.tunnelWidth));
+    if (this.rng.range(0, 100) < this._makeRoomsLeftProbability) {
+      let spawnPoint = this.location.plus(this.direction.multiply((this._stepLength >> 1 + 1))).plus(left.multiply(this._tunnelWidth));
       // use this and left in room crawler;
       // let it execute with one step delay, to let the tunnel crawler get ahead, possibly going sideways and blocking room
       this.spawnRoomCrawler(spawnPoint, left, -1, 2, roomGeneration, sizeSideways, false);
     }
 
     //relocate the tunnel crawler to the front of the new tunnel section
-    this.location = this.location.plus(this.direction.multiply(this.stepLength));
+    this.location = this.location.plus(this.direction.multiply(this._stepLength));
 
-    const smallAnteroomPossible = this.isAnteroomPossible(right, this.tunnelWidth + 2, this.tunnelWidth + 2, 2 * this.tunnelWidth + 5);
-    const largeAnteroomPossible = this.isAnteroomPossible(right, this.tunnelWidth + 3, this.tunnelWidth + 3, 2 * this.tunnelWidth + 7);
+    const smallAnteroomPossible = this.isAnteroomPossible(right, this._tunnelWidth + 2, this._tunnelWidth + 2, 2 * this._tunnelWidth + 5);
+    const largeAnteroomPossible = this.isAnteroomPossible(right, this._tunnelWidth + 3, this._tunnelWidth + 3, 2 * this._tunnelWidth + 7);
 
     let sizeUpTunnel = false;
     let sizeDownTunnel = false;
@@ -162,10 +162,10 @@ export class TunnelCrawler extends Crawler {
     if (changeDirection) {
       // change the direction
       // first check for available space
-      let [frontFreeRight] = this.frontFree(spawnPointRight, right, this.tunnelWidth + 1, this.tunnelWidth + 1);
-      let [frontFreeLeft] = this.frontFree(spawnPointLeft, left, this.tunnelWidth + 1, this.tunnelWidth + 1);
+      let [frontFreeRight] = this.frontFree(spawnPointRight, right, this._tunnelWidth + 1, this._tunnelWidth + 1);
+      let [frontFreeLeft] = this.frontFree(spawnPointLeft, left, this._tunnelWidth + 1, this._tunnelWidth + 1);
 
-      if (this.intendedDirection.equal(0, 0) || this.intendedDirection.equals(this.direction)) {
+      if (this._intendedDirection.equal(0, 0) || this._intendedDirection.equals(this.direction)) {
         // we can go left or right as we choose
         if ((!sizeUpTunnel) || (!doSpawn)) {
           // we go where there is more room
@@ -198,9 +198,9 @@ export class TunnelCrawler extends Crawler {
         }
       } else {
         // the intendedHeading leaves us no choice where to go
-        if ((this.intendedDirection.x === 0) || (this.intendedDirection.y === 0)) {
+        if ((this._intendedDirection.x === 0) || (this._intendedDirection.y === 0)) {
           // the intended heading is one of the four pure directions, and our new heading must be the intended heading
-          this.direction = this.intendedDirection;
+          this.direction = this._intendedDirection;
           if ((this.direction.equals(right))) {
             if (frontFreeRight > 0) {
               usedRight = true;
@@ -213,8 +213,8 @@ export class TunnelCrawler extends Crawler {
           }
         } else {
           // the intended heading must be in one of the four intermediate directions
-          console.assert(!this.intendedDirection.equal(0, 0));
-          this.direction = this.intendedDirection.minus(this.direction);
+          console.assert(!this._intendedDirection.equal(0, 0));
+          this.direction = this._intendedDirection.minus(this.direction);
           if (this.direction.equals(right)) {
             if (frontFreeRight > 0) {
               usedRight = true;
@@ -293,12 +293,12 @@ export class TunnelCrawler extends Crawler {
   private isAnteroomPossible(right: Point, leftFree: number, rightFree: number, minFrontFree: number): boolean {
     const dungeonCrawler = this.dungeonCrawler;
     let anteroomPossible = false;
-    console.assert(this.tunnelWidth >= 0);
+    console.assert(this._tunnelWidth >= 0);
     console.assert(dungeonCrawler.getMap(this.location) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
 
     // temporary, so we can step back to see it's free in our own row
     dungeonCrawler.setMap(this.location, TunnelerCellType.CLOSED);
-    for (let m = 1; m <= this.tunnelWidth; m++) {
+    for (let m = 1; m <= this._tunnelWidth; m++) {
       console.assert(dungeonCrawler.getMap(this.location.plus(right.multiply(m))) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
       console.assert(dungeonCrawler.getMap(this.location.minus(right.multiply(m))) === TunnelerCellType.INSIDE_TUNNEL_OPEN);
       dungeonCrawler.setMap(this.location.plus(right.multiply(m)), TunnelerCellType.CLOSED);
@@ -311,7 +311,7 @@ export class TunnelCrawler extends Crawler {
     }
     // revert
     dungeonCrawler.setMap(this.location, TunnelerCellType.INSIDE_TUNNEL_OPEN);
-    for (let m = 1; m <= this.tunnelWidth; m++) {
+    for (let m = 1; m <= this._tunnelWidth; m++) {
       dungeonCrawler.setMap(this.location.plus(right.multiply(m)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
       dungeonCrawler.setMap(this.location.minus(right.multiply(m)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
     }
@@ -328,30 +328,30 @@ export class TunnelCrawler extends Crawler {
   ): true | [Point, Point, Point, boolean] {
     const dungeonCrawler = this.dungeonCrawler;
     if (sizeUpTunnel) {
-      if (this.rng.range(0, 100) < this.getAnteroomProbability(this.tunnelWidth) || doSpawn) {
+      if (this.rng.range(0, 100) < this.getAnteroomProbability(this._tunnelWidth) || doSpawn) {
         // if we spawn this would look weird without anteroom
-        const result = this.buildAnteroom(2 * this.tunnelWidth + 5, this.tunnelWidth + 2);
+        const result = this.buildAnteroom(2 * this._tunnelWidth + 5, this._tunnelWidth + 2);
         console.assert(result);
-        const spawnDirection = this.location.plus(this.direction.multiply(2 * this.tunnelWidth + 5));
-        const spawnRight = this.location.plus(this.direction.multiply(this.tunnelWidth + 3)).plus(right.multiply(this.tunnelWidth + 2));
-        const spawnLeft = this.location.plus(this.direction.multiply(this.tunnelWidth + 3)).plus(left.multiply(this.tunnelWidth + 2));
+        const spawnDirection = this.location.plus(this.direction.multiply(2 * this._tunnelWidth + 5));
+        const spawnRight = this.location.plus(this.direction.multiply(this._tunnelWidth + 3)).plus(right.multiply(this._tunnelWidth + 2));
+        const spawnLeft = this.location.plus(this.direction.multiply(this._tunnelWidth + 3)).plus(left.multiply(this._tunnelWidth + 2));
         return [spawnDirection, spawnRight, spawnLeft, true];
       }
     } else {
-      if (this.rng.range(0, 100) < this.getAnteroomProbability(this.tunnelWidth) && smallAnteroomPossible) {
-        const result = this.buildAnteroom(2 * this.tunnelWidth + 3, this.tunnelWidth + 1);
+      if (this.rng.range(0, 100) < this.getAnteroomProbability(this._tunnelWidth) && smallAnteroomPossible) {
+        const result = this.buildAnteroom(2 * this._tunnelWidth + 3, this._tunnelWidth + 1);
         console.assert(result);
-        const spawnDirection = this.location.plus(this.direction.multiply(2 * this.tunnelWidth + 3));
-        const spawnRight = this.location.plus(this.direction.multiply(this.tunnelWidth + 2)).plus(right.multiply(this.tunnelWidth + 1));
-        const spawnLeft = this.location.plus(this.direction.multiply(this.tunnelWidth + 2)).plus(left.multiply(this.tunnelWidth + 1));
+        const spawnDirection = this.location.plus(this.direction.multiply(2 * this._tunnelWidth + 3));
+        const spawnRight = this.location.plus(this.direction.multiply(this._tunnelWidth + 2)).plus(right.multiply(this._tunnelWidth + 1));
+        const spawnLeft = this.location.plus(this.direction.multiply(this._tunnelWidth + 2)).plus(left.multiply(this._tunnelWidth + 1));
         return [spawnDirection, spawnRight, spawnLeft, true];
       }
     }
 
     // determine spawn points without anteroom:
     const spawnDirection = this.location;
-    const spawnRight = this.location.minus(this.direction.multiply(this.tunnelWidth)).plus(right.multiply(this.tunnelWidth));
-    const spawnLeft = this.location.minus(this.direction.multiply(this.tunnelWidth)).plus(left.multiply(this.tunnelWidth));
+    const spawnRight = this.location.minus(this.direction.multiply(this._tunnelWidth)).plus(right.multiply(this._tunnelWidth));
+    const spawnLeft = this.location.minus(this.direction.multiply(this._tunnelWidth)).plus(left.multiply(this._tunnelWidth));
     if (this.dungeonCrawler.getMap(spawnRight) !== TunnelerCellType.INSIDE_TUNNEL_OPEN ||
       dungeonCrawler.getMap(spawnLeft) !== TunnelerCellType.INSIDE_TUNNEL_OPEN) {
       // we didn't make a long enough step so we cannot really go back on this tunnel, bail out!
@@ -372,7 +372,7 @@ export class TunnelCrawler extends Crawler {
 
     // first see whether we can join straight ahead at full width
     let count = 0;
-    for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+    for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
       if (this.contains(cell, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
@@ -391,7 +391,7 @@ export class TunnelCrawler extends Crawler {
     }
 
     // if we try to join because reaching maxAge, we must also check that the distance to the tunnel to be joined is not too large:
-    if ((this.rng.range(0, 100) <= this.joinPreference) &&
+    if ((this.rng.range(0, 100) <= this._joinPreference) &&
       // if this is true, we don't have enough room to build a room and must join in any case
       ((this.age < this.maxAge - 1) || (frontFree <= this.config.tunnelJoinDist)) || frontFree < 5) {
       const result = this.joinOtherTunnel(count, frontFree, leftFree, rightFree, openAhead, roomAhead, guaranteedClosedAhead, right);
@@ -408,16 +408,16 @@ export class TunnelCrawler extends Crawler {
 
     // also, in case this room crawler fails or wasn't created, let's create a tunnel crawler that executes a bit later:
     let joinPreference = this.rng.range(0, 11) * 10;
-    if ((this.joinPreference !== 100) || (this.makeRoomsLeftProbability !== this.config.lastChanceTunnelCrawler.makeRoomsLeftProbability) ||
-      (this.makeRoomsRightProbability !== this.config.lastChanceTunnelCrawler.makeRoomsRightProbability) ||
-      (this.changeDirectionProbability !== this.config.lastChanceTunnelCrawler.changeDirectionProbability) ||
-      (this.straightDoubleSpawnProbability !== this.config.lastChanceTunnelCrawler.straightDoubleSpawnProbability) ||
-      (this.turnDoubleSpawnProbability !== this.config.lastChanceTunnelCrawler.turnDoubleSpawnProbability) ||
-      (this.tunnelWidth !== 0)) // this condition prevents an infinite loop of tunnel crawlers creating identical children
+    if ((this._joinPreference !== 100) || (this._makeRoomsLeftProbability !== this.config.lastChanceTunnelCrawler.makeRoomsLeftProbability) ||
+      (this._makeRoomsRightProbability !== this.config.lastChanceTunnelCrawler.makeRoomsRightProbability) ||
+      (this._changeDirectionProbability !== this.config.lastChanceTunnelCrawler.changeDirectionProbability) ||
+      (this._straightDoubleSpawnProbability !== this.config.lastChanceTunnelCrawler.straightDoubleSpawnProbability) ||
+      (this._turnDoubleSpawnProbability !== this.config.lastChanceTunnelCrawler.turnDoubleSpawnProbability) ||
+      (this._tunnelWidth !== 0)) // this condition prevents an infinite loop of tunnel crawlers creating identical children
     {
-      let [frontFreeRight] = this.frontFree(this.location.plus(right.multiply(this.tunnelWidth)), right, this.tunnelWidth + 1, this.tunnelWidth + 1);
-      let [frontFreeLeft] = this.frontFree(this.location.minus(right.multiply(this.tunnelWidth)), left, this.tunnelWidth + 1, this.tunnelWidth + 1);
-      let [frontFreeBack] = this.frontFree(this.location, this.direction.negative, this.tunnelWidth + 1, this.tunnelWidth + 1);
+      let [frontFreeRight] = this.frontFree(this.location.plus(right.multiply(this._tunnelWidth)), right, this._tunnelWidth + 1, this._tunnelWidth + 1);
+      let [frontFreeLeft] = this.frontFree(this.location.minus(right.multiply(this._tunnelWidth)), left, this._tunnelWidth + 1, this._tunnelWidth + 1);
+      let [frontFreeBack] = this.frontFree(this.location, this.direction.negative, this._tunnelWidth + 1, this._tunnelWidth + 1);
 
       const fork = (location: Point, direction: Point, generation: number, intendedDirection: Point) => {
         this.dungeonCrawler.createTunnelCrawler(location, direction, 0, this.maxAge,
@@ -427,12 +427,12 @@ export class TunnelCrawler extends Crawler {
           this.config.lastChanceTunnelCrawler.makeRoomsLeftProbability, joinPreference);
       };
 
-      if (this.tunnelWidth === 0) {
-        if ((this.makeRoomsLeftProbability === this.config.lastChanceTunnelCrawler.makeRoomsLeftProbability) &&
-          (this.makeRoomsRightProbability === this.config.lastChanceTunnelCrawler.makeRoomsRightProbability) &&
-          (this.changeDirectionProbability === this.config.lastChanceTunnelCrawler.changeDirectionProbability) &&
-          (this.straightDoubleSpawnProbability === this.config.lastChanceTunnelCrawler.straightDoubleSpawnProbability) &&
-          (this.turnDoubleSpawnProbability === this.config.lastChanceTunnelCrawler.turnDoubleSpawnProbability)) {
+      if (this._tunnelWidth === 0) {
+        if ((this._makeRoomsLeftProbability === this.config.lastChanceTunnelCrawler.makeRoomsLeftProbability) &&
+          (this._makeRoomsRightProbability === this.config.lastChanceTunnelCrawler.makeRoomsRightProbability) &&
+          (this._changeDirectionProbability === this.config.lastChanceTunnelCrawler.changeDirectionProbability) &&
+          (this._straightDoubleSpawnProbability === this.config.lastChanceTunnelCrawler.straightDoubleSpawnProbability) &&
+          (this._turnDoubleSpawnProbability === this.config.lastChanceTunnelCrawler.turnDoubleSpawnProbability)) {
           //we have a child of one spawned here which may be stuck, so redirect it
           if (frontFree >= frontFreeRight && frontFree >= frontFreeLeft && frontFree >= frontFreeBack) {
             fork(this.location, this.direction, this.generation + 1, this.direction);
@@ -450,14 +450,14 @@ export class TunnelCrawler extends Crawler {
         // here the forks at the end of wide tunnels get created
         if (guaranteedClosedAhead) {
           //we go left and right
-          fork(this.location.plus(right.multiply(this.tunnelWidth)), right, this.generation + this.config.genDelayLastChance, right);
-          fork(this.location.minus(right.multiply(this.tunnelWidth)), left, this.generation + this.config.genDelayLastChance, left);
+          fork(this.location.plus(right.multiply(this._tunnelWidth)), right, this.generation + this.config.genDelayLastChance, right);
+          fork(this.location.minus(right.multiply(this._tunnelWidth)), left, this.generation + this.config.genDelayLastChance, left);
         } else if (frontFreeRight >= frontFreeLeft || frontFreeRight === frontFreeLeft && this.rng.range(0, 100) < 50) {
-          fork(this.location.plus(right.multiply(this.tunnelWidth)), right, this.generation + this.config.genDelayLastChance, right);
-          fork(this.location.minus(right.multiply(this.tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
+          fork(this.location.plus(right.multiply(this._tunnelWidth)), right, this.generation + this.config.genDelayLastChance, right);
+          fork(this.location.minus(right.multiply(this._tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
         } else {
-          fork(this.location.plus(right.multiply(this.tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
-          fork(this.location.minus(right.multiply(this.tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
+          fork(this.location.plus(right.multiply(this._tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
+          fork(this.location.minus(right.multiply(this._tunnelWidth)), this.direction, this.generation + this.config.genDelayLastChance, this.direction);
         }
       }
     }
@@ -479,8 +479,8 @@ export class TunnelCrawler extends Crawler {
     const dungeonCrawler = this.dungeonCrawler;
     // try to join other tunnel
     // for the full width of the tunnel, we are faced with open squares
-    if ((2 * this.tunnelWidth + 1) === count) {
-      this.buildTunnel(frontFree, this.tunnelWidth);
+    if ((2 * this._tunnelWidth + 1) === count) {
+      this.buildTunnel(frontFree, this._tunnelWidth);
       return false;   //delete this tunnel crawler
     }
 
@@ -488,7 +488,7 @@ export class TunnelCrawler extends Crawler {
       return this.buildSmallerTunnel(frontFree, dungeonCrawler, right);
     } // openAhead === true
 
-    if (roomAhead && (this.tunnelWidth === 0)) {
+    if (roomAhead && (this._tunnelWidth === 0)) {
       // make a small entry into the room, we don't do this for wider corridors
       if (frontFree > 1) {
         //otherwise we can make adjacent doors into end-of-tunnel room
@@ -509,15 +509,15 @@ export class TunnelCrawler extends Crawler {
     if (guaranteedClosedAhead) {
       // if this didn't work, we often are at the edge of the map, looking towards the edge
       // change direction - this code only good for tunnelWidth === 0, but other cases have not been observed
-      if (this.tunnelWidth === 0) {
+      if (this._tunnelWidth === 0) {
         // this condition prevents an infinite loop of tunnel crawlers creating identical children
-        if (this.joinPreference !== 100 ||
-          this.makeRoomsLeftProbability !== 20 ||
-          this.makeRoomsRightProbability !== 20 ||
-          this.changeDirectionProbability !== 30 ||
-          this.straightDoubleSpawnProbability !== 0 ||
-          this.turnDoubleSpawnProbability !== 0 ||
-          this.tunnelWidth !== 0
+        if (this._joinPreference !== 100 ||
+          this._makeRoomsLeftProbability !== 20 ||
+          this._makeRoomsRightProbability !== 20 ||
+          this._changeDirectionProbability !== 30 ||
+          this._straightDoubleSpawnProbability !== 0 ||
+          this._turnDoubleSpawnProbability !== 0 ||
+          this._tunnelWidth !== 0
         ) {
           const joinPreference = this.rng.range(0, 11) * 10;
           const direction = leftFree >= rightFree ? right.negative : right;
@@ -529,10 +529,10 @@ export class TunnelCrawler extends Crawler {
 
     if (!openAhead && !guaranteedClosedAhead) {
       if (this.isSpecialCase(frontFree, right)) {
-        const isJoined = this.buildTunnel(frontFree, this.tunnelWidth);
+        const isJoined = this.buildTunnel(frontFree, this._tunnelWidth);
         console.assert(isJoined);
         // treat the next row manually
-        for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+        for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
           dungeonCrawler.setMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
         }
 
@@ -541,7 +541,7 @@ export class TunnelCrawler extends Crawler {
         let contactInNextRow = true;
         let rowAfterIsOK = true;
         while (contactInNextRow && rowAfterIsOK) {
-          for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+          for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
             if (cell !== TunnelerCellType.CLOSED) {
@@ -550,8 +550,8 @@ export class TunnelCrawler extends Crawler {
             }
           }
           //now check for contact
-          let testRight = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(this.tunnelWidth + 1));
-          let testLeft = this.location.plus(this.direction.multiply(directionLength)).minus(right.multiply(this.tunnelWidth + 1));
+          let testRight = this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(this._tunnelWidth + 1));
+          let testLeft = this.location.plus(this.direction.multiply(directionLength)).minus(right.multiply(this._tunnelWidth + 1));
           let rightCell = dungeonCrawler.getMap(testRight);
           let leftCell = dungeonCrawler.getMap(testLeft);
           if (
@@ -567,7 +567,7 @@ export class TunnelCrawler extends Crawler {
           }
 
           //now check the row after:
-          for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+          for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
             if (cell !== TunnelerCellType.CLOSED) {
@@ -576,8 +576,8 @@ export class TunnelCrawler extends Crawler {
           }
 
           //now check the two outlying squares
-          testRight = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(this.tunnelWidth + 1));
-          testLeft = this.location.plus(this.direction.multiply(directionLength + 1)).minus(right.multiply(this.tunnelWidth + 1));
+          testRight = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(this._tunnelWidth + 1));
+          testLeft = this.location.plus(this.direction.multiply(directionLength + 1)).minus(right.multiply(this._tunnelWidth + 1));
           rightCell = dungeonCrawler.getMap(testRight);
           leftCell = dungeonCrawler.getMap(testLeft);
           if (
@@ -591,7 +591,7 @@ export class TunnelCrawler extends Crawler {
             rowAfterIsOK = false;
           //however, if the entire row after is IT_OPEN, it's also OK
           let allOpen = true;
-          for (let i = -this.tunnelWidth - 1; i <= this.tunnelWidth + 1; i++) {
+          for (let i = -this._tunnelWidth - 1; i <= this._tunnelWidth + 1; i++) {
             const test = this.location.plus(this.direction.multiply(directionLength + 1)).plus(right.multiply(i));
             const cell = dungeonCrawler.getMap(test);
             if ((cell !== TunnelerCellType.INSIDE_TUNNEL_OPEN) && (cell !== TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
@@ -604,7 +604,7 @@ export class TunnelCrawler extends Crawler {
 
           // build another row
           if (contactInNextRow && rowAfterIsOK) {
-            for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+            for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
               dungeonCrawler.setMap(this.location.plus(this.direction.multiply(directionLength)).plus(right.multiply(i)), TunnelerCellType.INSIDE_TUNNEL_OPEN);
             }
           }
@@ -614,19 +614,19 @@ export class TunnelCrawler extends Crawler {
         return false;   // delete this tunnel crawler
       } // weHaveSpecialCase
       // now treat the case that a room blocks the path off center, only for tunnelWidth === 0:
-      if (this.tunnelWidth === 0) {
+      if (this._tunnelWidth === 0) {
         if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1))) === TunnelerCellType.CLOSED) {
           //look sideways, and turn away from the room
           if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).plus(right)) === TunnelerCellType.INSIDE_ROOM_OPEN) {
             this.direction = right.negative;
-            if (this.direction.equals(this.intendedDirection.negative)) {
-              this.direction = this.intendedDirection;   //to prevent heading off in the wrong direction
+            if (this.direction.equals(this._intendedDirection.negative)) {
+              this.direction = this._intendedDirection;   //to prevent heading off in the wrong direction
             }
             return true;
           } else if (dungeonCrawler.getMap(this.location.plus(this.direction.multiply(frontFree + 1)).minus(right)) === TunnelerCellType.INSIDE_ROOM_OPEN) {
             this.direction = right;
-            if (this.direction.equals(this.intendedDirection.negative)) {
-              this.direction = this.intendedDirection;   //to prevent heading off in the wrong direction
+            if (this.direction.equals(this._intendedDirection.negative)) {
+              this.direction = this._intendedDirection;   //to prevent heading off in the wrong direction
             }
             return true;
           }
@@ -643,7 +643,7 @@ export class TunnelCrawler extends Crawler {
     // treat special case that can arise when frontFree was in fact based on an OPEN square that's tunnelWidth+1 off center
     let isSpecialCase = true;
     // test that assumption:
-    for (let i = -this.tunnelWidth; i <= this.tunnelWidth; i++) {
+    for (let i = -this._tunnelWidth; i <= this._tunnelWidth; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
       if (cell !== TunnelerCellType.CLOSED) {
@@ -652,8 +652,8 @@ export class TunnelCrawler extends Crawler {
       }
     }
     // now test to the side
-    let testRight = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(this.tunnelWidth + 1));
-    let testLeft = this.location.plus(this.direction.multiply(frontFree + 1)).minus(right.multiply(this.tunnelWidth + 1));
+    let testRight = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(this._tunnelWidth + 1));
+    let testLeft = this.location.plus(this.direction.multiply(frontFree + 1)).minus(right.multiply(this._tunnelWidth + 1));
     let rightCell = dungeonCrawler.getMap(testRight);
     let leftCell = dungeonCrawler.getMap(testLeft);
     if (
@@ -668,7 +668,7 @@ export class TunnelCrawler extends Crawler {
     }
 
     // test next row to prevent collision with rooms
-    for (let i = -this.tunnelWidth - 1; i <= this.tunnelWidth + 1; i++) {
+    for (let i = -this._tunnelWidth - 1; i <= this._tunnelWidth + 1; i++) {
       const test = this.location.plus(this.direction.multiply(frontFree + 2)).plus(right.multiply(i));
       const cell = dungeonCrawler.getMap(test);
       if (cell === TunnelerCellType.INSIDE_ROOM_OPEN) {
@@ -694,8 +694,8 @@ export class TunnelCrawler extends Crawler {
                                readonly joinPreference: number
                              }
   ): void {
-    let tunnelWidth = this.tunnelWidth;
-    let stepLength = this.stepLength;
+    let tunnelWidth = this._tunnelWidth;
+    let stepLength = this._stepLength;
     if (sizeUpTunnel) {
       tunnelWidth++;
       stepLength = stepLength + 2; // @TODO: make better stepLength changes
@@ -729,7 +729,7 @@ export class TunnelCrawler extends Crawler {
 
   private spawnRoomCrawler(location: Point, direction: Point, age: number, maxAge: number,
                            generation: number, size: RoomSize, builtAnteroom: boolean): void {
-    const defaultWidth = Math.max(1, 2 * this.tunnelWidth);
+    const defaultWidth = Math.max(1, 2 * this._tunnelWidth);
     if (builtAnteroom) {
       generation = this.generation + Math.floor((generation - this.generation) / (this.config.genSpeedUpOnAnteroom));
     }
@@ -750,7 +750,7 @@ export class TunnelCrawler extends Crawler {
     }
 
     let offset = 0;
-    for (let i = 1; i <= this.tunnelWidth; i++) {
+    for (let i = 1; i <= this._tunnelWidth; i++) {
       const testP = this.location.plus(this.direction.multiply(frontFree + 1)).plus(right.multiply(i));
       const cellP = dungeonCrawler.getMap(testP);
       if (this.contains(cellP, TunnelerCellType.OPEN, TunnelerCellType.GUARANTEED_OPEN, TunnelerCellType.INSIDE_TUNNEL_OPEN, TunnelerCellType.INSIDE_ANTEROOM_OPEN)) {
@@ -791,10 +791,10 @@ export class TunnelCrawler extends Crawler {
   private sidewaysBranchingRoomSizes(): [RoomSize, RoomSize] {
     let sizeSideways: RoomSize;
     let sizeBranching: RoomSize;
-    const probabilityMediumSideways = this.getRoomSizeProbabilitySideways(this.tunnelWidth, RoomSize.MEDIUM);
-    const probabilitySmallSideways = this.getRoomSizeProbabilitySideways(this.tunnelWidth, RoomSize.SMALL);
-    const probabilityMediumBranching = this.getRoomSizeProbabilityBranching(this.tunnelWidth, RoomSize.MEDIUM);
-    const probSmallBranching = this.getRoomSizeProbabilityBranching(this.tunnelWidth, RoomSize.SMALL);
+    const probabilityMediumSideways = this.getRoomSizeProbabilitySideways(this._tunnelWidth, RoomSize.MEDIUM);
+    const probabilitySmallSideways = this.getRoomSizeProbabilitySideways(this._tunnelWidth, RoomSize.SMALL);
+    const probabilityMediumBranching = this.getRoomSizeProbabilityBranching(this._tunnelWidth, RoomSize.MEDIUM);
+    const probSmallBranching = this.getRoomSizeProbabilityBranching(this._tunnelWidth, RoomSize.SMALL);
 
     let diceRoll = this.rng.range(0, 100);
     if (diceRoll < probabilitySmallSideways)
@@ -815,13 +815,13 @@ export class TunnelCrawler extends Crawler {
   }
 
   private isChangeDirection(): boolean {
-    return this.rng.range(0, 100) < this.changeDirectionProbability;
+    return this.rng.range(0, 100) < this._changeDirectionProbability;
   }
 
   private isSpawn(changeDirection: boolean): boolean {
-    if (changeDirection && this.rng.range(0, 100) < this.turnDoubleSpawnProbability) {
+    if (changeDirection && this.rng.range(0, 100) < this._turnDoubleSpawnProbability) {
       return true;
-    } else if (!changeDirection && this.rng.range(0, 100) < this.straightDoubleSpawnProbability) {
+    } else if (!changeDirection && this.rng.range(0, 100) < this._straightDoubleSpawnProbability) {
       return true;
     }
     return false;
@@ -998,12 +998,12 @@ export class TunnelCrawler extends Crawler {
 
   private mutateOptions() {
     return {
-      straightDoubleSpawnProbability: this.dungeonCrawler.mutate(this.straightDoubleSpawnProbability),
-      turnDoubleSpawnProbability: this.dungeonCrawler.mutate(this.turnDoubleSpawnProbability),
-      changeDirectionProbability: this.dungeonCrawler.mutate(this.changeDirectionProbability),
-      makeRoomsRightProbability: this.dungeonCrawler.mutate(this.makeRoomsRightProbability),
-      makeRoomsLeftProbability: this.dungeonCrawler.mutate(this.makeRoomsLeftProbability),
-      joinPreference: this.dungeonCrawler.mutate(this.joinPreference),
+      straightDoubleSpawnProbability: this.dungeonCrawler.mutate(this._straightDoubleSpawnProbability),
+      turnDoubleSpawnProbability: this.dungeonCrawler.mutate(this._turnDoubleSpawnProbability),
+      changeDirectionProbability: this.dungeonCrawler.mutate(this._changeDirectionProbability),
+      makeRoomsRightProbability: this.dungeonCrawler.mutate(this._makeRoomsRightProbability),
+      makeRoomsLeftProbability: this.dungeonCrawler.mutate(this._makeRoomsLeftProbability),
+      joinPreference: this.dungeonCrawler.mutate(this._joinPreference),
     };
   }
 }

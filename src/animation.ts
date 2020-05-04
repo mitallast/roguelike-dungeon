@@ -1,7 +1,7 @@
 import {Curve} from "./curves";
 
 export class Animation {
-  private readonly clips: AnimationClip[] = [];
+  private readonly _clips: AnimationClip[] = [];
   private _playing: boolean = false;
 
   get isPlaying(): boolean {
@@ -9,31 +9,31 @@ export class Animation {
   }
 
   add(clip: AnimationClip): void {
-    this.clips.push(clip);
+    this._clips.push(clip);
   }
 
   clear(): void {
     this.stop();
-    this.clips.splice(0, this.clips.length);
+    this._clips.splice(0, this._clips.length);
   }
 
   start(): void {
     this._playing = true;
-    for (let clip of this.clips) {
+    for (let clip of this._clips) {
       clip.start();
     }
   }
 
   stop(): void {
     this._playing = false;
-    for (let clip of this.clips) {
+    for (let clip of this._clips) {
       clip.stop();
     }
   }
 
   update(deltaTime: number): void {
     let hasPlaying = false;
-    for (let clip of this.clips) {
+    for (let clip of this._clips) {
       clip.update(deltaTime);
       if (clip.isPlaying) {
         hasPlaying = true;

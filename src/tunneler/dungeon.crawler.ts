@@ -10,18 +10,18 @@ export class DungeonCrawler {
   readonly rng: RNG;
   readonly config: Config;
 
-  private readonly map: TunnelerCellType[];
-  private readonly rooms: Room[] = [];
-  private readonly mapFlagsDirections: boolean[] = [];
-  private readonly crawlers: (Crawler | null)[] = [];
+  private readonly _map: TunnelerCellType[];
+  private readonly _rooms: Room[] = [];
+  private readonly _mapFlagsDirections: boolean[] = [];
+  private readonly _crawlers: (Crawler | null)[] = [];
 
   activeGeneration: number = 0;
-  private currSmallRoomsLabyrinth: number = 0;
-  private currMediumRoomsLabyrinth: number = 0;
-  private currLargeRoomsLabyrinth: number = 0;
-  private currSmallRoomsDungeon: number = 0;
-  private currMediumRoomsDungeon: number = 0;
-  private currLargeRoomsDungeon: number = 0;
+  private _currSmallRoomsLabyrinth: number = 0;
+  private _currMediumRoomsLabyrinth: number = 0;
+  private _currLargeRoomsLabyrinth: number = 0;
+  private _currSmallRoomsDungeon: number = 0;
+  private _currMediumRoomsDungeon: number = 0;
+  private _currLargeRoomsDungeon: number = 0;
 
   private isOpen(pos: IPoint): boolean {
     //returns false inside-room/tunnel-open squares, for use in CreateRoom
@@ -47,14 +47,14 @@ export class DungeonCrawler {
     const y = point.y;
     console.assert(data !== undefined);
     console.assert((x < this.config.width) && (y < this.config.height) && (x >= 0) && (y >= 0));
-    this.map[x * this.config.height + y] = data;
+    this._map[x * this.config.height + y] = data;
   }
 
   getMap(point: IPoint): TunnelerCellType {
     const x = point.x;
     const y = point.y;
     console.assert((x < this.config.width) && (y < this.config.height) && (x >= 0) && (y >= 0));
-    return this.map[x * this.config.height + y];
+    return this._map[x * this.config.height + y];
   }
 
   isMapOpen(point: IPoint): boolean {
@@ -78,11 +78,11 @@ export class DungeonCrawler {
     if (size !== null) {
       switch (size) {
         case RoomSize.SMALL:
-          return (this.config.numSmallRoomsInLabyrinth > this.currSmallRoomsLabyrinth);
+          return (this.config.numSmallRoomsInLabyrinth > this._currSmallRoomsLabyrinth);
         case RoomSize.MEDIUM:
-          return (this.config.numMediumRoomsInLabyrinth > this.currMediumRoomsLabyrinth);
+          return (this.config.numMediumRoomsInLabyrinth > this._currMediumRoomsLabyrinth);
         case RoomSize.LARGE:
-          return (this.config.numLargeRoomsInLabyrinth > this.currLargeRoomsLabyrinth);
+          return (this.config.numLargeRoomsInLabyrinth > this._currLargeRoomsLabyrinth);
       }
     } else {
       return (this.isMoreRoomsLabyrinth(RoomSize.SMALL) || this.isMoreRoomsLabyrinth(RoomSize.MEDIUM) || this.isMoreRoomsLabyrinth(RoomSize.LARGE));
@@ -93,11 +93,11 @@ export class DungeonCrawler {
     if (size !== null) {
       switch (size) {
         case RoomSize.SMALL:
-          return (this.config.numSmallRoomsInDungeon > this.currSmallRoomsDungeon);
+          return (this.config.numSmallRoomsInDungeon > this._currSmallRoomsDungeon);
         case RoomSize.MEDIUM:
-          return (this.config.numMediumRoomsInDungeon > this.currMediumRoomsDungeon);
+          return (this.config.numMediumRoomsInDungeon > this._currMediumRoomsDungeon);
         case RoomSize.LARGE:
-          return (this.config.numLargeRoomsInDungeon > this.currLargeRoomsDungeon);
+          return (this.config.numLargeRoomsInDungeon > this._currLargeRoomsDungeon);
       }
     } else {
       return (this.isMoreRoomsDungeon(RoomSize.SMALL) || this.isMoreRoomsDungeon(RoomSize.MEDIUM) || this.isMoreRoomsDungeon(RoomSize.LARGE));
@@ -106,11 +106,11 @@ export class DungeonCrawler {
 
   builtRoomDungeon(size: RoomSize): void {
     if (RoomSize.SMALL === size)
-      this.currSmallRoomsDungeon++;
+      this._currSmallRoomsDungeon++;
     else if (RoomSize.MEDIUM === size)
-      this.currMediumRoomsDungeon++;
+      this._currMediumRoomsDungeon++;
     else if (RoomSize.LARGE === size)
-      this.currLargeRoomsDungeon++;
+      this._currLargeRoomsDungeon++;
   }
 
   getStepLength(generation: number): number {
@@ -132,12 +132,12 @@ export class DungeonCrawler {
   }
 
   addRoom(r: Room): void {
-    this.rooms.push(r);
+    this._rooms.push(r);
   }
 
   private isChecked(pos: Point): boolean {
     console.assert((pos.x < this.config.width) && (pos.y < this.config.height) && (pos.x >= 0) && (pos.y >= 0));
-    return this.mapFlagsDirections[pos.x * this.config.height + pos.y];
+    return this._mapFlagsDirections[pos.x * this.config.height + pos.y];
   }
 
   private static isCheckedList(pos: Point, checked: Point[]): boolean {
@@ -150,7 +150,7 @@ export class DungeonCrawler {
 
   private setChecked(pos: Point): void {
     console.assert((pos.x < this.config.width) && (pos.y < this.config.height) && (pos.x >= 0) && (pos.y >= 0));
-    this.mapFlagsDirections[pos.x * this.config.height + pos.y] = true;
+    this._mapFlagsDirections[pos.x * this.config.height + pos.y] = true;
   }
 
   constructor(config: Config, rng: RNG) {
@@ -163,14 +163,14 @@ export class DungeonCrawler {
     console.assert(config.genSpeedUpOnAnteroom >= 1, "Please use genSpeedUpOnAnteroom >= 1; parameter reset to 1");
     console.assert(!config.crawlersInAnterooms || (config.crawlersInAnterooms && config.crawlersInTunnels), "when you allow Crawlers in Anterooms, you must also allow them in Tunnels");
 
-    this.map = [];
+    this._map = [];
     for (let i = 0; i < this.config.width * this.config.height; i++) {
-      this.map[i] = this.config.background;
-      this.mapFlagsDirections[i] = false;
+      this._map[i] = this.config.background;
+      this._mapFlagsDirections[i] = false;
     }
 
     for (let i = 0; i < 4; i++) {
-      this.crawlers[i] = null;
+      this._crawlers[i] = null;
     }
 
     this.setRect(0, 0, this.config.width - 1, 0, TunnelerCellType.GUARANTEED_CLOSED);
@@ -315,14 +315,14 @@ export class DungeonCrawler {
       corridorWidth, straightSingleSpawnProbability, straightDoubleSpawnProbability,
       turnSingleSpawnProbability, turnDoubleSpawnProbability, changeDirectionProbability);
 
-    for (let i = 0; i < this.crawlers.length; i++) {
-      if (this.crawlers[i] === null) {
-        this.crawlers[i] = crawler;
+    for (let i = 0; i < this._crawlers.length; i++) {
+      if (this._crawlers[i] === null) {
+        this._crawlers[i] = crawler;
         return;
       }
     }
 
-    this.crawlers.push(crawler);
+    this._crawlers.push(crawler);
   }
 
   createTunnelCrawler(location: IPoint, direction: IPoint, age: number, maxAge: number, generation: number,
@@ -332,27 +332,27 @@ export class DungeonCrawler {
       Point.from(intendedDirection), stepLength, tunnelWidth, straightDoubleSpawnProbability, turnDoubleSpawnProbability,
       changeDirectionProbability, makeRoomsRightProbability, makeRoomsLeftProbability, joinPreference);
 
-    for (let i = 0; i < this.crawlers.length; i++) {
-      if (this.crawlers[i] === null) {
-        this.crawlers[i] = crawler;
+    for (let i = 0; i < this._crawlers.length; i++) {
+      if (this._crawlers[i] === null) {
+        this._crawlers[i] = crawler;
         return;
       }
     }
 
-    this.crawlers.push(crawler);
+    this._crawlers.push(crawler);
   }
 
   createRoomCrawler(location: IPoint, direction: IPoint, age: number, maxAge: number, generation: number, defaultWidth: number, size: RoomSize): void {
     const crawler = new RoomCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation, defaultWidth, size);
 
-    for (let i = 0; i < this.crawlers.length; i++) {
-      if (this.crawlers[i] === null) {
-        this.crawlers[i] = crawler;
+    for (let i = 0; i < this._crawlers.length; i++) {
+      if (this._crawlers[i] === null) {
+        this._crawlers[i] = crawler;
         return;
       }
     }
 
-    this.crawlers.push(crawler);
+    this._crawlers.push(crawler);
   }
 
   mutate(input: number): number {
@@ -466,10 +466,10 @@ export class DungeonCrawler {
   }
 
   private makeIteration(): boolean {
-    for (let i: number = 0; i < this.crawlers.length; i++) {
-      if (null !== this.crawlers[i]) {
-        if (!this.crawlers[i]!.stepAhead()) {  //if the crawler cannot do anything any more
-          this.crawlers[i] = null;
+    for (let i: number = 0; i < this._crawlers.length; i++) {
+      if (null !== this._crawlers[i]) {
+        if (!this._crawlers[i]!.stepAhead()) {  //if the crawler cannot do anything any more
+          this._crawlers[i] = null;
         }
       }
     }
@@ -480,11 +480,11 @@ export class DungeonCrawler {
   private advanceGeneration(): boolean {
     let isCrawlerExists: boolean = false;
     let highestNegativeAge: number = 0;  //used to advance the ages of all crawler of this generation if they are all dormant
-    for (let i: number = 0; i < this.crawlers.length; i++) {
-      if (null !== this.crawlers[i]) {
+    for (let i: number = 0; i < this._crawlers.length; i++) {
+      if (null !== this._crawlers[i]) {
         isCrawlerExists = true;
-        if (this.crawlers[i]!.generation === this.activeGeneration) {  //if the crawler is of the current generation
-          let a: number = this.crawlers[i]!.age;
+        if (this._crawlers[i]!.generation === this.activeGeneration) {  //if the crawler is of the current generation
+          let a: number = this._crawlers[i]!.age;
           if (a >= 0)
             return true;  //this crawler is still active, we cannot advance generation
           else if ((highestNegativeAge === 0) || (a > highestNegativeAge))
@@ -500,10 +500,10 @@ export class DungeonCrawler {
       return isCrawlerExists;
     } else {
       console.assert(highestNegativeAge < 0);
-      for (let i: number = 0; i < this.crawlers.length; i++) {
-        if (null !== this.crawlers[i]) {
-          if (this.crawlers[i]!.generation === this.activeGeneration)   //if the crawler is of the current generation
-            this.crawlers[i]!.age -= highestNegativeAge;
+      for (let i: number = 0; i < this._crawlers.length; i++) {
+        if (null !== this._crawlers[i]) {
+          if (this._crawlers[i]!.generation === this.activeGeneration)   //if the crawler is of the current generation
+            this._crawlers[i]!.age -= highestNegativeAge;
         }
       }
       return isCrawlerExists;
@@ -824,17 +824,17 @@ export class DungeonCrawler {
         if (!this.isMoreRoomsLabyrinth(RoomSize.SMALL))
           return false;
         else
-          this.currSmallRoomsLabyrinth++;
+          this._currSmallRoomsLabyrinth++;
       else if (RoomSquaresChecked.length < this.config.largeRoomSize)
         if (!this.isMoreRoomsLabyrinth(RoomSize.MEDIUM))
           return false;
         else
-          this.currMediumRoomsLabyrinth++;
+          this._currMediumRoomsLabyrinth++;
       else if (RoomSquaresChecked.length < this.config.maxRoomSize)
         if (!this.isMoreRoomsLabyrinth(RoomSize.LARGE))
           return false;
         else
-          this.currLargeRoomsLabyrinth++;
+          this._currLargeRoomsLabyrinth++;
       else
         return false;  //room too big, we don't want it
 
@@ -858,7 +858,7 @@ export class DungeonCrawler {
       }
 
       newRoom.inDungeon = false;  // this room is not in the dungeon, but in the labyrinth
-      this.rooms.push(newRoom);
+      this._rooms.push(newRoom);
     }
     return true;
   }

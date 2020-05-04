@@ -6,32 +6,32 @@ import {Colors} from "./ui";
 import * as PIXI from "pixi.js";
 
 export class GenerateDungeonScene implements Scene {
-  private readonly controller: SceneController;
-  private readonly generator: DungeonGenerator;
-  private promise: Promise<DungeonMap>;
+  private readonly _controller: SceneController;
+  private readonly _generator: DungeonGenerator;
+  private _promise: Promise<DungeonMap>;
 
-  private title: PIXI.BitmapText | null = null;
-  private progressBar: PIXI.Graphics;
+  private _title: PIXI.BitmapText | null = null;
+  private _progressBar: PIXI.Graphics;
 
   constructor(controller: SceneController, options: GenerateOptions) {
-    this.controller = controller;
-    this.generator = new HybridDungeonGenerator(this.controller);
+    this._controller = controller;
+    this._generator = new HybridDungeonGenerator(this._controller);
 
-    this.promise = this.generator.generate(options);
-    this.promise.then((dungeon) => this.controller.dungeon(options.hero, dungeon));
-    this.progressBar = new PIXI.Graphics();
+    this._promise = this._generator.generate(options);
+    this._promise.then((dungeon) => this._controller.dungeon(options.hero, dungeon));
+    this._progressBar = new PIXI.Graphics();
   }
 
   init(): void {
     this.renderTitle();
     this.renderProgressBar();
-    this.controller.app.ticker.add(this.update, this);
+    this._controller.app.ticker.add(this.update, this);
   }
 
   destroy(): void {
-    this.controller.app.ticker.remove(this.update, this);
-    this.title?.destroy();
-    this.progressBar?.destroy();
+    this._controller.app.ticker.remove(this.update, this);
+    this._title?.destroy();
+    this._progressBar?.destroy();
   }
 
   pause(): void {
@@ -41,34 +41,34 @@ export class GenerateDungeonScene implements Scene {
   }
 
   private renderTitle(): void {
-    this.title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
-    this.title.anchor = new PIXI.Point(0.5, 0);
-    this.title.position.set(this.controller.app.screen.width >> 1, 64);
-    this.controller.stage.addChild(this.title);
+    this._title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+    this._title.anchor = new PIXI.Point(0.5, 0);
+    this._title.position.set(this._controller.app.screen.width >> 1, 64);
+    this._controller.stage.addChild(this._title);
   }
 
   private renderProgressBar(): void {
-    this.progressBar = new PIXI.Graphics();
-    this.controller.stage.addChild(this.progressBar);
+    this._progressBar = new PIXI.Graphics();
+    this._controller.stage.addChild(this._progressBar);
   }
 
   private update(): void {
-    const c_w = this.controller.app.screen.width;
-    const c_h = this.controller.app.screen.height;
+    const c_w = this._controller.app.screen.width;
+    const c_h = this._controller.app.screen.height;
 
     const margin = 40;
     const h = 60;
     const border = 4;
     const w = c_w - margin - margin;
-    const w_p = Math.floor((w - border - border) * this.generator.percent / 100);
+    const w_p = Math.floor((w - border - border) * this._generator.percent / 100);
 
-    this.progressBar.clear();
-    this.progressBar.beginFill(Colors.uiBackground);
-    this.progressBar.drawRect(margin, c_h - margin - h - border - border, w, h);
-    this.progressBar.endFill();
+    this._progressBar.clear();
+    this._progressBar.beginFill(Colors.uiBackground);
+    this._progressBar.drawRect(margin, c_h - margin - h - border - border, w, h);
+    this._progressBar.endFill();
 
-    this.progressBar.beginFill(Colors.uiSelected);
-    this.progressBar.drawRect(margin + border, c_h - margin - h - border, w_p, h - border - border);
-    this.progressBar.endFill();
+    this._progressBar.beginFill(Colors.uiSelected);
+    this._progressBar.drawRect(margin + border, c_h - margin - h - border, w_p, h - border - border);
+    this._progressBar.endFill();
   }
 }

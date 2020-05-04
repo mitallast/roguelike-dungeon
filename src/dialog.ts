@@ -25,22 +25,21 @@ interface NpcAnswerConfig {
 }
 
 export class DialogManager {
-  private readonly controller: SceneController;
-  private readonly config: Partial<Record<string, NpcDialogConfig>>;
+  private readonly _controller: SceneController;
 
   constructor(controller: SceneController) {
-    this.controller = controller;
-    this.config = controller.app.loader.resources['dialogs.json'].data;
+    this._controller = controller;
   }
 
   dialog(hero: Hero, npc: Npc): Dialog {
-    const config = this.config[npc.name] || this.config["default"]!;
-    return new Dialog(this.controller, hero, npc, config);
+    const dialogs: Record<string, NpcDialogConfig> = this._controller.app.loader.resources['dialogs.json'].data;
+    const config = dialogs[npc.name] || dialogs["default"]!;
+    return new Dialog(this._controller, hero, npc, config);
   }
 }
 
 export class Dialog {
-  private readonly controller: SceneController;
+  private readonly _controller: SceneController;
   readonly hero: Hero;
   readonly npc: Npc;
 
@@ -54,7 +53,7 @@ export class Dialog {
   }
 
   constructor(controller: SceneController, hero: Hero, npc: Npc, config: NpcDialogConfig) {
-    this.controller = controller;
+    this._controller = controller;
     this.hero = hero;
     this.npc = npc;
     this._config = config;
@@ -84,7 +83,7 @@ export class Dialog {
   }
 
   private exit(): void {
-    this.controller.closeModal();
+    this._controller.closeModal();
   }
 
   private context(key: string, value: any): any {
@@ -131,17 +130,17 @@ export class Dialog {
 }
 
 export class DialogQuestion {
-  private readonly dialog: Dialog;
+  private readonly _dialog: Dialog;
   readonly text: string;
   readonly answers: DialogAnswer[] = [];
 
   constructor(dialog: Dialog, text: string) {
-    this.dialog = dialog;
+    this._dialog = dialog;
     this.text = text;
   }
 
   add(text: string, commands: string[]): void {
-    this.answers.push(new DialogAnswer(this.dialog, text, commands));
+    this.answers.push(new DialogAnswer(this._dialog, text, commands));
   }
 }
 
@@ -164,12 +163,12 @@ export class DialogAnswer {
 }
 
 export class DialogModalScene implements ModalScene {
-  private readonly controller: SceneController;
-  private readonly dialog: Dialog;
+  private readonly _controller: SceneController;
+  private readonly _dialog: Dialog;
 
-  private container: PIXI.Container | null = null;
-  private background: PIXI.Graphics | null = null;
-  private selectable: SelectableGrid | null = null;
+  private _container: PIXI.Container | null = null;
+  private _background: PIXI.Graphics | null = null;
+  private _selectable: SelectableGrid | null = null;
 
   private _width: number = 0;
   private _layout: Layout = new Layout();
@@ -177,31 +176,31 @@ export class DialogModalScene implements ModalScene {
   private _answers: DialogAnswerView[] = [];
 
   constructor(controller: SceneController, dialog: Dialog) {
-    this.controller = controller;
-    this.dialog = dialog;
+    this._controller = controller;
+    this._dialog = dialog;
   }
 
   init(): void {
-    this.background = new PIXI.Graphics();
+    this._background = new PIXI.Graphics();
 
-    this.selectable = new SelectableGrid(this.controller.joystick);
+    this._selectable = new SelectableGrid(this._controller.joystick);
 
     const width = 600;
     const height = 400;
-    this.background.beginFill(0x000000).drawRect(0, 0, width, height).endFill();
-    this.background.zIndex = 0;
+    this._background.beginFill(0x000000).drawRect(0, 0, width, height).endFill();
+    this._background.zIndex = 0;
 
-    this.container = new PIXI.Container();
-    this.container.addChild(this.background);
-    this.container.sortChildren();
-    this.container.position.set(
-      (this.controller.app.screen.width >> 1) - (width >> 1),
-      (this.controller.app.screen.height >> 1) - (height >> 1),
+    this._container = new PIXI.Container();
+    this._container.addChild(this._background);
+    this._container.sortChildren();
+    this._container.position.set(
+      (this._controller.app.screen.width >> 1) - (width >> 1),
+      (this._controller.app.screen.height >> 1) - (height >> 1),
     );
 
     const layout = this._layout;
     layout.offset(Sizes.uiMargin, Sizes.uiMargin);
-    const icon = this.controller.resources.animated(this.dialog.npc.name + "_idle");
+    const icon = this._controller.resources.animated(this._dialog.npc.name + "_idle");
     icon.width = icon.width * 4;
     icon.height = icon.height * 4;
     icon.position.set(layout.x + Sizes.uiBorder, layout.y + Sizes.uiBorder);
@@ -218,23 +217,23 @@ export class DialogModalScene implements ModalScene {
     layout.commit();
     this._width = width - layout.x;
 
-    this.container.addChild(iconBg, icon);
+    this._container.addChild(iconBg, icon);
 
-    this.controller.stage.addChild(this.container);
-    this.controller.app.ticker.add(this.handleInput, this);
+    this._controller.stage.addChild(this._container);
+    this._controller.app.ticker.add(this.handleInput, this);
 
-    this.dialog.question.subscribe(this.onQuestion, this);
-    this.dialog.start();
+    this._dialog.question.subscribe(this.onQuestion, this);
+    this._dialog.start();
   }
 
   destroy(): void {
-    this.dialog.question.unsubscribe(this.onQuestion, this);
-    this.controller.app.ticker.remove(this.handleInput, this);
-    this.container?.destroy();
-    this.container = null;
-    this.background?.destroy();
-    this.background = null;
-    this.selectable = null;
+    this._dialog.question.unsubscribe(this.onQuestion, this);
+    this._controller.app.ticker.remove(this.handleInput, this);
+    this._container?.destroy();
+    this._container = null;
+    this._background?.destroy();
+    this._background = null;
+    this._selectable = null;
   }
 
   private onQuestion(question: DialogQuestion): void {
@@ -242,9 +241,9 @@ export class DialogModalScene implements ModalScene {
     for (let i = 0; i < this._answers.length; i++) {
       let answer = this._answers[i];
       answer.destroy();
-      this.selectable!.remove(0, i);
+      this._selectable!.remove(0, i);
     }
-    this.selectable!.reset();
+    this._selectable!.reset();
     this._answers = [];
 
     const width = this._width - Sizes.uiMargin * 2;
@@ -254,26 +253,26 @@ export class DialogModalScene implements ModalScene {
 
     this._question = new DialogQuestionView(question, width);
     this._question.position.set(layout.x, layout.y);
-    this.container!.addChild(this._question);
+    this._container!.addChild(this._question);
     layout.offset(0, this._question.height);
     layout.offset(0, Sizes.uiMargin);
 
     for (let i = 0; i < question.answers.length; i++) {
       let answer = question.answers[i];
       const view = new DialogAnswerView(answer, width);
-      this.selectable!.set(0, i, view, answer.action.bind(answer));
+      this._selectable!.set(0, i, view, answer.action.bind(answer));
       view.position.set(layout.x, layout.y);
       layout.offset(0, view.height);
       layout.offset(0, Sizes.uiMargin);
       this._answers.push(view);
-      this.container!.addChild(view);
+      this._container!.addChild(view);
     }
 
-    this.selectable!.reset();
+    this._selectable!.reset();
   }
 
   private handleInput(): void {
-    this.selectable?.handleInput();
+    this._selectable?.handleInput();
   }
 }
 

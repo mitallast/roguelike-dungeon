@@ -99,7 +99,7 @@ interface ExpressionOperation {
 }
 
 export class Expression {
-  private operations: Partial<Record<string, ExpressionOperation>> = {
+  private _operations: Partial<Record<string, ExpressionOperation>> = {
     "+": {
       priority: 0,
       variable: false,
@@ -165,7 +165,7 @@ export class Expression {
   private static delimiters = " ,\r\r\n";
   private static quotes = "\'\"";
 
-  private context: Partial<Record<string, any>> = {};
+  private _context: Partial<Record<string, any>> = {};
 
   private static classifySymbol(symbol: string): KnownStringComponents {
     if (Expression.delimiters.indexOf(symbol) !== -1) {
@@ -184,7 +184,7 @@ export class Expression {
   }
 
   private isOfMoreOrEqualPriority(currentOp: string, otherOp: string): boolean {
-    return (this.operations[currentOp]!.priority <= this.operations[otherOp]!.priority);
+    return (this._operations[currentOp]!.priority <= this._operations[otherOp]!.priority);
   }
 
   private scanToken(str: string, start: number) {
@@ -200,7 +200,7 @@ export class Expression {
       state = tokenStateMachine[state]![symbolClass];
       if (
         state === TokenizerStates.ParsingFunction &&
-        this.operations[tokenString] !== undefined
+        this._operations[tokenString] !== undefined
       ) {
         state = TokenizerStates.Finished;
       }
@@ -254,7 +254,7 @@ export class Expression {
         j--;
         continue;
       }
-      if (Object.keys(this.operations).indexOf(tokens[i].type) !== -1) {
+      if (Object.keys(this._operations).indexOf(tokens[i].type) !== -1) {
         if (stack.length > 0) {
           do {
             currToken = stack.pop()!;
@@ -291,7 +291,7 @@ export class Expression {
       if (rpn[i].type === "n") {
         operands.push(rpn[i]);
       } else {
-        let op = this.operations[rpn[i].type]!;
+        let op = this._operations[rpn[i].type]!;
         let func = op.apply;
         let len = op.variable ? operands.length : func.length;
         let args = operands.splice(operands.length - len).map(op => op.value);
@@ -326,7 +326,7 @@ export class Expression {
           });
           tokens.push({
             type: "n",
-            value: this.context
+            value: this._context
           });
         } else if (tokenCandidate.workingState === TokenizerStates.ParsingString) {
           tokens.push({
@@ -346,11 +346,11 @@ export class Expression {
   }
 
   register(name: string, priority: number, variable: boolean, apply: (...props: any[]) => any): void {
-    this.operations[name] = {priority: priority, variable: variable, apply: apply};
+    this._operations[name] = {priority: priority, variable: variable, apply: apply};
   }
 
   evaluate(expression: string, context: Partial<Record<string, any>> = {}): any {
-    this.context = context;
+    this._context = context;
     const tokens = this.tokenize(expression);
     const rpn = this.convertToRPN(tokens);
     return this.calculateRPN(rpn);

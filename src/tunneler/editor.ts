@@ -9,20 +9,20 @@ import {Resources} from "../resources";
 import * as PIXI from "pixi.js";
 
 export class DungeonDesignEditor {
-  private readonly resources: Resources;
-  private readonly rulesEditor: RulesEditor;
-  private readonly canvas: HTMLCanvasElement;
-  private readonly text: HTMLTextAreaElement;
+  private readonly _resources: Resources;
+  private readonly _rulesEditor: RulesEditor;
+  private readonly _canvas: HTMLCanvasElement;
+  private readonly _text: HTMLTextAreaElement;
 
   constructor(
     resources: Resources,
     rulesEditor: RulesEditor,
     config: Config,
   ) {
-    this.resources = resources;
-    this.rulesEditor = rulesEditor;
+    this._resources = resources;
+    this._rulesEditor = rulesEditor;
 
-    const text = this.text = document.createElement("textarea");
+    const text = this._text = document.createElement("textarea");
     text.addEventListener("keydown", e => e.stopPropagation());
     text.addEventListener("keyup", e => e.stopPropagation());
     text.value = JSON.stringify(config, undefined, 4);
@@ -50,7 +50,7 @@ export class DungeonDesignEditor {
     buttons.style.flexDirection = "row";
     buttons.append(button1, button2, button3, button4);
 
-    this.canvas = document.createElement("canvas");
+    this._canvas = document.createElement("canvas");
 
     const left = document.createElement("div");
     left.style.display = "flex";
@@ -58,7 +58,7 @@ export class DungeonDesignEditor {
     left.append(buttons, text);
     const right = document.createElement("div");
     left.style.display = "flex";
-    right.append(this.canvas);
+    right.append(this._canvas);
 
     const container = document.createElement("div");
     container.classList.add("container");
@@ -69,7 +69,7 @@ export class DungeonDesignEditor {
   }
 
   private evaluate(): void {
-    const config = JSON.parse(this.text.value);
+    const config = JSON.parse(this._text.value);
     console.log("config", config);
 
     console.time("crawler");
@@ -81,12 +81,12 @@ export class DungeonDesignEditor {
   }
 
   private async evaluateWfc(): Promise<void> {
-    const config: Config = JSON.parse(this.text.value);
+    const config: Config = JSON.parse(this._text.value);
     console.log("config", config);
 
-    const tileset: TilesetRules = this.rulesEditor.buildRules();
+    const tileset: TilesetRules = this._rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
+    const model = new EvenSimpleTiledModel(this._resources, tileset, RNG.create(),
       config.width,
       config.height,
       [
@@ -117,12 +117,12 @@ export class DungeonDesignEditor {
   }
 
   private async sampleWfc(): Promise<void> {
-    const config: Config = JSON.parse(this.text.value);
+    const config: Config = JSON.parse(this._text.value);
     console.log("config", config);
 
-    const tileset: TilesetRules = this.rulesEditor.buildRules();
+    const tileset: TilesetRules = this._rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
+    const model = new EvenSimpleTiledModel(this._resources, tileset, RNG.create(),
       config.width,
       config.height,
       [
@@ -136,12 +136,12 @@ export class DungeonDesignEditor {
   }
 
   private async measureWfc(): Promise<void> {
-    const config: Config = JSON.parse(this.text.value);
+    const config: Config = JSON.parse(this._text.value);
     console.log("config", config);
 
-    const tileset: TilesetRules = this.rulesEditor.buildRules();
+    const tileset: TilesetRules = this._rulesEditor.buildRules();
 
-    const model = new EvenSimpleTiledModel(this.resources, tileset, RNG.create(),
+    const model = new EvenSimpleTiledModel(this._resources, tileset, RNG.create(),
       config.width,
       config.height,
       [
@@ -168,7 +168,7 @@ export class DungeonDesignEditor {
 
   render(crawler: DungeonCrawler): void {
     const scale = 4;
-    const canvas = this.canvas;
+    const canvas = this._canvas;
     canvas.width = crawler.config.width * scale;
     canvas.height = crawler.config.height * scale;
     const ctx = canvas.getContext("2d")!;

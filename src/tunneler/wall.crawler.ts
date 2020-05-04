@@ -4,30 +4,30 @@ import {Crawler} from "./crawler";
 import {RNG} from "../rng";
 
 export class WallCrawler extends Crawler {
-  private readonly intendedDirection: Point; // intended Direction, the direction the Crawler should be heading (0 , 0) <==> can head anywhere
-  private readonly stepLength: number;       // maximal number of wall tiles this crawler can lay down in one iteration
-  private readonly opening: number;          // opening = 1 <==> leave opening at end of wall = 0 no opening in this wall
-  private readonly corridorWidth: number;
-  private readonly straightSingleSpawnProbability: number; // probability to make a single child when going straight
-  private readonly straightDoubleSpawnProbability: number; // probability to make two children when going straight
-  private readonly turnSingleSpawnProbability: number;     // probability to make a single child when turning
-  private readonly turnDoubleSpawnProbability: number;     // probability to make two children when turning (=changing direction)
-  private readonly changeDirectionProbability: number;
+  private readonly _intendedDirection: Point; // intended Direction, the direction the Crawler should be heading (0 , 0) <==> can head anywhere
+  private readonly _stepLength: number;       // maximal number of wall tiles this crawler can lay down in one iteration
+  private readonly _opening: number;          // opening = 1 <==> leave opening at end of wall = 0 no opening in this wall
+  private readonly _corridorWidth: number;
+  private readonly _straightSingleSpawnProbability: number; // probability to make a single child when going straight
+  private readonly _straightDoubleSpawnProbability: number; // probability to make two children when going straight
+  private readonly _turnSingleSpawnProbability: number;     // probability to make a single child when turning
+  private readonly _turnDoubleSpawnProbability: number;     // probability to make two children when turning (=changing direction)
+  private readonly _changeDirectionProbability: number;
 
   constructor(rng: RNG, dungeonCrawler: DungeonCrawler, location: Point, direction: Point, age: number, maxAge: number, generation: number,
               intendedDirection: Point, stepLength: number, opening: number,
               corridorWidth: number, straightSingleSpawnProbability: number, straightDoubleSpawnProbability: number,
               turnSingleSpawnProbability: number, turnDoubleSpawnProbability: number, changeDirectionProbability: number) {
     super(rng, dungeonCrawler, location, direction, age, maxAge, generation);
-    this.intendedDirection = intendedDirection;
-    this.stepLength = stepLength;
-    this.opening = opening;
-    this.corridorWidth = corridorWidth;
-    this.straightSingleSpawnProbability = straightSingleSpawnProbability;
-    this.straightDoubleSpawnProbability = straightDoubleSpawnProbability;
-    this.turnSingleSpawnProbability = turnSingleSpawnProbability;
-    this.turnDoubleSpawnProbability = turnDoubleSpawnProbability;
-    this.changeDirectionProbability = changeDirectionProbability;
+    this._intendedDirection = intendedDirection;
+    this._stepLength = stepLength;
+    this._opening = opening;
+    this._corridorWidth = corridorWidth;
+    this._straightSingleSpawnProbability = straightSingleSpawnProbability;
+    this._straightDoubleSpawnProbability = straightDoubleSpawnProbability;
+    this._turnSingleSpawnProbability = turnSingleSpawnProbability;
+    this._turnDoubleSpawnProbability = turnDoubleSpawnProbability;
+    this._changeDirectionProbability = changeDirectionProbability;
 
     console.assert(corridorWidth >= 0);
   }
@@ -77,34 +77,34 @@ export class WallCrawler extends Crawler {
     }
 
     //this builds a section of wall and possibly a room, positions the crawler at a new spot, and may create new crawlers
-    let [frontFree, leftFree, rightFree] = this.frontFree(this.location, this.direction, this.corridorWidth, this.corridorWidth);
+    let [frontFree, leftFree, rightFree] = this.frontFree(this.location, this.direction, this._corridorWidth, this._corridorWidth);
 
     const right = this.rightDirection();
     const left = right.negative;
     let test = right;
 
     //if we want to join up with a wall up front, do so now
-    if ((this.opening === 0) && (frontFree < this.config.joinDistance)) {
+    if ((this._opening === 0) && (frontFree < this.config.joinDistance)) {
       if (this.join(frontFree)) {
         // the wall has been joined, the crawler will be deleted
         return false;
       }
     }
 
-    let tilesLaid = this.stepLength;
-    if (frontFree > this.corridorWidth) {
+    let tilesLaid = this._stepLength;
+    if (frontFree > this._corridorWidth) {
       //we can place at least one wall tile without becoming too narrow
       //we build wall tiles in the heading of the crawler - determine how many
-      if ((frontFree - this.corridorWidth) < this.stepLength) {
-        tilesLaid = frontFree - this.corridorWidth;
+      if ((frontFree - this._corridorWidth) < this._stepLength) {
+        tilesLaid = frontFree - this._corridorWidth;
       }
 
       for (let i = 1; i <= tilesLaid; i++) {
         test = this.location.plus(this.direction.multiply(i));
-        if (this.opening === 1) {
+        if (this._opening === 1) {
           this.dungeonCrawler.setMap(test, TunnelerCellType.CLOSED);
         } else {
-          console.assert(this.opening === 0);
+          console.assert(this._opening === 0);
           this.dungeonCrawler.setMap(test, TunnelerCellType.NON_JOIN_CLOSED);  //otherwise closed spaces can form
         }
       }
@@ -126,20 +126,20 @@ export class WallCrawler extends Crawler {
       }
       //determine other parameters
       const options = {
-        straightSingleSpawnProbability: this.dungeonCrawler.mutate(this.straightSingleSpawnProbability),
-        straightDoubleSpawnProbability: this.dungeonCrawler.mutate(this.straightDoubleSpawnProbability),
-        turnSingleSpawnProbability: this.dungeonCrawler.mutate(this.turnSingleSpawnProbability),
-        turnDoubleSpawnProbability: this.dungeonCrawler.mutate(this.turnDoubleSpawnProbability),
-        changeDirectionProbability: this.dungeonCrawler.mutate(this.changeDirectionProbability),
+        straightSingleSpawnProbability: this.dungeonCrawler.mutate(this._straightSingleSpawnProbability),
+        straightDoubleSpawnProbability: this.dungeonCrawler.mutate(this._straightDoubleSpawnProbability),
+        turnSingleSpawnProbability: this.dungeonCrawler.mutate(this._turnSingleSpawnProbability),
+        turnDoubleSpawnProbability: this.dungeonCrawler.mutate(this._turnDoubleSpawnProbability),
+        changeDirectionProbability: this.dungeonCrawler.mutate(this._changeDirectionProbability),
       };
 
-      if (this.rng.range(0, 100) < this.changeDirectionProbability) {   //roll of the dice
+      if (this.rng.range(0, 100) < this._changeDirectionProbability) {   //roll of the dice
         // change the direction
         // keep the old direction for future reference
         let oldDirection = this.direction;
         // first compare the current heading to the intended heading to see where we can go
-        if (((this.intendedDirection.x === 0) && (this.intendedDirection.y === 0)) ||   //we can go anywhere
-          ((this.intendedDirection.x === this.direction.x) && (this.intendedDirection.y === this.direction.y))) {//we can go left or right as we choose,  and go randomly in 50% of the cases
+        if (((this._intendedDirection.x === 0) && (this._intendedDirection.y === 0)) ||   //we can go anywhere
+          ((this._intendedDirection.x === this.direction.x) && (this._intendedDirection.y === this.direction.y))) {//we can go left or right as we choose,  and go randomly in 50% of the cases
           let random = this.rng.range(0, 4);
           if (random === 0) {
             this.direction = right;
@@ -155,21 +155,21 @@ export class WallCrawler extends Crawler {
           }
         } else {
           // the intendedHeading leaves us no choice where to go
-          if ((this.intendedDirection.x === 0) || (this.intendedDirection.y === 0)) {
+          if ((this._intendedDirection.x === 0) || (this._intendedDirection.y === 0)) {
             // the intended heading is one of the four pure directions, and our new heading must be the intended heading
-            this.direction = this.intendedDirection;
+            this.direction = this._intendedDirection;
           } else {
             // the intended heading must be in one of the four intermediate directions
-            console.assert(!this.intendedDirection.equal(0, 0));
-            this.direction = this.intendedDirection.minus(this.direction);
+            console.assert(!this._intendedDirection.equal(0, 0));
+            this.direction = this._intendedDirection.minus(this.direction);
           }
         }
 
         // make children now
-        if (this.rng.range(0, 100) < this.turnDoubleSpawnProbability) {
+        if (this.rng.range(0, 100) < this._turnDoubleSpawnProbability) {
           this.spawnWallCrawler(this.direction.negative, this.direction.negative, childGeneration, options);
           this.spawnWallCrawler(oldDirection, oldDirection, childGeneration, options);
-        } else if (this.rng.range(0, 100) < this.turnSingleSpawnProbability) {
+        } else if (this.rng.range(0, 100) < this._turnSingleSpawnProbability) {
           // create a child looking the other way
           this.spawnWallCrawler(this.direction.negative, this.direction.negative, childGeneration, options);
         }
@@ -177,11 +177,11 @@ export class WallCrawler extends Crawler {
         // we keep going straight on
 
         // create child if appropriate
-        if (this.rng.range(0, 100) < this.straightDoubleSpawnProbability) {
+        if (this.rng.range(0, 100) < this._straightDoubleSpawnProbability) {
           // create two children
           this.spawnWallCrawler(right, right, childGeneration, options);
           this.spawnWallCrawler(left, left, childGeneration, options);
-        } else if (this.rng.range(0, 100) < this.straightSingleSpawnProbability) {
+        } else if (this.rng.range(0, 100) < this._straightSingleSpawnProbability) {
           // create a child looking sideways
           if (leftFree > rightFree || leftFree === rightFree && this.rng.boolean()) {
             test = left;
@@ -199,17 +199,17 @@ export class WallCrawler extends Crawler {
       // frontFree <= corridorWidth
 
       //we relocate the crawler to look sideways, but only if there is more room that way
-      if (this.direction.equals(this.intendedDirection) || this.intendedDirection.equal(0, 0)) {
+      if (this.direction.equals(this._intendedDirection) || this._intendedDirection.equal(0, 0)) {
         // we can relocate both ways, and check where we have more room
 
         // these are different from leftFree and rightFree
-        let [rightFree] = this.frontFree(this.location, right, this.corridorWidth, this.corridorWidth);
-        let [leftFree] = this.frontFree(this.location, left, this.corridorWidth, this.corridorWidth);
+        let [rightFree] = this.frontFree(this.location, right, this._corridorWidth, this._corridorWidth);
+        let [leftFree] = this.frontFree(this.location, left, this._corridorWidth, this._corridorWidth);
 
-        if ((rightFree <= this.corridorWidth) && (leftFree <= this.corridorWidth)) {
+        if ((rightFree <= this._corridorWidth) && (leftFree <= this._corridorWidth)) {
           // we cannot relocate because there is not enough room either way to build
           return false;   // this crawler is toast!
-        } else if ((rightFree > 2 * this.corridorWidth + 1) && (leftFree > 2 * this.corridorWidth + 1)) {
+        } else if ((rightFree > 2 * this._corridorWidth + 1) && (leftFree > 2 * this._corridorWidth + 1)) {
           // rightFree or leftFree must be > corridorWidth
 
           // lots of room on both sides, we choose randomly
@@ -233,12 +233,12 @@ export class WallCrawler extends Crawler {
         //crawler has now been relocated
       } else {
         //we can relocate only in the direction of the intended heading
-        if ((this.intendedDirection.x === 0) || (this.intendedDirection.y === 0)) {
+        if ((this._intendedDirection.x === 0) || (this._intendedDirection.y === 0)) {
           //the intended heading is one of the four pure directions, and our new heading must be the intended heading
           //check whether we have room enough there
-          let [directionFree] = this.frontFree(this.location, this.intendedDirection, this.corridorWidth, this.corridorWidth);
-          if (directionFree > this.corridorWidth) {
-            this.direction = this.intendedDirection;
+          let [directionFree] = this.frontFree(this.location, this._intendedDirection, this._corridorWidth, this._corridorWidth);
+          if (directionFree > this._corridorWidth) {
+            this.direction = this._intendedDirection;
           } else {
             //we cannot relocate because there is not enough room either way to build
             //this crawler is toast
@@ -246,10 +246,10 @@ export class WallCrawler extends Crawler {
           }
         } else {
           //the intended heading must be in one of the four intermediate directions
-          console.assert(!this.intendedDirection.equal(0, 0));
-          test = this.intendedDirection.minus(this.direction);   //only other possible heading
-          let [testFree] = this.frontFree(this.location, test, this.corridorWidth, this.corridorWidth);
-          if (testFree > this.corridorWidth) {
+          console.assert(!this._intendedDirection.equal(0, 0));
+          test = this._intendedDirection.minus(this.direction);   //only other possible heading
+          let [testFree] = this.frontFree(this.location, test, this._corridorWidth, this._corridorWidth);
+          if (testFree > this._corridorWidth) {
             this.direction = test;
           } else {
             //we cannot relocate because there is not enough room either way to build
@@ -330,7 +330,7 @@ export class WallCrawler extends Crawler {
     let wall = new Point();
     let sidestep = 0;
     // checking the width of the corridor
-    for (let i = 1; i <= this.corridorWidth; i++) {
+    for (let i = 1; i <= this._corridorWidth; i++) {
       let point = this.location.plus(right.multiply(i)).plus(this.direction.multiply(frontFree + 1));
       if (!this.valid(point)) {
         // we have started outside the dungeon

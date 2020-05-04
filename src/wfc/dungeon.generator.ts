@@ -3,15 +3,15 @@ import {BaseDungeonGenerator, GenerateOptions} from '../dungeon.generator';
 import {SceneController} from "../scene";
 import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "./even.simple.tiled";
 import {Resolution} from "./model";
-import {Config} from "../tunneler/config";
+import {Config} from "../tunneler";
 import {yields} from "../concurency";
 import {RNG} from "../rng";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
-  private model: EvenSimpleTiledModel | null = null;
+  private _model: EvenSimpleTiledModel | null = null;
 
   get percent(): number {
-    return this.model?.percent || 0;
+    return this._model?.percent || 0;
   }
 
   constructor(controller: SceneController) {
@@ -37,13 +37,13 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     await yields(10);
 
     const crawler = new DungeonCrawlerConstraint(config);
-    this.model = new EvenSimpleTiledModel(this.resources, tileset, rng, config.width, config.height, [crawler]);
+    this._model = new EvenSimpleTiledModel(this.resources, tileset, rng, config.width, config.height, [crawler]);
 
     console.time("model loop run");
     let state;
     while (true) {
       console.time("model run");
-      state = await this.model.run(10000);
+      state = await this._model.run(10000);
       console.timeEnd("model run");
       if (state !== Resolution.Decided) {
         console.error("failed run model");
@@ -55,12 +55,12 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     }
     console.timeEnd("model loop run");
 
-    const dungeon = this.createDungeon(rng, seed, options.level, this.model.FMX, this.model.FMY);
+    const dungeon = this.createDungeon(rng, seed, options.level, this._model.FMX, this._model.FMY);
 
-    const observed = this.model.observed!;
-    for (let y = 0; y < this.model.FMY; y++) {
-      for (let x = 0; x < this.model.FMX; x++) {
-        const i = x + y * this.model.FMX;
+    const observed = this._model.observed!;
+    for (let y = 0; y < this._model.FMY; y++) {
+      for (let x = 0; x < this._model.FMX; x++) {
+        const i = x + y * this._model.FMX;
         const [floor, wall] = tileset.cells[observed[i]];
         if (floor >= 0) {
           dungeon.cell(x, y).floorName = tileset.tiles[floor];

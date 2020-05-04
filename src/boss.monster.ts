@@ -130,49 +130,49 @@ export class BossMonsterAI extends MonsterAI {
 }
 
 export class BossHealthView extends PIXI.Container {
-  private readonly boss: BossMonster;
-  private readonly health: BarView;
+  private readonly _boss: BossMonster;
+  private readonly _health: BarView;
 
-  private readonly widthMax: number;
-  private readonly pointWidth: number;
+  private readonly _widthMax: number;
+  private readonly _pointWidth: number;
 
-  private destroyed = false;
+  private _isDestroyed = false;
 
   constructor(boss: BossMonster) {
     super();
-    this.boss = boss;
+    this._boss = boss;
 
     const HEALTH_MAX_WIDTH = 500;
     const HEALTH_WIDTH = 4;
-    this.pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / this.boss.healthMax.get()));
+    this._pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / this._boss.healthMax.get()));
 
-    this.widthMax = this.pointWidth * this.boss.healthMax.get();
+    this._widthMax = this._pointWidth * this._boss.healthMax.get();
 
-    this.health = new BarView({
+    this._health = new BarView({
       color: Colors.uiRed,
-      widthMax: this.widthMax,
+      widthMax: this._widthMax,
       labelCenter: true
     });
-    this.health.position.set(-(this.widthMax >> 1), 0);
-    this.addChild(this.health);
+    this._health.position.set(-(this._widthMax >> 1), 0);
+    this.addChild(this._health);
 
-    this.boss.health.subscribe(this.updateHealth, this);
-    this.boss.dead.subscribe(this.updateDead, this);
+    this._boss.health.subscribe(this.updateHealth, this);
+    this._boss.dead.subscribe(this.updateDead, this);
   }
 
   destroy(): void {
-    if (!this.destroyed) {
-      this.destroyed = true;
-      this.boss.health.unsubscribe(this.updateHealth, this);
-      this.boss.dead.unsubscribe(this.updateDead, this);
-      this.health.destroy();
+    if (!this._isDestroyed) {
+      this._isDestroyed = true;
+      this._boss.health.unsubscribe(this.updateHealth, this);
+      this._boss.dead.unsubscribe(this.updateDead, this);
+      this._health.destroy();
       super.destroy();
     }
   }
 
   updateHealth(health: number) {
-    this.health.width = this.pointWidth * health;
-    this.health.label = `${this.boss.name} - ${health}`;
+    this._health.width = this._pointWidth * health;
+    this._health.label = `${this._boss.name} - ${health}`;
   }
 
   updateDead(dead: boolean) {

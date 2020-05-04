@@ -30,14 +30,14 @@ export interface DropInfo {
 export class Coins implements Drop {
   readonly spriteName: string = "coin"; // @animated
 
-  private readonly coins: number;
+  private readonly _coins: number;
 
   constructor(rng: RNG) {
-    this.coins = rng.range(1, 30);
+    this._coins = rng.range(1, 30);
   }
 
   pickedUp(hero: Hero): boolean {
-    hero.addCoins(this.coins);
+    hero.addCoins(this._coins);
     return true;
   }
 }
@@ -45,12 +45,12 @@ export class Coins implements Drop {
 export class HealthFlask implements UsableDrop {
   readonly spriteName: string = "flask_red.png";
 
-  private readonly health: number = 2;
+  private readonly _health: number = 2;
 
   info(): DropInfo {
     return {
       name: "Health flask",
-      health: this.health,
+      health: this._health,
       buyPrice: 100,
     };
   }
@@ -64,7 +64,7 @@ export class HealthFlask implements UsableDrop {
   }
 
   use(cell: InventoryCell, character: Character) {
-    character.heal(this.health);
+    character.heal(this._health);
     cell.decrease();
   }
 }
@@ -72,12 +72,12 @@ export class HealthFlask implements UsableDrop {
 export class HealthBigFlask implements UsableDrop {
   readonly spriteName: string = "flask_big_red.png";
 
-  private readonly health: number = 5;
+  private readonly _health: number = 5;
 
   info(): DropInfo {
     return {
       name: "Big health flask",
-      health: this.health,
+      health: this._health,
       buyPrice: 300,
     };
   }
@@ -91,7 +91,7 @@ export class HealthBigFlask implements UsableDrop {
   }
 
   use(cell: InventoryCell, character: Character) {
-    character.heal(this.health);
+    character.heal(this._health);
     cell.decrease();
   }
 }
@@ -550,34 +550,34 @@ export const npcWeapons: NpcWeapons = {
 // 6) возврат на изготовку - 3 кадра
 
 export class Weapon implements UsableDrop {
-  private readonly name: string;
+  private readonly _name: string;
   readonly speed: number;
   readonly animations: WeaponAnimationSet;
   readonly distance: number;
   readonly damage: number;
-  private readonly price: number;
+  private readonly _price: number;
 
   get spriteName(): string {
-    return this.name + ".png";
+    return this._name + ".png";
   }
 
   constructor(config: WeaponConfig) {
-    this.name = config.name;
+    this._name = config.name;
     this.speed = config.speed;
     this.distance = config.distance;
     this.damage = config.damage;
-    this.price = config.price;
+    this._price = config.price;
     this.animations = config.animations;
   }
 
   info(): DropInfo {
     return {
-      name: this.name.replace(/weapon_/, ''),
+      name: this._name.replace(/weapon_/, ''),
       speed: this.speed,
       distance: this.distance,
       damage: this.damage,
-      sellPrice: this.price,
-      buyPrice: this.price * 10,
+      sellPrice: this._price,
+      buyPrice: this._price * 10,
     };
   }
 

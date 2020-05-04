@@ -13,71 +13,71 @@ const border = 2;
 const sprite_size = 16;
 
 export class RulesEditor {
-  private readonly resources: Resources;
-  private readonly app: PIXI.Application;
+  private readonly _resources: Resources;
+  private readonly _app: PIXI.Application;
 
-  private readonly tiles: TileConfig[];
-  private readonly cells: [number, number, CellType][] = [];
+  private readonly _tiles: TileConfig[];
+  private readonly _cells: [number, number, CellType][] = [];
 
-  private readonly rulesRight: boolean[][];
-  private readonly rulesDown: boolean[][];
+  private readonly _rulesRight: boolean[][];
+  private readonly _rulesDown: boolean[][];
 
-  private readonly checkboxRight: RuleCheckboxCell[][] = [];
-  private readonly checkboxDown: RuleCheckboxCell[][] = [];
+  private readonly _checkboxRight: RuleCheckboxCell[][] = [];
+  private readonly _checkboxDown: RuleCheckboxCell[][] = [];
 
   constructor(resources: Resources, tiles: TileConfig[]) {
-    this.resources = resources;
-    this.tiles = tiles;
+    this._resources = resources;
+    this._tiles = tiles;
 
-    this.cells.push([-1, -1, CellType.EMPTY]);
+    this._cells.push([-1, -1, CellType.EMPTY]);
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
       switch (tile.type) {
         case CellType.FLOOR:
-          this.cells.push([i, -1, CellType.FLOOR]);
+          this._cells.push([i, -1, CellType.FLOOR]);
           for (let t = 0; t < tiles.length; t++) {
             const t_tile = tiles[t];
             if (t_tile.type === CellType.WALL_TOP) {
-              this.cells.push([i, t, CellType.FLOOR_WALL_TOP]);
+              this._cells.push([i, t, CellType.FLOOR_WALL_TOP]);
             }
           }
           break;
         case CellType.WALL_MID:
-          this.cells.push([-1, i, CellType.WALL_MID]);
+          this._cells.push([-1, i, CellType.WALL_MID]);
           break;
         case CellType.WALL_TOP:
-          this.cells.push([-1, i, CellType.WALL_TOP]);
+          this._cells.push([-1, i, CellType.WALL_TOP]);
           break;
         case CellType.WALL_SIDE:
-          this.cells.push([-1, i, CellType.WALL_SIDE]);
+          this._cells.push([-1, i, CellType.WALL_SIDE]);
           break;
       }
     }
 
-    const size = this.cells.length;
+    const size = this._cells.length;
 
-    this.rulesRight = [];
-    this.rulesDown = [];
+    this._rulesRight = [];
+    this._rulesDown = [];
     for (let first = 0; first < size; first++) {
-      this.rulesRight[first] = [];
-      this.rulesDown[first] = [];
+      this._rulesRight[first] = [];
+      this._rulesDown[first] = [];
       for (let second = 0; second < size; second++) {
-        this.rulesRight[first][second] = false;
-        this.rulesDown[first][second] = false;
+        this._rulesRight[first][second] = false;
+        this._rulesDown[first][second] = false;
       }
     }
 
-    this.app = new PIXI.Application({
+    this._app = new PIXI.Application({
       width: (size + 1) * sprite_size,
       height: (size + 1) * sprite_size,
       resolution: 2,
     });
-    this.app.stage.scale.set(scale, scale);
+    this._app.stage.scale.set(scale, scale);
 
     const div = document.createElement("div");
     div.classList.add("container");
-    div.appendChild(this.app.view);
+    div.appendChild(this._app.view);
     document.body.appendChild(div);
 
     const layout = new Layout();
@@ -87,17 +87,17 @@ export class RulesEditor {
     this.initMap(layout, Direction.RIGHT, false);
     this.initMap(layout, Direction.DOWN, true);
 
-    const s_w = this.app.stage.width + border + border;
-    const s_h = this.app.stage.height + border + border;
-    this.app.renderer.resize(s_w, s_h);
+    const s_w = this._app.stage.width + border + border;
+    const s_h = this._app.stage.height + border + border;
+    this._app.renderer.resize(s_w, s_h);
   }
 
   get floorTiles(): string[] {
-    return this.tiles.filter(c => c.type === CellType.FLOOR).map(c => c.name);
+    return this._tiles.filter(c => c.type === CellType.FLOOR).map(c => c.name);
   }
 
   get wallTiles(): string[] {
-    return this.tiles.filter(c =>
+    return this._tiles.filter(c =>
       c.type === CellType.WALL_MID ||
       c.type === CellType.WALL_TOP ||
       c.type === CellType.WALL_SIDE
@@ -112,7 +112,7 @@ export class RulesEditor {
     dump.interactive = true;
     dump.buttonMode = true;
     dump.on('click', () => this.dumpRules());
-    this.app.stage.addChild(dump);
+    this._app.stage.addChild(dump);
 
     layout.offset(dump.width, 0);
     layout.offset(border, 0);
@@ -124,7 +124,7 @@ export class RulesEditor {
     load.interactive = true;
     load.buttonMode = true;
     load.on('click', () => this.loadRules());
-    this.app.stage.addChild(load);
+    this._app.stage.addChild(load);
 
     layout.offset(dump.width, 0);
     layout.offset(border, 0);
@@ -136,7 +136,7 @@ export class RulesEditor {
     saveState.interactive = true;
     saveState.buttonMode = true;
     saveState.on('click', () => this.saveState());
-    this.app.stage.addChild(saveState);
+    this._app.stage.addChild(saveState);
 
     layout.offset(saveState.width, 0);
     layout.offset(border, 0);
@@ -148,7 +148,7 @@ export class RulesEditor {
     loadState.interactive = true;
     loadState.buttonMode = true;
     loadState.on('click', () => this.loadState());
-    this.app.stage.addChild(loadState);
+    this._app.stage.addChild(loadState);
 
     layout.offset(loadState.width, 0);
     layout.offset(border, 0);
@@ -160,7 +160,7 @@ export class RulesEditor {
     clear.interactive = true;
     clear.buttonMode = true;
     clear.on('click', () => this.clear());
-    this.app.stage.addChild(clear);
+    this._app.stage.addChild(clear);
 
     layout.reset();
     layout.offset(0, dump.height);
@@ -184,19 +184,19 @@ export class RulesEditor {
     const builder = new TilesetRulesBuilder();
     const indexes: number[] = [];
 
-    for (let [f, w, type] of this.cells) {
-      const floor = f >= 0 ? this.tiles[f].name : undefined;
-      const wall = w >= 0 ? this.tiles[w].name : undefined;
+    for (let [f, w, type] of this._cells) {
+      const floor = f >= 0 ? this._tiles[f].name : undefined;
+      const wall = w >= 0 ? this._tiles[w].name : undefined;
       const index = builder.addCell(floor, wall, type);
       indexes.push(index);
     }
 
-    for (let first = 0; first < this.cells.length; first++) {
-      for (let second = 0; second < this.cells.length; second++) {
-        if (this.rulesRight[first][second]) {
+    for (let first = 0; first < this._cells.length; first++) {
+      for (let second = 0; second < this._cells.length; second++) {
+        if (this._rulesRight[first][second]) {
           builder.addRuleRight(indexes[first], indexes[second]);
         }
-        if (this.rulesDown[first][second]) {
+        if (this._rulesDown[first][second]) {
           builder.addRuleDown(indexes[first], indexes[second]);
         }
       }
@@ -219,20 +219,20 @@ export class RulesEditor {
   }
 
   private clear(): void {
-    for (let first = 0; first < this.cells.length; first++) {
-      for (let second = 0; second < this.cells.length; second++) {
-        this.rulesRight[first][second] = false;
-        this.rulesDown[first][second] = false;
+    for (let first = 0; first < this._cells.length; first++) {
+      for (let second = 0; second < this._cells.length; second++) {
+        this._rulesRight[first][second] = false;
+        this._rulesDown[first][second] = false;
       }
     }
     this.refresh();
   }
 
   private refresh(): void {
-    for (let first = 0; first < this.cells.length; first++) {
-      for (let second = 0; second < this.cells.length; second++) {
-        this.checkboxRight[first][second].refresh();
-        this.checkboxDown[first][second].refresh();
+    for (let first = 0; first < this._cells.length; first++) {
+      for (let second = 0; second < this._cells.length; second++) {
+        this._checkboxRight[first][second].refresh();
+        this._checkboxDown[first][second].refresh();
       }
     }
   }
@@ -241,14 +241,14 @@ export class RulesEditor {
     this.clear();
     const findTile = (i: number): number => {
       const name = i >= 0 ? rules.tiles[i] : null;
-      return name ? this.tiles.findIndex(v => v.name === name) : -1;
+      return name ? this._tiles.findIndex(v => v.name === name) : -1;
     }
 
     const findCell = (i: number): number => {
       const [fi, wi] = rules.cells[i];
       const f = findTile(fi);
       const w = findTile(wi);
-      return this.cells.findIndex(c => c[0] === f && c[1] === w);
+      return this._cells.findIndex(c => c[0] === f && c[1] === w);
     };
 
     for (const [fi, si] of rules.right) {
@@ -276,13 +276,13 @@ export class RulesEditor {
     // init top line
     layout.reset();
     layout.offset(sprite_size + border, 0);
-    for (let i = 0; i < this.cells.length; i++) {
-      const [f, w] = this.cells[i];
-      const floor = f >= 0 ? this.tiles[f].name : null;
-      const wall = w >= 0 ? this.tiles[w].name : null;
-      const sample = new RuleSampleCell(this.resources, floor, wall);
+    for (let i = 0; i < this._cells.length; i++) {
+      const [f, w] = this._cells[i];
+      const floor = f >= 0 ? this._tiles[f].name : null;
+      const wall = w >= 0 ? this._tiles[w].name : null;
+      const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
-      this.app.stage.addChild(sample);
+      this._app.stage.addChild(sample);
       layout.offset(sprite_size + border, 0);
     }
 
@@ -290,16 +290,16 @@ export class RulesEditor {
     if (bottom) {
       layout.reset();
       layout.offset(sprite_size + border, 0);
-      for (let i = 0; i <= this.cells.length; i++) {
+      for (let i = 0; i <= this._cells.length; i++) {
         layout.offset(0, sprite_size + border);
       }
-      for (let i = 0; i < this.cells.length; i++) {
-        const [f, w] = this.cells[i];
-        const floor = f >= 0 ? this.tiles[f].name : null;
-        const wall = w >= 0 ? this.tiles[w].name : null;
-        const sample = new RuleSampleCell(this.resources, floor, wall);
+      for (let i = 0; i < this._cells.length; i++) {
+        const [f, w] = this._cells[i];
+        const floor = f >= 0 ? this._tiles[f].name : null;
+        const wall = w >= 0 ? this._tiles[w].name : null;
+        const sample = new RuleSampleCell(this._resources, floor, wall);
         sample.position.set(layout.x, layout.y);
-        this.app.stage.addChild(sample);
+        this._app.stage.addChild(sample);
         layout.offset(sprite_size + border, 0);
       }
     }
@@ -307,36 +307,36 @@ export class RulesEditor {
     // init left line
     layout.reset();
     layout.offset(0, sprite_size + border);
-    for (let i = 0; i < this.cells.length; i++) {
-      const [f, w] = this.cells[i];
-      const floor = f >= 0 ? this.tiles[f].name : null;
-      const wall = w >= 0 ? this.tiles[w].name : null;
-      const sample = new RuleSampleCell(this.resources, floor, wall);
+    for (let i = 0; i < this._cells.length; i++) {
+      const [f, w] = this._cells[i];
+      const floor = f >= 0 ? this._tiles[f].name : null;
+      const wall = w >= 0 ? this._tiles[w].name : null;
+      const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
-      this.app.stage.addChild(sample);
+      this._app.stage.addChild(sample);
       layout.offset(0, sprite_size + border);
     }
 
     // init right line
     layout.reset();
     layout.offset(0, sprite_size + border);
-    for (let i = 0; i <= this.cells.length; i++) {
+    for (let i = 0; i <= this._cells.length; i++) {
       layout.offset(sprite_size + border, 0);
     }
-    for (let i = 0; i < this.cells.length; i++) {
-      const [f, w] = this.cells[i];
-      const floor = f >= 0 ? this.tiles[f].name : null;
-      const wall = w >= 0 ? this.tiles[w].name : null;
-      const sample = new RuleSampleCell(this.resources, floor, wall);
+    for (let i = 0; i < this._cells.length; i++) {
+      const [f, w] = this._cells[i];
+      const floor = f >= 0 ? this._tiles[f].name : null;
+      const wall = w >= 0 ? this._tiles[w].name : null;
+      const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
-      this.app.stage.addChild(sample);
+      this._app.stage.addChild(sample);
       layout.offset(0, sprite_size + border);
     }
 
-    const checkboxes = direction === Direction.RIGHT ? this.checkboxRight : this.checkboxDown;
+    const checkboxes = direction === Direction.RIGHT ? this._checkboxRight : this._checkboxDown;
 
     // init checkbox map
-    for (let first = 0; first < this.cells.length; first++) {
+    for (let first = 0; first < this._cells.length; first++) {
       layout.reset();
       layout.offset(sprite_size + border, 0);
       layout.offset(0, sprite_size + border);
@@ -347,10 +347,10 @@ export class RulesEditor {
 
       checkboxes[first] = [];
 
-      for (let second = 0; second < this.cells.length; second++) {
+      for (let second = 0; second < this._cells.length; second++) {
         const checkbox = new RuleCheckboxCell(this, first, second, direction);
         checkbox.position.set(layout.x, layout.y);
-        this.app.stage.addChild(checkbox);
+        this._app.stage.addChild(checkbox);
         checkboxes[first][second] = checkbox;
         layout.offset(sprite_size + border, 0);
       }
@@ -358,7 +358,7 @@ export class RulesEditor {
 
     // commit layout at bottom
     layout.reset();
-    for (let i = 0; i <= this.cells.length; i++) {
+    for (let i = 0; i <= this._cells.length; i++) {
       layout.offset(0, sprite_size + border);
     }
 
@@ -366,12 +366,12 @@ export class RulesEditor {
   }
 
   getRule(first: number, second: number, direction: Direction): boolean {
-    const rules = direction === Direction.RIGHT ? this.rulesRight : this.rulesDown;
+    const rules = direction === Direction.RIGHT ? this._rulesRight : this._rulesDown;
     return rules[first][second];
   }
 
   setRule(first: number, second: number, direction: Direction, value: boolean): void {
-    const rules = direction === Direction.RIGHT ? this.rulesRight : this.rulesDown;
+    const rules = direction === Direction.RIGHT ? this._rulesRight : this._rulesDown;
     rules[first][second] = value;
   }
 
@@ -449,45 +449,45 @@ export class RulesEditor {
 }
 
 class RuleSampleCell extends PIXI.Container {
-  private readonly floorSprite: PIXI.Sprite | null;
-  private readonly wallSprite: PIXI.Sprite | null;
+  private readonly _floorSprite: PIXI.Sprite | null;
+  private readonly _wallSprite: PIXI.Sprite | null;
 
   constructor(resources: Resources, floor: string | null, wall: string | null) {
     super()
 
     if (floor) {
-      this.floorSprite = resources.sprite(floor);
-      this.addChild(this.floorSprite);
+      this._floorSprite = resources.sprite(floor);
+      this.addChild(this._floorSprite);
     } else {
-      this.floorSprite = null;
+      this._floorSprite = null;
     }
 
     if (wall) {
-      this.wallSprite = resources.sprite(wall);
-      this.addChild(this.wallSprite);
+      this._wallSprite = resources.sprite(wall);
+      this.addChild(this._wallSprite);
     } else {
-      this.wallSprite = null;
+      this._wallSprite = null;
     }
   }
 }
 
 class RuleCheckboxCell extends PIXI.Container {
-  private readonly editor: RulesEditor;
-  private readonly first: number;
-  private readonly second: number;
-  private readonly direction: Direction;
+  private readonly _editor: RulesEditor;
+  private readonly _first: number;
+  private readonly _second: number;
+  private readonly _direction: Direction;
 
-  private readonly bg: PIXI.Graphics;
+  private readonly _bg: PIXI.Graphics;
 
   constructor(editor: RulesEditor, first: number, second: number, direction: Direction) {
     super();
-    this.editor = editor;
-    this.first = first;
-    this.second = second;
-    this.direction = direction;
+    this._editor = editor;
+    this._first = first;
+    this._second = second;
+    this._direction = direction;
 
-    this.bg = new PIXI.Graphics();
-    this.addChild(this.bg);
+    this._bg = new PIXI.Graphics();
+    this.addChild(this._bg);
     this.refresh();
 
     this.interactive = true;
@@ -496,15 +496,15 @@ class RuleCheckboxCell extends PIXI.Container {
   }
 
   toggle() {
-    const value = this.editor.getRule(this.first, this.second, this.direction);
-    this.editor.setRule(this.first, this.second, this.direction, !value);
+    const value = this._editor.getRule(this._first, this._second, this._direction);
+    this._editor.setRule(this._first, this._second, this._direction, !value);
     this.refresh();
   }
 
   refresh() {
-    const value = this.editor.getRule(this.first, this.second, this.direction);
+    const value = this._editor.getRule(this._first, this._second, this._direction);
     const color = value ? Colors.uiSelected : Colors.uiNotSelected;
-    this.bg.clear()
+    this._bg.clear()
       .beginFill(Colors.uiBackground)
       .drawRect(0, 0, sprite_size, sprite_size)
       .endFill()

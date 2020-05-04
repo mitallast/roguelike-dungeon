@@ -8,7 +8,7 @@ export class OverlappingModel<T> extends Model {
   patterns: number[][]; // array of patterns
   tiles: Tile<T>[];
   ground: number;
-  private readonly constraints: Constraint<T>[];
+  private readonly _constraints: Constraint<T>[];
 
   constructor(
     input: Tile<T>[][], // y >> x
@@ -26,7 +26,7 @@ export class OverlappingModel<T> extends Model {
 
     this.N = N;
     this.periodic = periodicOutput;
-    this.constraints = constraints;
+    this._constraints = constraints;
     let SMY = input.length;
     let SMX = input[0].length;
     this.tiles = [];
@@ -211,7 +211,7 @@ export class OverlappingModel<T> extends Model {
   }
 
   initConstraint(): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.init(this);
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed init constraint", this.status);
@@ -221,7 +221,7 @@ export class OverlappingModel<T> extends Model {
   }
 
   stepConstraint(): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.check();
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed step constraint check");
@@ -237,13 +237,13 @@ export class OverlappingModel<T> extends Model {
   }
 
   backtrackConstraint(index: number, pattern: number): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onBacktrack(index, pattern);
     }
   }
 
   banConstraint(index: number, pattern: number): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onBan(index, pattern);
     }
   }
@@ -273,7 +273,7 @@ export class OverlappingModel<T> extends Model {
       }
       this.propagate();
     }
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onClear();
       this.propagate();
     }
@@ -379,48 +379,48 @@ export interface Constraint<T> {
 }
 
 export class PathConstraint<T> implements Constraint<T> {
-  private readonly pathTiles: Tile<T>[];
-  private isPathTile: boolean[] = [];
+  private readonly _pathTiles: Tile<T>[];
+  private _isPathTile: boolean[] = [];
 
-  private model: OverlappingModel<T> | null = null;
-  private graph: SimpleGraph | null = null;
-  private couldBePath: boolean[] = [];
-  private mustBePath: boolean[] = [];
+  private _model: OverlappingModel<T> | null = null;
+  private _graph: SimpleGraph | null = null;
+  private _couldBePath: boolean[] = [];
+  private _mustBePath: boolean[] = [];
 
-  private refresh: boolean[] = [];
-  private refreshQueue: number[] = [];
+  private _refresh: boolean[] = [];
+  private _refreshQueue: number[] = [];
 
   constructor(pathTiles: Tile<T>[]) {
-    this.pathTiles = pathTiles;
+    this._pathTiles = pathTiles;
   }
 
   init(model: OverlappingModel<T>): void {
-    this.model = model;
+    this._model = model;
     const indices = model.FMX * model.FMY;
-    this.isPathTile = buffer(indices, false);
-    for (const pathTile of this.pathTiles) {
+    this._isPathTile = buffer(indices, false);
+    for (const pathTile of this._pathTiles) {
       const index = model.tiles.findIndex(m => m.equals(pathTile));
-      this.isPathTile[index] = true;
+      this._isPathTile[index] = true;
     }
 
-    this.couldBePath = buffer(indices, false);
-    this.mustBePath = buffer(indices, false);
-    this.refresh = buffer(indices, true);
-    this.refreshQueue = [];
+    this._couldBePath = buffer(indices, false);
+    this._mustBePath = buffer(indices, false);
+    this._refresh = buffer(indices, true);
+    this._refreshQueue = [];
   }
 
   onClear(): void {
-    let indices = this.model!.FMX * this.model!.FMY;
-    this.couldBePath = buffer(indices, false);
-    this.mustBePath = buffer(indices, false);
-    this.refresh = buffer(indices, true);
-    this.refreshQueue = [];
+    let indices = this._model!.FMX * this._model!.FMY;
+    this._couldBePath = buffer(indices, false);
+    this._mustBePath = buffer(indices, false);
+    this._refresh = buffer(indices, true);
+    this._refreshQueue = [];
     for (let i = 0; i < indices; i++) {
-      this.refreshQueue.push(i);
+      this._refreshQueue.push(i);
     }
     this.refreshAll();
 
-    this.graph = this.createGraph();
+    this._graph = this.createGraph();
   }
 
   onBan(index: number, _patternIndex: number): void {
@@ -432,19 +432,19 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private addRefresh(index: number): void {
-    if (!this.refresh[index]) {
+    if (!this._refresh[index]) {
 
-      const FMX = this.model!.FMX;
-      const FMY = this.model!.FMY;
+      const FMX = this._model!.FMX;
+      const FMY = this._model!.FMY;
       let x = index % FMX, y = Math.floor(index / FMX);
 
-      this.refresh[index] = true;
-      this.refreshQueue.push(index);
+      this._refresh[index] = true;
+      this._refreshQueue.push(index);
 
       for (let direction = 0; direction < 4; direction++) {
         let dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
-        if (this.model!.onBoundary(sx, sy)) {
+        if (this._model!.onBoundary(sx, sy)) {
           continue;
         }
 
@@ -455,24 +455,24 @@ export class PathConstraint<T> implements Constraint<T> {
 
         let s = sx + sy * FMX;
 
-        if (!this.refresh[s]) {
-          this.refresh[s] = true;
-          this.refreshQueue.push(s);
+        if (!this._refresh[s]) {
+          this._refresh[s] = true;
+          this._refreshQueue.push(s);
         }
       }
     }
   }
 
   private refreshAll(): void {
-    const model = this.model!;
+    const model = this._model!;
     const FMX = model.FMX;
     const FMY = model.FMY;
     const N = model.N;
     const T = model.T;
 
-    while (this.refreshQueue.length > 0) {
-      const i = this.refreshQueue.pop()!;
-      this.refresh[i] = false;
+    while (this._refreshQueue.length > 0) {
+      const i = this._refreshQueue.pop()!;
+      this._refresh[i] = false;
 
       const x = i % FMX, y = Math.floor(i / FMX);
 
@@ -497,7 +497,7 @@ export class PathConstraint<T> implements Constraint<T> {
             if (model.wave[s][t]) {
               totalCount++;
               const index = model.patterns[t][dx + dy * N];
-              if (this.isPathTile[index]) {
+              if (this._isPathTile[index]) {
                 pathCount++;
               }
             }
@@ -505,8 +505,8 @@ export class PathConstraint<T> implements Constraint<T> {
         }
       }
 
-      this.couldBePath[i] = pathCount > 0;
-      this.mustBePath[i] = pathCount > 0 && totalCount === pathCount;
+      this._couldBePath[i] = pathCount > 0;
+      this._mustBePath[i] = pathCount > 0 && totalCount === pathCount;
     }
   }
 
@@ -516,19 +516,19 @@ export class PathConstraint<T> implements Constraint<T> {
 
       let isArticulation = this.getArticulationPoints();
       if (isArticulation == null) {
-        if (this.model!.debug) console.error("no articulation");
-        this.model!.status = Resolution.Contradiction;
+        if (this._model!.debug) console.error("no articulation");
+        this._model!.status = Resolution.Contradiction;
         return;
       }
 
       if (this.applyArticulationPoints(isArticulation)) {
-        if (this.model!.debug) {
+        if (this._model!.debug) {
           console.log("articulation");
           let markup: number[] = isArticulation
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
-          this.model!.graphics(markup);
+          this._model!.graphics(markup);
           console.log("continue articulation loop");
         }
       } else {
@@ -538,7 +538,7 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private applyArticulationPoints(isArticulation: boolean[]): boolean {
-    const model = this.model!;
+    const model = this._model!;
     const FMX = model.FMX;
     const FMY = model.FMY;
     let indices = FMX * FMY;
@@ -546,7 +546,7 @@ export class PathConstraint<T> implements Constraint<T> {
     // So ban any other possibilities
     let changed = false;
     for (let i = 0; i < indices; i++) {
-      if (isArticulation[i] && !this.mustBePath[i]) {
+      if (isArticulation[i] && !this._mustBePath[i]) {
         if (model.debug) console.log("articulation", i);
         let x = i % model.FMX, y = Math.floor(i / model.FMX);
         if (model.debug) console.log("x, y, i", x, y, i);
@@ -565,7 +565,7 @@ export class PathConstraint<T> implements Constraint<T> {
             for (let t = 0; t < model.T; t++) {
               if (model.wave[s][t]) {
                 let index = model.patterns[t][dx + dy * model.N];
-                if (this.isPathTile[index]) {
+                if (this._isPathTile[index]) {
                   if (model.debug) console.log("ban not path", index, t, model.patterns[t]);
                   model.ban(s, t);
                   changed = true;
@@ -580,11 +580,11 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private getArticulationPoints(): boolean[] | null {
-    const walkable = this.couldBePath;
-    const relevant = this.mustBePath;
+    const walkable = this._couldBePath;
+    const relevant = this._mustBePath;
 
-    const model = this.model!;
-    const graph = this.graph!;
+    const model = this._model!;
+    const graph = this._graph!;
     const indices = walkable.length;
 
     const low: number[] = buffer(indices, 0);
@@ -780,7 +780,7 @@ export class PathConstraint<T> implements Constraint<T> {
   }
 
   private createGraph(): SimpleGraph {
-    const model = this.model!;
+    const model = this._model!;
     let nodeCount = model.FMX * model.FMY;
     let neighbours: number[][] = [];
     for (let i = 0; i < nodeCount; i++) {
@@ -814,21 +814,21 @@ export class PathConstraint<T> implements Constraint<T> {
 }
 
 export class BorderConstraint<T> implements Constraint<T> {
-  private readonly borderTile: Tile<T>;
-  private model: OverlappingModel<T> | null = null;
+  private readonly _borderTile: Tile<T>;
+  private _model: OverlappingModel<T> | null = null;
 
   constructor(borderTile: Tile<T>) {
-    this.borderTile = borderTile;
+    this._borderTile = borderTile;
   }
 
   init(model: OverlappingModel<T>): void {
-    this.model = model;
+    this._model = model;
   }
 
   onClear(): void {
-    const model = this.model!;
+    const model = this._model!;
     const indices = model.FMX * model.FMY;
-    const borderTileIndex = model.tiles.findIndex(c => this.borderTile.equals(c));
+    const borderTileIndex = model.tiles.findIndex(c => this._borderTile.equals(c));
 
     for (let i = 0; i < indices; i++) {
       let x = i % model.FMX, y = Math.floor(i / model.FMX);

@@ -5,7 +5,7 @@ import {Indexer} from "./indexer";
 import {Layout} from "./ui";
 import {RNG} from "./rng";
 import {buffer, Model} from "./wfc/model";
-import {DungeonCrawler} from "./tunneler/dungeon.crawler";
+import {DungeonCrawler} from "./tunneler";
 import {yields} from "./concurency";
 import {RulesEditor} from "./wfc/rules.editor";
 import * as PIXI from "pixi.js";
@@ -21,31 +21,31 @@ export interface EditorSample {
 }
 
 export class EditorSampleBuilder {
-  private readonly tilesIndex: Indexer<string> = Indexer.identity();
-  private readonly cellsIndex: Indexer<[number, number, number]> = Indexer.array();
-  private readonly map: number[][];
+  private readonly _tilesIndex: Indexer<string> = Indexer.identity();
+  private readonly _cellsIndex: Indexer<[number, number, number]> = Indexer.array();
+  private readonly _map: number[][];
 
   constructor(width: number, height: number) {
-    this.map = [];
+    this._map = [];
     for (let y = 0; y < height; y++) {
-      this.map[y] = [];
+      this._map[y] = [];
       for (let x = 0; x < width; x++) {
-        this.map[y][x] = 0;
+        this._map[y][x] = 0;
       }
     }
   }
 
   set(x: number, y: number, floorTile: string | undefined, wallTile: string | undefined, zIndex: number | undefined): void {
-    const floorId = floorTile ? this.tilesIndex.index(floorTile) : -1;
-    const wallId = wallTile ? this.tilesIndex.index(wallTile) : -1;
-    this.map[y][x] = this.cellsIndex.index([floorId, wallId, zIndex || 1]);
+    const floorId = floorTile ? this._tilesIndex.index(floorTile) : -1;
+    const wallId = wallTile ? this._tilesIndex.index(wallTile) : -1;
+    this._map[y][x] = this._cellsIndex.index([floorId, wallId, zIndex || 1]);
   }
 
   build(): EditorSample {
     return {
-      tiles: this.tilesIndex.values,
-      cells: this.cellsIndex.values,
-      map: this.map
+      tiles: this._tilesIndex.values,
+      cells: this._cellsIndex.values,
+      map: this._map
     }
   }
 }
@@ -54,37 +54,37 @@ export class Editor {
   readonly width: number;
   readonly height: number;
 
-  private readonly floorTiles: string[];
-  private readonly wallTiles: string[];
+  private readonly _floorTiles: string[];
+  private readonly _wallTiles: string[];
 
-  private readonly resources: Resources;
-  private readonly rulesEditor: RulesEditor;
-  private readonly app: PIXI.Application;
+  private readonly _resources: Resources;
+  private readonly _rulesEditor: RulesEditor;
+  private readonly _app: PIXI.Application;
 
-  private readonly cells: EditorMapCell[][] = [];
-  private selected: EditorPaletteCell | null = null;
+  private readonly _cells: EditorMapCell[][] = [];
+  private _selected: EditorPaletteCell | null = null;
 
-  private readonly title: PIXI.BitmapText;
+  private readonly _title: PIXI.BitmapText;
 
   constructor(width: number, height: number, resources: Resources, rulesEditor: RulesEditor) {
     this.width = width;
     this.height = height;
-    this.resources = resources;
-    this.rulesEditor = rulesEditor;
+    this._resources = resources;
+    this._rulesEditor = rulesEditor;
 
-    this.floorTiles = rulesEditor.floorTiles;
-    this.wallTiles = rulesEditor.wallTiles;
+    this._floorTiles = rulesEditor.floorTiles;
+    this._wallTiles = rulesEditor.wallTiles;
 
-    this.app = new PIXI.Application({
+    this._app = new PIXI.Application({
       width: width,
       height: height,
       resolution: 2,
     });
-    this.app.stage.scale.set(scale, scale);
+    this._app.stage.scale.set(scale, scale);
 
     const div = document.createElement("div");
     div.classList.add("container");
-    div.appendChild(this.app.view);
+    div.appendChild(this._app.view);
     document.body.appendChild(div);
 
     const layout = new Layout();
@@ -94,21 +94,21 @@ export class Editor {
     this.initPalette(layout);
 
     layout.offset(0, border);
-    this.title = new PIXI.BitmapText("title", {font: {name: "alagard", size: 16}});
-    this.title.zIndex = 1000;
-    this.title.position.set(layout.x, layout.y);
-    this.app.stage.addChild(this.title);
-    layout.offset(0, this.title.height);
+    this._title = new PIXI.BitmapText("title", {font: {name: "alagard", size: 16}});
+    this._title.zIndex = 1000;
+    this._title.position.set(layout.x, layout.y);
+    this._app.stage.addChild(this._title);
+    layout.offset(0, this._title.height);
     layout.offset(0, border);
     layout.commit();
 
     this.initMap(layout);
 
-    this.app.stage.sortChildren();
-    this.app.stage.calculateBounds();
-    const s_w = this.app.stage.width + border + border;
-    const s_h = this.app.stage.height + border + border;
-    this.app.renderer.resize(s_w, s_h);
+    this._app.stage.sortChildren();
+    this._app.stage.calculateBounds();
+    const s_w = this._app.stage.width + border + border;
+    const s_h = this._app.stage.height + border + border;
+    this._app.renderer.resize(s_w, s_h);
   }
 
   private initPalette(layout: Layout): void {
@@ -124,7 +124,7 @@ export class Editor {
     const addCell = (cell: EditorPaletteCell) => {
       cell.init();
       cell.position.set(layout.x, layout.y);
-      this.app.stage.addChild(cell);
+      this._app.stage.addChild(cell);
       offset++;
       if (offset % palette_width === 0) {
         layout.reset();
@@ -135,21 +135,21 @@ export class Editor {
       }
     };
 
-    for (let name of this.floorTiles) {
-      addCell(new FloorPaletteCell(name, this.resources, this));
+    for (let name of this._floorTiles) {
+      addCell(new FloorPaletteCell(name, this._resources, this));
     }
 
-    addCell(new ClearFloorPaletteCell(this.resources, this));
-    for (let name of this.wallTiles) {
-      addCell(new WallPaletteCell(name, this.resources, this));
+    addCell(new ClearFloorPaletteCell(this._resources, this));
+    for (let name of this._wallTiles) {
+      addCell(new WallPaletteCell(name, this._resources, this));
     }
 
-    addCell(new ClearWallPaletteCell(this.resources, this));
-    addCell(new DumpPaletteCell(this.resources, this));
-    addCell(new LoadPaletteCell(this.resources, this));
-    addCell(new ApplyTunnelerDesignPaletteCell(this.resources, this));
-    addCell(new ApplyRulesPaletteCell(this.resources, this, this.rulesEditor));
-    addCell(new FindRulesErrorPaletteCell(this.resources, this, this.rulesEditor));
+    addCell(new ClearWallPaletteCell(this._resources, this));
+    addCell(new DumpPaletteCell(this._resources, this));
+    addCell(new LoadPaletteCell(this._resources, this));
+    addCell(new ApplyTunnelerDesignPaletteCell(this._resources, this));
+    addCell(new ApplyRulesPaletteCell(this._resources, this, this._rulesEditor));
+    addCell(new FindRulesErrorPaletteCell(this._resources, this, this._rulesEditor));
 
     nextRow();
     layout.commit();
@@ -157,12 +157,12 @@ export class Editor {
 
   private initMap(layout: Layout): void {
     for (let y = 0; y < this.height; y++) {
-      this.cells.push([]);
+      this._cells.push([]);
       for (let x = 0; x < this.width; x++) {
-        const cell = new EditorMapCell(x, y, this.resources, this);
+        const cell = new EditorMapCell(x, y, this._resources, this);
         cell.position.set(layout.x, layout.y);
-        this.cells[y][x] = cell;
-        this.app.stage.addChild(cell);
+        this._cells[y][x] = cell;
+        this._app.stage.addChild(cell);
 
         layout.offset(sprite_size, 0);
       }
@@ -173,24 +173,24 @@ export class Editor {
   }
 
   cell(x: number, y: number): EditorMapCell {
-    return this.cells[y][x];
+    return this._cells[y][x];
   }
 
   clear(): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        this.cells[y][x].clear();
+        this._cells[y][x].clear();
       }
     }
   }
 
   action(cell: EditorMapCell): void {
-    this.selected?.action(cell);
+    this._selected?.action(cell);
   }
 
   selectPalette(cell: EditorPaletteCell): void {
-    this.selected = cell;
-    this.title.text = cell?.title || "";
+    this._selected = cell;
+    this._title.text = cell?.title || "";
   }
 
   dump(min_x: number, min_y: number, max_x: number, max_y: number): void {
@@ -201,7 +201,7 @@ export class Editor {
 
     for (let y = min_y; y <= max_y; y++) {
       for (let x = min_x; x <= max_x; x++) {
-        const cell = this.cells[y][x];
+        const cell = this._cells[y][x];
         builder.set(
           x - min_x,
           y - min_y,
@@ -218,7 +218,7 @@ export class Editor {
     for (let y = 0; y < sample.map.length; y++) {
       for (let x = 0; x < sample.map[y].length; x++) {
         if (y + dy < this.height && x + dx < this.width) {
-          const cell = this.cells[y + dy][x + dx];
+          const cell = this._cells[y + dy][x + dx];
           const cellId = sample.map[y][x];
           const [floorId, wallId] = sample.cells[cellId];
           cell.clear();
@@ -231,8 +231,8 @@ export class Editor {
 }
 
 class EditorMapCell extends PIXI.Container {
-  private readonly resources: Resources;
-  private readonly editor: Editor;
+  private readonly _resources: Resources;
+  private readonly _editor: Editor;
   readonly cell_x: number;
   readonly cell_y: number;
   readonly bg: PIXI.Graphics;
@@ -241,8 +241,8 @@ class EditorMapCell extends PIXI.Container {
 
   constructor(x: number, y: number, resources: Resources, editor: Editor) {
     super();
-    this.resources = resources;
-    this.editor = editor;
+    this._resources = resources;
+    this._editor = editor;
     this.cell_x = x;
     this.cell_y = y;
 
@@ -273,7 +273,7 @@ class EditorMapCell extends PIXI.Container {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
-      this.floorSprite = this.resources.sprite(name);
+      this.floorSprite = this._resources.sprite(name);
       this.floorSprite.zIndex = DungeonZIndexes.floor;
       this.addChild(this.floorSprite);
       this.sortChildren();
@@ -284,7 +284,7 @@ class EditorMapCell extends PIXI.Container {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
-      this.wallSprite = this.resources.sprite(name);
+      this.wallSprite = this._resources.sprite(name);
       this.wallSprite.zIndex = DungeonZIndexes.wall;
       this.addChild(this.wallSprite);
       this.sortChildren();
@@ -301,7 +301,7 @@ class EditorMapCell extends PIXI.Container {
   }
 
   private select() {
-    this.editor.action(this);
+    this._editor.action(this);
   }
 }
 
@@ -428,24 +428,24 @@ enum DumpState {
 }
 
 class DumpPaletteCell extends NamedPaletteCell {
-  private state: DumpState = DumpState.START;
-  private min_x: number = 0;
-  private min_y: number = 0;
+  private _state: DumpState = DumpState.START;
+  private _min_x: number = 0;
+  private _min_y: number = 0;
 
   constructor(resources: Resources, editor: Editor) {
     super("DUMP", "Dump", resources, editor);
   }
 
   action(cell: EditorMapCell): void {
-    switch (this.state) {
+    switch (this._state) {
       case DumpState.START:
-        this.min_x = cell.cell_x;
-        this.min_y = cell.cell_y;
-        this.state = DumpState.END;
+        this._min_x = cell.cell_x;
+        this._min_y = cell.cell_y;
+        this._state = DumpState.END;
         break;
       case DumpState.END:
-        this.editor.dump(this.min_x, this.min_y, cell.cell_x, cell.cell_y);
-        this.state = DumpState.START;
+        this.editor.dump(this._min_x, this._min_y, cell.cell_x, cell.cell_y);
+        this._state = DumpState.START;
         break;
     }
   }
@@ -456,65 +456,65 @@ class DumpPaletteCell extends NamedPaletteCell {
 }
 
 class LoadPaletteCell extends NamedPaletteCell {
-  private options: EditorSample | null = null;
+  private _options: EditorSample | null = null;
 
   constructor(resources: Resources, editor: Editor) {
     super("LOAD", "Load", resources, editor);
   }
 
   action(cell: EditorMapCell): void {
-    if (this.options) {
-      this.editor.load(cell.cell_x, cell.cell_y, this.options);
+    if (this._options) {
+      this.editor.load(cell.cell_x, cell.cell_y, this._options);
     }
   }
 
   protected async onClick(): Promise<void> {
     const source = prompt("enter json");
     if (source) {
-      this.options = JSON.parse(source);
+      this._options = JSON.parse(source);
       this.editor.selectPalette(this);
     }
   }
 }
 
 class SimpleTiledWFC {
-  private readonly rulesEditor: RulesEditor;
-  private readonly rng: RNG;
-  private readonly resources: Resources;
-  private readonly width: number;
-  private readonly height: number;
+  private readonly _rulesEditor: RulesEditor;
+  private readonly _rng: RNG;
+  private readonly _resources: Resources;
+  private readonly _width: number;
+  private readonly _height: number;
 
-  private tileset: TilesetRules;
-  private propagator: number[][][] = [];
-  private wave: boolean[][] = [];
-  private entropies: number[] = [];
-  private compatible: number[][][] = [];
-  private toPropagate: [number, number][] = [];
+  private _tileset: TilesetRules;
+  private _propagator: number[][][] = [];
+  private _wave: boolean[][] = [];
+  private _entropies: number[] = [];
+  private _compatible: number[][][] = [];
+  private _propagate: [number, number][] = [];
 
-  private app: PIXI.Application | null = null;
+  private _app: PIXI.Application | null = null;
 
   constructor(rulesEditor: RulesEditor, rng: RNG, resources: Resources, width: number, height: number) {
-    this.rulesEditor = rulesEditor;
-    this.rng = rng;
-    this.resources = resources;
-    this.width = width;
-    this.height = height;
-    this.tileset = rulesEditor.buildRules();
+    this._rulesEditor = rulesEditor;
+    this._rng = rng;
+    this._resources = resources;
+    this._width = width;
+    this._height = height;
+    this._tileset = rulesEditor.buildRules();
   }
 
   init(): void {
-    this.propagator = [];
-    this.wave = [];
-    this.entropies = [];
-    this.compatible = [];
-    this.toPropagate = [];
+    this._propagator = [];
+    this._wave = [];
+    this._entropies = [];
+    this._compatible = [];
+    this._propagate = [];
 
-    const tileset = this.rulesEditor.buildRules();
-    this.tileset = tileset;
+    const tileset = this._rulesEditor.buildRules();
+    this._tileset = tileset;
 
     const T = tileset.cells.length;
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     const tmpPropagator: boolean[][][] = [];
@@ -541,25 +541,25 @@ class SimpleTiledWFC {
     }
 
     for (let direction = 0; direction < 4; direction++) {
-      this.propagator[direction] = [];
+      this._propagator[direction] = [];
       for (let cell1 = 0; cell1 < T; cell1++) {
-        this.propagator[direction][cell1] = [];
+        this._propagator[direction][cell1] = [];
         for (let cell2 = 0; cell2 < T; cell2++) {
           if (tmpPropagator[direction][cell1][cell2]) {
-            this.propagator[direction][cell1].push(cell2);
+            this._propagator[direction][cell1].push(cell2);
           }
         }
       }
     }
 
     for (let i = 0; i < length; i++) {
-      this.wave[i] = buffer(T, true);
-      this.entropies[i] = T;
-      this.compatible[i] = [];
+      this._wave[i] = buffer(T, true);
+      this._entropies[i] = T;
+      this._compatible[i] = [];
       for (let t = 0; t < T; t++) {
-        this.compatible[i][t] = [];
+        this._compatible[i][t] = [];
         for (let d = 0; d < 4; d++) {
-          this.compatible[i][t][d] = this.propagator[Model.opposite[d]][t].length;
+          this._compatible[i][t][d] = this._propagator[Model.opposite[d]][t].length;
         }
       }
     }
@@ -569,13 +569,13 @@ class SimpleTiledWFC {
     let min = 1E+3;
     let argmin = -1;
 
-    const T = this.tileset.cells.length;
-    const width = this.width;
-    const height = this.height;
+    const T = this._tileset.cells.length;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     for (let i = 0; i < length; i++) {
-      let entropy = this.entropies[i];
+      let entropy = this._entropies[i];
       if (entropy > 1 && entropy <= min) {
         min = entropy;
         argmin = i;
@@ -587,14 +587,14 @@ class SimpleTiledWFC {
       return [-1, -1];
     }
 
-    const w = this.wave[argmin];
+    const w = this._wave[argmin];
 
     let sum = 0;
     for (let t of w) {
       sum += t ? 1 : 0;
     }
 
-    let rnd_sum = this.rng.range(0, sum);
+    let rnd_sum = this._rng.range(0, sum);
     let rnd_t = 0;
     for (let t = 0; t < T; t++) {
       rnd_sum -= w[t] ? 1 : 0;
@@ -614,37 +614,37 @@ class SimpleTiledWFC {
   }
 
   ban(i: number, t: number): void {
-    const T = this.tileset.cells.length;
+    const T = this._tileset.cells.length;
 
-    if (this.wave[i][t]) {
-      this.wave[i][t] = false;
-      const comp = this.compatible[i][t];
+    if (this._wave[i][t]) {
+      this._wave[i][t] = false;
+      const comp = this._compatible[i][t];
       for (let d = 0; d < 4; d++) {
         comp[d] -= T;
       }
-      this.entropies[i] -= 1;
-      if (this.entropies[i] === 0) {
+      this._entropies[i] -= 1;
+      if (this._entropies[i] === 0) {
         this.debug([i]);
-        console.error(`empty cell, {x:${i % this.width},y:${Math.floor(i / this.width)}}`);
+        console.error(`empty cell, {x:${i % this._width},y:${Math.floor(i / this._width)}}`);
         throw `empty cell`;
       } else {
-        this.toPropagate.push([i, t]);
+        this._propagate.push([i, t]);
       }
     }
   }
 
   propagate(): void {
-    while (this.toPropagate.length > 0) {
-      const [i, t] = this.toPropagate.pop()!;
-      const x = i % this.width, y = Math.floor(i / this.width);
+    while (this._propagate.length > 0) {
+      const [i, t] = this._propagate.pop()!;
+      const x = i % this._width, y = Math.floor(i / this._width);
       for (let d = 0; d < 4; d++) {
         const dx = Model.DX[d], dy = Model.DY[d];
         const sx = x + dx, sy = y + dy;
         if (this.onBoundary(sx, sy)) continue;
-        const s = sx + sy * this.width;
-        let pattern1 = this.propagator[d][t];
+        const s = sx + sy * this._width;
+        let pattern1 = this._propagator[d][t];
         for (let st of pattern1) {
-          let comp = this.compatible[s][st];
+          let comp = this._compatible[s][st];
           comp[d]--;
           if (comp[d] === 0) {
             this.ban(s, st);
@@ -655,7 +655,7 @@ class SimpleTiledWFC {
   }
 
   onBoundary(x: number, y: number): boolean {
-    return x < 0 || y < 0 || x >= this.width || y >= this.height;
+    return x < 0 || y < 0 || x >= this._width || y >= this._height;
   }
 
   step(): boolean {
@@ -677,18 +677,18 @@ class SimpleTiledWFC {
   }
 
   observed(editor: Editor): void {
-    const tileset = this.tileset;
+    const tileset = this._tileset;
     const T = tileset.cells.length;
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     for (let i = 0; i < length; i++) {
       let x = i % width, y = Math.floor(i / width);
       if (this.onBoundary(x, y)) continue;
-      if (this.entropies[i] !== 1) continue;
+      if (this._entropies[i] !== 1) continue;
       for (let t = 0; t < T; t++) {
-        if (this.wave[i][t]) {
+        if (this._wave[i][t]) {
           const [, w] = tileset.cells[t];
           // if (f >= 0) {
           //   cell.floor = tileset.tiles[f];
@@ -705,14 +705,14 @@ class SimpleTiledWFC {
 
   debug(markup: number[] = []): void {
     const scale = 1;
-    const tileset = this.tileset;
+    const tileset = this._tileset;
     const T = tileset.cells.length;
     const tilesize = tileset.size;
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
 
-    if (this.app == null) {
-      this.app = new PIXI.Application({
+    if (this._app == null) {
+      this._app = new PIXI.Application({
         width: width * tilesize * scale,
         height: height * tilesize * scale,
         resolution: 1,
@@ -721,17 +721,17 @@ class SimpleTiledWFC {
         sharedTicker: false,
         sharedLoader: false
       });
-      document.body.appendChild(this.app.view);
+      document.body.appendChild(this._app.view);
     }
-    const app = this.app;
-    this.app.stage.removeChildren();
+    const app = this._app;
+    this._app.stage.removeChildren();
     const container = new PIXI.Container();
     container.scale.set(scale, scale);
     app.stage.addChild(container);
 
     for (let x = 0; x < width; x++) {
       for (let y = 0; y < height; y++) {
-        let a = this.wave[x + y * width];
+        let a = this._wave[x + y * width];
         let weights_sum = 0;
         for (let t = 0; t < T; t++) {
           if (a[t]) {
@@ -744,14 +744,14 @@ class SimpleTiledWFC {
             const [floor, wall] = tileset.cells[t];
             const tiles = (floor >= 0 ? 1 : 0) + (wall >= 0 ? 1 : 0);
             if (floor >= 0) {
-              const sprite = this.resources.sprite(tileset.tiles[floor]);
+              const sprite = this._resources.sprite(tileset.tiles[floor]);
               sprite.position.set(x * tilesize, y * tilesize);
               sprite.zIndex = 1;
               sprite.alpha = alpha * (1 / tiles);
               container.addChild(sprite);
             }
             if (wall >= 0) {
-              const sprite = this.resources.sprite(tileset.tiles[wall]);
+              const sprite = this._resources.sprite(tileset.tiles[wall]);
               sprite.position.set(x * tilesize, y * tilesize);
               sprite.zIndex = 2;
               sprite.alpha = alpha * (1 / tiles);
@@ -766,7 +766,7 @@ class SimpleTiledWFC {
     container.addChild(graphics);
     graphics.lineStyle(1, 0xFF0000);
     for (let i of markup) {
-      let x = i % this.width, y = Math.floor(i / this.width);
+      let x = i % this._width, y = Math.floor(i / this._width);
       graphics.drawRect(x * tilesize, y * tilesize, tilesize, tilesize);
     }
 
@@ -783,10 +783,10 @@ class SimpleTiledWFC {
   }
 
   constraintFromEditor(editor: Editor): void {
-    const tileset = this.tileset;
+    const tileset = this._tileset;
     const T = tileset.cells.length;
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     const isOpen = buffer(length, false);
@@ -833,8 +833,8 @@ class SimpleTiledWFC {
   }
 
   constraintFromTunneler(crawler: DungeonCrawler): void {
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     const isOpen = buffer(length, false);
@@ -850,10 +850,10 @@ class SimpleTiledWFC {
   }
 
   private constraint(isOpen: boolean[]): void {
-    const tileset = this.tileset;
+    const tileset = this._tileset;
     const T = tileset.cells.length;
-    const width = this.width;
-    const height = this.height;
+    const width = this._width;
+    const height = this._height;
     const length = width * height;
 
     const onlyFloorAround = (i: number): boolean => {
@@ -936,12 +936,12 @@ class SimpleTiledWFC {
 }
 
 class ApplyRulesPaletteCell extends NamedPaletteCell {
-  private readonly wfc: SimpleTiledWFC;
+  private readonly _wfc: SimpleTiledWFC;
 
   constructor(resources: Resources, editor: Editor, rulesEditor: RulesEditor) {
     super("AP RL", "Apply rules", resources, editor);
 
-    this.wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
+    this._wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
   }
 
   action(_cell: EditorMapCell): void {
@@ -949,23 +949,23 @@ class ApplyRulesPaletteCell extends NamedPaletteCell {
 
   protected async onClick(): Promise<void> {
     try {
-      this.wfc.init();
-      this.wfc.constraintFromEditor(this.editor);
-      this.wfc.run(1000);
+      this._wfc.init();
+      this._wfc.constraintFromEditor(this.editor);
+      this._wfc.run(1000);
     } catch (e) {
       console.error(e);
     }
-    this.wfc.observed(this.editor);
+    this._wfc.observed(this.editor);
   }
 }
 
 class FindRulesErrorPaletteCell extends NamedPaletteCell {
-  private readonly wfc: SimpleTiledWFC;
+  private readonly _wfc: SimpleTiledWFC;
 
   constructor(resources: Resources, editor: Editor, rulesEditor: RulesEditor) {
     super("FN ER", "Find rules error", resources, editor);
 
-    this.wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
+    this._wfc = new SimpleTiledWFC(rulesEditor, RNG.create(), resources, editor.width, editor.height);
   }
 
   action(_cell: EditorMapCell): void {
@@ -984,9 +984,9 @@ class FindRulesErrorPaletteCell extends NamedPaletteCell {
       crawler.generate();
 
       try {
-        this.wfc.init();
-        this.wfc.constraintFromTunneler(crawler);
-        const result = this.wfc.run();
+        this._wfc.init();
+        this._wfc.constraintFromTunneler(crawler);
+        const result = this._wfc.run();
         if (result) {
           console.info(`[${i}] success`);
         } else {
@@ -1012,7 +1012,7 @@ class FindRulesErrorPaletteCell extends NamedPaletteCell {
       }
     }
 
-    this.wfc.observed(this.editor);
+    this._wfc.observed(this.editor);
   }
 }
 

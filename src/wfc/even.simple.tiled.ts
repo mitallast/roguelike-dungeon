@@ -3,8 +3,7 @@ import {RNG} from "../rng";
 import {Resources} from "../resources";
 import {TunnelingAlgorithm, TunnelingOptions} from "../tunneling";
 import {Indexer} from "../indexer";
-import {Config} from "../tunneler/config";
-import {DungeonCrawler} from "../tunneler/dungeon.crawler";
+import {Config, DungeonCrawler} from "../tunneler";
 import * as PIXI from "pixi.js";
 
 export enum Direction {
@@ -31,49 +30,49 @@ export interface TilesetRules {
 }
 
 export class TilesetRulesBuilder {
-  private readonly tilesIndex: Indexer<string> = Indexer.identity();
-  private readonly cellsIndex: Indexer<[number, number, CellType]> = Indexer.array();
+  private readonly _tilesIndex: Indexer<string> = Indexer.identity();
+  private readonly _cellsIndex: Indexer<[number, number, CellType]> = Indexer.array();
 
-  private readonly rightIndex: Indexer<[number, number]> = Indexer.array();
-  private readonly downIndex: Indexer<[number, number]> = Indexer.array();
+  private readonly _rightIndex: Indexer<[number, number]> = Indexer.array();
+  private readonly _downIndex: Indexer<[number, number]> = Indexer.array();
 
   addCell(floor: string | undefined, wall: string | undefined, type: CellType): number {
-    const floorId = floor ? this.tilesIndex.index(floor) : -1;
-    const wallId = wall ? this.tilesIndex.index(wall) : -1;
-    return this.cellsIndex.index([floorId, wallId, type]);
+    const floorId = floor ? this._tilesIndex.index(floor) : -1;
+    const wallId = wall ? this._tilesIndex.index(wall) : -1;
+    return this._cellsIndex.index([floorId, wallId, type]);
   }
 
   addRuleRight(first: number, next: number,): void {
-    this.rightIndex.index([first, next]);
+    this._rightIndex.index([first, next]);
   }
 
   addRuleDown(first: number, next: number,): void {
-    this.downIndex.index([first, next]);
+    this._downIndex.index([first, next]);
   }
 
   build(): TilesetRules {
     return {
       size: 16,
-      tiles: this.tilesIndex.values,
-      cells: this.cellsIndex.values,
-      right: this.rightIndex.values,
-      down: this.downIndex.values,
+      tiles: this._tilesIndex.values,
+      cells: this._cellsIndex.values,
+      right: this._rightIndex.values,
+      down: this._downIndex.values,
     };
   }
 }
 
 export class EvenSimpleTiledModel extends Model {
-  private readonly resources: Resources;
+  private readonly _resources: Resources;
   readonly tileset: TilesetRules;
 
-  private readonly constraints: Constraint[];
+  private readonly _constraints: Constraint[];
 
   constructor(resources: Resources, tileset: TilesetRules, rng: RNG, width: number, height: number, constraints: Constraint[]) {
     super(rng, width, height);
-    this.resources = resources;
+    this._resources = resources;
     this.weights = [];
     this.tileset = tileset;
-    this.constraints = constraints;
+    this._constraints = constraints;
 
     this.T = tileset.cells.length;
     for (let i = 0; i < this.T; i++) {
@@ -123,26 +122,26 @@ export class EvenSimpleTiledModel extends Model {
 
   clear(): void {
     super.clear();
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onClear();
       this.propagate();
     }
   }
 
   backtrackConstraint(index: number, pattern: number): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onBacktrack(index, pattern);
     }
   }
 
   banConstraint(index: number, pattern: number): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.onBan(index, pattern);
     }
   }
 
   initConstraint(): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.init(this);
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed init constraint", this.status);
@@ -152,7 +151,7 @@ export class EvenSimpleTiledModel extends Model {
   }
 
   stepConstraint(): void {
-    for (let constraint of this.constraints) {
+    for (let constraint of this._constraints) {
       constraint.check();
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed step constraint check");
@@ -177,14 +176,14 @@ export class EvenSimpleTiledModel extends Model {
     }
   }
 
-  private app: PIXI.Application | null = null;
+  private _app: PIXI.Application | null = null;
 
   graphics(markup: number[]): void {
     const scale = 1;
     const tilesize = this.tileset.size;
     console.log("tilesize", tilesize, this.tileset, this.tileset.size);
-    if (this.app == null) {
-      this.app = new PIXI.Application({
+    if (this._app == null) {
+      this._app = new PIXI.Application({
         width: this.FMX * tilesize * scale,
         height: this.FMY * tilesize * scale,
         resolution: 1,
@@ -193,10 +192,10 @@ export class EvenSimpleTiledModel extends Model {
         sharedTicker: false,
         sharedLoader: false
       });
-      document.body.appendChild(this.app.view);
+      document.body.appendChild(this._app.view);
     }
-    const app = this.app;
-    this.app.stage.removeChildren();
+    const app = this._app;
+    this._app.stage.removeChildren();
     const container = new PIXI.Container();
     container.scale.set(scale, scale);
     app.stage.addChild(container);
@@ -205,13 +204,13 @@ export class EvenSimpleTiledModel extends Model {
         for (let y = 0; y < this.FMY; y++) {
           let [floor, wall] = this.tileset.cells[this.observed[x + y * this.FMX]];
           if (floor >= 0) {
-            const sprite = this.resources.sprite(this.tileset.tiles[floor]);
+            const sprite = this._resources.sprite(this.tileset.tiles[floor]);
             sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 1;
             container.addChild(sprite);
           }
           if (wall >= 0) {
-            const sprite = this.resources.sprite(this.tileset.tiles[wall]);
+            const sprite = this._resources.sprite(this.tileset.tiles[wall]);
             sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 2;
             container.addChild(sprite);
@@ -234,14 +233,14 @@ export class EvenSimpleTiledModel extends Model {
               const [floor, wall] = this.tileset.cells[t];
               const tiles = (floor >= 0 ? 1 : 0) + (wall >= 0 ? 1 : 0);
               if (floor >= 0) {
-                const sprite = this.resources.sprite(this.tileset.tiles[floor]);
+                const sprite = this._resources.sprite(this.tileset.tiles[floor]);
                 sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 1;
                 sprite.alpha = alpha * (1 / tiles) * this.weights[t];
                 container.addChild(sprite);
               }
               if (wall >= 0) {
-                const sprite = this.resources.sprite(this.tileset.tiles[wall]);
+                const sprite = this._resources.sprite(this.tileset.tiles[wall]);
                 sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 2;
                 sprite.alpha = alpha * (1 / tiles) * this.weights[t];
@@ -285,28 +284,28 @@ export interface Constraint {
 }
 
 export class BorderConstraint implements Constraint {
-  private readonly isBorderCell: boolean[];
+  private readonly _isBorderCell: boolean[];
 
-  private model: EvenSimpleTiledModel | null = null;
+  private _model: EvenSimpleTiledModel | null = null;
 
   constructor(isBorderCell: boolean[]) {
-    this.isBorderCell = isBorderCell;
+    this._isBorderCell = isBorderCell;
   }
 
   init(model: EvenSimpleTiledModel): void {
-    this.model = model;
+    this._model = model;
   }
 
   onClear(): void {
     console.log("on clear");
-    const model = this.model!;
+    const model = this._model!;
     const indices = model.FMX * model.FMY;
 
     for (let i = 0; i < indices; i++) {
       let x = i % model.FMX, y = Math.floor(i / model.FMX);
       if (x === 0 || x === model.FMX - 1 || y === 0 || y === model.FMY - 1) {
         for (let t = 0; t < model.T; t++) {
-          if (model.wave[i][t] && !this.isBorderCell[t]) {
+          if (model.wave[i][t] && !this._isBorderCell[t]) {
             model.ban(i, t);
           }
         }
@@ -326,41 +325,41 @@ export class BorderConstraint implements Constraint {
 }
 
 export class PathConstraint implements Constraint {
-  private readonly isPathCell: boolean[];
+  private readonly _isPathCell: boolean[];
 
-  private model: EvenSimpleTiledModel | null = null;
-  private graph: SimpleGraph | null = null;
-  private couldBePath: boolean[] = [];
-  private mustBePath: boolean[] = [];
+  private _model: EvenSimpleTiledModel | null = null;
+  private _graph: SimpleGraph | null = null;
+  private _couldBePath: boolean[] = [];
+  private _mustBePath: boolean[] = [];
 
-  private refresh: boolean[] = [];
-  private refreshQueue: number[] = [];
+  private _refresh: boolean[] = [];
+  private _refreshQueue: number[] = [];
 
   constructor(isPathCell: boolean[]) {
-    this.isPathCell = isPathCell;
+    this._isPathCell = isPathCell;
   }
 
   init(model: EvenSimpleTiledModel): void {
-    this.model = model;
+    this._model = model;
     const indices = model.FMX * model.FMY;
-    this.couldBePath = buffer(indices, false);
-    this.mustBePath = buffer(indices, false);
-    this.refresh = buffer(indices, true);
-    this.refreshQueue = [];
+    this._couldBePath = buffer(indices, false);
+    this._mustBePath = buffer(indices, false);
+    this._refresh = buffer(indices, true);
+    this._refreshQueue = [];
   }
 
   onClear(): void {
-    let indices = this.model!.FMX * this.model!.FMY;
-    this.couldBePath = buffer(indices, false);
-    this.mustBePath = buffer(indices, false);
-    this.refresh = buffer(indices, true);
-    this.refreshQueue = [];
+    let indices = this._model!.FMX * this._model!.FMY;
+    this._couldBePath = buffer(indices, false);
+    this._mustBePath = buffer(indices, false);
+    this._refresh = buffer(indices, true);
+    this._refreshQueue = [];
     for (let i = 0; i < indices; i++) {
-      this.refreshQueue.push(i);
+      this._refreshQueue.push(i);
     }
     this.refreshAll();
 
-    this.graph = this.createGraph();
+    this._graph = this.createGraph();
   }
 
   onBacktrack(index: number, _pattern: number): void {
@@ -372,19 +371,19 @@ export class PathConstraint implements Constraint {
   }
 
   private addRefresh(index: number): void {
-    if (!this.refresh[index]) {
+    if (!this._refresh[index]) {
 
-      const FMX = this.model!.FMX;
-      const FMY = this.model!.FMY;
+      const FMX = this._model!.FMX;
+      const FMY = this._model!.FMY;
       let x = index % FMX, y = Math.floor(index / FMX);
 
-      this.refresh[index] = true;
-      this.refreshQueue.push(index);
+      this._refresh[index] = true;
+      this._refreshQueue.push(index);
 
       for (let direction = 0; direction < 4; direction++) {
         let dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
-        if (this.model!.onBoundary(sx, sy)) {
+        if (this._model!.onBoundary(sx, sy)) {
           continue;
         }
 
@@ -395,21 +394,21 @@ export class PathConstraint implements Constraint {
 
         let s = sx + sy * FMX;
 
-        if (!this.refresh[s]) {
-          this.refresh[s] = true;
-          this.refreshQueue.push(s);
+        if (!this._refresh[s]) {
+          this._refresh[s] = true;
+          this._refreshQueue.push(s);
         }
       }
     }
   }
 
   private refreshAll(): void {
-    const model = this.model!;
+    const model = this._model!;
     const T = model.T;
 
-    while (this.refreshQueue.length > 0) {
-      const i = this.refreshQueue.pop()!;
-      this.refresh[i] = false;
+    while (this._refreshQueue.length > 0) {
+      const i = this._refreshQueue.pop()!;
+      this._refresh[i] = false;
 
       let pathCount = 0;
       let totalCount = 0;
@@ -417,14 +416,14 @@ export class PathConstraint implements Constraint {
       for (let t = 0; t < T; t++) {
         if (model.wave[i][t]) {
           totalCount++;
-          if (this.isPathCell[t]) {
+          if (this._isPathCell[t]) {
             pathCount++;
           }
         }
       }
 
-      this.couldBePath[i] = pathCount > 0;
-      this.mustBePath[i] = pathCount > 0 && totalCount === pathCount;
+      this._couldBePath[i] = pathCount > 0;
+      this._mustBePath[i] = pathCount > 0 && totalCount === pathCount;
     }
   }
 
@@ -434,19 +433,19 @@ export class PathConstraint implements Constraint {
 
       let isArticulation = this.getArticulationPoints();
       if (isArticulation == null) {
-        if (this.model!.debug) console.error("no articulation");
-        this.model!.status = Resolution.Contradiction;
+        if (this._model!.debug) console.error("no articulation");
+        this._model!.status = Resolution.Contradiction;
         return;
       }
 
       if (this.applyArticulationPoints(isArticulation)) {
-        if (this.model!.debug) {
+        if (this._model!.debug) {
           console.log("articulation");
           let markup: number[] = isArticulation
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
-          this.model!.graphics(markup);
+          this._model!.graphics(markup);
           console.log("continue articulation loop");
         }
       } else {
@@ -456,7 +455,7 @@ export class PathConstraint implements Constraint {
   }
 
   private applyArticulationPoints(isArticulation: boolean[]): boolean {
-    const model = this.model!;
+    const model = this._model!;
     const FMX = model.FMX;
     const FMY = model.FMY;
     let indices = FMX * FMY;
@@ -464,14 +463,14 @@ export class PathConstraint implements Constraint {
     // So ban any other possibilities
     let changed = false;
     for (let i = 0; i < indices; i++) {
-      if (isArticulation[i] && !this.mustBePath[i]) {
+      if (isArticulation[i] && !this._mustBePath[i]) {
         if (model.debug) console.log("articulation", i);
         let x = i % model.FMX, y = Math.floor(i / model.FMX);
         if (model.debug) console.log("x, y, i", x, y, i);
 
         for (let t = 0; t < model.T; t++) {
           if (model.wave[i][t]) {
-            if (this.isPathCell[t]) {
+            if (this._isPathCell[t]) {
               if (model.debug) console.log("ban not path", i, t);
               model.ban(i, t);
               changed = true;
@@ -484,11 +483,11 @@ export class PathConstraint implements Constraint {
   }
 
   private getArticulationPoints(): boolean[] | null {
-    const walkable = this.couldBePath;
-    const relevant = this.mustBePath;
+    const walkable = this._couldBePath;
+    const relevant = this._mustBePath;
 
-    const model = this.model!;
-    const graph = this.graph!;
+    const model = this._model!;
+    const graph = this._graph!;
     const indices = walkable.length;
 
     const low: number[] = buffer(indices, 0);
@@ -684,7 +683,7 @@ export class PathConstraint implements Constraint {
   }
 
   private createGraph(): SimpleGraph {
-    const model = this.model!;
+    const model = this._model!;
     let nodeCount = model.FMX * model.FMY;
     let neighbours: number[][] = [];
     for (let i = 0; i < nodeCount; i++) {
@@ -734,25 +733,25 @@ interface SimpleGraph {
 }
 
 export class RoomConstraint implements Constraint {
-  private readonly tunnelingOptions: TunnelingOptions;
-  private readonly isRoomCell: boolean[] = [];
-  private readonly denyOther: boolean;
+  private readonly _tunnelingOptions: TunnelingOptions;
+  private readonly _isRoomCell: boolean[] = [];
+  private readonly _denyOther: boolean;
 
-  private model: EvenSimpleTiledModel | null = null;
+  private _model: EvenSimpleTiledModel | null = null;
 
   constructor(isRoomCell: boolean[], denyOther: boolean, tunneling: TunnelingOptions) {
-    this.isRoomCell = isRoomCell;
-    this.denyOther = denyOther;
-    this.tunnelingOptions = tunneling;
+    this._isRoomCell = isRoomCell;
+    this._denyOther = denyOther;
+    this._tunnelingOptions = tunneling;
   }
 
   init(model: EvenSimpleTiledModel): void {
-    this.model = model;
+    this._model = model;
   }
 
   onClear(): void {
-    const model = this.model!;
-    const tunneling = new TunnelingAlgorithm(model.rng, model.FMX, model.FMY, this.tunnelingOptions);
+    const model = this._model!;
+    const tunneling = new TunnelingAlgorithm(model.rng, model.FMX, model.FMY, this._tunnelingOptions);
     tunneling.generate();
 
     const isRoom = buffer(model.FMX * model.FMY, false);
@@ -768,11 +767,11 @@ export class RoomConstraint implements Constraint {
     for (let i = 0; i < isRoom.length; i++) {
       for (let t = 0; t < model.T; t++) {
         if (isRoom[i]) {
-          if (!this.isRoomCell[t]) {
+          if (!this._isRoomCell[t]) {
             model.ban(i, t);
           }
-        } else if (this.denyOther) {
-          if (this.isRoomCell[t]) {
+        } else if (this._denyOther) {
+          if (this._isRoomCell[t]) {
             model.ban(i, t);
           }
         }
@@ -791,22 +790,22 @@ export class RoomConstraint implements Constraint {
 }
 
 export class DungeonCrawlerConstraint implements Constraint {
-  private readonly config: Config;
+  private readonly _config: Config;
 
-  private model: EvenSimpleTiledModel | null = null;
+  private _model: EvenSimpleTiledModel | null = null;
 
   constructor(config: Config) {
-    this.config = config;
+    this._config = config;
   }
 
   init(model: EvenSimpleTiledModel): void {
-    this.model = model;
+    this._model = model;
   }
 
   onClear(): void {
-    const model = this.model!;
+    const model = this._model!;
     console.time("crawler");
-    const crawler = new DungeonCrawler(this.config, model.rng);
+    const crawler = new DungeonCrawler(this._config, model.rng);
     crawler.generate();
     console.timeEnd("crawler");
 

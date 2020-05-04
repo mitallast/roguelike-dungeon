@@ -14,7 +14,7 @@ export enum BonfireState {
 }
 
 export class DungeonBonfire implements DungeonObject {
-  private readonly dungeon: DungeonMap;
+  private readonly _dungeon: DungeonMap;
   private _sprite: PIXI.AnimatedSprite;
   private _state: BonfireState;
 
@@ -31,27 +31,27 @@ export class DungeonBonfire implements DungeonObject {
   }
 
   constructor(dungeon: DungeonMap, x: number, y: number, light: boolean) {
-    this.dungeon = dungeon;
+    this._dungeon = dungeon;
     this.x = x;
     this.y = y;
     this._state = BonfireState.UNLIT;
-    this._sprite = this.dungeon.animated(this.x, this.y, `bonfire_unlit`);
+    this._sprite = this._dungeon.animated(this.x, this.y, `bonfire_unlit`);
     this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
-    this.dungeon.set(this.x, this.y, this);
+    this._dungeon.set(this.x, this.y, this);
 
     if (light) this.light();
   }
 
   destroy(): void {
-    this.dungeon.remove(this.x, this.y, this);
+    this._dungeon.remove(this.x, this.y, this);
     this._sprite.destroy();
   }
 
   interact(hero: HeroAI): void {
     switch (this._state) {
       case BonfireState.UNLIT:
-        hero.character.bonfires.add(this.dungeon.level);
-        this.dungeon.controller.showBanner({
+        hero.character.bonfires.add(this._dungeon.level);
+        this._dungeon.controller.showBanner({
           text: 'BONFIRE LIT',
           color: Colors.uiYellow
         });
@@ -59,7 +59,7 @@ export class DungeonBonfire implements DungeonObject {
         break;
       case BonfireState.LIGHT:
       case BonfireState.LIT:
-        this.dungeon.controller.showBonfire(hero.character);
+        this._dungeon.controller.showBonfire(hero.character);
         break;
     }
   }
@@ -72,11 +72,11 @@ export class DungeonBonfire implements DungeonObject {
     if (this._state === BonfireState.UNLIT) {
       this._state = BonfireState.LIGHT;
       this._sprite.destroy();
-      this._sprite = this.dungeon.animated(this.x, this.y, "bonfire_light");
+      this._sprite = this._dungeon.animated(this.x, this.y, "bonfire_light");
       this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
       this._sprite.loop = false;
       this._sprite.onComplete = () => this.lit();
-      this.dungeon.light.addLight(
+      this._dungeon.light.addLight(
         {
           x: this.x * TILE_SIZE + 8,
           y: this.y * TILE_SIZE - TILE_SIZE,
@@ -89,22 +89,22 @@ export class DungeonBonfire implements DungeonObject {
   private lit(): void {
     this._state = BonfireState.LIT;
     this._sprite?.destroy();
-    this._sprite = this.dungeon.animated(this.x, this.y, "bonfire_lit");
+    this._sprite = this._dungeon.animated(this.x, this.y, "bonfire_lit");
     this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
   }
 }
 
-export class DungeonBonfireDialogModal implements ModalScene {
-  private readonly controller: SceneController;
-  private readonly hero: Hero;
+export class DungeonBonfireModal implements ModalScene {
+  private readonly _controller: SceneController;
+  private readonly _hero: Hero;
 
-  private container: PIXI.Container | null = null;
-  private background: PIXI.Graphics | null = null;
-  private selectable: SelectableGrid | null = null;
+  private _container: PIXI.Container | null = null;
+  private _background: PIXI.Graphics | null = null;
+  private _selectable: SelectableGrid | null = null;
 
   constructor(controller: SceneController, hero: Hero) {
-    this.controller = controller;
-    this.hero = hero;
+    this._controller = controller;
+    this._hero = hero;
   }
 
   init(): void {
@@ -114,22 +114,22 @@ export class DungeonBonfireDialogModal implements ModalScene {
     const button_height = 32;
     const button_text_size = 24;
 
-    this.selectable = new SelectableGrid(this.controller.joystick);
+    this._selectable = new SelectableGrid(this._controller.joystick);
 
-    this.background = new PIXI.Graphics();
-    this.background.beginFill(0x000000).drawRect(0, 0, width, height).endFill();
-    this.background.zIndex = 0;
+    this._background = new PIXI.Graphics();
+    this._background.beginFill(0x000000).drawRect(0, 0, width, height).endFill();
+    this._background.zIndex = 0;
 
-    this.container = new PIXI.Container();
-    this.container.addChild(this.background);
-    this.container.sortChildren();
-    this.container.position.set(
-      (this.controller.app.screen.width >> 1) - (width >> 1),
-      (this.controller.app.screen.height >> 1) - (height >> 1),
+    this._container = new PIXI.Container();
+    this._container.addChild(this._background);
+    this._container.sortChildren();
+    this._container.position.set(
+      (this._controller.app.screen.width >> 1) - (width >> 1),
+      (this._controller.app.screen.height >> 1) - (height >> 1),
     );
-    this.controller.stage.addChild(this.container);
+    this._controller.stage.addChild(this._container);
 
-    this.controller.app.ticker.add(this.handleInput, this);
+    this._controller.app.ticker.add(this.handleInput, this);
 
     const layout = new Layout();
     layout.offset(Sizes.uiMargin, Sizes.uiMargin);
@@ -143,14 +143,14 @@ export class DungeonBonfireDialogModal implements ModalScene {
         height: button_height,
         textSize: button_text_size
       });
-      this.container!.addChild(button);
+      this._container!.addChild(button);
       button.position.set(layout.x, layout.y);
       layout.offset(0, button_height);
       layout.offset(0, Sizes.uiMargin);
-      this.selectable!.set(0, y, button, action);
+      this._selectable!.set(0, y, button, action);
       y++;
     };
-    const levels = [...this.hero.bonfires].sort((a, b) => a - b);
+    const levels = [...this._hero.bonfires].sort((a, b) => a - b);
     for (const level of levels) {
       addButton(`Level ${level}`, () => this.goto(level));
     }
@@ -158,27 +158,27 @@ export class DungeonBonfireDialogModal implements ModalScene {
   }
 
   private goto(level: number): void {
-    this.controller.closeModal();
-    this.controller.generateDungeon({
-      hero: this.hero,
+    this._controller.closeModal();
+    this._controller.generateDungeon({
+      hero: this._hero,
       level: level
     })
   }
 
   private cancel(): void {
-    this.controller.closeModal();
+    this._controller.closeModal();
   }
 
   private handleInput(): void {
-    this.selectable?.handleInput();
+    this._selectable?.handleInput();
   }
 
   destroy(): void {
-    this.controller.app.ticker.remove(this.handleInput, this);
-    this.container?.destroy();
-    this.container = null;
-    this.background?.destroy();
-    this.background = null;
-    this.selectable = null;
+    this._controller.app.ticker.remove(this.handleInput, this);
+    this._container?.destroy();
+    this._container = null;
+    this._background?.destroy();
+    this._background = null;
+    this._selectable = null;
   }
 }

@@ -2,21 +2,21 @@ import {Scene, SceneController} from "./scene";
 import * as PIXI from 'pixi.js';
 
 export class KeyBindScene implements Scene {
-  private readonly controller: SceneController;
+  private readonly _controller: SceneController;
 
   constructor(controller: SceneController) {
-    this.controller = controller;
+    this._controller = controller;
   }
 
   init(): void {
     this.renderTitle();
     this.renderHelp();
-    this.controller.app.ticker.add(this.handleInput, this);
+    this._controller.app.ticker.add(this.handleInput, this);
   }
 
   destroy(): void {
-    this.controller.app.ticker.remove(this.handleInput, this);
-    this.controller.stage.removeChildren();
+    this._controller.app.ticker.remove(this.handleInput, this);
+    this._controller.stage.removeChildren();
   }
 
   pause(): void {
@@ -28,8 +28,8 @@ export class KeyBindScene implements Scene {
   private renderTitle() {
     let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
-    title.position.set(this.controller.app.screen.width >> 1, 64);
-    this.controller.stage.addChild(title);
+    title.position.set(this._controller.app.screen.width >> 1, 64);
+    this._controller.stage.addChild(title);
   }
 
   private renderHelp() {
@@ -47,14 +47,14 @@ export class KeyBindScene implements Scene {
       if (text.length > 0) {
         const line = new PIXI.BitmapText(text, {font: {name: 'alagard', size: 32}});
         line.position.set(40, 200 + i * 30);
-        this.controller.stage.addChild(line);
+        this._controller.stage.addChild(line);
       }
     }
   }
 
   private handleInput() {
-    if (this.controller.joystick.hit.once()) {
-      this.controller.selectHero();
+    if (this._controller.joystick.hit.once()) {
+      this._controller.selectHero();
     }
   }
 }

@@ -1,76 +1,77 @@
 import {ModalScene, SceneController} from "./scene";
 import {Button, HStack, SelectableGrid, Sizes, VStack} from "./ui";
 import {InventoryController, InventoryView} from "./inventory";
+import * as PIXI from "pixi.js";
 
 export class InventoryModalScene implements ModalScene {
-  private readonly controller: SceneController;
-  private readonly actionsController: InventoryController;
+  private readonly _controller: SceneController;
+  private readonly _actionsController: InventoryController;
 
-  private container: VStack | null = null;
-  private head: HStack | null = null;
-  private title: PIXI.BitmapText | null = null;
-  private close: Button | null = null;
-  private selectable: SelectableGrid | null = null;
-  private inventoryView: InventoryView | null = null;
+  private _container: VStack | null = null;
+  private _head: HStack | null = null;
+  private _title: PIXI.BitmapText | null = null;
+  private _close: Button | null = null;
+  private _selectable: SelectableGrid | null = null;
+  private _inventoryView: InventoryView | null = null;
 
   constructor(controller: SceneController, actionsController: InventoryController) {
-    this.controller = controller;
-    this.actionsController = actionsController;
+    this._controller = controller;
+    this._actionsController = actionsController;
   }
 
   init(): void {
-    this.selectable = new SelectableGrid(this.controller.joystick);
+    this._selectable = new SelectableGrid(this._controller.joystick);
 
-    this.container = new VStack({background: {color: 0x000000}});
+    this._container = new VStack({background: {color: 0x000000}});
 
-    this.head = new HStack({padding: 0});
-    this.container.addChild(this.head);
+    this._head = new HStack({padding: 0});
+    this._container.addChild(this._head);
 
-    this.close = new Button({label: "X", width: 40, height: 32});
-    this.head.addChild(this.close);
-    this.selectable.set(0, 0, this.close, () => this.controller.closeModal());
+    this._close = new Button({label: "X", width: 40, height: 32});
+    this._head.addChild(this._close);
+    this._selectable.set(0, 0, this._close, () => this._controller.closeModal());
 
-    this.title = new PIXI.BitmapText(this.actionsController.title, {font: {name: "alagard", size: 32}});
-    this.head.addChild(this.title);
+    this._title = new PIXI.BitmapText(this._actionsController.title, {font: {name: "alagard", size: 32}});
+    this._head.addChild(this._title);
 
-    this.inventoryView = new InventoryView(this.controller.resources, this.actionsController, this.selectable, 0, 1);
-    this.inventoryView.position.set(Sizes.uiMargin, Sizes.uiMargin);
-    this.inventoryView.calculateBounds();
-    this.inventoryView.zIndex = 1;
-    this.container.addChild(this.inventoryView);
-    const width = this.container.width;
-    const height = this.container.height;
+    this._inventoryView = new InventoryView(this._controller.resources, this._actionsController, this._selectable, 0, 1);
+    this._inventoryView.position.set(Sizes.uiMargin, Sizes.uiMargin);
+    this._inventoryView.calculateBounds();
+    this._inventoryView.zIndex = 1;
+    this._container.addChild(this._inventoryView);
+    const width = this._container.width;
+    const height = this._container.height;
 
-    this.container.position.set(
-      (this.controller.app.screen.width >> 1) - (width >> 1),
-      (this.controller.app.screen.height >> 1) - (height >> 1),
+    this._container.position.set(
+      (this._controller.app.screen.width >> 1) - (width >> 1),
+      (this._controller.app.screen.height >> 1) - (height >> 1),
     );
 
-    this.controller.stage.addChild(this.container);
-    this.controller.app.ticker.add(this.handleInput, this);
+    this._controller.stage.addChild(this._container);
+    this._controller.app.ticker.add(this.handleInput, this);
   }
 
   destroy(): void {
-    this.controller.app.ticker.remove(this.handleInput, this);
-    this.container?.destroy();
-    this.container = null;
-    this.head?.destroy();
-    this.head = null;
-    this.title?.destroy();
-    this.title = null;
-    this.close?.destroy();
-    this.close = null;
-    this.inventoryView?.destroy();
-    this.inventoryView = null;
-    this.selectable = null;
+    this._controller.app.ticker.remove(this.handleInput, this);
+    this._container?.destroy();
+    this._container = null;
+    this._head?.destroy();
+    this._head = null;
+    this._title?.destroy();
+    this._title = null;
+    this._close?.destroy();
+    this._close = null;
+    this._inventoryView?.destroy();
+    this._inventoryView = null;
+    this._selectable = null;
   }
 
   private handleInput(): void {
-    const joystick = this.controller.joystick;
+    const joystick = this._controller.joystick;
     if (joystick.inventory.once()) {
-      this.controller.closeModal();
+      this._controller.closeModal();
       return;
     }
-    this.selectable?.handleInput();
+    this._selectable?.handleInput();
   }
 }

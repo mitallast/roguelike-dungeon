@@ -2,7 +2,7 @@ enum KeyBindState {Await = 1, Pressed = 2}
 
 export class KeyBind {
   readonly code: string;
-  private state: KeyBindState;
+  private _state: KeyBindState;
   private _triggered: boolean;
   private _processed: boolean;
 
@@ -19,7 +19,7 @@ export class KeyBind {
 
   constructor(code: string) {
     this.code = code;
-    this.state = KeyBindState.Await;
+    this._state = KeyBindState.Await;
     this._triggered = false;
     this._processed = true;
   }
@@ -27,10 +27,10 @@ export class KeyBind {
   keydown(e: KeyboardEvent) {
     if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === KeyBindState.Await) {
+      if (this._state === KeyBindState.Await) {
         this._triggered = true;
         this._processed = false;
-        this.state = KeyBindState.Pressed;
+        this._state = KeyBindState.Pressed;
       }
     }
   }
@@ -38,9 +38,9 @@ export class KeyBind {
   keyup(e: KeyboardEvent) {
     if (e.code === this.code) {
       e.preventDefault();
-      if (this.state === KeyBindState.Pressed) {
+      if (this._state === KeyBindState.Pressed) {
         this._triggered = false;
-        this.state = KeyBindState.Await;
+        this._state = KeyBindState.Await;
       }
     }
   }
@@ -72,7 +72,7 @@ export class Joystick {
   readonly digit9: KeyBind;
   readonly digit0: KeyBind;
 
-  private readonly bindings: Partial<Record<string, KeyBind>>;
+  private readonly _bindings: Partial<Record<string, KeyBind>>;
 
   constructor() {
     this.moveUp = new KeyBind('KeyW');
@@ -94,12 +94,12 @@ export class Joystick {
     this.digit9 = new KeyBind('Digit9');
     this.digit0 = new KeyBind('Digit0');
 
-    this.bindings = {};
+    this._bindings = {};
 
     for (const property of Object.getOwnPropertyNames(this)) {
       const value = (this as Partial<Record<string, any>>)[property];
       if (value && value instanceof KeyBind) {
-        this.bindings[value.code] = value;
+        this._bindings[value.code] = value; // @todo refactor
       }
     }
 
@@ -133,16 +133,16 @@ export class Joystick {
   }
 
   reset(): void {
-    for (const code of Object.getOwnPropertyNames(this.bindings)) {
-      this.bindings[code]?.reset();
+    for (const code of Object.getOwnPropertyNames(this._bindings)) {
+      this._bindings[code]?.reset();
     }
   }
 
   private keydown(e: KeyboardEvent) {
-    this.bindings[e.code]?.keydown(e);
+    this._bindings[e.code]?.keydown(e);
   }
 
   private keyup(e: KeyboardEvent) {
-    this.bindings[e.code]?.keyup(e);
+    this._bindings[e.code]?.keyup(e);
   }
 }

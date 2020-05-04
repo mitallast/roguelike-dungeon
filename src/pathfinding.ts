@@ -22,16 +22,16 @@ class Node {
 
 // classic A* path finding
 export class PathFinding {
-  private readonly width: number;
-  private readonly height: number;
-  private readonly map: number[][] = []; // x => y
+  private readonly _width: number;
+  private readonly _height: number;
+  private readonly _map: number[][] = []; // x => y
 
-  private readonly heuristic: Heuristic;
-  private readonly weight: number = 1;
+  private readonly _heuristic: Heuristic;
+  private readonly _weight: number = 1;
 
-  private readonly includeStart: boolean;
-  private readonly includeEnd: boolean;
-  private readonly diagonalAllowed: boolean;
+  private readonly _includeStart: boolean;
+  private readonly _includeEnd: boolean;
+  private readonly _diagonalAllowed: boolean;
 
   constructor(width: number,
               height: number,
@@ -40,16 +40,16 @@ export class PathFinding {
               includeEnd: boolean = false,
               heuristic: Heuristic = Heuristic.Chebyshev,
               weight: number = 1) {
-    this.width = width;
-    this.height = height;
-    this.diagonalAllowed = diagonalAllowed;
-    this.includeStart = includeStart;
-    this.includeEnd = includeEnd;
-    this.heuristic = heuristic;
-    this.weight = weight;
+    this._width = width;
+    this._height = height;
+    this._diagonalAllowed = diagonalAllowed;
+    this._includeStart = includeStart;
+    this._includeEnd = includeEnd;
+    this._heuristic = heuristic;
+    this._weight = weight;
     for (let x = 0; x < width; x++) {
       const row: number[] = [];
-      this.map.push(row);
+      this._map.push(row);
       for (let y = 0; y < height; y++) {
         row.push(1);
       }
@@ -57,11 +57,11 @@ export class PathFinding {
   }
 
   clear(x: number, y: number): void {
-    this.map[x][y] = 0;
+    this._map[x][y] = 0;
   }
 
   mark(x: number, y: number): void {
-    this.map[x][y] = 1;
+    this._map[x][y] = 1;
   }
 
   find(start: PIXI.Point, end: PIXI.Point): PIXI.Point[] {
@@ -98,7 +98,7 @@ export class PathFinding {
       if (current_node.equal(end_node)) {
         const path: PIXI.Point[] = [];
         let current: Node;
-        if (this.includeEnd) {
+        if (this._includeEnd) {
           current = current_node;
         } else {
           // @ts-ignore
@@ -108,7 +108,7 @@ export class PathFinding {
           path.push(current.position);
           current = current.parent;
         }
-        if (this.includeStart) {
+        if (this._includeStart) {
           path.push(current.position);
         }
         return path.reverse();
@@ -116,7 +116,7 @@ export class PathFinding {
 
       // Generate children
       const children: Node[] = [];
-      const squares = this.diagonalAllowed ? PathFinding.adjacentSquaresDiagonal : PathFinding.adjacentSquares;
+      const squares = this._diagonalAllowed ? PathFinding.adjacentSquaresDiagonal : PathFinding.adjacentSquares;
 
       for (let i = 0; i < squares.length; i++) {
         let new_position = squares[i];
@@ -124,13 +124,13 @@ export class PathFinding {
         let node_position = new PIXI.Point(current_node.position.x + new_position.x, current_node.position.y + new_position.y);
 
         // Make sure within range
-        if (node_position.x >= this.width || node_position.x < 0 ||
-          node_position.y >= this.height || node_position.y < 0) {
+        if (node_position.x >= this._width || node_position.x < 0 ||
+          node_position.y >= this._height || node_position.y < 0) {
           continue;
         }
 
         // Make sure walkable terrain
-        if (this.map[node_position.x][node_position.y] != 0) {
+        if (this._map[node_position.x][node_position.y] != 0) {
           continue;
         }
 
@@ -174,21 +174,21 @@ export class PathFinding {
     let dx = Math.abs(pos1.x - pos0.x);
     let dy = Math.abs(pos1.y - pos0.y);
 
-    switch (this.heuristic) {
+    switch (this._heuristic) {
       case Heuristic.Manhattan:
         /**
          * Calculate the Manhatten distance.
          * Generally: Overestimates distances because diagonal movement not taken into accout.
          * Good for a 4-connected grid (diagonal movement not allowed)
          */
-        return (dx + dy) * this.weight;
+        return (dx + dy) * this._weight;
       case Heuristic.Euclidean:
         /**
          * Calculate the Euclidean distance.
          * Generally: Underestimates distances, assuming paths can have any angle.
          * Can be used f.e. when units can move at any angle.
          */
-        return Math.sqrt(dx * dx + dy * dy) * this.weight;
+        return Math.sqrt(dx * dx + dy * dy) * this._weight;
       case Heuristic.Chebyshev:
         /**
          * Calculate the Chebyshev distance.
@@ -198,7 +198,7 @@ export class PathFinding {
          * => (dx + dy) - Math.min(dx, dy)
          * This is equivalent to Math.max(dx, dy)
          */
-        return Math.max(dx, dy) * this.weight;
+        return Math.max(dx, dy) * this._weight;
       case Heuristic.Octile:
         /**
          * Calculate the Octile distance.
@@ -207,7 +207,7 @@ export class PathFinding {
          * D = 1 and D2 = sqrt(2)
          * => (dx + dy) - 0.58 * Math.min(dx, dy)
          */
-        return (dx + dy - 0.58 * Math.min(dx, dy)) * this.weight;
+        return (dx + dy - 0.58 * Math.min(dx, dy)) * this._weight;
     }
   }
 

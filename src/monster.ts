@@ -71,8 +71,8 @@ export abstract class MonsterAI extends BaseCharacterAI {
   readonly interacting: boolean = false;
 
   private _state: MonsterState = MonsterState.READY;
-  private last_path: PIXI.Point[] = [];
-  private readonly spawned: MonsterAI[] = [];
+  private _last_path: PIXI.Point[] = [];
+  private readonly _spawned: MonsterAI[] = [];
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
@@ -143,20 +143,20 @@ export abstract class MonsterAI extends BaseCharacterAI {
   }
 
   protected moveTo(character: CharacterAI): boolean {
-    this.last_path = this.findPath(character);
+    this._last_path = this.findPath(character);
     return this.moveByPath();
   }
 
   protected moveByPath(): boolean {
-    if (this.last_path.length > 0) {
-      const next = this.last_path[0];
+    if (this._last_path.length > 0) {
+      const next = this._last_path[0];
       const d_x = next.x - this.x;
       const d_y = next.y - this.y;
       if (this.move(d_x, d_y)) {
-        this.last_path.splice(0, 1);
+        this._last_path.splice(0, 1);
         return true;
       } else {
-        this.last_path = [];
+        this._last_path = [];
         return false;
       }
     } else {
@@ -175,12 +175,12 @@ export abstract class MonsterAI extends BaseCharacterAI {
   }
 
   protected spawnMinions(): boolean {
-    for (let i = this.spawned.length - 1; i >= 0; i--) {
-      if (this.spawned[i].character.dead.get()) {
-        this.spawned.splice(i, 1);
+    for (let i = this._spawned.length - 1; i >= 0; i--) {
+      if (this._spawned[i].character.dead.get()) {
+        this._spawned.splice(i, 1);
       }
     }
-    if (this.spawned.length < this.character.spawn) {
+    if (this._spawned.length < this.character.spawn) {
       if (Math.random() > 0.1) {
         return false;
       }
@@ -192,7 +192,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
       const minion = this.spawnMinion(cell.x, cell.y);
       if (minion) {
         cell.object = minion;
-        this.spawned.push(minion);
+        this._spawned.push(minion);
         return true;
       } else {
         console.warn("minion not spawned", this.character.category, this.character.type);

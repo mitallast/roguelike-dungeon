@@ -41,7 +41,7 @@ const defaultGlobalState: GlobalHeroState = {
 };
 
 export class Hero extends Character {
-  private readonly persistent: PersistentState;
+  private readonly _persistent: PersistentState;
 
   private readonly _level: ObservableVar<number>;
   private readonly _levelXp: ObservableVar<number>;
@@ -104,7 +104,7 @@ export class Hero extends Character {
       baseDamage: state.baseDamage,
       coins: state.coins,
     });
-    this.persistent = persistent;
+    this._persistent = persistent;
     this._level = new ObservableVar(state.level);
     this._levelXp = new ObservableVar(state.levelXp);
     this._skillPoints = new ObservableVar(state.skillPoints);
@@ -124,7 +124,7 @@ export class Hero extends Character {
   }
 
   private save(): void {
-    this.persistent.global.save(this.name, this.state);
+    this._persistent.global.save(this.name, this.state);
   }
 
   private get state(): GlobalHeroState {
@@ -316,15 +316,15 @@ export class HeroAI extends BaseCharacterAI {
 }
 
 export class HeroStateView extends PIXI.Container {
-  private readonly heroState: Hero;
-  private readonly health: BarView;
-  private readonly xp: BarView;
-  private readonly coins: PIXI.BitmapText;
+  private readonly _heroState: Hero;
+  private readonly _health: BarView;
+  private readonly _xp: BarView;
+  private readonly _coins: PIXI.BitmapText;
 
-  private readonly fixedHPSize: boolean;
-  private readonly hpBarSize: number;
-  private readonly maxBarSize: number;
-  private readonly maxBarInnerSize: number;
+  private readonly _fixedHPSize: boolean;
+  private readonly _hpBarSize: number;
+  private readonly _maxBarSize: number;
+  private readonly _maxBarInnerSize: number;
 
   constructor(heroState: Hero, options: {
     fixedHPSize: boolean
@@ -332,31 +332,31 @@ export class HeroStateView extends PIXI.Container {
     maxBarSize?: number
   }) {
     super();
-    this.fixedHPSize = options.fixedHPSize;
-    this.hpBarSize = options.hpBarSize || 8;
-    this.maxBarSize = options.maxBarSize || 256;
-    this.maxBarInnerSize = this.maxBarSize - (Sizes.uiBorder << 1);
+    this._fixedHPSize = options.fixedHPSize;
+    this._hpBarSize = options.hpBarSize || 8;
+    this._maxBarSize = options.maxBarSize || 256;
+    this._maxBarInnerSize = this._maxBarSize - (Sizes.uiBorder << 1);
 
     const barHeight = 18 + (Sizes.uiBorder << 1);
     const offsetY = barHeight + Sizes.uiMargin;
 
-    this.heroState = heroState;
-    this.health = new BarView({
+    this._heroState = heroState;
+    this._health = new BarView({
       color: Colors.uiRed,
       width: 0,
-      widthMax: this.maxBarInnerSize
+      widthMax: this._maxBarInnerSize
     });
-    this.xp = new BarView({
+    this._xp = new BarView({
       color: Colors.uiYellow,
       width: 0,
-      widthMax: this.maxBarInnerSize
+      widthMax: this._maxBarInnerSize
     });
-    this.xp.position.set(0, offsetY);
+    this._xp.position.set(0, offsetY);
 
-    this.coins = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this.coins.position.set(0, offsetY * 2);
+    this._coins = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
+    this._coins.position.set(0, offsetY * 2);
 
-    super.addChild(this.health, this.xp, this.coins);
+    super.addChild(this._health, this._xp, this._coins);
 
     heroState.health.subscribe(this.updateHealth, this);
     heroState.healthMax.subscribe(this.updateHealthMax, this);
@@ -369,46 +369,46 @@ export class HeroStateView extends PIXI.Container {
 
   destroy(): void {
     super.destroy();
-    this.heroState.health.unsubscribe(this.updateHealth, this);
-    this.heroState.healthMax.unsubscribe(this.updateHealthMax, this);
-    this.heroState.level.unsubscribe(this.updateXp, this);
-    this.heroState.levelXp.unsubscribe(this.updateXp, this);
-    this.heroState.skillPoints.unsubscribe(this.updateXp, this);
-    this.heroState.xp.unsubscribe(this.updateXp, this);
-    this.heroState.coins.unsubscribe(this.updateCoins, this);
+    this._heroState.health.unsubscribe(this.updateHealth, this);
+    this._heroState.healthMax.unsubscribe(this.updateHealthMax, this);
+    this._heroState.level.unsubscribe(this.updateXp, this);
+    this._heroState.levelXp.unsubscribe(this.updateXp, this);
+    this._heroState.skillPoints.unsubscribe(this.updateXp, this);
+    this._heroState.xp.unsubscribe(this.updateXp, this);
+    this._heroState.coins.unsubscribe(this.updateCoins, this);
   }
 
   private updateHealthMax(healthMax: number) {
-    const health = this.heroState.health.get();
-    if (!this.fixedHPSize) {
-      this.health.widthMax = this.hpBarSize * healthMax;
+    const health = this._heroState.health.get();
+    if (!this._fixedHPSize) {
+      this._health.widthMax = this._hpBarSize * healthMax;
     }
-    this.health.label = `${health}/${healthMax}`;
+    this._health.label = `${health}/${healthMax}`;
   }
 
   private updateHealth(health: number) {
-    const healthMax = this.heroState.healthMax.get();
-    if (this.fixedHPSize) {
-      this.health.width = Math.floor(this.maxBarInnerSize * health / healthMax);
+    const healthMax = this._heroState.healthMax.get();
+    if (this._fixedHPSize) {
+      this._health.width = Math.floor(this._maxBarInnerSize * health / healthMax);
     } else {
-      this.health.width = this.hpBarSize * health;
+      this._health.width = this._hpBarSize * health;
     }
-    this.health.label = `${health}/${healthMax}`;
+    this._health.label = `${health}/${healthMax}`;
   }
 
   private updateXp() {
-    const level = this.heroState.level.get();
-    const levelXp = this.heroState.levelXp.get();
-    const skillPoints = this.heroState.skillPoints.get();
-    const xp = this.heroState.xp.get();
+    const level = this._heroState.level.get();
+    const levelXp = this._heroState.levelXp.get();
+    const skillPoints = this._heroState.skillPoints.get();
+    const xp = this._heroState.xp.get();
 
-    this.xp.widthMax = this.maxBarInnerSize;
-    this.xp.width = Math.floor(this.maxBarInnerSize * xp / levelXp);
-    this.xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
+    this._xp.widthMax = this._maxBarInnerSize;
+    this._xp.width = Math.floor(this._maxBarInnerSize * xp / levelXp);
+    this._xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 
   private updateCoins(coins: number) {
-    this.coins.text = `$${coins}`;
+    this._coins.text = `$${coins}`;
   }
 }
 

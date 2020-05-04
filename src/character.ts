@@ -473,28 +473,28 @@ export class IdleAnimationController extends BaseAnimationController {
 }
 
 export class RunAnimationController extends BaseAnimationController {
-  private readonly x: number;
-  private readonly y: number;
-  private readonly new_x: number;
-  private readonly new_y: number;
+  private readonly _x: number;
+  private readonly _y: number;
+  private readonly _new_x: number;
+  private readonly _new_y: number;
 
   constructor(ai: CharacterAI, new_x: number, new_y: number) {
     super(ai, ai.character.name + '_run');
-    this.x = this.ai.x;
-    this.y = this.ai.y;
-    this.new_x = new_x;
-    this.new_y = new_y;
+    this._x = this.ai.x;
+    this._y = this.ai.y;
+    this._new_x = new_x;
+    this._new_y = new_y;
   }
 
   start(): void {
     const clip = this.view.animation(this.spriteName, this.ai.character.speed * 0.2);
-    this.ai.dungeon.set(this.new_x, this.new_y, this.ai);
+    this.ai.dungeon.set(this._new_x, this._new_y, this.ai);
     this.animation.clear();
     this.animation.add(clip);
     this.animation.add(new AnimationCurveClip(
       LinearCurve.matrix(
-        [this.x, this.y],
-        [this.new_x, this.new_y],
+        [this._x, this._y],
+        [this._new_x, this._new_y],
       ),
       clip.duration,
       clip.animationSpeed,
@@ -511,16 +511,16 @@ export class RunAnimationController extends BaseAnimationController {
 
   cancel(): void {
     super.cancel();
-    this.ai.dungeon.remove(this.x, this.y, this.ai);
-    this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
+    this.ai.dungeon.remove(this._x, this._y, this.ai);
+    this.ai.dungeon.remove(this._new_x, this._new_y, this.ai);
     this.ai.setPosition(this.ai.x, this.ai.y);
   }
 
   finish(): void {
     super.finish();
-    this.ai.dungeon.remove(this.x, this.y, this.ai);
-    this.ai.dungeon.remove(this.new_x, this.new_y, this.ai);
-    this.ai.setPosition(this.new_x, this.new_y);
+    this.ai.dungeon.remove(this._x, this._y, this.ai);
+    this.ai.dungeon.remove(this._new_x, this._new_y, this.ai);
+    this.ai.setPosition(this._new_x, this._new_y);
   }
 }
 
@@ -578,7 +578,7 @@ export interface CharacterView {
 }
 
 export class DefaultCharacterView extends PIXI.Container implements CharacterView {
-  private readonly resources: Resources;
+  private readonly _resources: Resources;
 
   private readonly _baseZIndex: number;
   private readonly _gridWidth: number;
@@ -604,11 +604,11 @@ export class DefaultCharacterView extends PIXI.Container implements CharacterVie
 
   constructor(dungeon: DungeonMap, zIndex: number, gridWidth: number, onPosition?: (x: number, y: number) => void) {
     super();
-    this.resources = dungeon.controller.resources;
+    this._resources = dungeon.controller.resources;
     this._baseZIndex = zIndex;
     this._gridWidth = gridWidth;
     this._onPosition = onPosition || null;
-    this._weapon = new DefaultWeaponView(this.resources);
+    this._weapon = new DefaultWeaponView(this._resources);
     this._weapon.zIndex = 2;
     this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
     this.addChild(this._weapon);
@@ -636,7 +636,7 @@ export class DefaultCharacterView extends PIXI.Container implements CharacterVie
 
   animation(spriteName: string, speed: number): AnimationClip {
     this._sprite?.destroy();
-    this._sprite = this.resources.animated(spriteName, {
+    this._sprite = this._resources.animated(spriteName, {
       autoUpdate: false,
       loop: false,
       animationSpeed: speed,
@@ -661,12 +661,12 @@ export interface WeaponView {
 }
 
 export class DefaultWeaponView extends PIXI.Container implements WeaponView {
-  private readonly resources: Resources;
+  private readonly _resources: Resources;
   private _sprite: PIXI.Sprite | null = null;
 
   constructor(resources: Resources) {
     super();
-    this.resources = resources;
+    this._resources = resources;
   }
 
   destroy() {
@@ -679,7 +679,7 @@ export class DefaultWeaponView extends PIXI.Container implements WeaponView {
     this._sprite?.destroy();
     this._sprite = null;
     if (weapon) {
-      this._sprite = this.resources.sprite(weapon.spriteName);
+      this._sprite = this._resources.sprite(weapon.spriteName);
       this._sprite.anchor.set(0.5, 1);
       this.addChild(this._sprite);
     }

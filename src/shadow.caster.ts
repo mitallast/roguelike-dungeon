@@ -39,16 +39,16 @@ export class Segment {
 }
 
 export class ShadowCaster {
-  private segments: Segment[] = [];
-  private endpoints: EndPoint[] = [];
+  private _segments: Segment[] = [];
+  private _endpoints: EndPoint[] = [];
 
-  private light: PIXI.Point = new PIXI.Point(0, 0);
-  private maxDistance: number = 500;
+  private _light: PIXI.Point = new PIXI.Point(0, 0);
+  private _maxDistance: number = 500;
 
   init() {
-    this.segments = [];
-    this.endpoints = [];
-    this.light = new PIXI.Point(0.0, 0.0);
+    this._segments = [];
+    this._endpoints = [];
+    this._light = new PIXI.Point(0.0, 0.0);
   }
 
   // Add a segment, where the first point shows up in the
@@ -58,9 +58,9 @@ export class ShadowCaster {
     const p1 = new PIXI.Point(x1, y1);
     const p2 = new PIXI.Point(x2, y2);
     const segment = new Segment(p1, p2, type);
-    this.segments.push(segment);
-    this.endpoints.push(segment.p1);
-    this.endpoints.push(segment.p2);
+    this._segments.push(segment);
+    this._endpoints.push(segment.p1);
+    this._endpoints.push(segment.p2);
   }
 
   private static deduplicated(queue: Segment[]): Segment[] {
@@ -249,9 +249,9 @@ export class ShadowCaster {
   }
 
   optimize(): void {
-    console.log(`optimize: segments=${this.segments.length}`)
+    console.log(`optimize: segments=${this._segments.length}`)
 
-    const deduplicated = ShadowCaster.deduplicated([...this.segments]);
+    const deduplicated = ShadowCaster.deduplicated([...this._segments]);
     console.log(`optimize: deduplicated=${deduplicated.length}`);
 
     const connected = ShadowCaster.connected(deduplicated);
@@ -269,23 +269,23 @@ export class ShadowCaster {
     ];
     console.log(`optimize: merged=${merged.length}`);
 
-    this.segments = [];
-    this.endpoints = [];
+    this._segments = [];
+    this._endpoints = [];
 
     for (const segment of merged) {
-      this.segments.push(segment);
-      this.endpoints.push(segment.p1);
-      this.endpoints.push(segment.p2);
+      this._segments.push(segment);
+      this._endpoints.push(segment.p1);
+      this._endpoints.push(segment.p2);
     }
   }
 
   setLightLocation(x: number, y: number, maxDistance: number) {
-    this.light.x = x;
-    this.light.y = y;
-    this.maxDistance = maxDistance;
+    this._light.x = x;
+    this._light.y = y;
+    this._maxDistance = maxDistance;
 
-    this.endpoints = [];
-    for (const segment of this.segments) {
+    this._endpoints = [];
+    for (const segment of this._segments) {
 
       let dx = 0.5 * (segment.p1.point.x + segment.p2.point.x) - x;
       let dy = 0.5 * (segment.p1.point.y + segment.p2.point.y) - y;
@@ -317,11 +317,11 @@ export class ShadowCaster {
         segment.p1.begin = (dAngle > 0.0);
         segment.p2.begin = !segment.p1.begin;
 
-        this.endpoints.push(segment.p1, segment.p2);
+        this._endpoints.push(segment.p1, segment.p2);
       }
     }
 
-    this.endpoints.sort(ShadowCaster.compare);
+    this._endpoints.sort(ShadowCaster.compare);
   }
 
   private static compare(a: EndPoint, b: EndPoint): number {
@@ -418,14 +418,14 @@ export class ShadowCaster {
     // efficient to go through all the segments, figure out which
     // ones intersect the initial sweep line, and then sort them.
     for (let pass = 0; pass <= 2; pass++) {
-      for (const p of this.endpoints) {
+      for (const p of this._endpoints) {
         let current_old = open.length === 0 ? null : open[0];
 
         if (p.begin) {
           // Insert into the right place in the list
           let i = 0;
           let node = open[i];
-          while (node != null && ShadowCaster.segmentInFrontOf(p.segment, node, this.light)) {
+          while (node != null && ShadowCaster.segmentInFrontOf(p.segment, node, this._light)) {
             i++;
             node = open[i];
           }
@@ -497,8 +497,8 @@ export class ShadowCaster {
     const angle2cos = Math.cos(angle2);
     const angle2sin = Math.sin(angle2);
 
-    let p1 = this.light;
-    let p2 = new PIXI.Point(this.light.x + angle1cos, this.light.y + angle1sin);
+    let p1 = this._light;
+    let p2 = new PIXI.Point(this._light.x + angle1cos, this._light.y + angle1sin);
     let p3 = new PIXI.Point(0.0, 0.0);
     let p4 = new PIXI.Point(0.0, 0.0);
 
@@ -511,10 +511,10 @@ export class ShadowCaster {
     } else {
       // Stop the triangle at a fixed distance; this probably is
       // not what we want, but it never gets used in the demo
-      p3.x = this.light.x + angle1cos * this.maxDistance;
-      p3.y = this.light.y + angle1sin * this.maxDistance;
-      p4.x = this.light.x + angle2cos * this.maxDistance;
-      p4.y = this.light.y + angle2sin * this.maxDistance;
+      p3.x = this._light.x + angle1cos * this._maxDistance;
+      p3.y = this._light.y + angle1sin * this._maxDistance;
+      p4.x = this._light.x + angle2cos * this._maxDistance;
+      p4.y = this._light.y + angle2sin * this._maxDistance;
     }
 
     let pBegin = ShadowCaster.lineIntersection(p3, p4, p1, p2);
@@ -522,8 +522,8 @@ export class ShadowCaster {
     pBegin.x = Math.round(pBegin.x); // round for pixel perfect
     pBegin.y = Math.round(pBegin.y); // round for pixel perfect
 
-    p2.x = this.light.x + angle2cos;
-    p2.y = this.light.y + angle2sin;
+    p2.x = this._light.x + angle2cos;
+    p2.y = this._light.y + angle2sin;
     let pEnd = ShadowCaster.lineIntersection(p3, p4, p1, p2);
     if (pEnd === null) return;
     pEnd.x = Math.round(pEnd.x); // round for pixel perfect
@@ -563,7 +563,7 @@ export class ShadowCaster {
     ctx.scale(scale, scale);
 
     const segments = new Path2D();
-    for (let segment of this.segments) {
+    for (let segment of this._segments) {
       const start = segment.p1.point;
       const end = segment.p2.point;
       segments.moveTo(start.x, start.y);

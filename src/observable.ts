@@ -8,52 +8,52 @@ export interface Observable<T> extends Publisher<T> {
 }
 
 export class ObservableVar<T> implements Observable<T> {
-  private value: T;
-  private readonly listeners: Listener<T>[] = [];
+  private _value: T;
+  private readonly _listeners: Listener<T>[] = [];
 
   constructor(value: T) {
-    this.value = value;
+    this._value = value;
   }
 
   set(value: T) {
-    this.value = value;
-    for (let i = this.listeners.length - 1; i >= 0; i--) {
-      let listener = this.listeners[i];
+    this._value = value;
+    for (let i = this._listeners.length - 1; i >= 0; i--) {
+      let listener = this._listeners[i];
       if (listener.gc) {
-        this.listeners.splice(i, 1);
+        this._listeners.splice(i, 1);
       } else {
-        listener.send(this.value);
+        listener.send(this._value);
       }
     }
   }
 
   update(f: (value: T) => T): void {
-    this.set(f(this.value));
+    this.set(f(this._value));
   }
 
   get(): T {
-    return this.value;
+    return this._value;
   }
 
   subscribe(callback: (value: T) => void, context: any): void {
     const listener = new Listener<T>(callback, context);
-    this.listeners.push(listener);
-    listener.send(this.value);
+    this._listeners.push(listener);
+    listener.send(this._value);
   }
 
   unsubscribe(callback: (value: T) => void, context: any): void {
-    this.listeners.find(l => l.matches(callback, context))?.unsubscribe();
+    this._listeners.find(l => l.matches(callback, context))?.unsubscribe();
   }
 }
 
 export class EventPublisher<T> implements Publisher<T> {
-  private readonly listeners: Listener<T>[] = [];
+  private readonly _listeners: Listener<T>[] = [];
 
   send(value: T): void {
-    for (let i = this.listeners.length - 1; i >= 0; i--) {
-      let listener = this.listeners[i];
+    for (let i = this._listeners.length - 1; i >= 0; i--) {
+      let listener = this._listeners[i];
       if (listener.gc) {
-        this.listeners.splice(i, 1);
+        this._listeners.splice(i, 1);
       } else {
         listener.send(value);
       }
@@ -62,17 +62,17 @@ export class EventPublisher<T> implements Publisher<T> {
 
   subscribe(callback: (value: T) => void, context: any): void {
     const listener = new Listener<T>(callback, context);
-    this.listeners.push(listener);
+    this._listeners.push(listener);
   }
 
   unsubscribe(callback: (value: T) => void, context: any): void {
-    this.listeners.find(l => l.matches(callback, context))?.unsubscribe();
+    this._listeners.find(l => l.matches(callback, context))?.unsubscribe();
   }
 }
 
 class Listener<T> {
-  private readonly callback: (value: T) => void;
-  private readonly context: any;
+  private readonly _callback: (value: T) => void;
+  private readonly _context: any;
   private _gc: boolean = false;
 
   get gc(): boolean {
@@ -80,19 +80,19 @@ class Listener<T> {
   }
 
   constructor(callback: (value: T) => void, context: any) {
-    this.callback = callback;
-    this.context = context || null;
+    this._callback = callback;
+    this._context = context || null;
   }
 
   matches(callback: (value: T) => void, context: any): boolean {
-    return this.callback === callback && this.context === context;
+    return this._callback === callback && this._context === context;
   }
 
   send(value: T): void {
-    if (this.context) {
-      this.callback.call(this.context, value);
+    if (this._context) {
+      this._callback.call(this._context, value);
     } else {
-      this.callback(value);
+      this._callback(value);
     }
   }
 

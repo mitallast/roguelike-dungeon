@@ -2,13 +2,7 @@ import "pixi.js";
 import "pixi-layers";
 import "pixi-sound";
 
-import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {Colors} from "./ui";
-
-// import {DungeonDesignEditor} from "./tunneler/editor";
-// import {Editor} from "./editor";
-// import {RulesEditor} from "./wfc/rules.editor";
 
 (async function () {
   PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -25,19 +19,11 @@ import {Colors} from "./ui";
   // create the stage instead of container
   const stage = new PIXI.display.Stage();
   app.stage = stage;
-  app.renderer.backgroundColor = Colors.background;
-
-  const resources = new Resources(app.loader);
-  await resources.load();
+  app.renderer.backgroundColor = 0x000000;
 
   document.getElementById("container")!.appendChild(app.view);
 
-  const controller = new SceneController(resources, app, stage);
+  const controller = new SceneController(app, stage);
+  await controller.init();
   controller.keyBind();
-
-  // RulesEditor.dungeon(resources);
-
-  // const rulesEditor = RulesEditor.dungeon(resources);
-  // new Editor(80, 200, resources, rulesEditor);
-  // await DungeonDesignEditor.run(resources, rulesEditor);
 })();

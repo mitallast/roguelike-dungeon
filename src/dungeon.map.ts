@@ -38,7 +38,7 @@ export class DungeonMap {
   readonly width: number;
   readonly height: number;
 
-  private readonly cells: MapCell[][];
+  private readonly _cells: MapCell[][];
 
   readonly container: PIXI.Container;
   readonly floorContainer: PIXI.Container;
@@ -55,11 +55,11 @@ export class DungeonMap {
     this.width = width;
     this.height = height;
 
-    this.cells = [];
+    this._cells = [];
     for (let y = 0; y < this.width; y++) {
-      this.cells[y] = [];
+      this._cells[y] = [];
       for (let x = 0; x < this.height; x++) {
-        this.cells[y][x] = new MapCell(this, x, y);
+        this._cells[y][x] = new MapCell(this, x, y);
       }
     }
 
@@ -86,7 +86,7 @@ export class DungeonMap {
   destroy(): void {
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        this.cells[y][x].destroy();
+        this._cells[y][x].destroy();
       }
     }
     this.lighting.destroy();
@@ -99,7 +99,7 @@ export class DungeonMap {
   }
 
   cell(x: number, y: number): MapCell {
-    return this.cells[y][x];
+    return this._cells[y][x];
   }
 
   remove(x: number, y: number, object: DungeonObject): void {
@@ -161,7 +161,7 @@ export class DungeonMap {
 }
 
 export class MapCell {
-  private readonly dungeon: DungeonMap;
+  private readonly _dungeon: DungeonMap;
   readonly x: number;
   readonly y: number;
   private _floor: DungeonFloor | null = null;
@@ -170,7 +170,7 @@ export class MapCell {
   private _object: DungeonObject | null = null;
 
   constructor(dungeon: DungeonMap, x: number, y: number) {
-    this.dungeon = dungeon;
+    this._dungeon = dungeon;
     this.x = x;
     this.y = y;
   }
@@ -190,7 +190,7 @@ export class MapCell {
     this._floor?.destroy();
     this._floor = null;
     if (name) {
-      this._floor = new DefaultDungeonFloor(this.dungeon, this.x, this.y, name);
+      this._floor = new DefaultDungeonFloor(this._dungeon, this.x, this.y, name);
     }
   }
 
@@ -214,7 +214,7 @@ export class MapCell {
     this._wall?.destroy();
     this._wall = null;
     if (name) {
-      this._wall = new DungeonWall(this.dungeon, this.x, this.y, name);
+      this._wall = new DungeonWall(this._dungeon, this.x, this.y, name);
     }
   }
 
@@ -226,7 +226,7 @@ export class MapCell {
     this._drop?.destroy();
     this._drop = null;
     if (drop) {
-      this._drop = new DungeonDrop(this.dungeon, this.x, this.y, drop);
+      this._drop = new DungeonDrop(this._dungeon, this.x, this.y, drop);
     }
   }
 
@@ -247,7 +247,7 @@ export class MapCell {
     //         if remaining_distance < 0:
     //             return i
 
-    const rng = this.dungeon.rng;
+    const rng = this._dungeon.rng;
 
     const weight_coins = 20;
     const weight_health_flask = 10;
@@ -257,7 +257,7 @@ export class MapCell {
 
     let remaining_distance = rng.float() * sum;
     if ((remaining_distance -= weight_weapon) <= 0) {
-      this.dropItem = Weapon.create(rng, this.dungeon.level);
+      this.dropItem = Weapon.create(rng, this._dungeon.level);
     } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
       this.dropItem = new HealthBigFlask();
     } else if ((remaining_distance -= weight_health_flask) <= 0) {
@@ -287,7 +287,7 @@ export class MapCell {
 
   ladder(): void {
     this._floor?.destroy();
-    this._floor = new DungeonLadder(this.dungeon, this.x, this.y);
+    this._floor = new DungeonLadder(this._dungeon, this.x, this.y);
   }
 
   get interacting(): boolean {
@@ -441,18 +441,18 @@ export class DungeonDrop implements DungeonObject {
   readonly static: boolean = true;
   readonly interacting: boolean = false;
 
-  private readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+  private readonly _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
 
   constructor(dungeon: DungeonMap, x: number, y: number, drop: Drop) {
     this.dungeon = dungeon;
     this.x = x;
     this.y = y;
     this.drop = drop;
-    this.sprite = dungeon.sprite(x, y, drop.spriteName);
-    this.sprite.zIndex = DungeonZIndexes.drop + y * DungeonZIndexes.row;
-    this.sprite.x += (TILE_SIZE >> 1);
-    this.sprite.y += TILE_SIZE - 2;
-    this.sprite.anchor.set(0.5, 1);
+    this._sprite = dungeon.sprite(x, y, drop.spriteName);
+    this._sprite.zIndex = DungeonZIndexes.drop + y * DungeonZIndexes.row;
+    this._sprite.x += (TILE_SIZE >> 1);
+    this._sprite.y += TILE_SIZE - 2;
+    this._sprite.anchor.set(0.5, 1);
   }
 
   pickedUp(hero: Hero): boolean {
@@ -472,26 +472,26 @@ export class DungeonDrop implements DungeonObject {
   }
 
   destroy(): void {
-    this.sprite.destroy();
+    this._sprite.destroy();
   }
 }
 
 export class DungeonTitle extends PIXI.Container {
-  private readonly title: PIXI.BitmapText;
+  private readonly _title: PIXI.BitmapText;
 
   constructor() {
     super();
-    this.title = new PIXI.BitmapText("", {font: {name: 'alagard', size: 32}});
-    this.title.anchor = 0.5;
-    this.title.position.set(0, 16);
-    this.addChild(this.title);
+    this._title = new PIXI.BitmapText("", {font: {name: 'alagard', size: 32}});
+    this._title.anchor = 0.5;
+    this._title.position.set(0, 16);
+    this.addChild(this._title);
   }
 
   set level(level: number) {
-    this.title.text = `LEVEL ${level}`;
+    this._title.text = `LEVEL ${level}`;
   }
 
   destroy(): void {
-    this.title.destroy();
+    this._title.destroy();
   }
 }

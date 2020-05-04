@@ -4,19 +4,19 @@ import {Crawler} from "./crawler";
 import {RNG} from "../rng";
 
 export class RoomCrawler extends Crawler {
-  private readonly defaultWidth: number; // we try to build a room with defaultWidth to the left and right of the room crawler start position
+  private readonly _defaultWidth: number; // we try to build a room with defaultWidth to the left and right of the room crawler start position
   // so that the total width is 2 * defaultWidth + 1, however, this is not guaranteed
-  private readonly size: RoomSize; // actual sizes of small, etc rooms are read from file - this size can be overridden by category
+  private readonly _size: RoomSize; // actual sizes of small, etc rooms are read from file - this size can be overridden by category
 
   constructor(rng: RNG, dungeonCrawler: DungeonCrawler, location: Point, direction: Point, age: number, maxAge: number,
               generation: number, defaultWidth: number, size: RoomSize) {
     super(rng, dungeonCrawler, location, direction, age, maxAge, generation);
-    this.defaultWidth = defaultWidth;
-    this.size = size;
+    this._defaultWidth = defaultWidth;
+    this._size = size;
   }
 
   stepAhead(): boolean {
-    if (!this.dungeonCrawler.isMoreRoomsDungeon(this.size)) {
+    if (!this.dungeonCrawler.isMoreRoomsDungeon(this._size)) {
       return false;
     }
 
@@ -35,9 +35,9 @@ export class RoomCrawler extends Crawler {
 
     const right = this.rightDirection();
 
-    let defaultWidth = this.defaultWidth;
-    const minSize = this.getMinRoomSize(this.size);
-    const maxSize = this.getMaxRoomSize(this.size);
+    let defaultWidth = this._defaultWidth;
+    const minSize = this.getMinRoomSize(this._size);
+    const maxSize = this.getMaxRoomSize(this._size);
     let leftFree: number;
     let rightFree: number;
     let frontFree: number;
@@ -121,7 +121,7 @@ export class RoomCrawler extends Crawler {
             this.dungeonCrawler.setMap(this.location.plus(this.direction), TunnelerCellType.H_DOOR);
           }
         }
-        this.dungeonCrawler.builtRoomDungeon(this.size); // for counting
+        this.dungeonCrawler.builtRoomDungeon(this._size); // for counting
         room.inDungeon = true;  // this room's in the dungeon part
         this.dungeonCrawler.addRoom(room);
         return false;

@@ -6,26 +6,26 @@ export interface PersistentStore {
 }
 
 export class StoragePersistentStore implements PersistentStore {
-  private readonly transaction = new Map<string, any>();
-  private readonly storage: Storage;
-  private readonly prefix: string;
+  private readonly _transaction = new Map<string, any>();
+  private readonly _storage: Storage;
+  private readonly _prefix: string;
 
   constructor(storage: Storage, prefix: string) {
-    this.storage = storage;
-    this.prefix = prefix;
+    this._storage = storage;
+    this._prefix = prefix;
   }
 
   clear(): void {
-    for (let key of Object.keys(this.storage)) {
-      if (key.startsWith(this.prefix)) {
-        this.storage.removeItem(key);
+    for (let key of Object.keys(this._storage)) {
+      if (key.startsWith(this._prefix)) {
+        this._storage.removeItem(key);
       }
     }
-    this.transaction.clear();
+    this._transaction.clear();
   }
 
   load(key: string): any | null {
-    const value = this.storage.getItem(this.key(key));
+    const value = this._storage.getItem(this.key(key));
     if (value !== null) {
       return JSON.parse(value);
     } else {
@@ -34,26 +34,26 @@ export class StoragePersistentStore implements PersistentStore {
   }
 
   save(key: string, value: any): void {
-    this.transaction.set(key, value);
+    this._transaction.set(key, value);
 
-    this.storage.setItem(
+    this._storage.setItem(
       this.key(key),
       JSON.stringify(value)
     );
   }
 
   commit(): void {
-    for (let [key, value] of this.transaction) {
-      this.storage.setItem(
+    for (let [key, value] of this._transaction) {
+      this._storage.setItem(
         this.key(key),
         JSON.stringify(value)
       );
     }
-    this.transaction.clear();
+    this._transaction.clear();
   }
 
   private key(key: string): string {
-    return [this.prefix, key].join();
+    return [this._prefix, key].join();
   }
 }
 
