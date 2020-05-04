@@ -153,9 +153,9 @@ export class TinyMonsterAI extends MonsterAI {
     if (hero) {
       this.lookAt(hero);
       this.sendAlarm(hero);
-      const dist_x = Math.abs(this.x - hero.x);
-      const dist_y = Math.abs(this.y - hero.y);
-      if (dist_x > this.width || dist_y > this.height) {
+      const distX = Math.abs(this.x - hero.x);
+      const distY = Math.abs(this.y - hero.y);
+      if (distX > this.width || distY > this.height) {
         const dx = Math.min(1, Math.max(-1, this.x - hero.x));
         const dy = Math.min(1, Math.max(-1, this.y - hero.y));
         console.log("move from hero");

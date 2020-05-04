@@ -20,15 +20,14 @@ export class DungeonScene implements Scene {
   }
 
   init(): void {
-    const c_w = this._controller.app.screen.width;
-    const c_h = this._controller.app.screen.height;
+    const screen = this._controller.app.screen;
 
-    this._titleView.position.set(c_w >> 1, 16);
+    this._titleView.position.set(screen.width >> 1, 16);
     this._titleView.zIndex = 10;
     this._controller.stage.addChild(this._titleView);
 
-    const i_w = this._inventoryView.width;
-    this._inventoryView.position.set((c_w >> 1) - (i_w >> 1), c_h - (32 + 4 + 16));
+    const invWidth = this._inventoryView.width;
+    this._inventoryView.position.set((screen.width  >> 1) - (invWidth >> 1), screen.height - (32 + 4 + 16));
     this._inventoryView.zIndex = 11;
     this._controller.stage.addChild(this._inventoryView);
 

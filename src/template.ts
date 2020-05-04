@@ -10,7 +10,7 @@ export class Template {
     return template.replace(
       /{{([^}]+)}}/g,
       (_match: string, token: string) => {
-        let sub = token.split('.');
+        const sub = token.split('.');
         if (sub.length >= 1) {
           let value: any = this._context;
           while (sub.length > 0) {

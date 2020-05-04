@@ -38,16 +38,16 @@ export abstract class MonsterCharacter extends Character {
   readonly spawn: number;
 
   protected constructor(options: {
-    name: string,
-    speed: number,
-    healthMax: number,
-    level: number,
-    luck: number,
-    baseDamage: number,
-    xp: number,
-    category: MonsterCategory,
-    type: MonsterType,
-    spawn: number,
+    name: string;
+    speed: number;
+    healthMax: number;
+    level: number;
+    luck: number;
+    baseDamage: number;
+    xp: number;
+    category: MonsterCategory;
+    type: MonsterType;
+    spawn: number;
   }) {
     super({
       name: options.name,
@@ -71,7 +71,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
   readonly interacting: boolean = false;
 
   private _state: MonsterState = MonsterState.READY;
-  private _last_path: PIXI.Point[] = [];
+  private _lastPath: PIXI.Point[] = [];
   private readonly _spawned: MonsterAI[] = [];
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
@@ -114,11 +114,11 @@ export abstract class MonsterAI extends BaseCharacterAI {
   }
 
   protected randomMove(): boolean {
-    const random_move_percent = 0.1;
-    if (Math.random() < random_move_percent) {
-      const move_x = Math.floor(Math.random() * 3) - 1;
-      const move_y = Math.floor(Math.random() * 3) - 1;
-      if (this.move(move_x, move_y)) {
+    const randomMovePercent = 0.1;
+    if (Math.random() < randomMovePercent) {
+      const moveX = Math.floor(Math.random() * 3) - 1;
+      const moveY = Math.floor(Math.random() * 3) - 1;
+      if (this.move(moveX, moveY)) {
         return true;
       }
     }
@@ -130,9 +130,9 @@ export abstract class MonsterAI extends BaseCharacterAI {
     if (hero) {
       this.lookAt(hero);
       this.sendAlarm(hero);
-      const dist_x = Math.abs(this.x - hero.x);
-      const dist_y = Math.abs(this.y - hero.y);
-      if (dist_x > this.width || dist_y > this.height) {
+      const distX = Math.abs(this.x - hero.x);
+      const distY = Math.abs(this.y - hero.y);
+      if (distX > this.width || distY > this.height) {
         return this.moveTo(hero);
       } else if (this.character.luck < this.dungeon.rng.float()) {
         this.hit();
@@ -143,20 +143,20 @@ export abstract class MonsterAI extends BaseCharacterAI {
   }
 
   protected moveTo(character: CharacterAI): boolean {
-    this._last_path = this.findPath(character);
+    this._lastPath = this.findPath(character);
     return this.moveByPath();
   }
 
   protected moveByPath(): boolean {
-    if (this._last_path.length > 0) {
-      const next = this._last_path[0];
-      const d_x = next.x - this.x;
-      const d_y = next.y - this.y;
-      if (this.move(d_x, d_y)) {
-        this._last_path.splice(0, 1);
+    if (this._lastPath.length > 0) {
+      const next = this._lastPath[0];
+      const deltaX = next.x - this.x;
+      const deltaY = next.y - this.y;
+      if (this.move(deltaX, deltaY)) {
+        this._lastPath.splice(0, 1);
         return true;
       } else {
-        this._last_path = [];
+        this._lastPath = [];
         return false;
       }
     } else {
@@ -204,12 +204,12 @@ export abstract class MonsterAI extends BaseCharacterAI {
 
   protected abstract spawnMinion(x: number, y: number): MonsterAI | null;
 
-  protected scanHero(direction: ScanDirection, max_distance: number): HeroAI[] {
-    return this.scanObjects(direction, max_distance, c => c instanceof HeroAI)
+  protected scanHero(direction: ScanDirection, maxDistance: number): HeroAI[] {
+    return this.scanObjects(direction, maxDistance, c => c instanceof HeroAI)
       .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroAI[];
   }
 
-  protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
-    return this.scanObjects(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
+  protected scanMonsters(direction: ScanDirection, maxDistance: number): MonsterAI[] {
+    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterAI) as MonsterAI[];
   }
 }

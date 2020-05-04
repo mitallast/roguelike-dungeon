@@ -1,4 +1,4 @@
-import {TunnelerCellType, IPoint, Point} from "./model";
+import {TunnelerCellType, ImmutablePoint, Point} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {Config} from "./config";
 import {RNG} from "../rng";
@@ -46,15 +46,15 @@ export abstract class Crawler {
     }
   }
 
-  protected valid(point: IPoint): boolean {
+  protected valid(point: ImmutablePoint): boolean {
     return point.x >= 0 && point.y >= 0 && point.x < this.config.width && point.y < this.config.height;
   }
 
-  protected validDirection(direction: IPoint): boolean {
+  protected validDirection(direction: ImmutablePoint): boolean {
     return (direction.x === 0 && (direction.y === -1 || direction.y === 1)) || (direction.y === 0 && (direction.x === -1 || direction.x === 1))
   }
 
-  protected frontFree(position: Point, heading: Point, leftFree: number, rightFree: number) {
+  protected frontFree(position: Point, heading: Point, leftFree: number, rightFree: number): [number, number, number] {
     // returns the number of rows free in front of position, looking towards heading
     // must hold, make sure no smaller parameters are ever passed
 
@@ -81,9 +81,9 @@ export abstract class Crawler {
     return [frontFree, leftFree, rightFree];
   }
 
-  protected findFrontFree(leftFree: number, rightFree: number, position: Point, right: Point, heading: Point) {
+  protected findFrontFree(leftFree: number, rightFree: number, position: Point, right: Point, heading: Point): number {
     let frontFree = 0;
-    while (true) {
+    for (; ;) {
       frontFree++;
       for (let i = -leftFree; i <= rightFree; i++) {
         const cell = position.plus(right.multiply(i)).plus(heading.multiply(frontFree));
@@ -97,8 +97,8 @@ export abstract class Crawler {
     }
   }
 
-  protected findLeftFree(leftFree: number, frontFree: number, position: Point, right: Point, heading: Point) {
-    while (true) {
+  protected findLeftFree(leftFree: number, frontFree: number, position: Point, right: Point, heading: Point): number {
+    for (; ;) {
       leftFree++;
       for (let i = 1; i <= frontFree; i++) {
         const cell = position.minus(right.multiply(leftFree)).plus(heading.multiply(i));
@@ -112,8 +112,8 @@ export abstract class Crawler {
     }
   }
 
-  protected findRightFree(rightFree: number, frontFree: number, position: Point, right: Point, heading: Point) {
-    while (true) {
+  protected findRightFree(rightFree: number, frontFree: number, position: Point, right: Point, heading: Point): number {
+    for (; ;) {
       rightFree++;
       for (let i = 1; i <= frontFree; i++) {
         const cell = position.plus(right.multiply(rightFree)).plus(heading.multiply(i));

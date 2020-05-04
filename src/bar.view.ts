@@ -13,10 +13,10 @@ export class BarView extends PIXI.Container {
   private readonly _labelCenter: boolean;
 
   constructor(options: {
-    color: number,
-    width?: number,
-    widthMax: number,
-    labelCenter?: boolean
+    color: number;
+    width?: number;
+    widthMax: number;
+    labelCenter?: boolean;
   }) {
     super();
     this._color = options.color;
@@ -50,7 +50,7 @@ export class BarView extends PIXI.Container {
     this.updateRect();
   }
 
-  private updateRect() {
+  private updateRect(): void {
     this._rect.clear()
       .beginFill(Colors.uiBackground)
       .drawRect(

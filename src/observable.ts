@@ -15,10 +15,10 @@ export class ObservableVar<T> implements Observable<T> {
     this._value = value;
   }
 
-  set(value: T) {
+  set(value: T): void {
     this._value = value;
     for (let i = this._listeners.length - 1; i >= 0; i--) {
-      let listener = this._listeners[i];
+      const listener = this._listeners[i];
       if (listener.gc) {
         this._listeners.splice(i, 1);
       } else {
@@ -51,7 +51,7 @@ export class EventPublisher<T> implements Publisher<T> {
 
   send(value: T): void {
     for (let i = this._listeners.length - 1; i >= 0; i--) {
-      let listener = this._listeners[i];
+      const listener = this._listeners[i];
       if (listener.gc) {
         this._listeners.splice(i, 1);
       } else {

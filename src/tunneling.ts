@@ -2,25 +2,25 @@ import {ImmutableRect, MutableRect, Rect} from "./geometry";
 import {RNG} from "./rng";
 
 export interface TunnelingOptions {
-  readonly room_min_w?: number;
-  readonly room_min_h?: number;
-  readonly room_max_w?: number;
-  readonly room_max_h?: number;
-  readonly room_min_x?: number;
-  readonly room_min_y?: number;
+  readonly roomMinW?: number;
+  readonly roomMinH?: number;
+  readonly roomMaxW?: number;
+  readonly roomMaxH?: number;
+  readonly roomMinX?: number;
+  readonly roomMinY?: number;
 
-  readonly max_corr_dist?: number;
-  readonly max_corr_width?: number;
+  readonly maxCorrDist?: number;
+  readonly maxCorrWidth?: number;
 
   readonly skew?: number;
 
-  readonly x_dist?: number;
-  readonly y_dist?: number;
+  readonly xDist?: number;
+  readonly yDist?: number;
 
-  readonly min_corr_dist_x?: number;
-  readonly min_corr_dist_y?: number;
+  readonly minCorrDistX?: number;
+  readonly minCorrDistY?: number;
 
-  readonly max_rooms?: number;
+  readonly maxRooms?: number;
 
   readonly debug?: boolean;
 }
@@ -36,25 +36,25 @@ export class TunnelingAlgorithm {
   private readonly _width: number;
   private readonly _height: number;
 
-  private readonly _room_min_w: number;
-  private readonly _room_min_h: number;
-  private readonly _room_max_w: number;
-  private readonly _room_max_h: number;
-  private readonly _room_min_x: number;
-  private readonly _room_min_y: number;
+  private readonly _roomMinW: number;
+  private readonly _roomNinH: number;
+  private readonly _roomMaxW: number;
+  private readonly _roomMaxH: number;
+  private readonly _roomMinX: number;
+  private readonly _roomMinY: number;
 
-  private readonly _max_corr_dist: number;
-  private readonly _max_corr_width: number;
+  private readonly MaxCorrDist: number;
+  private readonly MaxCorrWidth: number;
 
   private readonly _skew: number;
 
-  private readonly _x_dist: number;
-  private readonly _y_dist: number;
+  private readonly _xDist: number;
+  private readonly _yDist: number;
 
-  private readonly _min_corr_dist_x: number;
-  private readonly _min_corr_dist_y: number;
+  private readonly MinCorrDistX: number;
+  private readonly MinCorrDistY: number;
 
-  private readonly _max_rooms: number;
+  private readonly MaxRooms: number;
 
   private readonly _debug: boolean;
 
@@ -63,35 +63,35 @@ export class TunnelingAlgorithm {
     this._width = width;
     this._height = height;
 
-    this._room_min_w = options.room_min_w || 5;
-    this._room_min_h = options.room_min_h || 5;
-    this._room_max_w = options.room_max_w || 20;
-    this._room_max_h = options.room_max_h || 20;
-    this._room_min_x = options.room_min_x || 2;
-    this._room_min_y = options.room_min_y || 2;
+    this._roomMinW = options.roomMinW || 5;
+    this._roomNinH = options.roomMinH || 5;
+    this._roomMaxW = options.roomMaxW || 20;
+    this._roomMaxH = options.roomMaxH || 20;
+    this._roomMinX = options.roomMinX || 2;
+    this._roomMinY = options.roomMinY || 2;
 
-    this._max_corr_dist = options.max_corr_dist || 20;
-    this._max_corr_width = options.max_corr_width || 5;
+    this.MaxCorrDist = options.maxCorrDist || 20;
+    this.MaxCorrWidth = options.maxCorrWidth || 5;
 
     this._skew = options.skew || 3;
 
-    this._x_dist = options.x_dist || 2;
-    this._y_dist = options.y_dist || 2;
+    this._xDist = options.xDist || 2;
+    this._yDist = options.yDist || 2;
 
-    this._min_corr_dist_x = options.min_corr_dist_x || (this._x_dist << 1) + 1;
-    this._min_corr_dist_y = options.min_corr_dist_y || (this._y_dist << 1) + 1;
+    this.MinCorrDistX = options.minCorrDistX || (this._xDist << 1) + 1;
+    this.MinCorrDistY = options.minCorrDistY || (this._yDist << 1) + 1;
 
-    this._max_rooms = options.max_rooms || 0;
+    this.MaxRooms = options.maxRooms || 0;
 
     this._debug = options.debug || false;
   }
 
-  private isOverlap(a: Rect) {
+  private isOverlap(a: Rect): boolean {
     const f = a.isOverlap.bind(a);
     return this.rooms.some(f) ||
       this.corridorsV.some(f) ||
       this.corridorsH.some(f);
-  };
+  }
 
   private valid(rect: Rect): boolean {
     return rect.x >= 0 && rect.y >= 0 && rect.w > 0 && rect.h > 0 &&
@@ -106,8 +106,8 @@ export class TunnelingAlgorithm {
     this.corridorsV.splice(0, this.corridorsV.length);
 
     if (this.generateFirstRoom()) {
-      if (this._max_rooms > 0) {
-        while (this.rooms.length < this._max_rooms) {
+      if (this.MaxRooms > 0) {
+        while (this.rooms.length < this.MaxRooms) {
           if (!this.generateNextRoom()) {
             return false;
           }
@@ -115,6 +115,7 @@ export class TunnelingAlgorithm {
         return true;
       } else {
         while (this.generateNextRoom()) {
+          console.log("generate next room");
         }
         return true;
       }
@@ -123,20 +124,20 @@ export class TunnelingAlgorithm {
   }
 
   private generateFirstRoom(): boolean {
-    const room_w = this._rng.range(this._room_min_w, this._room_max_w);
-    const room_h = this._rng.range(this._room_min_h, this._room_max_h);
+    const roomW = this._rng.range(this._roomMinW, this._roomMaxW);
+    const roomH = this._rng.range(this._roomNinH, this._roomMaxH);
 
-    const min_x = Math.max(this._room_min_x, (this._width >> 1) - room_w);
-    const min_y = Math.max(this._room_min_y, (this._height >> 1) - room_h);
+    const minX = Math.max(this._roomMinX, (this._width >> 1) - roomW);
+    const minY = Math.max(this._roomMinY, (this._height >> 1) - roomH);
 
-    const max_x = Math.min(this._width - this._room_min_x - room_w, (this._width >> 1) + room_w);
-    const max_y = Math.min(this._height - this._room_min_y - room_h, (this._height >> 1) + room_h);
+    const maxX = Math.min(this._width - this._roomMinX - roomW, (this._width >> 1) + roomW);
+    const maxY = Math.min(this._height - this._roomMinY - roomH, (this._height >> 1) + roomH);
 
     const room = new ImmutableRect(
-      this.nextRange(min_x, max_x),
-      this.nextRange(min_y, max_y),
-      room_w,
-      room_h
+      this.nextRange(minX, maxX),
+      this.nextRange(minY, maxY),
+      roomW,
+      roomH
     );
 
     if (!this.isOverlap(room.expand())) {
@@ -231,14 +232,14 @@ export class TunnelingAlgorithm {
 
   private findTopCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
-    buffer.h = this._min_corr_dist_y;
-    buffer.y -= this._min_corr_dist_y;
-    buffer.x += this._x_dist;
-    buffer.w -= this._x_dist << 1;
+    buffer.h = this.MinCorrDistY;
+    buffer.y -= this.MinCorrDistY;
+    buffer.x += this._xDist;
+    buffer.w -= this._xDist << 1;
 
     let h = -1;
     let y = -1;
-    for (; buffer.h <= this._max_corr_dist; buffer.h++, buffer.y--) {
+    for (; buffer.h <= this.MaxCorrDist; buffer.h++, buffer.y--) {
       if (this.valid(buffer)) {
         h = buffer.h;
         y = buffer.y;
@@ -259,12 +260,12 @@ export class TunnelingAlgorithm {
   private findBottomCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.y += room.h;
-    buffer.h = this._min_corr_dist_y;
-    buffer.x += this._x_dist;
-    buffer.w -= this._x_dist << 1;
+    buffer.h = this.MinCorrDistY;
+    buffer.x += this._xDist;
+    buffer.w -= this._xDist << 1;
 
     let h = -1;
-    for (; buffer.h < this._max_corr_dist; buffer.h++) {
+    for (; buffer.h < this.MaxCorrDist; buffer.h++) {
       if (this.valid(buffer)) {
         h = buffer.h;
       } else {
@@ -283,11 +284,11 @@ export class TunnelingAlgorithm {
   private findRightCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
     buffer.x += buffer.w;
-    buffer.y += this._y_dist;
-    buffer.h -= this._y_dist << 1;
+    buffer.y += this._yDist;
+    buffer.h -= this._yDist << 1;
 
     let w = -1;
-    for (; buffer.w < this._max_corr_dist; buffer.w++) {
+    for (; buffer.w < this.MaxCorrDist; buffer.w++) {
       if (this.valid(buffer)) {
         w = buffer.w;
       } else {
@@ -305,14 +306,14 @@ export class TunnelingAlgorithm {
 
   private findLeftCorridorArea(room: Rect): Rect | null {
     const buffer = MutableRect.from(room);
-    buffer.w = this._min_corr_dist_x;
-    buffer.x -= this._min_corr_dist_x;
-    buffer.y += this._y_dist;
-    buffer.h -= this._y_dist << 1;
+    buffer.w = this.MinCorrDistX;
+    buffer.x -= this.MinCorrDistX;
+    buffer.y += this._yDist;
+    buffer.h -= this._yDist << 1;
 
     let w = -1;
     let x = -1;
-    for (; buffer.w <= this._max_corr_dist; buffer.w++, buffer.x--) {
+    for (; buffer.w <= this.MaxCorrDist; buffer.w++, buffer.x--) {
       if (this.valid(buffer)) {
         w = buffer.w;
         x = buffer.x;
@@ -334,12 +335,12 @@ export class TunnelingAlgorithm {
 
   private findTopRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
-    buffer.h -= this._min_corr_dist_y; // shift bottom
-    buffer.x -= this._x_dist; // shift to min width
-    buffer.w += this._x_dist << 1;
+    buffer.h -= this.MinCorrDistY; // shift bottom
+    buffer.x -= this._xDist; // shift to min width
+    buffer.w += this._xDist << 1;
 
-    if (buffer.h < this._room_min_h) { // shift to min height
-      const d = this._room_min_h - buffer.h;
+    if (buffer.h < this._roomNinH) { // shift to min height
+      const d = this._roomNinH - buffer.h;
       buffer.h += d;
       buffer.y -= d;
     }
@@ -347,7 +348,7 @@ export class TunnelingAlgorithm {
     // find max height
     let y = buffer.y;
     let h = buffer.h;
-    for (; buffer.h <= this._room_max_h; buffer.h++, buffer.y--) {
+    for (; buffer.h <= this._roomMaxH; buffer.h++, buffer.y--) {
       if (this.valid(buffer)) {
         h = buffer.h;
         y = buffer.y;
@@ -362,8 +363,8 @@ export class TunnelingAlgorithm {
       // find min x
       let x = buffer.x;
       let w = buffer.w;
-      for (const min_x = corridor.x + this._x_dist + 1 - this._room_max_w;
-           buffer.x > min_x;
+      for (const minX = corridor.x + this._xDist + 1 - this._roomMaxW;
+           buffer.x > minX;
            buffer.x--, buffer.w++
       ) {
         if (this.valid(buffer)) {
@@ -377,8 +378,8 @@ export class TunnelingAlgorithm {
       buffer.w = w;
 
       // find max x
-      for (const max_x = corridor.x + corridor.w - this._x_dist - 1 + this._room_max_w;
-           buffer.x + buffer.w < max_x;
+      for (const maxX = corridor.x + corridor.w - this._xDist - 1 + this._roomMaxW;
+           buffer.x + buffer.w < maxX;
            buffer.w++
       ) {
         if (this.valid(buffer)) {
@@ -395,18 +396,18 @@ export class TunnelingAlgorithm {
 
   private findBottomRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
-    buffer.y += this._min_corr_dist_y; // shift top
-    buffer.h -= this._min_corr_dist_y; // shift top
-    buffer.x -= this._x_dist; // shift to min width
-    buffer.w += this._x_dist << 1;
+    buffer.y += this.MinCorrDistY; // shift top
+    buffer.h -= this.MinCorrDistY; // shift top
+    buffer.x -= this._xDist; // shift to min width
+    buffer.w += this._xDist << 1;
 
-    if (buffer.h < this._room_min_h) { // shift to min height
-      buffer.h = this._room_min_h;
+    if (buffer.h < this._roomNinH) { // shift to min height
+      buffer.h = this._roomNinH;
     }
 
     // find max height
     let h = buffer.h;
-    for (; buffer.h <= this._room_max_h; buffer.h++) {
+    for (; buffer.h <= this._roomMaxH; buffer.h++) {
       if (this.valid(buffer)) {
         h = buffer.h;
       } else {
@@ -420,8 +421,8 @@ export class TunnelingAlgorithm {
       // find min x
       let x = buffer.x;
       let w = buffer.w;
-      for (const min_x = corridor.x + this._x_dist + 1 - this._room_max_w;
-           buffer.x > min_x;
+      for (const minX = corridor.x + this._xDist + 1 - this._roomMaxW;
+           buffer.x > minX;
            buffer.x--, buffer.w++
       ) {
         if (this.valid(buffer)) {
@@ -435,8 +436,8 @@ export class TunnelingAlgorithm {
       buffer.w = w;
 
       // find max x
-      for (const max_x = corridor.x + corridor.w - this._x_dist - 1 + this._room_max_w;
-           buffer.x + buffer.w < max_x;
+      for (const maxX = corridor.x + corridor.w - this._xDist - 1 + this._roomMaxW;
+           buffer.x + buffer.w < maxX;
            buffer.w++
       ) {
         if (this.valid(buffer)) {
@@ -454,18 +455,18 @@ export class TunnelingAlgorithm {
 
   private findRightRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
-    buffer.x += this._min_corr_dist_x; // shift left
-    buffer.w -= this._min_corr_dist_x;
-    buffer.y -= this._y_dist;  // shift to min height
-    buffer.h += this._y_dist << 1;
+    buffer.x += this.MinCorrDistX; // shift left
+    buffer.w -= this.MinCorrDistX;
+    buffer.y -= this._yDist;  // shift to min height
+    buffer.h += this._yDist << 1;
 
-    if (buffer.w < this._room_min_w) {
-      buffer.w = this._room_min_w;
+    if (buffer.w < this._roomMinW) {
+      buffer.w = this._roomMinW;
     }
 
     // find max width
     let w = buffer.w;
-    for (; buffer.w <= this._room_max_w; buffer.w++) {
+    for (; buffer.w <= this._roomMaxW; buffer.w++) {
       if (this.valid(buffer)) {
         w = buffer.w;
       } else {
@@ -478,8 +479,8 @@ export class TunnelingAlgorithm {
       // find min y
       let y = buffer.y;
       let h = buffer.h;
-      for (const min_y = corridor.y + this._y_dist + 1 - this._room_max_h;
-           buffer.y > min_y;
+      for (const minY = corridor.y + this._yDist + 1 - this._roomMaxH;
+           buffer.y > minY;
            buffer.y--, buffer.h++
       ) {
         if (this.valid(buffer)) {
@@ -493,8 +494,8 @@ export class TunnelingAlgorithm {
       }
 
       // find max y
-      for (const max_y = corridor.y + corridor.h - this._y_dist - 1 + this._room_max_h;
-           buffer.y + buffer.h < max_y;
+      for (const maxY = corridor.y + corridor.h - this._yDist - 1 + this._roomMaxH;
+           buffer.y + buffer.h < maxY;
            buffer.h++
       ) {
         if (this.valid(buffer)) {
@@ -512,12 +513,12 @@ export class TunnelingAlgorithm {
 
   private findLeftRoomArea(corridor: Rect): Rect | null {
     const buffer = MutableRect.from(corridor);
-    buffer.w -= this._min_corr_dist_x; // shift right
-    buffer.y -= this._y_dist; // shift to min height
-    buffer.h += this._y_dist << 1;
+    buffer.w -= this.MinCorrDistX; // shift right
+    buffer.y -= this._yDist; // shift to min height
+    buffer.h += this._yDist << 1;
 
-    if (buffer.w < this._room_min_w) { // shift to min width
-      const d = this._room_min_w - buffer.w;
+    if (buffer.w < this._roomMinW) { // shift to min width
+      const d = this._roomMinW - buffer.w;
       buffer.w += d;
       buffer.x -= d;
     }
@@ -525,7 +526,7 @@ export class TunnelingAlgorithm {
     // find max width
     let x = buffer.x;
     let w = buffer.w;
-    for (; buffer.w <= this._room_max_w; buffer.w++, buffer.x--) {
+    for (; buffer.w <= this._roomMaxW; buffer.w++, buffer.x--) {
       if (this.valid(buffer)) {
         w = buffer.w;
         x = buffer.x;
@@ -541,8 +542,8 @@ export class TunnelingAlgorithm {
       // find min y
       let y = buffer.y;
       let h = buffer.h;
-      for (const min_y = corridor.y + this._y_dist + 1 - this._room_max_h;
-           buffer.y > min_y;
+      for (const minY = corridor.y + this._yDist + 1 - this._roomMaxH;
+           buffer.y > minY;
            buffer.y--, buffer.h++
       ) {
         if (this.valid(buffer)) {
@@ -556,8 +557,8 @@ export class TunnelingAlgorithm {
       buffer.h = h;
 
       // find max y
-      for (const max_y = corridor.y - this._y_dist - 1 + this._room_max_h;
-           buffer.y + buffer.h < max_y;
+      for (const maxY = corridor.y - this._yDist - 1 + this._roomMaxH;
+           buffer.y + buffer.h < maxY;
            buffer.h++
       ) {
         if (this.valid(buffer)) {
@@ -577,27 +578,27 @@ export class TunnelingAlgorithm {
   // generate rooms
 
   private generateTopRoom(possible: Possible): boolean {
-    const corr_w = this.nextRange(1, Math.min(this._max_corr_width, possible.corridor.w));
-    const corr_h = this.nextRange(this._min_corr_dist_y, possible.corridor.h);
-    const corr_y = possible.corridor.y + (possible.corridor.h - corr_h);
-    const corr_x = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
-    const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
+    const corrW = this.nextRange(1, Math.min(this.MaxCorrWidth, possible.corridor.w));
+    const corrH = this.nextRange(this.MinCorrDistY, possible.corridor.h);
+    const corrY = possible.corridor.y + (possible.corridor.h - corrH);
+    const corrX = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corrW);
+    const corr = new ImmutableRect(corrX, corrY, corrW, corrH);
 
     if (this.valid(corr.expandV())) {
-      const room_min_y = Math.max(3, possible.room.y, corr.y - this._room_max_h);
-      const room_y = this.nextRange(room_min_y, corr.y - this._room_min_h);
-      const room_h = corr.y - room_y;
+      const roomMinY = Math.max(3, possible.room.y, corr.y - this._roomMaxH);
+      const roomY = this.nextRange(roomMinY, corr.y - this._roomNinH);
+      const roomH = corr.y - roomY;
 
-      const room_max_x = corr.x - this._x_dist;
-      const room_min_x = Math.max(2, possible.room.x, corr.x + corr.w + this._x_dist - this._room_max_w);
-      const room_x = this.nextRange(room_min_x, room_max_x);
+      const roomMaxX = corr.x - this._xDist;
+      const roomMinX = Math.max(2, possible.room.x, corr.x + corr.w + this._xDist - this._roomMaxW);
+      const roomX = this.nextRange(roomMinX, roomMaxX);
 
-      const room_min_right_x = corr.x + corr.w + this._x_dist;
-      const room_max_right_x = Math.min(possible.room.x + possible.room.w, room_x + this._room_max_w);
+      const roomMinRightX = corr.x + corr.w + this._xDist;
+      const roomMaxRightX = Math.min(possible.room.x + possible.room.w, roomX + this._roomMaxW);
 
-      const room_right_x = this.nextRange(room_min_right_x, room_max_right_x);
-      const room_w = room_right_x - room_x;
-      const room = new ImmutableRect(room_x, room_y, room_w, room_h);
+      const roomRightX = this.nextRange(roomMinRightX, roomMaxRightX);
+      const roomW = roomRightX - roomX;
+      const room = new ImmutableRect(roomX, roomY, roomW, roomH);
 
       if (this.valid(room.expand())) {
         if (this._debug) console.log("add top room", corr, room);
@@ -615,29 +616,29 @@ export class TunnelingAlgorithm {
   }
 
   private generateBottomRoom(possible: Possible): boolean {
-    const corr_y = possible.corridor.y;
-    const corr_w = this.nextRange(1, Math.min(this._max_corr_width, possible.corridor.w));
-    const corr_h = this.nextRange(this._min_corr_dist_y, possible.corridor.h);
-    const corr_x = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corr_w);
-    const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
+    const corrY = possible.corridor.y;
+    const corrW = this.nextRange(1, Math.min(this.MaxCorrWidth, possible.corridor.w));
+    const corrH = this.nextRange(this.MinCorrDistY, possible.corridor.h);
+    const corrX = this.nextRange(possible.corridor.x, possible.corridor.x + possible.corridor.w - corrW);
+    const corr = new ImmutableRect(corrX, corrY, corrW, corrH);
 
     if (this.valid(corr.expandV())) {
-      const room_y = corr.y + corr.h;
-      const room_min_y = room_y + this._room_min_h;
-      const room_max_y = Math.min(possible.room.y + possible.room.h, room_min_y + this._room_max_h);
-      const room_bottom_y = this.nextRange(room_min_y, room_max_y);
-      const room_h = room_bottom_y - room_y;
+      const roomY = corr.y + corr.h;
+      const roomMinY = roomY + this._roomNinH;
+      const roomMaxY = Math.min(possible.room.y + possible.room.h, roomMinY + this._roomMaxH);
+      const roomBottomY = this.nextRange(roomMinY, roomMaxY);
+      const roomH = roomBottomY - roomY;
 
-      const room_max_x = corr.x - this._x_dist;
-      const room_min_x = Math.max(2, possible.room.x, corr.x + corr.w + this._x_dist - this._room_max_w);
-      const room_x = this.nextRange(room_min_x, room_max_x);
+      const roomMaxX = corr.x - this._xDist;
+      const roomMinX = Math.max(2, possible.room.x, corr.x + corr.w + this._xDist - this._roomMaxW);
+      const roomX = this.nextRange(roomMinX, roomMaxX);
 
-      const room_min_right_x = corr.x + corr.w + this._x_dist;
-      const room_max_right_x = Math.min(possible.room.x + possible.room.w, room_x + this._room_max_w);
+      const roomMinRightX = corr.x + corr.w + this._xDist;
+      const roomMaxRightX = Math.min(possible.room.x + possible.room.w, roomX + this._roomMaxW);
 
-      const room_right_x = this.nextRange(room_min_right_x, room_max_right_x);
-      const room_w = room_right_x - room_x;
-      const room = new ImmutableRect(room_x, room_y, room_w, room_h);
+      const roomRightX = this.nextRange(roomMinRightX, roomMaxRightX);
+      const roomW = roomRightX - roomX;
+      const room = new ImmutableRect(roomX, roomY, roomW, roomH);
 
       if (this.valid(room.expand())) {
         if (this._debug) console.log("add bottom room", corr, room);
@@ -655,30 +656,30 @@ export class TunnelingAlgorithm {
   }
 
   private generateRightRoom(possible: Possible): boolean {
-    const corr_x = possible.corridor.x;
-    const corr_h = this.nextRange(1, Math.min(this._max_corr_width, possible.corridor.h));
-    const corr_w = this.nextRange(this._min_corr_dist_x, possible.corridor.w);
-    const corr_y = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
-    const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
+    const corrX = possible.corridor.x;
+    const corrH = this.nextRange(1, Math.min(this.MaxCorrWidth, possible.corridor.h));
+    const corrW = this.nextRange(this.MinCorrDistX, possible.corridor.w);
+    const corrY = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corrH);
+    const corr = new ImmutableRect(corrX, corrY, corrW, corrH);
 
     if (this.valid(corr.expandH())) {
-      const room_x = corr.x + corr.w;
-      const room_min_x = room_x + this._room_min_w;
-      const room_max_x = Math.min(possible.room.x + possible.room.w, room_min_x + this._room_max_w);
-      const room_right_x = this.nextRange(room_min_x, room_max_x);
-      const room_w = room_right_x - room_x;
+      const roomX = corr.x + corr.w;
+      const roomMinX = roomX + this._roomMinW;
+      const roomMaxX = Math.min(possible.room.x + possible.room.w, roomMinX + this._roomMaxW);
+      const roomRightX = this.nextRange(roomMinX, roomMaxX);
+      const roomW = roomRightX - roomX;
 
-      const room_max_y = corr.y - this._y_dist;
-      const room_min_y = Math.max(2, possible.room.y, corr.y + corr.h + this._y_dist - this._room_max_h);
-      const room_y = this.nextRange(room_min_y, room_max_y);
+      const roomMaxY = corr.y - this._yDist;
+      const roomMinY = Math.max(2, possible.room.y, corr.y + corr.h + this._yDist - this._roomMaxH);
+      const roomY = this.nextRange(roomMinY, roomMaxY);
 
-      const room_min_bottom_y = corr.y + corr.h + this._y_dist;
-      const room_max_bottom_y = Math.min(possible.room.y + possible.room.h, room_y + this._room_max_h);
+      const roomMinBottomY = corr.y + corr.h + this._yDist;
+      const roomMaxBottomY = Math.min(possible.room.y + possible.room.h, roomY + this._roomMaxH);
 
-      const room_bottom_y = this.nextRange(room_min_bottom_y, room_max_bottom_y);
-      const room_h = room_bottom_y - room_y;
+      const roomBottomY = this.nextRange(roomMinBottomY, roomMaxBottomY);
+      const roomH = roomBottomY - roomY;
 
-      const room = new ImmutableRect(room_x, room_y, room_w, room_h);
+      const room = new ImmutableRect(roomX, roomY, roomW, roomH);
 
       if (this.valid(room.expand())) {
         if (this._debug) console.log("add right room", corr, room);
@@ -697,27 +698,27 @@ export class TunnelingAlgorithm {
   }
 
   private generateLeftRoom(possible: Possible): boolean {
-    const corr_h = this.nextRange(1, Math.min(this._max_corr_width, possible.corridor.h));
-    const corr_w = this.nextRange(this._min_corr_dist_x, possible.corridor.w);
-    const corr_x = possible.corridor.x + (possible.corridor.w - corr_w);
-    const corr_y = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corr_h);
-    const corr = new ImmutableRect(corr_x, corr_y, corr_w, corr_h);
+    const corrH = this.nextRange(1, Math.min(this.MaxCorrWidth, possible.corridor.h));
+    const corrW = this.nextRange(this.MinCorrDistX, possible.corridor.w);
+    const corrX = possible.corridor.x + (possible.corridor.w - corrW);
+    const corrY = this.nextRange(possible.corridor.y, possible.corridor.y + possible.corridor.h - corrH);
+    const corr = new ImmutableRect(corrX, corrY, corrW, corrH);
 
     if (this.valid(corr.expandH())) {
-      const room_min_x = Math.max(2, possible.room.x, corr.x - this._room_max_w);
-      const room_x = this.nextRange(room_min_x, corr.x - this._room_min_w);
-      const room_w = corr.x - room_x;
+      const roomMinX = Math.max(2, possible.room.x, corr.x - this._roomMaxW);
+      const roomX = this.nextRange(roomMinX, corr.x - this._roomMinW);
+      const roomW = corr.x - roomX;
 
-      const room_max_y = corr.y - this._y_dist;
-      const room_min_y = Math.max(3, possible.room.y, corr.y + corr.h + this._y_dist - this._room_max_h);
-      const room_y = this.nextRange(room_min_y, room_max_y);
+      const roomMaxY = corr.y - this._yDist;
+      const roomMinY = Math.max(3, possible.room.y, corr.y + corr.h + this._yDist - this._roomMaxH);
+      const roomY = this.nextRange(roomMinY, roomMaxY);
 
-      const room_min_bottom_y = corr.y + corr.h + this._y_dist;
-      const room_max_bottom_y = Math.min(possible.room.y + possible.room.h, room_y + this._room_max_h);
+      const roomMinBottomY = corr.y + corr.h + this._yDist;
+      const roomMaxBottomY = Math.min(possible.room.y + possible.room.h, roomY + this._roomMaxH);
 
-      const room_bottom_y = this.nextRange(room_min_bottom_y, room_max_bottom_y);
-      const room_h = room_bottom_y - room_y;
-      const room = new ImmutableRect(room_x, room_y, room_w, room_h);
+      const roomBottomY = this.nextRange(roomMinBottomY, roomMaxBottomY);
+      const roomH = roomBottomY - roomY;
+      const room = new ImmutableRect(roomX, roomY, roomW, roomH);
 
       if (this.valid(room.expand())) {
         if (this._debug) console.log("add left room", corr, room);
@@ -746,58 +747,58 @@ export class TunnelingAlgorithm {
 
     // connect with all possible rooms
     for (let i = 0; i < this.rooms.length - 1; i++) {
-      let b = this.rooms[i];
+      const b = this.rooms[i];
 
       // try calculate horizontal distance
-      const max_x = Math.max(a.x, b.x);
-      const min_x_w = Math.min(a.x + a.w, b.x + b.w);
-      if (max_x + 5 <= min_x_w) {
+      const maxX = Math.max(a.x, b.x);
+      const minWidthX = Math.min(a.x + a.w, b.x + b.w);
+      if (maxX + 5 <= minWidthX) {
         let rect: ImmutableRect;
         if (a.y + a.h < b.y) {
           rect = new ImmutableRect(
-            max_x + 2,
+            maxX + 2,
             a.y + a.h,
-            min_x_w - max_x - 4,
+            minWidthX - maxX - 4,
             b.y - a.y - a.h
           );
         } else {
           rect = new ImmutableRect(
-            max_x + 2,
+            maxX + 2,
             b.y + b.h,
-            min_x_w - max_x - 4,
+            minWidthX - maxX - 4,
             a.y - b.y - b.h
           );
         }
         if (this._debug) console.log("test v corr", rect);
-        if (rect.w < this._max_corr_dist && this.valid(rect.expandV())) {
+        if (rect.w < this.MaxCorrDist && this.valid(rect.expandV())) {
           if (this._debug) console.log("add v corr", rect);
           this.corridorsV.push(rect);
         }
       }
 
       // try calculate vertical distance
-      const max_y = Math.max(a.y, b.y);
-      const min_y_h = Math.min(a.y + a.h, b.y + b.h);
-      if (max_y + 3 <= min_y_h) {
+      const maxY = Math.max(a.y, b.y);
+      const minHeightY = Math.min(a.y + a.h, b.y + b.h);
+      if (maxY + 3 <= minHeightY) {
         let rect: ImmutableRect;
         if (a.x + a.w < b.x) {
           rect = new ImmutableRect(
             a.x + a.w,
-            max_y + 1,
+            maxY + 1,
             b.x - a.x - a.w,
-            min_y_h - max_y - 2
+            minHeightY - maxY - 2
           );
         } else {
           rect = new ImmutableRect(
             b.x + b.w,
-            max_y + 1,
+            maxY + 1,
             a.x - b.x - b.w,
-            min_y_h - max_y - 2,
+            minHeightY - maxY - 2,
           );
         }
 
         if (this._debug) console.log("test h corr", rect);
-        if (rect.h < this._max_corr_dist && this.valid(rect.expandH())) {
+        if (rect.h < this.MaxCorrDist && this.valid(rect.expandH())) {
           if (this._debug) console.log("add h corr", rect);
           this.corridorsH.push(rect);
         }

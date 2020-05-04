@@ -29,11 +29,11 @@ export class Color {
   }
 
   static fromBuffer(buffer: Uint8Array | Uint8ClampedArray, w: number, x: number, y: number): Color {
-    let offset = 4 * (y * w + x);
-    let R = buffer[offset];
-    let G = buffer[offset + 1];
-    let B = buffer[offset + 2];
-    let A = buffer[offset + 3];
+    const offset = 4 * (y * w + x);
+    const R = buffer[offset];
+    const G = buffer[offset + 1];
+    const B = buffer[offset + 2];
+    const A = buffer[offset + 3];
     return new Color(R, G, B, A);
   }
 
@@ -57,7 +57,7 @@ export class Tile<T> {
   readonly color: Color;
   private readonly _equal: (a: T, b: T) => boolean;
 
-  constructor(value: T, color: Color, equal: (a: T, b: T) => boolean = (a, b) => a === b) {
+  constructor(value: T, color: Color, equal: (a: T, b: T) => boolean = (a: T, b: T): boolean => a === b) {
     this.value = value;
     this.color = color;
     this._equal = equal;
@@ -290,7 +290,7 @@ export abstract class Model {
         index = 0;
 
         // Actually backtrack
-        while (true) {
+        for (; ;) {
           if (this.debug) console.log("while backtrack");
 
           if (this._backtrackItemsLengths.length == 1) {
@@ -300,7 +300,7 @@ export abstract class Model {
             return Resolution.Contradiction;
           }
           this.backtrack();
-          let item = this._prevChoices.pop()!;
+          const item = this._prevChoices.pop()!;
           this.toPropagate = [];
           this.status = Resolution.Undecided;
           // Mark the given choice as impossible
@@ -342,7 +342,7 @@ export abstract class Model {
     for (let i = 0; i < this.wave.length; i++) {
       if (this.onBoundary(i % this.FMX, Math.floor(i / this.FMX))) continue;
 
-      let amount = this.sumsOfOnes[i];
+      const amount = this.sumsOfOnes[i];
       if (amount === 0) {
         if (this.debug) console.error(`[wave=${i}] found zero sum of ones`);
         if (this.debug) this.graphics([i]);
@@ -350,9 +350,9 @@ export abstract class Model {
         return [-1, -1]
       }
 
-      let entropy = this.entropies[i];
+      const entropy = this.entropies[i];
       if (amount > 1 && entropy <= min) {
-        let noise = 1E-6 * this.rng.float();
+        const noise = 1E-6 * this.rng.float();
         if (entropy + noise < min) {
           min = entropy + noise;
           argmin = i;
@@ -364,7 +364,7 @@ export abstract class Model {
       if (this.debug) console.log("complete observed");
       this.observed = buffer(this.FMX * this.FMY, 0);
       for (let i = 0; i < this.wave.length; i++) {
-        let x = i % this.FMX, y = Math.floor(i / this.FMX);
+        const x = i % this.FMX, y = Math.floor(i / this.FMX);
         if (this.onBoundary(x, y)) {
           continue;
         }
@@ -381,22 +381,22 @@ export abstract class Model {
       return [-1, -1]
     }
 
-    let distribution_sum: number = 0;
-    let distribution: number[] = [];
+    let distributionSum: number = 0;
+    const distribution: number[] = [];
     for (let t = 0; t < this.T; t++) {
       distribution[t] = this.wave[argmin][t] ? this.weights[t] : 0;
-      distribution_sum += distribution[t];
+      distributionSum += distribution[t];
     }
 
-    let rnd = this.rng.float() * distribution_sum;
+    let rnd = this.rng.float() * distributionSum;
     let r = 0;
-    for (let weight of distribution) {
+    for (const weight of distribution) {
       rnd -= weight;
       if (rnd < 0) break;
       r++;
     }
 
-    let w = this.wave[argmin];
+    const w = this.wave[argmin];
     for (let t = 0; t < this.T; t++) {
       if (w[t] != (t == r)) {
         if (this.debug) console.log("observe select");
@@ -418,9 +418,9 @@ export abstract class Model {
 
   protected propagate(): void {
     while (this.toPropagate.length > 0) {
-      let [i, t] = this.toPropagate.pop()!;
+      const [i, t] = this.toPropagate.pop()!;
 
-      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+      const x = i % this.FMX, y = Math.floor(i / this.FMX);
       for (let direction = 0; direction < 4; direction++) {
         const dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
@@ -433,13 +433,13 @@ export abstract class Model {
         if (sy < 0) sy += this.FMY;
         else if (sy >= this.FMY) sy -= this.FMY;
 
-        let s = sx + sy * this.FMX;
+        const s = sx + sy * this.FMX;
 
-        let pattern1 = this.propagator[direction][t]; // item2
-        let compat = this.compatible[s];
+        const pattern1 = this.propagator[direction][t]; // item2
+        const compat = this.compatible[s];
 
-        for (let st of pattern1) {
-          let comp = compat[st];
+        for (const st of pattern1) {
+          const comp = compat[st];
           comp[direction]--;
           if (comp[direction] == 0) {
             if (this.internalBan(s, st)) {
@@ -471,7 +471,7 @@ export abstract class Model {
     if (this.debug) console.log("internal ban", index, pattern);
     this.wave[index][pattern] = false;
 
-    let comp = this.compatible[index][pattern];
+    const comp = this.compatible[index][pattern];
     for (let d = 0; d < 4; d++) {
       comp[d] -= this.T;
     }
@@ -481,7 +481,7 @@ export abstract class Model {
     this.sumsOfWeights[index] -= this.weights[pattern];
     this.sumsOfWeightLogWeights[index] -= this.weightLogWeights[pattern];
 
-    let sum = this.sumsOfWeights[index];
+    const sum = this.sumsOfWeights[index];
     this.entropies[index] = Math.log(sum) - this.sumsOfWeightLogWeights[index] / sum;
 
     this.backtrackItems.push([index, pattern]);
@@ -506,13 +506,13 @@ export abstract class Model {
 
     const toPropagateSet = new Set<string>(this.toPropagate.map((i) => i.join(",")));
     while (this.backtrackItems.length > targetLength) {
-      let [index, patternIndex] = this.backtrackItems.pop()!;
+      const [index, patternIndex] = this.backtrackItems.pop()!;
 
       markup.push(index);
 
       // First restore compatible for this cell
       // As it is set to zero in InternalBan
-      let comp = this.compatible[index][patternIndex];
+      const comp = this.compatible[index][patternIndex];
       for (let d = 0; d < 4; d++) {
         comp[d] += this.T;
       }
@@ -524,16 +524,16 @@ export abstract class Model {
       this.sumsOfWeights[index] += this.weights[patternIndex];
       this.sumsOfWeightLogWeights[index] += this.weightLogWeights[patternIndex];
 
-      let sum = this.sumsOfWeights[index];
+      const sum = this.sumsOfWeights[index];
       this.entropies[index] = Math.log(sum) - this.sumsOfWeightLogWeights[index] / sum;
 
       // Next, undo the decrements done in propagate
 
       // We skip this if the item is still in toPropagate, as that means Propagate hasn't run
       if (!toPropagateSet.has([index, patternIndex].join(","))) {
-        let x = index % this.FMX, y = Math.floor(index / this.FMX);
+        const x = index % this.FMX, y = Math.floor(index / this.FMX);
         for (let direction = 0; direction < 4; direction++) {
-          let dx = Model.DX[direction], dy = Model.DY[direction];
+          const dx = Model.DX[direction], dy = Model.DY[direction];
           let sx = x + dx, sy = y + dy;
           if (this.onBoundary(sx, sy)) {
             continue;
@@ -544,12 +544,12 @@ export abstract class Model {
           if (sy < 0) sy += this.FMY;
           else if (sy >= this.FMY) sy -= this.FMY;
 
-          let s = sx + sy * this.FMX;
+          const s = sx + sy * this.FMX;
 
           markup.push(s);
 
           const pattern = this.propagator[direction][patternIndex];
-          for (let st of pattern) {
+          for (const st of pattern) {
             this.compatible[s][st][direction]++;
           }
         }

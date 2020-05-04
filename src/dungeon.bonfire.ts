@@ -64,7 +64,7 @@ export class DungeonBonfire implements DungeonObject {
     }
   }
 
-  collide(_: DungeonObject): boolean {
+  collide(): boolean {
     return true;
   }
 
@@ -75,7 +75,7 @@ export class DungeonBonfire implements DungeonObject {
       this._sprite = this._dungeon.animated(this.x, this.y, "bonfire_light");
       this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
       this._sprite.loop = false;
-      this._sprite.onComplete = () => this.lit();
+      this._sprite.onComplete = (): void => this.lit();
       this._dungeon.light.addLight(
         {
           x: this.x * TILE_SIZE + 8,
@@ -111,8 +111,8 @@ export class DungeonBonfireModal implements ModalScene {
     const width = 400;
     const height = 400;
 
-    const button_height = 32;
-    const button_text_size = 24;
+    const buttonHeight = 32;
+    const buttonTextSize = 24;
 
     this._selectable = new SelectableGrid(this._controller.joystick);
 
@@ -136,21 +136,21 @@ export class DungeonBonfireModal implements ModalScene {
     layout.commit();
 
     let y = 0;
-    const addButton = (label: string, action: () => void) => {
+    const addButton = (label: string, action: () => void): void => {
       const button = new Button({
         label: label,
         width: width - Sizes.uiMargin * 2,
-        height: button_height,
-        textSize: button_text_size
+        height: buttonHeight,
+        textSize: buttonTextSize
       });
       this._container!.addChild(button);
       button.position.set(layout.x, layout.y);
-      layout.offset(0, button_height);
+      layout.offset(0, buttonHeight);
       layout.offset(0, Sizes.uiMargin);
       this._selectable!.set(0, y, button, action);
       y++;
     };
-    const levels = [...this._hero.bonfires].sort((a, b) => a - b);
+    const levels = [...this._hero.bonfires].sort((a: number, b: number) => a - b);
     for (const level of levels) {
       addButton(`Level ${level}`, () => this.goto(level));
     }

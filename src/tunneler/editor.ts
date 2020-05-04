@@ -96,7 +96,7 @@ export class DungeonDesignEditor {
 
     console.time("model loop run");
     let state;
-    while (true) {
+    for (; ;) {
       console.time("model run");
       state = await model.run();
       console.timeEnd("model run");

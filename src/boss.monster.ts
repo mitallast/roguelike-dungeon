@@ -71,10 +71,10 @@ export class BossMonsterAI extends MonsterAI {
     }
     this.init();
 
-    const c_w = dungeon.controller.app.screen.width;
+    const screen = dungeon.controller.app.screen;
     const healthView = new BossHealthView(this.character);
     healthView.zIndex = 13;
-    healthView.position.set((c_w >> 1), 64);
+    healthView.position.set((screen.width >> 1), 64);
     dungeon.controller.stage.addChild(healthView);
   }
 
@@ -170,12 +170,12 @@ export class BossHealthView extends PIXI.Container {
     }
   }
 
-  updateHealth(health: number) {
+  private updateHealth(health: number): void {
     this._health.width = this._pointWidth * health;
     this._health.label = `${this._boss.name} - ${health}`;
   }
 
-  updateDead(dead: boolean) {
+  private updateDead(dead: boolean): void {
     if (dead) {
       this.destroy();
     }

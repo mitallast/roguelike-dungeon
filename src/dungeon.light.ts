@@ -55,7 +55,7 @@ export class DungeonLight {
     this.layer.destroy();
   }
 
-  loadMap() {
+  loadMap(): void {
     this._shadowCaster.init();
     const dungeon = this._dungeon;
 
@@ -76,10 +76,10 @@ export class DungeonLight {
           }
 
           // find wall segments
-          const has_top = y > 0 && dungeon.cell(x, y - 1).hasFloor;
-          const has_bottom = y + 1 < dungeon.height && dungeon.cell(x, y + 1).hasFloor;
-          const has_left = x > 0 && dungeon.cell(x - 1, y).hasFloor;
-          const has_right = x + 1 < dungeon.width && dungeon.cell(x + 1, y).hasFloor;
+          const hasTop = y > 0 && dungeon.cell(x, y - 1).hasFloor;
+          const hasBottom = y + 1 < dungeon.height && dungeon.cell(x, y + 1).hasFloor;
+          const hasLeft = x > 0 && dungeon.cell(x - 1, y).hasFloor;
+          const hasRight = x + 1 < dungeon.width && dungeon.cell(x + 1, y).hasFloor;
 
           let config: WallConfig;
           const cellWall = cell.wallName;
@@ -89,10 +89,10 @@ export class DungeonLight {
             config = this._wall_default;
           }
           this.add(x, y, config.default);
-          if (!has_top) this.add(x, y, config.top);
-          if (!has_bottom) this.add(x, y, config.bottom);
-          if (!has_left) this.add(x, y, config.left);
-          if (!has_right) this.add(x, y, config.right);
+          if (!hasTop) this.add(x, y, config.top);
+          if (!hasBottom) this.add(x, y, config.bottom);
+          if (!hasLeft) this.add(x, y, config.left);
+          if (!hasRight) this.add(x, y, config.right);
         }
       }
     }
@@ -129,7 +129,7 @@ export class DungeonLight {
   }
 
   private add(x: number, y: number, segments: WallSegment[]): void {
-    for (let segment of segments) {
+    for (const segment of segments) {
       this._shadowCaster.addSegment(
         x * TILE_SIZE + segment.x1,
         y * TILE_SIZE + segment.y1,
@@ -352,11 +352,11 @@ export class DungeonLight {
 }
 
 interface WallConfig {
-  default: WallSegment[]
-  top: WallSegment[]
-  bottom: WallSegment[]
-  left: WallSegment[]
-  right: WallSegment[]
+  default: WallSegment[];
+  top: WallSegment[];
+  bottom: WallSegment[];
+  left: WallSegment[];
+  right: WallSegment[];
 }
 
 interface WallSegment {
@@ -406,7 +406,7 @@ class LightSource {
     this._rendered = {x: this.position.x, y: this.position.y};
   }
 
-  destroy() {
+  destroy(): void {
     this.sprite.destroy();
     this.mask.destroy();
   }

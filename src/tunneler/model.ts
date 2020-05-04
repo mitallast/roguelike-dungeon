@@ -1,9 +1,9 @@
-export interface IPoint {
+export interface ImmutablePoint {
   readonly x: number;
   readonly y: number;
 }
 
-export class Point implements IPoint {
+export class Point implements ImmutablePoint {
   constructor(public readonly x: number = 0, public readonly y: number = 0) {
   }
 
@@ -27,7 +27,7 @@ export class Point implements IPoint {
     return this.x === x && this.y === y;
   }
 
-  equals(that: IPoint): boolean {
+  equals(that: ImmutablePoint): boolean {
     return this.x === that.x && this.y === that.y;
   }
 
@@ -35,7 +35,7 @@ export class Point implements IPoint {
     return `{x: ${this.x}, y: ${this.y}}`;
   }
 
-  static from(point: IPoint): Point {
+  static from(point: ImmutablePoint): Point {
     return new Point(point.x, point.y);
   }
 

@@ -8,13 +8,13 @@ import * as PIXI from 'pixi.js';
 const TILE_SIZE = 16;
 
 export interface DungeonZIndexScheme {
-  readonly character: number
-  readonly hero: number
-  readonly drop: number
-  readonly static: number
-  readonly floor: number
-  readonly wall: number
-  readonly row: number
+  readonly character: number;
+  readonly hero: number;
+  readonly drop: number;
+  readonly static: number;
+  readonly floor: number;
+  readonly wall: number;
+  readonly row: number;
 }
 
 export const DungeonZIndexes: DungeonZIndexScheme = {
@@ -135,13 +135,11 @@ export class DungeonMap {
   }
 
   camera(x: number, y: number): void {
-    const c_w = this.controller.app.screen.width;
-    const c_h = this.controller.app.screen.height;
-    const p_x = (c_w >> 1) - x * this.scale;
-    const p_y = (c_h >> 1) - y * this.scale;
-
-    this.container.position.set(p_x, p_y);
-    this.light.container.position.set(p_x, p_y);
+    const screen = this.controller.app.screen;
+    const posX = (screen.width >> 1) - x * this.scale;
+    const posY = (screen.height >> 1) - y * this.scale;
+    this.container.position.set(posX, posY);
+    this.light.container.position.set(posX, posY);
   }
 
   sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {
@@ -249,20 +247,20 @@ export class MapCell {
 
     const rng = this._dungeon.rng;
 
-    const weight_coins = 20;
-    const weight_health_flask = 10;
-    const weight_health_big_flask = 10;
-    const weight_weapon = 10;
-    const sum = weight_coins + weight_health_flask + weight_health_big_flask + weight_weapon;
+    const weightCoins = 20;
+    const weightHealthFlask = 10;
+    const weightHealthBigFlask = 10;
+    const weightWeapon = 10;
+    const sum = weightCoins + weightHealthFlask + weightHealthBigFlask + weightWeapon;
 
-    let remaining_distance = rng.float() * sum;
-    if ((remaining_distance -= weight_weapon) <= 0) {
+    let remainingDistance = rng.float() * sum;
+    if ((remainingDistance -= weightWeapon) <= 0) {
       this.dropItem = Weapon.create(rng, this._dungeon.level);
-    } else if ((remaining_distance -= weight_health_big_flask) <= 0) {
+    } else if ((remainingDistance -= weightHealthBigFlask) <= 0) {
       this.dropItem = new HealthBigFlask();
-    } else if ((remaining_distance -= weight_health_flask) <= 0) {
+    } else if ((remainingDistance -= weightHealthFlask) <= 0) {
       this.dropItem = new HealthFlask();
-    } else if ((remaining_distance - weight_coins) <= 0) {
+    } else if ((remainingDistance - weightCoins) <= 0) {
       this.dropItem = new Coins(rng);
     }
     return this.hasDrop;
@@ -362,7 +360,7 @@ export abstract class DungeonFloor implements DungeonObject {
 
   abstract interact(hero: HeroAI): void;
 
-  collide(_: DungeonObject): boolean {
+  collide(): boolean {
     return false;
   }
 
@@ -378,7 +376,7 @@ export class DefaultDungeonFloor extends DungeonFloor {
     super(dungeon, x, y, name);
   }
 
-  interact(_: HeroAI): void {
+  interact(): void {
   }
 }
 

@@ -51,10 +51,10 @@ export class Resources {
 
   private add(spritesheet: PIXI.Spritesheet): void {
     spritesheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-    for (let name of Object.keys(spritesheet.textures)) {
+    for (const name of Object.keys(spritesheet.textures)) {
       this._sprites[name] = spritesheet.textures[name];
     }
-    for (let name of Object.keys(spritesheet.animations)) {
+    for (const name of Object.keys(spritesheet.animations)) {
       this._animations[name] = spritesheet.animations[name];
     }
   }

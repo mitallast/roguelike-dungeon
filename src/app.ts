@@ -4,7 +4,7 @@ import "pixi-sound";
 
 import {SceneController} from "./scene";
 
-(async function () {
+(async function (): Promise<void> {
   PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
   PIXI.settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
   PIXI.sound.volumeAll = 0.5;

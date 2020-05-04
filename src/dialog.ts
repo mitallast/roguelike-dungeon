@@ -96,12 +96,12 @@ export class Dialog {
   }
 
   private goto(...ids: string[]): void {
-    for (let id of ids) {
+    for (const id of ids) {
       const config = this._config.questions[id]!;
       if (this.check(config.conditions || [])) {
         const text = this._template.render(config.text);
         const question = new DialogQuestion(this, text);
-        for (let answer of config.answers) {
+        for (const answer of config.answers) {
           if (this.check(answer.conditions)) {
             const text = this._template.render(answer.text);
             question.add(text, answer.commands);
@@ -115,7 +115,7 @@ export class Dialog {
 
   private check(conditions: string[] | undefined): boolean {
     if (conditions) {
-      for (let rule of conditions) {
+      for (const rule of conditions) {
         if (!this.evaluate(rule)) {
           return false;
         }
@@ -156,7 +156,7 @@ export class DialogAnswer {
   }
 
   action(): void {
-    for (let command of this.commands) {
+    for (const command of this.commands) {
       this.dialog.evaluate(command);
     }
   }
@@ -239,7 +239,7 @@ export class DialogModalScene implements ModalScene {
   private onQuestion(question: DialogQuestion): void {
     this._question?.destroy();
     for (let i = 0; i < this._answers.length; i++) {
-      let answer = this._answers[i];
+      const answer = this._answers[i];
       answer.destroy();
       this._selectable!.remove(0, i);
     }
@@ -258,7 +258,7 @@ export class DialogModalScene implements ModalScene {
     layout.offset(0, Sizes.uiMargin);
 
     for (let i = 0; i < question.answers.length; i++) {
-      let answer = question.answers[i];
+      const answer = question.answers[i];
       const view = new DialogAnswerView(answer, width);
       this._selectable!.set(0, i, view, answer.action.bind(answer));
       view.position.set(layout.x, layout.y);

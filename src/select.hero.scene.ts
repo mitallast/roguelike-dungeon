@@ -5,10 +5,10 @@ import {Colors, Selectable, SelectableGrid} from "./ui";
 import {Resources} from "./resources";
 import * as PIXI from "pixi.js";
 
-const margin = 40;
-const title_h = 32;
-const tile_w = 16;
-const tile_h = 28;
+const MARGIN = 40;
+const TITLE_H = 32;
+const TILE_W = 16;
+const TILE_H = 28;
 
 export class SelectHeroScene implements Scene {
   private readonly _controller: SceneController;
@@ -38,33 +38,32 @@ export class SelectHeroScene implements Scene {
   resume(): void {
   }
 
-  private renderTitle() {
-    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+  private renderTitle(): void {
+    const title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this._controller.app.screen.width >> 1, 64);
     this._controller.stage.addChild(title);
   }
 
-  private renderHeroes() {
-    const c_w = this._controller.app.screen.width;
-    const c_h = this._controller.app.screen.height;
+  private renderHeroes(): void {
+    const screen = this._controller.app.screen;
 
     const total = heroCharacterNames.length;
 
-    const rect_w = Math.floor((c_w - margin * (total + 1)) / total);
-    const sprite_w = rect_w - (margin << 1);
-    const scale = sprite_w / tile_w;
-    const sprite_h = Math.floor(tile_h * scale);
-    const rect_h = sprite_h + title_h + margin * 3;
+    const rectWidth = Math.floor((screen.width - MARGIN * (total + 1)) / total);
+    const spriteWidth = rectWidth - (MARGIN << 1);
+    const scale = spriteWidth / TILE_W;
+    const spriteHeight = Math.floor(TILE_H * scale);
+    const rectHeight = spriteHeight + TITLE_H + MARGIN * 3;
 
     for (let i = 0; i < total; i++) {
       const heroName = heroCharacterNames[i];
 
-      const d_x = margin * (i + 1) + rect_w * i;
-      const d_y = (c_h >> 1) - (rect_h >> 1);
+      const posX = MARGIN * (i + 1) + rectWidth * i;
+      const posY = (screen.height >> 1) - (rectHeight >> 1);
 
-      const view = new SelectHeroView(rect_w, rect_h, heroName, this._controller.resources);
-      view.position.set(d_x, d_y);
+      const view = new SelectHeroView(rectWidth, rectHeight, heroName, this._controller.resources);
+      view.position.set(posX, posY);
       this._heroes.push(view);
       this._controller.stage.addChild(view);
 
@@ -107,18 +106,18 @@ class SelectHeroView extends PIXI.Container implements Selectable {
       .drawRect(0, 0, width, height)
       .endFill();
 
-    this._title = new PIXI.BitmapText(heroName, {font: {name: 'alagard', size: title_h}});
+    this._title = new PIXI.BitmapText(heroName, {font: {name: 'alagard', size: TITLE_H}});
     this._title.anchor = 0.5;
-    this._title.position.set(width >> 1, margin);
+    this._title.position.set(width >> 1, MARGIN);
 
-    const sprite_w = width - (margin << 1);
-    const scale = sprite_w / tile_w;
-    const sprite_h = Math.floor(tile_h * scale);
+    const spriteWidth = width - (MARGIN << 1);
+    const scale = spriteWidth / TILE_W;
+    const spriteHeight = Math.floor(TILE_H * scale);
 
     this._sprite = resources.animated(heroName + "_idle");
-    this._sprite.width = sprite_w;
-    this._sprite.height = sprite_h;
-    this._sprite.position.set(margin, margin + margin + title_h);
+    this._sprite.width = spriteWidth;
+    this._sprite.height = spriteHeight;
+    this._sprite.position.set(MARGIN, MARGIN + MARGIN + TITLE_H);
 
     this.addChild(this._selectedBg, this._notSelectedBg, this._title, this._sprite);
     this.selected = false;
@@ -143,7 +142,7 @@ class SelectHeroView extends PIXI.Container implements Selectable {
     }
   }
 
-  destroy() {
+  destroy(): void {
     super.destroy();
     this._selectedBg.destroy();
     this._notSelectedBg.destroy();

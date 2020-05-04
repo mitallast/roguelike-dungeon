@@ -36,7 +36,7 @@ export class RNG {
    * @returns Pseudorandom value [0,1), uniformly distributed
    */
   float(): number {
-    let t = 2091639 * this._s0 + this._c * FRAC;
+    const t = 2091639 * this._s0 + this._c * FRAC;
     this._s0 = this._s1;
     this._s1 = this._s2;
     this._c = t | 0;
@@ -80,7 +80,7 @@ export class RNG {
       r = u * u + v * v;
     } while (r > 1 || r == 0);
 
-    let gauss = u * Math.sqrt(-2 * Math.log(r) / r);
+    const gauss = u * Math.sqrt(-2 * Math.log(r) / r);
     return mean + gauss * stddev;
   }
 

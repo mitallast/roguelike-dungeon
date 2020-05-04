@@ -103,58 +103,58 @@ export class Expression {
     "+": {
       priority: 0,
       variable: false,
-      apply: (a: any, b: any) => a + b
+      apply: (a: any, b: any): any => a + b
     },
     "-": {
       priority: 0,
       variable: false,
-      apply: (a: number, b: number) => a - b
+      apply: (a: number, b: number): any => a - b
     },
     "*": {
       priority: 1,
       variable: false,
-      apply: (a: number, b: number) => a * b
+      apply: (a: number, b: number): any => a * b
     },
     "/": {
       priority: 1,
       variable: false,
-      apply: (a: number, b: number) => a / b
+      apply: (a: number, b: number): any => a / b
     },
     "%": {
       priority: 1,
       variable: false,
-      apply: (a: number, b: number) => a % b
+      apply: (a: number, b: number): any => a % b
     },
     or: {
       priority: 0,
       variable: false,
-      apply: (a: any, b: any) => a || b
+      apply: (a: any, b: any): any => a || b
     },
     and: {
       priority: 1,
       variable: false,
-      apply: (a: any, b: any) => a && b
+      apply: (a: any, b: any): any => a && b
     },
     "!": {
       priority: 2,
       variable: false,
-      apply: (a: any) => !a
+      apply: (a: any): any => !a
     },
     true: {
       priority: 100,
       variable: false,
-      apply: () => true
+      apply: (): any => true
     },
     false: {
       priority: 100,
       variable: false,
-      apply: () => false
+      apply: (): any => false
     },
     $$getContextValue: {
       priority: 100,
       variable: false,
-      apply: (contextPropertyName: string, context: Partial<Record<string, any>>) => {
-        let propertyName = contextPropertyName.substring(1, contextPropertyName.length - 1);
+      apply: (contextPropertyName: string, context: Partial<Record<string, any>>): any => {
+        const propertyName = contextPropertyName.substring(1, contextPropertyName.length - 1);
         return context[propertyName]!;
       }
     }
@@ -163,7 +163,7 @@ export class Expression {
   private static brackets = "()";
   private static contextBrackets = "{}";
   private static delimiters = " ,\r\r\n";
-  private static quotes = "\'\"";
+  private static quotes = "'\"";
 
   private _context: Partial<Record<string, any>> = {};
 
@@ -187,16 +187,13 @@ export class Expression {
     return (this._operations[currentOp]!.priority <= this._operations[otherOp]!.priority);
   }
 
-  private scanToken(str: string, start: number) {
+  private scanToken(str: string, start: number): { workingState: TokenizerStates; tokenString: string; pos: number } {
     let state: TokenizerStates = TokenizerStates.Started;
     let workingState = TokenizerStates.Error;
     let tokenString = "";
     let i = start;
-    while (
-      i < str.length &&
-      (state !== TokenizerStates.Finished && state !== TokenizerStates.Error)
-      ) {
-      let symbolClass = Expression.classifySymbol(str[i]);
+    while (i < str.length && state !== TokenizerStates.Finished && state !== TokenizerStates.Error) {
+      const symbolClass = Expression.classifySymbol(str[i]);
       state = tokenStateMachine[state]![symbolClass];
       if (
         state === TokenizerStates.ParsingFunction &&
@@ -232,8 +229,8 @@ export class Expression {
   }
 
   private convertToRPN(tokens: Token[]): Token[] {
-    let stack: Token[] = [];
-    let rpn: Token[] = [];
+    const stack: Token[] = [];
+    const rpn: Token[] = [];
     let currToken: Token;
 
     let j = 0;
@@ -283,7 +280,7 @@ export class Expression {
   }
 
   private calculateRPN(rpn: Token[]): any {
-    let operands: Token[] = [];
+    const operands: Token[] = [];
     if (rpn.length === 0) {
       return null;
     }
@@ -291,11 +288,11 @@ export class Expression {
       if (rpn[i].type === "n") {
         operands.push(rpn[i]);
       } else {
-        let op = this._operations[rpn[i].type]!;
-        let func = op.apply;
-        let len = op.variable ? operands.length : func.length;
-        let args = operands.splice(operands.length - len).map(op => op.value);
-        let result = func.apply(null, args);
+        const op = this._operations[rpn[i].type]!;
+        const func = op.apply;
+        const len = op.variable ? operands.length : func.length;
+        const args = operands.splice(operands.length - len).map(op => op.value);
+        const result = func(...args);
         operands.push({type: "n", value: result});
       }
     }
@@ -305,7 +302,7 @@ export class Expression {
   private tokenize(expression: string): Token[] {
     const tokens: Token[] = [];
     for (let i = 0; i < expression.length;) {
-      let tokenCandidate = this.scanToken(expression, i);
+      const tokenCandidate = this.scanToken(expression, i);
       if (tokenCandidate.workingState !== TokenizerStates.Error) {
         if (tokenCandidate.workingState === TokenizerStates.ParsingNumber) {
           tokens.push({

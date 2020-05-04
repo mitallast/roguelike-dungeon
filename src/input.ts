@@ -24,7 +24,7 @@ export class KeyBind {
     this._processed = true;
   }
 
-  keydown(e: KeyboardEvent) {
+  keydown(e: KeyboardEvent): void {
     if (e.code === this.code) {
       e.preventDefault();
       if (this._state === KeyBindState.Await) {
@@ -35,7 +35,7 @@ export class KeyBind {
     }
   }
 
-  keyup(e: KeyboardEvent) {
+  keyup(e: KeyboardEvent): void {
     if (e.code === this.code) {
       e.preventDefault();
       if (this._state === KeyBindState.Pressed) {
@@ -138,11 +138,11 @@ export class Joystick {
     }
   }
 
-  private keydown(e: KeyboardEvent) {
+  private keydown(e: KeyboardEvent): void {
     this._bindings[e.code]?.keydown(e);
   }
 
-  private keyup(e: KeyboardEvent) {
+  private keyup(e: KeyboardEvent): void {
     this._bindings[e.code]?.keyup(e);
   }
 }

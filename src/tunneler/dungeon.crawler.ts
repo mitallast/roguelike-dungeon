@@ -1,4 +1,4 @@
-import {Point, TunnelerCellType, Direction, RoomSize, FillRect, Room, IPoint} from "./model";
+import {Point, TunnelerCellType, Direction, RoomSize, FillRect, Room, ImmutablePoint} from "./model";
 import {Config} from "./config"
 import {WallCrawler} from "./wall.crawler";
 import {TunnelCrawler} from "./tunnel.crawler";
@@ -23,9 +23,9 @@ export class DungeonCrawler {
   private _currMediumRoomsDungeon: number = 0;
   private _currLargeRoomsDungeon: number = 0;
 
-  private isOpen(pos: IPoint): boolean {
+  private isOpen(pos: ImmutablePoint): boolean {
     //returns false inside-room/tunnel-open squares, for use in CreateRoom
-    let type: TunnelerCellType = this.getMap(pos);
+    const type: TunnelerCellType = this.getMap(pos);
     return (type === TunnelerCellType.OPEN) ||
       (type === TunnelerCellType.NON_JOIN_OPEN) ||
       (type === TunnelerCellType.INSIDE_TUNNEL_OPEN) ||
@@ -34,15 +34,15 @@ export class DungeonCrawler {
       (type === TunnelerCellType.NON_JOIN_GUARANTEED_OPEN);
   }
 
-  private static isActive(pos: IPoint, Active: IPoint[]): boolean {
-    for (let i of Active) {
+  private static isActive(pos: ImmutablePoint, Active: ImmutablePoint[]): boolean {
+    for (const i of Active) {
       if ((pos.x === i.x) && (pos.y === i.y))
         return true;
     }
     return false;
   }
 
-  setMap(point: IPoint, data: TunnelerCellType): void {
+  setMap(point: ImmutablePoint, data: TunnelerCellType): void {
     const x = point.x;
     const y = point.y;
     console.assert(data !== undefined);
@@ -50,14 +50,14 @@ export class DungeonCrawler {
     this._map[x * this.config.height + y] = data;
   }
 
-  getMap(point: IPoint): TunnelerCellType {
+  getMap(point: ImmutablePoint): TunnelerCellType {
     const x = point.x;
     const y = point.y;
     console.assert((x < this.config.width) && (y < this.config.height) && (x >= 0) && (y >= 0));
     return this._map[x * this.config.height + y];
   }
 
-  isMapOpen(point: IPoint): boolean {
+  isMapOpen(point: ImmutablePoint): boolean {
     switch (this.getMap(point)) {
       case TunnelerCellType.OPEN:
       case TunnelerCellType.GUARANTEED_OPEN:
@@ -214,7 +214,7 @@ export class DungeonCrawler {
       }
     }
 
-    const spawnRandomWallCrawler = (location: Point, direction: Point, generation: number) => {
+    const spawnRandomWallCrawler = (location: Point, direction: Point, generation: number): void => {
       this.createWallCrawler(location, direction, 0,
         this.getMaxAgeCrawlers(generation), generation, direction,
         this.getStepLength(generation), 1,
@@ -228,7 +228,7 @@ export class DungeonCrawler {
     };
 
     for (let generation = 0; generation < config.randCrawler.perGeneration.length; generation++) {
-      let crawlersPer1000Squares: number = config.randCrawler.perGeneration[generation];
+      const crawlersPer1000Squares: number = config.randCrawler.perGeneration[generation];
       if (crawlersPer1000Squares > 0) { // otherwise nothing to do
         let crawlersPerTopBottomWall: number = Math.floor((this.config.height * crawlersPer1000Squares) / 1000);
         if (crawlersPerTopBottomWall === 0) {
@@ -268,7 +268,7 @@ export class DungeonCrawler {
         cd.turnSingleSpawnProbability, cd.turnDoubleSpawnProbability, cd.changeDirectionProbability);
     }
 
-    for (let [first, second] of config.crawlerPairs) {
+    for (const [first, second] of config.crawlerPairs) {
       let firstIsOpen: boolean = true;
       if (this.rng.boolean())
         firstIsOpen = false;
@@ -284,7 +284,7 @@ export class DungeonCrawler {
       this.setMap(second.location, TunnelerCellType.CLOSED);   //could be two different starting locations, so be sure
     }
 
-    for (let td of config.tunnelCrawlers) {
+    for (const td of config.tunnelCrawlers) {
       this.createTunnelCrawler(td.location, td.direction, -td.age, td.maxAge, td.generation, td.intendedDirection,
         td.stepLength, td.tunnelWidth, td.straightDoubleSpawnProbability, td.turnDoubleSpawnProbability, td.changeDirectionProbability,
         td.makeRoomsRightProbability, td.makeRoomsLeftProbability, td.joinPreference);
@@ -306,11 +306,11 @@ export class DungeonCrawler {
     }
   }
 
-  createWallCrawler(location: IPoint, direction: IPoint, age: number, maxAge: number, generation: number,
-                    intendedDirection: IPoint, stepLength: number, opening: number,
+  createWallCrawler(location: ImmutablePoint, direction: ImmutablePoint, age: number, maxAge: number, generation: number,
+                    intendedDirection: ImmutablePoint, stepLength: number, opening: number,
                     corridorWidth: number, straightSingleSpawnProbability: number, straightDoubleSpawnProbability: number,
                     turnSingleSpawnProbability: number, turnDoubleSpawnProbability: number, changeDirectionProbability: number): void {
-    let crawler = new WallCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation,
+    const crawler = new WallCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation,
       Point.from(intendedDirection), stepLength, opening,
       corridorWidth, straightSingleSpawnProbability, straightDoubleSpawnProbability,
       turnSingleSpawnProbability, turnDoubleSpawnProbability, changeDirectionProbability);
@@ -325,10 +325,10 @@ export class DungeonCrawler {
     this._crawlers.push(crawler);
   }
 
-  createTunnelCrawler(location: IPoint, direction: IPoint, age: number, maxAge: number, generation: number,
-                      intendedDirection: IPoint, stepLength: number, tunnelWidth: number, straightDoubleSpawnProbability: number, turnDoubleSpawnProbability: number,
+  createTunnelCrawler(location: ImmutablePoint, direction: ImmutablePoint, age: number, maxAge: number, generation: number,
+                      intendedDirection: ImmutablePoint, stepLength: number, tunnelWidth: number, straightDoubleSpawnProbability: number, turnDoubleSpawnProbability: number,
                       changeDirectionProbability: number, makeRoomsRightProbability: number, makeRoomsLeftProbability: number, joinPreference: number): void {
-    let crawler = new TunnelCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation,
+    const crawler = new TunnelCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation,
       Point.from(intendedDirection), stepLength, tunnelWidth, straightDoubleSpawnProbability, turnDoubleSpawnProbability,
       changeDirectionProbability, makeRoomsRightProbability, makeRoomsLeftProbability, joinPreference);
 
@@ -342,7 +342,7 @@ export class DungeonCrawler {
     this._crawlers.push(crawler);
   }
 
-  createRoomCrawler(location: IPoint, direction: IPoint, age: number, maxAge: number, generation: number, defaultWidth: number, size: RoomSize): void {
+  createRoomCrawler(location: ImmutablePoint, direction: ImmutablePoint, age: number, maxAge: number, generation: number, defaultWidth: number, size: RoomSize): void {
     const crawler = new RoomCrawler(this.rng, this, Point.from(location), Point.from(direction), age, maxAge, generation, defaultWidth, size);
 
     for (let i = 0; i < this._crawlers.length; i++) {
@@ -356,7 +356,7 @@ export class DungeonCrawler {
   }
 
   mutate(input: number): number {
-    let output: number = input - this.config.mutator + this.rng.range(0, 2 * this.config.mutator + 1);
+    const output: number = input - this.config.mutator + this.rng.range(0, 2 * this.config.mutator + 1);
     if (output < 0)
       return 0;
     else
@@ -408,7 +408,7 @@ export class DungeonCrawler {
         else
           startX = 1;
       }
-      let direction = new Point(startX, startY);
+      const direction = new Point(startX, startY);
       let orthogonal: Point;
       if (direction.x === 0) {
         orthogonal = new Point(direction.y, 0);
@@ -484,7 +484,7 @@ export class DungeonCrawler {
       if (null !== this._crawlers[i]) {
         isCrawlerExists = true;
         if (this._crawlers[i]!.generation === this.activeGeneration) {  //if the crawler is of the current generation
-          let a: number = this._crawlers[i]!.age;
+          const a: number = this._crawlers[i]!.age;
           if (a >= 0)
             return true;  //this crawler is still active, we cannot advance generation
           else if ((highestNegativeAge === 0) || (a > highestNegativeAge))
@@ -519,9 +519,9 @@ export class DungeonCrawler {
     if ((rect.endY - rect.startY) <= 5)
       return false;   //too small to mess with, see next lines
 
-    let startX: number = rect.startX + 1 + this.rng.range(0, rect.endX - rect.startX - 3);     // [startX + 1 , ... , endX - 1]
-    let startY: number = rect.startY + 1 + this.rng.range(0, rect.endY - rect.startY - 3);     // [startY + 1 ,     , endY - 1]
-    let start = new Point(startX, startY);
+    const startX: number = rect.startX + 1 + this.rng.range(0, rect.endX - rect.startX - 3);     // [startX + 1 , ... , endX - 1]
+    const startY: number = rect.startY + 1 + this.rng.range(0, rect.endY - rect.startY - 3);     // [startY + 1 ,     , endY - 1]
+    const start = new Point(startX, startY);
 
     if (!this.isOpen(start))
       return false;   //bad choice of start position
@@ -537,10 +537,9 @@ export class DungeonCrawler {
       return false;
 
     let stillFindingMultiples: boolean = true;
-    let RoomSquaresChecked: Point[] = [];
-    let RoomSquaresActive: Point[] = [];
-    let ActiveFoundThisTurn: Point[] = [];
-
+    const RoomSquaresChecked: Point[] = [];
+    const RoomSquaresActive: Point[] = [];
+    const ActiveFoundThisTurn: Point[] = [];
 
     RoomSquaresActive.push(start);
 
@@ -548,65 +547,65 @@ export class DungeonCrawler {
     while (stillFindingMultiples) {//we expand our chacked area, but not into areas where we find just one open square - these are door candidates
       stillFindingMultiples = false;
       for (let actIt = 0; actIt < RoomSquaresActive.length; /*increment inside loop*/) {
-        let Curr = RoomSquaresActive[actIt];
+        const curr = RoomSquaresActive[actIt];
         numberFound = 0;
         //check the entire neighborhood of our square for open squares:
-        if (this.isOpen(Curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.EAST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.EAST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.EAST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.EAST), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.WEST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.WEST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.WEST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.WEST), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
           numberFound++;
-        if (this.isOpen(Curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
-          !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
+        if (this.isOpen(curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
+          !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
           numberFound++;
 
         if (numberFound > 2) {
           stillFindingMultiples = true;
           //process this square
-          if (this.isOpen(Curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH));
-          if (this.isOpen(Curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH));
-          if (this.isOpen(Curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.EAST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.EAST));
-          if (this.isOpen(Curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.WEST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.WEST));
-          if (this.isOpen(Curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH_EAST));
-          if (this.isOpen(Curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH_WEST));
-          if (this.isOpen(Curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH_EAST));
-          if (this.isOpen(Curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH_WEST));
+          if (this.isOpen(curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH));
+          if (this.isOpen(curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH));
+          if (this.isOpen(curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.EAST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.EAST));
+          if (this.isOpen(curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.WEST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.WEST));
+          if (this.isOpen(curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH_EAST));
+          if (this.isOpen(curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH_WEST));
+          if (this.isOpen(curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH_EAST));
+          if (this.isOpen(curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH_WEST));
 
-          if (!DungeonCrawler.isCheckedList(Curr, RoomSquaresChecked)) {
-            RoomSquaresChecked.push(Curr);
-            this.setChecked(Curr);
+          if (!DungeonCrawler.isCheckedList(curr, RoomSquaresChecked)) {
+            RoomSquaresChecked.push(curr);
+            this.setChecked(curr);
           }
 
           //erase Curr from the active list and increment iterator
@@ -615,46 +614,46 @@ export class DungeonCrawler {
         } else if (numberFound === 2) {//special treatment to prevent a common occurrence of going through perfectly good door locations in two steps,
           // each time seeing two open squares
           let found: number = 0;
-          if (this.isOpen(Curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH), ActiveFoundThisTurn)) {
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH));
+          if (this.isOpen(curr.plus(Point.NORTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH), ActiveFoundThisTurn)) {
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH));
             found++;
           }
-          if (this.isOpen(Curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH), ActiveFoundThisTurn)) {
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH));
+          if (this.isOpen(curr.plus(Point.SOUTH)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH), ActiveFoundThisTurn)) {
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH));
             found++;
           }
-          if (this.isOpen(Curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.EAST), ActiveFoundThisTurn)) {
-            ActiveFoundThisTurn.push(Curr.plus(Point.EAST));
+          if (this.isOpen(curr.plus(Point.EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.EAST), ActiveFoundThisTurn)) {
+            ActiveFoundThisTurn.push(curr.plus(Point.EAST));
             found++;
           }
-          if (this.isOpen(Curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.WEST), ActiveFoundThisTurn)) {
-            ActiveFoundThisTurn.push(Curr.plus(Point.WEST));
+          if (this.isOpen(curr.plus(Point.WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.WEST), ActiveFoundThisTurn)) {
+            ActiveFoundThisTurn.push(curr.plus(Point.WEST));
             found++;
           }
           if (found === 1) {//good chance we catch the door if we bail out now
             actIt++;
             continue;
           }
-          if (this.isOpen(Curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH_EAST));
-          if (this.isOpen(Curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.NORTH_WEST));
-          if (this.isOpen(Curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH_EAST));
-          if (this.isOpen(Curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(Curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
-            !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(Curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
-            ActiveFoundThisTurn.push(Curr.plus(Point.SOUTH_WEST));
+          if (this.isOpen(curr.plus(Point.NORTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_EAST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH_EAST));
+          if (this.isOpen(curr.plus(Point.NORTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.NORTH_WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.NORTH_WEST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.NORTH_WEST));
+          if (this.isOpen(curr.plus(Point.SOUTH_EAST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_EAST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_EAST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH_EAST));
+          if (this.isOpen(curr.plus(Point.SOUTH_WEST)) && !DungeonCrawler.isCheckedList(curr.plus(Point.SOUTH_WEST), RoomSquaresChecked) &&
+            !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), RoomSquaresActive) && !DungeonCrawler.isActive(curr.plus(Point.SOUTH_WEST), ActiveFoundThisTurn))
+            ActiveFoundThisTurn.push(curr.plus(Point.SOUTH_WEST));
 
-          if (!DungeonCrawler.isCheckedList(Curr, RoomSquaresChecked)) {
-            RoomSquaresChecked.push(Curr);
-            this.setChecked(Curr);
+          if (!DungeonCrawler.isCheckedList(curr, RoomSquaresChecked)) {
+            RoomSquaresChecked.push(curr);
+            this.setChecked(curr);
           }
 
           RoomSquaresActive.splice(actIt, 1); //erase Curr from the active list and increment iterator
@@ -664,9 +663,9 @@ export class DungeonCrawler {
           actIt++;
         } else {
           console.assert(numberFound === 0);    //overly cautious, right?
-          if (!DungeonCrawler.isCheckedList(Curr, RoomSquaresChecked)) {
-            RoomSquaresChecked.push(Curr);
-            this.setChecked(Curr);
+          if (!DungeonCrawler.isCheckedList(curr, RoomSquaresChecked)) {
+            RoomSquaresChecked.push(curr);
+            this.setChecked(curr);
           }
 
           RoomSquaresActive.splice(actIt, 1);   //erase Curr from the active list and increment iterator
@@ -678,11 +677,11 @@ export class DungeonCrawler {
       }//end for loop
 
       //merge newly found actives into list
-      for (let Curr of ActiveFoundThisTurn) {
-        if ((this.getMap(Curr) === TunnelerCellType.GUARANTEED_OPEN) || (this.getMap(Curr) === TunnelerCellType.NON_JOIN_GUARANTEED_OPEN))
+      for (const curr of ActiveFoundThisTurn) {
+        if ((this.getMap(curr) === TunnelerCellType.GUARANTEED_OPEN) || (this.getMap(curr) === TunnelerCellType.NON_JOIN_GUARANTEED_OPEN))
           return false;   //to prevent us from building rooms that enclose exits... exits always have G_OPEN squares!!!
-        if (!DungeonCrawler.isCheckedList(Curr, RoomSquaresChecked) && !DungeonCrawler.isActive(Curr, RoomSquaresActive))
-          RoomSquaresActive.push(Curr);
+        if (!DungeonCrawler.isCheckedList(curr, RoomSquaresChecked) && !DungeonCrawler.isActive(curr, RoomSquaresActive))
+          RoomSquaresActive.push(curr);
       }
       ActiveFoundThisTurn.splice(0, ActiveFoundThisTurn.length);
     }//end stillFinding Multiples
@@ -848,7 +847,7 @@ export class DungeonCrawler {
         this.setMap(curr, TunnelerCellType.V_DOOR);
       }
 
-      let newRoom: Room = new Room();
+      const newRoom: Room = new Room();
 
       for (let i: number = 0; i !== RoomSquaresChecked.length; i++) {
         console.assert((this.getMap(RoomSquaresChecked[i]) === TunnelerCellType.OPEN) || (this.getMap(RoomSquaresChecked[i]) === TunnelerCellType.NON_JOIN_OPEN) ||
@@ -865,7 +864,7 @@ export class DungeonCrawler {
 
   generate(): void {
     //create the dungeon
-    while (true) {
+    for (; ;) {
       if (this.activeGeneration === this.config.tunnelCrawlerGeneration)
         this.createSeedCrawlersInTunnels();
 
@@ -881,7 +880,7 @@ export class DungeonCrawler {
     //run through the dungeon creation process again with newly seeded Crawlers in Tunnels:
     if ((this.config.tunnelCrawlerGeneration < 0) || (this.activeGeneration < this.config.tunnelCrawlerGeneration)) {
       this.createSeedCrawlersInTunnels();
-      while (true) {
+      for (; ;) {
         while (this.makeIteration()) { /* stops when no change on map */
         }
         if (!this.advanceGeneration())  //! there are crawlers left
@@ -894,7 +893,7 @@ export class DungeonCrawler {
     let counter: number = 0;
     let number: number = 0;
     if (this.config.background === TunnelerCellType.OPEN) {
-      let rect = new FillRect(0, 0, this.config.width, this.config.height, this.config.background);
+      const rect = new FillRect(0, 0, this.config.width, this.config.height, this.config.background);
       counter = 0;
       number = this.config.width * this.config.height;   //size of the square
       while (this.isMoreRoomsLabyrinth()) {
@@ -907,7 +906,7 @@ export class DungeonCrawler {
     }
 
     //now create rooms inside OPEN squares that were placed in the design:
-    for (let rect of this.config.design) {
+    for (const rect of this.config.design) {
       if (rect.type !== TunnelerCellType.OPEN)
         continue;   //we only make rooms in the labyrinth part
 

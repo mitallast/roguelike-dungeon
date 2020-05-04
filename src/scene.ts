@@ -25,7 +25,7 @@ import {
 
 export interface Scene {
   init(): void;
-  destroy(): void
+  destroy(): void;
 
   pause(): void;
   resume(): void;
@@ -33,7 +33,7 @@ export interface Scene {
 
 export interface ModalScene {
   init(): void;
-  destroy(): void
+  destroy(): void;
 }
 
 export class SceneController {

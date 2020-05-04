@@ -4,13 +4,13 @@ import {Button, Colors, Layout} from "../ui";
 import * as PIXI from "pixi.js";
 
 interface TileConfig {
-  name: string
-  type: CellType
+  name: string;
+  type: CellType;
 }
 
-const scale = 1;
-const border = 2;
-const sprite_size = 16;
+const SCALE = 1;
+const BORDER = 2;
+const SPRITE_SIZE = 16;
 
 export class RulesEditor {
   private readonly _resources: Resources;
@@ -37,8 +37,8 @@ export class RulesEditor {
         case CellType.FLOOR:
           this._cells.push([i, -1, CellType.FLOOR]);
           for (let t = 0; t < tiles.length; t++) {
-            const t_tile = tiles[t];
-            if (t_tile.type === CellType.WALL_TOP) {
+            const tTile = tiles[t];
+            if (tTile.type === CellType.WALL_TOP) {
               this._cells.push([i, t, CellType.FLOOR_WALL_TOP]);
             }
           }
@@ -69,11 +69,11 @@ export class RulesEditor {
     }
 
     this._app = new PIXI.Application({
-      width: (size + 1) * sprite_size,
-      height: (size + 1) * sprite_size,
+      width: (size + 1) * SPRITE_SIZE,
+      height: (size + 1) * SPRITE_SIZE,
       resolution: 2,
     });
-    this._app.stage.scale.set(scale, scale);
+    this._app.stage.scale.set(SCALE, SCALE);
 
     const div = document.createElement("div");
     div.classList.add("container");
@@ -81,15 +81,15 @@ export class RulesEditor {
     document.body.appendChild(div);
 
     const layout = new Layout();
-    layout.offset(border, border);
+    layout.offset(BORDER, BORDER);
     layout.commit();
     this.initButtons(layout);
     this.initMap(layout, Direction.RIGHT, false);
     this.initMap(layout, Direction.DOWN, true);
 
-    const s_w = this._app.stage.width + border + border;
-    const s_h = this._app.stage.height + border + border;
-    this._app.renderer.resize(s_w, s_h);
+    const sW = this._app.stage.width + BORDER + BORDER;
+    const sH = this._app.stage.height + BORDER + BORDER;
+    this._app.renderer.resize(sW, sH);
   }
 
   get floorTiles(): string[] {
@@ -115,7 +115,7 @@ export class RulesEditor {
     this._app.stage.addChild(dump);
 
     layout.offset(dump.width, 0);
-    layout.offset(border, 0);
+    layout.offset(BORDER, 0);
 
     const load = new Button({
       label: "Load rules"
@@ -127,7 +127,7 @@ export class RulesEditor {
     this._app.stage.addChild(load);
 
     layout.offset(dump.width, 0);
-    layout.offset(border, 0);
+    layout.offset(BORDER, 0);
 
     const saveState = new Button({
       label: "Save state"
@@ -139,7 +139,7 @@ export class RulesEditor {
     this._app.stage.addChild(saveState);
 
     layout.offset(saveState.width, 0);
-    layout.offset(border, 0);
+    layout.offset(BORDER, 0);
 
     const loadState = new Button({
       label: "Load state"
@@ -151,7 +151,7 @@ export class RulesEditor {
     this._app.stage.addChild(loadState);
 
     layout.offset(loadState.width, 0);
-    layout.offset(border, 0);
+    layout.offset(BORDER, 0);
 
     const clear = new Button({
       label: "Clear"
@@ -164,7 +164,7 @@ export class RulesEditor {
 
     layout.reset();
     layout.offset(0, dump.height);
-    layout.offset(0, sprite_size);
+    layout.offset(0, SPRITE_SIZE);
     layout.commit();
   }
 
@@ -184,7 +184,7 @@ export class RulesEditor {
     const builder = new TilesetRulesBuilder();
     const indexes: number[] = [];
 
-    for (let [f, w, type] of this._cells) {
+    for (const [f, w, type] of this._cells) {
       const floor = f >= 0 ? this._tiles[f].name : undefined;
       const wall = w >= 0 ? this._tiles[w].name : undefined;
       const index = builder.addCell(floor, wall, type);
@@ -275,7 +275,7 @@ export class RulesEditor {
   private initMap(layout: Layout, direction: Direction, bottom: boolean): void {
     // init top line
     layout.reset();
-    layout.offset(sprite_size + border, 0);
+    layout.offset(SPRITE_SIZE + BORDER, 0);
     for (let i = 0; i < this._cells.length; i++) {
       const [f, w] = this._cells[i];
       const floor = f >= 0 ? this._tiles[f].name : null;
@@ -283,15 +283,15 @@ export class RulesEditor {
       const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
       this._app.stage.addChild(sample);
-      layout.offset(sprite_size + border, 0);
+      layout.offset(SPRITE_SIZE + BORDER, 0);
     }
 
     // init bottom line
     if (bottom) {
       layout.reset();
-      layout.offset(sprite_size + border, 0);
+      layout.offset(SPRITE_SIZE + BORDER, 0);
       for (let i = 0; i <= this._cells.length; i++) {
-        layout.offset(0, sprite_size + border);
+        layout.offset(0, SPRITE_SIZE + BORDER);
       }
       for (let i = 0; i < this._cells.length; i++) {
         const [f, w] = this._cells[i];
@@ -300,13 +300,13 @@ export class RulesEditor {
         const sample = new RuleSampleCell(this._resources, floor, wall);
         sample.position.set(layout.x, layout.y);
         this._app.stage.addChild(sample);
-        layout.offset(sprite_size + border, 0);
+        layout.offset(SPRITE_SIZE + BORDER, 0);
       }
     }
 
     // init left line
     layout.reset();
-    layout.offset(0, sprite_size + border);
+    layout.offset(0, SPRITE_SIZE + BORDER);
     for (let i = 0; i < this._cells.length; i++) {
       const [f, w] = this._cells[i];
       const floor = f >= 0 ? this._tiles[f].name : null;
@@ -314,14 +314,14 @@ export class RulesEditor {
       const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
       this._app.stage.addChild(sample);
-      layout.offset(0, sprite_size + border);
+      layout.offset(0, SPRITE_SIZE + BORDER);
     }
 
     // init right line
     layout.reset();
-    layout.offset(0, sprite_size + border);
+    layout.offset(0, SPRITE_SIZE + BORDER);
     for (let i = 0; i <= this._cells.length; i++) {
-      layout.offset(sprite_size + border, 0);
+      layout.offset(SPRITE_SIZE + BORDER, 0);
     }
     for (let i = 0; i < this._cells.length; i++) {
       const [f, w] = this._cells[i];
@@ -330,7 +330,7 @@ export class RulesEditor {
       const sample = new RuleSampleCell(this._resources, floor, wall);
       sample.position.set(layout.x, layout.y);
       this._app.stage.addChild(sample);
-      layout.offset(0, sprite_size + border);
+      layout.offset(0, SPRITE_SIZE + BORDER);
     }
 
     const checkboxes = direction === Direction.RIGHT ? this._checkboxRight : this._checkboxDown;
@@ -338,11 +338,11 @@ export class RulesEditor {
     // init checkbox map
     for (let first = 0; first < this._cells.length; first++) {
       layout.reset();
-      layout.offset(sprite_size + border, 0);
-      layout.offset(0, sprite_size + border);
+      layout.offset(SPRITE_SIZE + BORDER, 0);
+      layout.offset(0, SPRITE_SIZE + BORDER);
 
       for (let i = 0; i < first; i++) {
-        layout.offset(0, sprite_size + border);
+        layout.offset(0, SPRITE_SIZE + BORDER);
       }
 
       checkboxes[first] = [];
@@ -352,14 +352,14 @@ export class RulesEditor {
         checkbox.position.set(layout.x, layout.y);
         this._app.stage.addChild(checkbox);
         checkboxes[first][second] = checkbox;
-        layout.offset(sprite_size + border, 0);
+        layout.offset(SPRITE_SIZE + BORDER, 0);
       }
     }
 
     // commit layout at bottom
     layout.reset();
     for (let i = 0; i <= this._cells.length; i++) {
-      layout.offset(0, sprite_size + border);
+      layout.offset(0, SPRITE_SIZE + BORDER);
     }
 
     layout.commit();
@@ -495,21 +495,21 @@ class RuleCheckboxCell extends PIXI.Container {
     this.on('click', () => this.toggle());
   }
 
-  toggle() {
+  toggle(): void {
     const value = this._editor.getRule(this._first, this._second, this._direction);
     this._editor.setRule(this._first, this._second, this._direction, !value);
     this.refresh();
   }
 
-  refresh() {
+  refresh(): void {
     const value = this._editor.getRule(this._first, this._second, this._direction);
     const color = value ? Colors.uiSelected : Colors.uiNotSelected;
     this._bg.clear()
       .beginFill(Colors.uiBackground)
-      .drawRect(0, 0, sprite_size, sprite_size)
+      .drawRect(0, 0, SPRITE_SIZE, SPRITE_SIZE)
       .endFill()
       .beginFill(color)
-      .drawRect(2, 2, sprite_size - 4, sprite_size - 4)
+      .drawRect(2, 2, SPRITE_SIZE - 4, SPRITE_SIZE - 4)
       .endFill();
   }
 }

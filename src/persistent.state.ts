@@ -16,7 +16,7 @@ export class StoragePersistentStore implements PersistentStore {
   }
 
   clear(): void {
-    for (let key of Object.keys(this._storage)) {
+    for (const key of Object.keys(this._storage)) {
       if (key.startsWith(this._prefix)) {
         this._storage.removeItem(key);
       }
@@ -43,7 +43,7 @@ export class StoragePersistentStore implements PersistentStore {
   }
 
   commit(): void {
-    for (let [key, value] of this._transaction) {
+    for (const [key, value] of this._transaction) {
       this._storage.setItem(
         this.key(key),
         JSON.stringify(value)

@@ -1,5 +1,5 @@
-const x_dist = 2;
-const y_dist = 3;
+const X_DIST = 2;
+const Y_DIST = 3;
 
 export interface Rect {
   readonly x: number;
@@ -28,41 +28,37 @@ export class ImmutableRect implements Rect {
   }
 
   expand(): ImmutableRect {
-    const a = this;
     return new ImmutableRect(
-      a.x - x_dist,
-      a.y - y_dist,
-      a.w + x_dist + x_dist,
-      a.h + y_dist + y_dist
+      this.x - X_DIST,
+      this.y - Y_DIST,
+      this.w + X_DIST + X_DIST,
+      this.h + Y_DIST + Y_DIST
     );
   }
 
   expandV(): ImmutableRect {
-    const a = this;
     return new ImmutableRect(
-      a.x - x_dist,
-      a.y,
-      a.w + x_dist + x_dist,
-      a.h
+      this.x - X_DIST,
+      this.y,
+      this.w + X_DIST + X_DIST,
+      this.h
     );
   }
 
   expandH(): ImmutableRect {
-    const a = this;
     return new ImmutableRect(
-      a.x,
-      a.y - y_dist,
-      a.w,
-      a.h + y_dist + y_dist
+      this.x,
+      this.y - Y_DIST,
+      this.w,
+      this.h + Y_DIST + Y_DIST
     );
   }
 
-  isOverlap(b: Rect) {
-    const a = this;
-    return a.x < b.x + b.w
-      && a.x + a.w > b.x
-      && a.y < b.y + b.h
-      && a.y + a.h > b.y;
+  isOverlap(b: Rect): boolean {
+    return this.x < b.x + b.w
+      && this.x + this.w > b.x
+      && this.y < b.y + b.h
+      && this.y + this.h > b.y;
   }
 
   toString(): string {
@@ -92,11 +88,10 @@ export class MutableRect implements Rect {
   }
 
   isOverlap(b: Rect): boolean {
-    const a = this;
-    return a.x < b.x + b.w
-      && a.x + a.w > b.x
-      && a.y < b.y + b.h
-      && a.y + a.h > b.y;
+    return this.x < b.x + b.w
+      && this.x + this.w > b.x
+      && this.y < b.y + b.h
+      && this.y + this.h > b.y;
   }
 
   toString(): string {

@@ -19,21 +19,21 @@ export class Animation {
 
   start(): void {
     this._playing = true;
-    for (let clip of this._clips) {
+    for (const clip of this._clips) {
       clip.start();
     }
   }
 
   stop(): void {
     this._playing = false;
-    for (let clip of this._clips) {
+    for (const clip of this._clips) {
       clip.stop();
     }
   }
 
   update(deltaTime: number): void {
     let hasPlaying = false;
-    for (let clip of this._clips) {
+    for (const clip of this._clips) {
       clip.update(deltaTime);
       if (clip.isPlaying) {
         hasPlaying = true;
@@ -134,7 +134,7 @@ export class AnimationCurveClip<Args extends number[]> extends AnimationClip {
   }
 
   protected play(): void {
-    let t = this._time / this._duration;
+    const t = this._time / this._duration;
     if (t >= 1) {
       this._playing = false;
       this._method.call(this._context, ...this._curve(1));
@@ -167,7 +167,7 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     let start: AnimationKeyFrame<Args> | null = null;
     let end: AnimationKeyFrame<Args> | null = null;
     for (let i = 0; i < this._frames.length; i++) {
-      let frame = this._frames[i];
+      const frame = this._frames[i];
       if (frame.time <= this._time) {
         start = frame;
       } else {
@@ -177,7 +177,7 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     }
     if (start !== null && end !== null) {
       // linear interpolation
-      let args = [] as number[] as Args;
+      const args = [] as number[] as Args;
       for (let i = 0; i < start.args.length; i++) {
         args[i] = start.args[i] * (end.time - this._time) + end.args[i] * (this._time - start.time);
       }
@@ -236,7 +236,7 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
 
   protected play(): void {
     while (this._playing) {
-      let next = this._event === null ? 0 : this._event + 1;
+      const next = this._event === null ? 0 : this._event + 1;
       if (next < this._events.length) {
         if (this._events[next].time <= this._time) {
           this._event = next;

@@ -70,7 +70,7 @@ export class Hero extends Character {
   addXp(value: number): void {
     this._xp.update((v) => {
       let newXp = v + value;
-      while (true) {
+      for (; ;) {
         const levelXp = this._levelXp.get();
         if (newXp >= levelXp) {
           newXp = newXp - levelXp;
@@ -141,7 +141,7 @@ export class Hero extends Character {
   }
 
   static load(name: string, persistent: PersistentState): Hero {
-    let state: GlobalHeroState = persistent.global.load(name) || defaultGlobalState;
+    const state: GlobalHeroState = persistent.global.load(name) || defaultGlobalState;
     return new Hero(name, state, persistent);
   }
 }
@@ -157,7 +157,7 @@ export class HeroAI extends BaseCharacterAI {
       width: 1,
       height: 1,
       zIndex: DungeonZIndexes.hero,
-      on_position: dungeon.camera.bind(dungeon),
+      onPosition: dungeon.camera.bind(dungeon),
     });
     this.character = character;
     this.init();
@@ -181,7 +181,7 @@ export class HeroAI extends BaseCharacterAI {
   }
 
   private onDrop(event: [UsableDrop, number]): void {
-    let [drop] = event;
+    const [drop] = event;
     const cell = this.findDropCell();
     if (cell) {
       cell.dropItem = drop;
@@ -247,11 +247,11 @@ export class HeroAI extends BaseCharacterAI {
       }
 
       if (idle || finished) {
-        const d_x = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
-        const d_y = HeroAI.delta(joystick.moveUp, joystick.moveDown);
+        const velocityX = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
+        const velocityY = HeroAI.delta(joystick.moveUp, joystick.moveDown);
 
-        if (d_x !== 0 || d_y !== 0) {
-          if (this.move(d_x, d_y)) {
+        if (velocityX !== 0 || velocityY !== 0) {
+          if (this.move(velocityX, velocityY)) {
             return true;
           }
         }
@@ -270,7 +270,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  private scanDrop() {
+  private scanDrop(): void {
     const cell = this.dungeon.cell(this.x, this.y);
     if (cell.drop?.pickedUp(this.character)) {
       PIXI.sound.play('fruit_collect');
@@ -282,7 +282,7 @@ export class HeroAI extends BaseCharacterAI {
     const distance = weapon?.distance || 1;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const monsters = this.scanMonsters(direction, distance);
-    for (let monster of monsters) {
+    for (const monster of monsters) {
       monster.character.hitDamage(this.character, this.character.damage);
     }
     if (monsters.length > 0) {
@@ -302,16 +302,16 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected scanInteracting(direction: ScanDirection, max_distance: number): MapCell[] {
-    return this.scanCells(direction, max_distance, c => c.interacting);
+  protected scanInteracting(direction: ScanDirection, maxDistance: number): MapCell[] {
+    return this.scanCells(direction, maxDistance, c => c.interacting);
   }
 
-  protected scanMonsters(direction: ScanDirection, max_distance: number): MonsterAI[] {
-    return this.scanObjects(direction, max_distance, c => c instanceof MonsterAI) as MonsterAI[];
+  protected scanMonsters(direction: ScanDirection, maxDistance: number): MonsterAI[] {
+    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterAI) as MonsterAI[];
   }
 
-  protected monstersHealth(direction: ScanDirection, max_distance: number): number {
-    return this.scanMonsters(direction, max_distance).map(m => m.character.health.get()).reduce((a, b) => a + b, 0);
+  protected monstersHealth(direction: ScanDirection, maxDistance: number): number {
+    return this.scanMonsters(direction, maxDistance).map(m => m.character.health.get()).reduce((a, b) => a + b, 0);
   }
 }
 
@@ -327,9 +327,9 @@ export class HeroStateView extends PIXI.Container {
   private readonly _maxBarInnerSize: number;
 
   constructor(heroState: Hero, options: {
-    fixedHPSize: boolean
-    hpBarSize?: number
-    maxBarSize?: number
+    fixedHPSize: boolean;
+    hpBarSize?: number;
+    maxBarSize?: number;
   }) {
     super();
     this._fixedHPSize = options.fixedHPSize;
@@ -378,7 +378,7 @@ export class HeroStateView extends PIXI.Container {
     this._heroState.coins.unsubscribe(this.updateCoins, this);
   }
 
-  private updateHealthMax(healthMax: number) {
+  private updateHealthMax(healthMax: number): void {
     const health = this._heroState.health.get();
     if (!this._fixedHPSize) {
       this._health.widthMax = this._hpBarSize * healthMax;
@@ -386,7 +386,7 @@ export class HeroStateView extends PIXI.Container {
     this._health.label = `${health}/${healthMax}`;
   }
 
-  private updateHealth(health: number) {
+  private updateHealth(health: number): void {
     const healthMax = this._heroState.healthMax.get();
     if (this._fixedHPSize) {
       this._health.width = Math.floor(this._maxBarInnerSize * health / healthMax);
@@ -396,7 +396,7 @@ export class HeroStateView extends PIXI.Container {
     this._health.label = `${health}/${healthMax}`;
   }
 
-  private updateXp() {
+  private updateXp(): void {
     const level = this._heroState.level.get();
     const levelXp = this._heroState.levelXp.get();
     const skillPoints = this._heroState.skillPoints.get();
@@ -407,7 +407,7 @@ export class HeroStateView extends PIXI.Container {
     this._xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 
-  private updateCoins(coins: number) {
+  private updateCoins(coins: number): void {
     this._coins.text = `$${coins}`;
   }
 }

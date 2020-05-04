@@ -25,14 +25,14 @@ export class KeyBindScene implements Scene {
   resume(): void {
   }
 
-  private renderTitle() {
-    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+  private renderTitle(): void {
+    const title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this._controller.app.screen.width >> 1, 64);
     this._controller.stage.addChild(title);
   }
 
-  private renderHelp() {
+  private renderHelp(): void {
     const bindings = [
       "WASD - top, left, bottom, right",
       "F - action",
@@ -52,7 +52,7 @@ export class KeyBindScene implements Scene {
     }
   }
 
-  private handleInput() {
+  private handleInput(): void {
     if (this._controller.joystick.hit.once()) {
       this._controller.selectHero();
     }

@@ -325,27 +325,27 @@ export const NPCs: readonly NpcConfig[] = [
 ];
 
 export class Npc extends Character {
-  private _context: Partial<Record<string, any>> = {};
-  private _skill: Partial<Record<string, NpcSkill>> = {};
+  private _context: Map<string, any> = new Map<string, any>();
+  private _skill: Map<string, NpcSkill> = new Map<string, NpcSkill>();
 
   setContext(key: string, value: any): void {
-    this._context[key] = value;
+    this._context.set(key, value);
   }
 
   getContext(key: string): any {
-    return this._context[key];
+    return this._context.get(key);
   }
 
   hasSkill(id: string): boolean {
-    return this._skill.hasOwnProperty(id);
+    return this._skill.has(id);
   }
 
   getSkill(id: string): NpcSkill | null {
-    return this._skill[id] || null;
+    return this._skill.get(id) || null;
   }
 
   addSkill(id: string, skill: NpcSkill): void {
-    this._skill[id] = skill;
+    this._skill.set(id, skill);
   }
 
   constructor(options: {
@@ -385,6 +385,7 @@ export class NpcAI extends BaseCharacterAI {
   }
 
   protected initSkills(controller: SceneController, config: NpcConfig): void {
+    const backpack = this.character.inventory.backpack;
     for (const id of config.skills) {
       switch (id) {
         case SellingSkill.id:
@@ -392,7 +393,6 @@ export class NpcAI extends BaseCharacterAI {
           break;
         case BuyingSkill.id:
           this.character.addSkill(id, new BuyingSkill(this.character, controller));
-          const backpack = this.character.inventory.backpack;
           for (const trading of config.trading) {
             switch (trading) {
               case TradingType.POTIONS:
@@ -423,7 +423,7 @@ export class NpcAI extends BaseCharacterAI {
   protected onDead(): void {
   }
 
-  protected onKilledBy(_by: Character): void {
+  protected onKilledBy(_: Character): void {
   }
 
   action(): boolean {

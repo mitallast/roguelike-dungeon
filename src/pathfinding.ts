@@ -67,42 +67,41 @@ export class PathFinding {
   find(start: PIXI.Point, end: PIXI.Point): PIXI.Point[] {
 
     // Create start and end node
-    let start_node = new Node(null, start);
-    let end_node = new Node(null, end);
+    const startNode = new Node(null, start);
+    const endNode = new Node(null, end);
 
     // Initialize both open and closed list
-    let open_list: Node[] = [];
-    let closed_list: Node[] = [];
+    const openList: Node[] = [];
+    const closedList: Node[] = [];
 
     // Add the start node
-    open_list.push(start_node);
+    openList.push(startNode);
 
     // Loop until you find the end
-    while (open_list.length > 0) {
+    while (openList.length > 0) {
       // Get the current node
-      let current_node = open_list[0];
-      let current_index = 0;
-      for (let i = 1; i < open_list.length; i++) {
-        let item = open_list[i];
-        if (item.f < current_node.f) {
-          current_node = item;
-          current_index = i;
+      let currentNode = openList[0];
+      let currentIndex = 0;
+      for (let i = 1; i < openList.length; i++) {
+        const item = openList[i];
+        if (item.f < currentNode.f) {
+          currentNode = item;
+          currentIndex = i;
         }
       }
 
       // Pop current off open list, add to closed list
-      open_list.splice(current_index, 1);
-      closed_list.push(current_node);
+      openList.splice(currentIndex, 1);
+      closedList.push(currentNode);
 
       // Found the goal
-      if (current_node.equal(end_node)) {
+      if (currentNode.equal(endNode)) {
         const path: PIXI.Point[] = [];
         let current: Node;
         if (this._includeEnd) {
-          current = current_node;
+          current = currentNode;
         } else {
-          // @ts-ignore
-          current = current_node.parent;
+          current = currentNode.parent!;
         }
         while (current.parent !== null) {
           path.push(current.position);
@@ -119,48 +118,48 @@ export class PathFinding {
       const squares = this._diagonalAllowed ? PathFinding.adjacentSquaresDiagonal : PathFinding.adjacentSquares;
 
       for (let i = 0; i < squares.length; i++) {
-        let new_position = squares[i];
+        const newPosition = squares[i];
         // Get node position
-        let node_position = new PIXI.Point(current_node.position.x + new_position.x, current_node.position.y + new_position.y);
+        const nodePosition = new PIXI.Point(currentNode.position.x + newPosition.x, currentNode.position.y + newPosition.y);
 
         // Make sure within range
-        if (node_position.x >= this._width || node_position.x < 0 ||
-          node_position.y >= this._height || node_position.y < 0) {
+        if (nodePosition.x >= this._width || nodePosition.x < 0 ||
+          nodePosition.y >= this._height || nodePosition.y < 0) {
           continue;
         }
 
         // Make sure walkable terrain
-        if (this._map[node_position.x][node_position.y] != 0) {
+        if (this._map[nodePosition.x][nodePosition.y] != 0) {
           continue;
         }
 
         // Create new node
-        let new_node = new Node(current_node, node_position);
+        const newNode = new Node(currentNode, nodePosition);
 
         // Append
-        children.push(new_node);
+        children.push(newNode);
       }
 
       // Loop through children
       for (let i = 0; i < children.length; i++) {
-        let child = children[i];
+        const child = children[i];
 
         // Child is on the closed list
-        if (closed_list.find(c => c.equal(child)) != null) {
+        if (closedList.find(c => c.equal(child)) != null) {
           continue;
         }
 
         // Create the f, g, and h values
-        child.g = current_node.g + 1;
-        child.h = this.heuristicFunction(child.position, end_node.position);
+        child.g = currentNode.g + 1;
+        child.h = this.heuristicFunction(child.position, endNode.position);
         child.f = child.g + child.h;
 
         // Child is already in the open list
-        if (open_list.find(c => c.equal(child)) != null) {
+        if (openList.find(c => c.equal(child)) != null) {
           continue;
         }
 
-        open_list.push(child);
+        openList.push(child);
       }
     }
 
@@ -171,8 +170,8 @@ export class PathFinding {
     pos0: PIXI.Point,
     pos1: PIXI.Point,
   ): number {
-    let dx = Math.abs(pos1.x - pos0.x);
-    let dy = Math.abs(pos1.y - pos0.y);
+    const deltaX = Math.abs(pos1.x - pos0.x);
+    const deltaY = Math.abs(pos1.y - pos0.y);
 
     switch (this._heuristic) {
       case Heuristic.Manhattan:
@@ -181,14 +180,14 @@ export class PathFinding {
          * Generally: Overestimates distances because diagonal movement not taken into accout.
          * Good for a 4-connected grid (diagonal movement not allowed)
          */
-        return (dx + dy) * this._weight;
+        return (deltaX + deltaY) * this._weight;
       case Heuristic.Euclidean:
         /**
          * Calculate the Euclidean distance.
          * Generally: Underestimates distances, assuming paths can have any angle.
          * Can be used f.e. when units can move at any angle.
          */
-        return Math.sqrt(dx * dx + dy * dy) * this._weight;
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY) * this._weight;
       case Heuristic.Chebyshev:
         /**
          * Calculate the Chebyshev distance.
@@ -198,7 +197,7 @@ export class PathFinding {
          * => (dx + dy) - Math.min(dx, dy)
          * This is equivalent to Math.max(dx, dy)
          */
-        return Math.max(dx, dy) * this._weight;
+        return Math.max(deltaX, deltaY) * this._weight;
       case Heuristic.Octile:
         /**
          * Calculate the Octile distance.
@@ -207,7 +206,7 @@ export class PathFinding {
          * D = 1 and D2 = sqrt(2)
          * => (dx + dy) - 0.58 * Math.min(dx, dy)
          */
-        return (dx + dy - 0.58 * Math.min(dx, dy)) * this._weight;
+        return (deltaX + deltaY - 0.58 * Math.min(deltaX, deltaY)) * this._weight;
     }
   }
 

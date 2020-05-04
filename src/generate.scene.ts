@@ -53,22 +53,21 @@ export class GenerateDungeonScene implements Scene {
   }
 
   private update(): void {
-    const c_w = this._controller.app.screen.width;
-    const c_h = this._controller.app.screen.height;
+    const screen = this._controller.app.screen;
 
     const margin = 40;
     const h = 60;
     const border = 4;
-    const w = c_w - margin - margin;
-    const w_p = Math.floor((w - border - border) * this._generator.percent / 100);
+    const width = screen.width - margin - margin;
+    const progressWidth = Math.floor((width - border - border) * this._generator.percent / 100);
 
     this._progressBar.clear();
     this._progressBar.beginFill(Colors.uiBackground);
-    this._progressBar.drawRect(margin, c_h - margin - h - border - border, w, h);
+    this._progressBar.drawRect(margin, screen.height - margin - h - border - border, width, h);
     this._progressBar.endFill();
 
     this._progressBar.beginFill(Colors.uiSelected);
-    this._progressBar.drawRect(margin + border, c_h - margin - h - border, w_p, h - border - border);
+    this._progressBar.drawRect(margin + border, screen.height - margin - h - border, progressWidth, h - border - border);
     this._progressBar.endFill();
   }
 }

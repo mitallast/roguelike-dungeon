@@ -11,8 +11,8 @@ import {RulesEditor} from "./wfc/rules.editor";
 import * as PIXI from "pixi.js";
 
 const scale = 1;
-const border = 2;
-const sprite_size = 16;
+const BORDER = 2;
+const SPRITE_SIZE = 16;
 
 export interface EditorSample {
   readonly tiles: string[];
@@ -88,59 +88,59 @@ export class Editor {
     document.body.appendChild(div);
 
     const layout = new Layout();
-    layout.offset(border, border);
+    layout.offset(BORDER, BORDER);
     layout.commit();
 
     this.initPalette(layout);
 
-    layout.offset(0, border);
+    layout.offset(0, BORDER);
     this._title = new PIXI.BitmapText("title", {font: {name: "alagard", size: 16}});
     this._title.zIndex = 1000;
     this._title.position.set(layout.x, layout.y);
     this._app.stage.addChild(this._title);
     layout.offset(0, this._title.height);
-    layout.offset(0, border);
+    layout.offset(0, BORDER);
     layout.commit();
 
     this.initMap(layout);
 
     this._app.stage.sortChildren();
     this._app.stage.calculateBounds();
-    const s_w = this._app.stage.width + border + border;
-    const s_h = this._app.stage.height + border + border;
-    this._app.renderer.resize(s_w, s_h);
+    const screenWidth = this._app.stage.width + BORDER + BORDER;
+    const screenHeight = this._app.stage.height + BORDER + BORDER;
+    this._app.renderer.resize(screenWidth, screenHeight);
   }
 
   private initPalette(layout: Layout): void {
-    const map_width = this.width * sprite_size + border * 2;
-    const palette_width = Math.floor((map_width - border) / (sprite_size + border));
+    const mapWidth = this.width * SPRITE_SIZE + BORDER * 2;
+    const paletteWidth = Math.floor((mapWidth - BORDER) / (SPRITE_SIZE + BORDER));
 
     let offset = 0;
-    const nextRow = () => {
+    const nextRow = (): void => {
       layout.reset();
-      layout.offset(0, sprite_size + border);
+      layout.offset(0, SPRITE_SIZE + BORDER);
       layout.commit();
     };
-    const addCell = (cell: EditorPaletteCell) => {
+    const addCell = (cell: EditorPaletteCell): void => {
       cell.init();
       cell.position.set(layout.x, layout.y);
       this._app.stage.addChild(cell);
       offset++;
-      if (offset % palette_width === 0) {
+      if (offset % paletteWidth === 0) {
         layout.reset();
-        layout.offset(0, sprite_size + border);
+        layout.offset(0, SPRITE_SIZE + BORDER);
         layout.commit();
       } else {
-        layout.offset(sprite_size + border, 0);
+        layout.offset(SPRITE_SIZE + BORDER, 0);
       }
     };
 
-    for (let name of this._floorTiles) {
+    for (const name of this._floorTiles) {
       addCell(new FloorPaletteCell(name, this._resources, this));
     }
 
     addCell(new ClearFloorPaletteCell(this._resources, this));
-    for (let name of this._wallTiles) {
+    for (const name of this._wallTiles) {
       addCell(new WallPaletteCell(name, this._resources, this));
     }
 
@@ -164,10 +164,10 @@ export class Editor {
         this._cells[y][x] = cell;
         this._app.stage.addChild(cell);
 
-        layout.offset(sprite_size, 0);
+        layout.offset(SPRITE_SIZE, 0);
       }
       layout.reset();
-      layout.offset(0, sprite_size);
+      layout.offset(0, SPRITE_SIZE);
       layout.commit();
     }
   }
@@ -193,18 +193,18 @@ export class Editor {
     this._title.text = cell?.title || "";
   }
 
-  dump(min_x: number, min_y: number, max_x: number, max_y: number): void {
-    max_x = Math.min(this.width - 1, max_x);
-    max_y = Math.min(this.height - 1, max_y);
+  dump(minX: number, minY: number, maxX: number, maxY: number): void {
+    maxX = Math.min(this.width - 1, maxX);
+    maxY = Math.min(this.height - 1, maxY);
 
-    const builder = new EditorSampleBuilder(max_x - min_x + 1, max_y - min_y + 1);
+    const builder = new EditorSampleBuilder(maxX - minX + 1, maxY - minY + 1);
 
-    for (let y = min_y; y <= max_y; y++) {
-      for (let x = min_x; x <= max_x; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
         const cell = this._cells[y][x];
         builder.set(
-          x - min_x,
-          y - min_y,
+          x - minX,
+          y - minY,
           cell.floorSprite?.name,
           cell.wallSprite?.name,
           cell.wallSprite?.zIndex
@@ -233,8 +233,8 @@ export class Editor {
 class EditorMapCell extends PIXI.Container {
   private readonly _resources: Resources;
   private readonly _editor: Editor;
-  readonly cell_x: number;
-  readonly cell_y: number;
+  readonly cellX: number;
+  readonly cellY: number;
   readonly bg: PIXI.Graphics;
   floorSprite: PIXI.Sprite | null = null;
   wallSprite: PIXI.Sprite | null = null;
@@ -243,16 +243,16 @@ class EditorMapCell extends PIXI.Container {
     super();
     this._resources = resources;
     this._editor = editor;
-    this.cell_x = x;
-    this.cell_y = y;
+    this.cellX = x;
+    this.cellY = y;
 
     this.bg = new PIXI.Graphics();
     this.bg.zIndex = 0;
     this.bg.beginFill(0x303030)
-      .drawRect(0, 0, sprite_size, sprite_size)
+      .drawRect(0, 0, SPRITE_SIZE, SPRITE_SIZE)
       .endFill()
       .beginFill(0x909090)
-      .drawRect(1, 1, sprite_size - 2, sprite_size - 2)
+      .drawRect(1, 1, SPRITE_SIZE - 2, SPRITE_SIZE - 2)
       .endFill();
 
     this.addChild(this.bg);
@@ -300,7 +300,7 @@ class EditorMapCell extends PIXI.Container {
     return !(this.floorSprite || this.wallSprite);
   }
 
-  private select() {
+  private select(): void {
     this._editor.action(this);
   }
 }
@@ -377,16 +377,16 @@ abstract class NamedPaletteCell extends EditorPaletteCell {
   init(): void {
     const graphics = new PIXI.Graphics()
       .beginFill(0x303030)
-      .drawRect(0, 0, sprite_size, sprite_size)
+      .drawRect(0, 0, SPRITE_SIZE, SPRITE_SIZE)
       .endFill()
       .beginFill(0x707070)
-      .drawRect(1, 1, sprite_size - 2, sprite_size - 2)
+      .drawRect(1, 1, SPRITE_SIZE - 2, SPRITE_SIZE - 2)
       .endFill();
 
     const text = new PIXI.BitmapText(this.name, {font: {name: "alagard", size: 8}});
     text.scale.set(0.5, 0.5);
     text.anchor = new PIXI.Point(0.5, 0.5);
-    text.position.set(sprite_size >> 1, sprite_size >> 1);
+    text.position.set(SPRITE_SIZE >> 1, SPRITE_SIZE >> 1);
     text.zIndex = 1000;
 
     this.addChild(graphics);
@@ -429,8 +429,8 @@ enum DumpState {
 
 class DumpPaletteCell extends NamedPaletteCell {
   private _state: DumpState = DumpState.START;
-  private _min_x: number = 0;
-  private _min_y: number = 0;
+  private _minX: number = 0;
+  private _minY: number = 0;
 
   constructor(resources: Resources, editor: Editor) {
     super("DUMP", "Dump", resources, editor);
@@ -439,12 +439,12 @@ class DumpPaletteCell extends NamedPaletteCell {
   action(cell: EditorMapCell): void {
     switch (this._state) {
       case DumpState.START:
-        this._min_x = cell.cell_x;
-        this._min_y = cell.cell_y;
+        this._minX = cell.cellX;
+        this._minY = cell.cellY;
         this._state = DumpState.END;
         break;
       case DumpState.END:
-        this.editor.dump(this._min_x, this._min_y, cell.cell_x, cell.cell_y);
+        this.editor.dump(this._minX, this._minY, cell.cellX, cell.cellY);
         this._state = DumpState.START;
         break;
     }
@@ -464,7 +464,7 @@ class LoadPaletteCell extends NamedPaletteCell {
 
   action(cell: EditorMapCell): void {
     if (this._options) {
-      this.editor.load(cell.cell_x, cell.cell_y, this._options);
+      this.editor.load(cell.cellX, cell.cellY, this._options);
     }
   }
 
@@ -528,13 +528,13 @@ class SimpleTiledWFC {
       }
     }
 
-    for (let [first, next] of tileset.right) {
+    for (const [first, next] of tileset.right) {
       const opposite = Model.opposite[Direction.RIGHT];
       tmpPropagator[Direction.RIGHT][first][next] = true;
       tmpPropagator[opposite][next][first] = true;
     }
 
-    for (let [first, next] of tileset.down) {
+    for (const [first, next] of tileset.down) {
       const opposite = Model.opposite[Direction.DOWN];
       tmpPropagator[Direction.DOWN][first][next] = true;
       tmpPropagator[opposite][next][first] = true;
@@ -575,7 +575,7 @@ class SimpleTiledWFC {
     const length = width * height;
 
     for (let i = 0; i < length; i++) {
-      let entropy = this._entropies[i];
+      const entropy = this._entropies[i];
       if (entropy > 1 && entropy <= min) {
         min = entropy;
         argmin = i;
@@ -590,27 +590,27 @@ class SimpleTiledWFC {
     const w = this._wave[argmin];
 
     let sum = 0;
-    for (let t of w) {
+    for (const t of w) {
       sum += t ? 1 : 0;
     }
 
-    let rnd_sum = this._rng.range(0, sum);
-    let rnd_t = 0;
+    let rndSum = this._rng.range(0, sum);
+    let rndT = 0;
     for (let t = 0; t < T; t++) {
-      rnd_sum -= w[t] ? 1 : 0;
-      if (rnd_sum < 0) break;
-      rnd_t++;
+      rndSum -= w[t] ? 1 : 0;
+      if (rndSum < 0) break;
+      rndT++;
     }
 
     // console.log(`observed ${argmin} ${rnd_t}`);
 
     for (let t = 0; t < T; t++) {
-      if (w[t] != (t == rnd_t)) {
+      if (w[t] != (t == rndT)) {
         this.ban(argmin, t);
       }
     }
 
-    return [argmin, rnd_t];
+    return [argmin, rndT];
   }
 
   ban(i: number, t: number): void {
@@ -642,9 +642,9 @@ class SimpleTiledWFC {
         const sx = x + dx, sy = y + dy;
         if (this.onBoundary(sx, sy)) continue;
         const s = sx + sy * this._width;
-        let pattern1 = this._propagator[d][t];
-        for (let st of pattern1) {
-          let comp = this._compatible[s][st];
+        const pattern1 = this._propagator[d][t];
+        for (const st of pattern1) {
+          const comp = this._compatible[s][st];
           comp[d]--;
           if (comp[d] === 0) {
             this.ban(s, st);
@@ -684,7 +684,7 @@ class SimpleTiledWFC {
     const length = width * height;
 
     for (let i = 0; i < length; i++) {
-      let x = i % width, y = Math.floor(i / width);
+      const x = i % width, y = Math.floor(i / width);
       if (this.onBoundary(x, y)) continue;
       if (this._entropies[i] !== 1) continue;
       for (let t = 0; t < T; t++) {
@@ -731,14 +731,14 @@ class SimpleTiledWFC {
 
     for (let x = 0; x < width; x++) {
       for (let y = 0; y < height; y++) {
-        let a = this._wave[x + y * width];
-        let weights_sum = 0;
+        const a = this._wave[x + y * width];
+        let weightsSum = 0;
         for (let t = 0; t < T; t++) {
           if (a[t]) {
-            weights_sum += 1;
+            weightsSum += 1;
           }
         }
-        const alpha = 1 / weights_sum;
+        const alpha = 1 / weightsSum;
         for (let t = 0; t < T; t++) {
           if (a[t]) {
             const [floor, wall] = tileset.cells[t];
@@ -765,8 +765,8 @@ class SimpleTiledWFC {
     const graphics = new PIXI.Graphics();
     container.addChild(graphics);
     graphics.lineStyle(1, 0xFF0000);
-    for (let i of markup) {
-      let x = i % this._width, y = Math.floor(i / this._width);
+    for (const i of markup) {
+      const x = i % this._width, y = Math.floor(i / this._width);
       graphics.drawRect(x * tilesize, y * tilesize, tilesize, tilesize);
     }
 
@@ -791,7 +791,7 @@ class SimpleTiledWFC {
 
     const isOpen = buffer(length, false);
     for (let i = 0; i < length; i++) {
-      let x = i % width, y = Math.floor(i / width);
+      const x = i % width, y = Math.floor(i / width);
       if (this.onBoundary(x, y)) continue;
       const cell = editor.cell(x, y);
       if (!cell.isEmpty) {
@@ -812,8 +812,8 @@ class SimpleTiledWFC {
           wallId = tileset.tiles.findIndex(t => t === name);
         }
         if (wallId >= 0) {
-          let cellId = tileset.cells.findIndex(c => {
-            let [f, w, z] = c;
+          const cellId = tileset.cells.findIndex(c => {
+            const [f, w, z] = c;
             return f === floorId && w === wallId && z === wallZIndex;
           });
           // console.log(`found static cellId=${cellId}, {x:${i % width},y:${Math.floor(i / width)}}`);
@@ -857,12 +857,12 @@ class SimpleTiledWFC {
     const length = width * height;
 
     const onlyFloorAround = (i: number): boolean => {
-      let x = i % width, y = Math.floor(i / width);
+      const x = i % width, y = Math.floor(i / width);
       for (let dy = 0; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx !== 0 || dy !== 0) {
-            let sx = x + dx;
-            let sy = y + dy;
+            const sx = x + dx;
+            const sy = y + dy;
             if (this.onBoundary(sx, sy)) continue;
             if (!isOpen[sx + sy * width]) {
               return false;
@@ -874,12 +874,12 @@ class SimpleTiledWFC {
     }
 
     const hasFloorAround = (i: number, h: number = 2): boolean => {
-      let x = i % width, y = Math.floor(i / width);
+      const x = i % width, y = Math.floor(i / width);
       for (let dy = -1; dy <= h; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx !== 0 || dy !== 0) {
-            let sx = x + dx;
-            let sy = y + dy;
+            const sx = x + dx;
+            const sy = y + dy;
             if (this.onBoundary(sx, sy)) continue;
             if (isOpen[sx + sy * width]) {
               return true;
@@ -891,9 +891,9 @@ class SimpleTiledWFC {
     }
 
     const checkOpen = (i: number, dx: number, dy: number): boolean | null => {
-      let x = i % width, y = Math.floor(i / width);
-      let sx = x + dx;
-      let sy = y + dy;
+      const x = i % width, y = Math.floor(i / width);
+      const sx = x + dx;
+      const sy = y + dy;
       if (this.onBoundary(sx, sy)) return null;
       return isOpen[sx + sy * width];
     }

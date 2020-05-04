@@ -18,12 +18,12 @@ export type Curve<Point> = (t: number) => Point;
 
 export class LinearCurve {
   static line(start: number, end: number): Curve<number> {
-    return t => start * (1 - t) + end * t;
+    return (t: number): number => start * (1 - t) + end * t;
   }
 
   static matrix<Point extends number[]>(start: Point, end: Point): Curve<Point> {
-    return t => {
-      let m = [] as number[] as Point;
+    return (t: number): Point => {
+      const m = [] as number[] as Point;
       for (let i = 0; i < start.length; i++) {
         m[i] = start[i] * (1 - t) + end[i] * t;
       }
@@ -46,15 +46,13 @@ export class BezierCurve {
 
   static line(...controlPoints: readonly number[]): Curve<number> {
     const n = controlPoints.length - 1;
-    return (t) => {
+    return (t): number => {
       if (t > 1) {
         t = 1;
       }
-      // @ts-ignore
       let point: number = 0;
       for (let i = 0; i < controlPoints.length; i++) {
-        let b = BezierCurve.basis(i, n, t);
-        point += controlPoints[i] * b;
+        point += controlPoints[i] * BezierCurve.basis(i, n, t);
       }
       return point;
     };
@@ -63,17 +61,16 @@ export class BezierCurve {
   static matrix<Point extends number[]>(...controlPoints: readonly Point[]): Curve<Point> {
     const n = controlPoints.length - 1;
     const D = controlPoints[0].length;
-    return (t): Point => {
+    return (t: number): Point => {
       if (t > 1) {
         t = 1;
       }
-      // @ts-ignore
-      let point: Point = [];
+      const point = [] as number[] as Point;
       for (let d = 0; d < D; d++) {
         point[d] = 0;
       }
       for (let i = 0; i < controlPoints.length; i++) {
-        let b = BezierCurve.basis(i, n, t);
+        const b = BezierCurve.basis(i, n, t);
         for (let d = 0; d < D; d++) {
           point[d] += controlPoints[i][d] * b;
         }

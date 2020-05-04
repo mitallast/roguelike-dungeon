@@ -2,12 +2,12 @@ import {Joystick} from "./input";
 import * as PIXI from "pixi.js";
 
 export interface ColorScheme {
-  readonly background: number
-  readonly uiBackground: number
-  readonly uiSelected: number
-  readonly uiNotSelected: number
-  readonly uiRed: number
-  readonly uiYellow: number
+  readonly background: number;
+  readonly uiBackground: number;
+  readonly uiSelected: number;
+  readonly uiNotSelected: number;
+  readonly uiRed: number;
+  readonly uiYellow: number;
 }
 
 export const Colors: ColorScheme = {
@@ -38,11 +38,11 @@ export class Button extends PIXI.Container implements Selectable {
   private _selected: boolean = false;
 
   constructor(options: {
-    label: string,
-    selected?: boolean,
-    width?: number
-    height?: number
-    textSize?: number
+    readonly label: string;
+    readonly selected?: boolean;
+    readonly width?: number;
+    readonly height?: number;
+    readonly textSize?: number;
   }) {
     super();
     this._width = options.width || 200;
@@ -90,7 +90,7 @@ export class Layout {
     this._offsetY = this._commitY;
   }
 
-  offset(x: number, y: number) {
+  offset(x: number, y: number): void {
     this._offsetX += x;
     this._offsetY += y;
   }
@@ -139,13 +139,13 @@ function nonEmptyCount(counts: number[], curr: number | null): number | null {
 export class SelectableGrid {
   private readonly _joystick: Joystick;
   private readonly _cells: SelectableCell[][] = []; // y => x => cell
-  private readonly _counts_x: number[] = [];
-  private readonly _counts_y: number[] = [];
-  private _limit_x: number = -1;
-  private _limit_y: number = -1;
+  private readonly _countsX: number[] = [];
+  private readonly _countsY: number[] = [];
+  private _limitX: number = -1;
+  private _limitY: number = -1;
 
-  private _selected_x: number | null = null;
-  private _selected_y: number | null = null;
+  private _selectedX: number | null = null;
+  private _selectedY: number | null = null;
 
   constructor(joystick: Joystick) {
     this._joystick = joystick;
@@ -153,15 +153,15 @@ export class SelectableGrid {
 
   reset(): void {
     this.unmark();
-    this._selected_x = nonEmptyCount(this._counts_x, this._selected_x);
-    this._selected_y = nonEmptyCount(this._counts_y, this._selected_y);
+    this._selectedX = nonEmptyCount(this._countsX, this._selectedX);
+    this._selectedY = nonEmptyCount(this._countsY, this._selectedY);
 
-    if (this._selected_x === null || this._selected_y === null) {
-      this._selected_x = null;
-      this._selected_y = null;
+    if (this._selectedX === null || this._selectedY === null) {
+      this._selectedX = null;
+      this._selectedY = null;
     } else {
-      if (!this.cell(this._selected_x, this._selected_y).isSelectable) {
-        const y = this._selected_y;
+      if (!this.cell(this._selectedX, this._selectedY).isSelectable) {
+        const y = this._selectedY;
         const prev = (from: number): number | null => {
           for (let x = from - 1; x >= 0; x--) {
             if (this.cell(x, y).isSelectable) {
@@ -170,21 +170,21 @@ export class SelectableGrid {
           }
           return null;
         };
-        const p = prev(this._selected_x);
+        const p = prev(this._selectedX);
         if (p !== null) {
-          this._selected_x = p;
+          this._selectedX = p;
         } else {
           const next = (from: number): number | null => {
-            for (let x = from + 1; x <= this._limit_x; x++) {
+            for (let x = from + 1; x <= this._limitX; x++) {
               if (this.cell(x, y).isSelectable) {
                 return x;
               }
             }
             return null;
           };
-          const n = next(this._selected_x);
+          const n = next(this._selectedX);
           if (n !== null) {
-            this._selected_x = n;
+            this._selectedX = n;
           } else {
             throw "illegal state";
           }
@@ -196,16 +196,16 @@ export class SelectableGrid {
 
   moveLeft(): void {
     this.unmark();
-    if (this._selected_x !== null && this._selected_y !== null) {
-      const y = this._selected_y;
-      if (this._counts_y[y] === 0) throw `illegal state: empty column ${y}`;
+    if (this._selectedX !== null && this._selectedY !== null) {
+      const y = this._selectedY;
+      if (this._countsY[y] === 0) throw `illegal state: empty column ${y}`;
       const merged = this.selectedCell?.merged;
-      const start_x = this._selected_x;
-      const prev = (x: number): number => x > 0 ? x - 1 : this._limit_x;
-      for (let x = prev(start_x); x != start_x; x = prev(x)) {
+      const startX = this._selectedX;
+      const prev = (x: number): number => x > 0 ? x - 1 : this._limitX;
+      for (let x = prev(startX); x != startX; x = prev(x)) {
         if (merged?.contains(x, y)) continue;
         if (this.cell(x, y).isSelectable) {
-          this._selected_x = x;
+          this._selectedX = x;
           break;
         }
       }
@@ -215,16 +215,16 @@ export class SelectableGrid {
 
   moveRight(): void {
     this.unmark();
-    if (this._selected_x !== null && this._selected_y !== null) {
-      const y = this._selected_y;
-      if (this._counts_y[y] === 0) throw `illegal state: empty column ${y}`;
+    if (this._selectedX !== null && this._selectedY !== null) {
+      const y = this._selectedY;
+      if (this._countsY[y] === 0) throw `illegal state: empty column ${y}`;
       const merged = this.selectedCell?.merged;
-      const start_x = this._selected_x;
-      const next = (x: number): number => (x + 1) % (this._limit_x + 1);
-      for (let x = next(start_x); x != start_x; x = next(x)) {
+      const startX = this._selectedX;
+      const next = (x: number): number => (x + 1) % (this._limitX + 1);
+      for (let x = next(startX); x != startX; x = next(x)) {
         if (merged?.contains(x, y)) continue;
         if (this.cell(x, y).isSelectable) {
-          this._selected_x = x;
+          this._selectedX = x;
           break;
         }
       }
@@ -234,16 +234,16 @@ export class SelectableGrid {
 
   moveUp(): void {
     this.unmark();
-    if (this._selected_x !== null && this._selected_y !== null) {
-      const x = this._selected_x;
-      if (this._counts_x[x] === 0) throw `illegal state: empty row ${x}`;
+    if (this._selectedX !== null && this._selectedY !== null) {
+      const x = this._selectedX;
+      if (this._countsX[x] === 0) throw `illegal state: empty row ${x}`;
       const merged = this.selectedCell?.merged;
-      const start_y = this._selected_y;
-      const prev = (y: number): number => y > 0 ? y - 1 : this._limit_y;
-      for (let y = prev(start_y); y != start_y; y = prev(y)) {
+      const startY = this._selectedY;
+      const prev = (y: number): number => y > 0 ? y - 1 : this._limitY;
+      for (let y = prev(startY); y != startY; y = prev(y)) {
         if (merged?.contains(x, y)) continue;
         if (this.cell(x, y).isSelectable) {
-          this._selected_y = y;
+          this._selectedY = y;
           break;
         }
       }
@@ -253,16 +253,16 @@ export class SelectableGrid {
 
   moveDown(): void {
     this.unmark();
-    if (this._selected_x !== null && this._selected_y !== null) {
-      const x = this._selected_x;
-      if (this._counts_x[x] === 0) throw `illegal state: empty row ${x}`;
+    if (this._selectedX !== null && this._selectedY !== null) {
+      const x = this._selectedX;
+      if (this._countsX[x] === 0) throw `illegal state: empty row ${x}`;
       const merged = this.selectedCell?.merged;
-      const start_y = this._selected_y;
-      const next = (y: number): number => (y + 1) % (this._limit_y + 1);
-      for (let y = next(start_y); y != start_y; y = next(y)) {
+      const startY = this._selectedY;
+      const next = (y: number): number => (y + 1) % (this._limitY + 1);
+      for (let y = next(startY); y != startY; y = next(y)) {
         if (merged?.contains(x, y)) continue;
         if (this.cell(x, y).isSelectable) {
-          this._selected_y = y;
+          this._selectedY = y;
           break;
         }
       }
@@ -283,8 +283,8 @@ export class SelectableGrid {
   }
 
   private get selectedCell(): SelectableCell | null {
-    if (this._selected_x !== null && this._selected_y !== null) {
-      const cell = this.cell(this._selected_x, this._selected_y);
+    if (this._selectedX !== null && this._selectedY !== null) {
+      const cell = this.cell(this._selectedX, this._selectedY);
       if (cell.merged && cell.isRef) {
         return this.cell(cell.merged.from_x, cell.merged.from_y);
       } else {
@@ -298,21 +298,21 @@ export class SelectableGrid {
     if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
     const cell = this.cell(x, y);
     if (cell.isRef) throw `cell is ref: ${x}:${y}`;
-    const has_prev = cell.value !== null;
+    const hasPrev = cell.value !== null;
     cell.value = [selectable, action];
 
-    if (!has_prev) {
+    if (!hasPrev) {
       if (cell.merged) {
         const merged = cell.merged;
         for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
           for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
-            this._counts_x[sx]++;
-            this._counts_y[sy]++;
+            this._countsX[sx]++;
+            this._countsY[sy]++;
           }
         }
       } else {
-        this._counts_x[x]++;
-        this._counts_y[y]++;
+        this._countsX[x]++;
+        this._countsY[y]++;
       }
     }
 
@@ -327,7 +327,7 @@ export class SelectableGrid {
     if (origin.isRef) throw `cell is ref: ${x}:${y}`;
     if (origin.merged) throw `cell is merged: ${JSON.stringify(origin.merged)}`;
     origin.merged = merged;
-    const has_value = origin.value !== null;
+    const hasValue = origin.value !== null;
     for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
       for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
         if (!(sx === x && sy === y)) {
@@ -335,9 +335,9 @@ export class SelectableGrid {
           if (cell.value) throw `merging cell already has value: ${sx}:${sy}`;
           if (cell.isRef) throw `merging cell is ref: ${sx}:${sy}`;
           cell.merged = merged;
-          if (has_value) {
-            this._counts_x[sx]++;
-            this._counts_y[sy]++;
+          if (hasValue) {
+            this._countsX[sx]++;
+            this._countsY[sy]++;
           }
         }
       }
@@ -354,13 +354,13 @@ export class SelectableGrid {
         const merged = cell.merged;
         for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
           for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
-            this._counts_x[sx]--;
-            this._counts_y[sy]--;
+            this._countsX[sx]--;
+            this._countsY[sy]--;
           }
         }
       } else {
-        this._counts_x[x]--;
-        this._counts_y[y]--;
+        this._countsX[x]--;
+        this._countsY[y]--;
       }
     }
   }
@@ -370,16 +370,16 @@ export class SelectableGrid {
     const origin = this.cell(x, y);
     if (origin.isRef) throw `cell is ref: ${x}:${y}`;
     if (origin.merged) {
-      const has_value = origin.value !== null;
+      const hasValue = origin.value !== null;
       const merged = origin.merged;
       origin.merged = null;
       for (let sx = merged.from_x; sx <= merged.to_x; sx++) {
         for (let sy = merged.from_y; sy <= merged.to_y; sy++) {
           if (!(sx === x && sy === y)) {
             this.cell(sx, sy).merged = null;
-            if (has_value) {
-              this._counts_x[sx]--;
-              this._counts_y[sy]--;
+            if (hasValue) {
+              this._countsX[sx]--;
+              this._countsY[sy]--;
             }
           }
         }
@@ -393,20 +393,20 @@ export class SelectableGrid {
     return this._cells[y][x];
   }
 
-  private expand(to_x: number, to_y: number): void {
-    while (this._limit_y < to_y) {
-      this._limit_y++;
-      this._counts_y[this._limit_y] = 0;
-      this._cells[this._limit_y] = [];
-      for (let x = 0; x <= this._limit_x; x++) {
-        this._cells[this._limit_y][x] = new SelectableCell(x, this._limit_y);
+  private expand(toX: number, toY: number): void {
+    while (this._limitY < toY) {
+      this._limitY++;
+      this._countsY[this._limitY] = 0;
+      this._cells[this._limitY] = [];
+      for (let x = 0; x <= this._limitX; x++) {
+        this._cells[this._limitY][x] = new SelectableCell(x, this._limitY);
       }
     }
-    while (this._limit_x < to_x) {
-      this._limit_x++;
-      this._counts_x[this._limit_x] = 0;
-      for (let y = 0; y <= this._limit_y; y++) {
-        this._cells[y][this._limit_x] = new SelectableCell(this._limit_x, y);
+    while (this._limitX < toX) {
+      this._limitX++;
+      this._countsX[this._limitX] = 0;
+      for (let y = 0; y <= this._limitY; y++) {
+        this._cells[y][this._limitX] = new SelectableCell(this._limitX, y);
       }
     }
   }
@@ -428,7 +428,7 @@ export class SelectableGrid {
     if (joystick.hit.once()) {
       const selected = this.selected;
       if (selected) {
-        let [, callback] = selected;
+        const [, callback] = selected;
         PIXI.sound.play('confirm');
         callback();
       } else {
@@ -487,11 +487,11 @@ export class VStack extends PIXI.Container {
   private readonly _background: PIXI.Container;
 
   constructor(options: {
-    spacing?: number;
-    padding?: number;
-    background?: {
-      color: number;
-    }
+    readonly spacing?: number;
+    readonly padding?: number;
+    readonly background?: {
+      readonly color: number;
+    };
   } = {}) {
     super();
     this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
@@ -507,20 +507,20 @@ export class VStack extends PIXI.Container {
     this.addChild(this._background);
   }
 
-  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }) {
+  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
     super.destroy(options);
     this._background?.destroy();
   }
 
-  protected onChildrenChange() {
+  protected onChildrenChange(): void {
     this._dirtyLayout = true;
   }
 
-  protected _calculateBounds() {
+  protected _calculateBounds(): void {
     this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
   }
 
-  updateTransform() {
+  updateTransform(): void {
     if (this._dirtyLayout) {
       this.updateLayout();
     }
@@ -528,21 +528,21 @@ export class VStack extends PIXI.Container {
   }
 
   private updateLayout(): void {
-    let max_width = 0;
+    let maxWidth = 0;
     let y = this._padding;
-    let x = this._padding;
+    const x = this._padding;
     let first = true;
-    for (let child of this.children) {
+    for (const child of this.children) {
       if (child === this._background) continue;
       if (!first) y += this._spacing;
       first = false;
       child.position.set(x, y);
       const bounds = child.getBounds();
       y += bounds.height;
-      max_width = Math.max(max_width, bounds.width);
+      maxWidth = Math.max(maxWidth, bounds.width);
     }
     this._height = y + this._padding;
-    this._width = max_width + this._padding * 2;
+    this._width = maxWidth + this._padding * 2;
     this._background.width = this._width;
     this._background.height = this._height;
     this._calculateBounds();
@@ -560,12 +560,12 @@ export class HStack extends PIXI.Container {
   private readonly _background: PIXI.Container;
 
   constructor(options: {
-    spacing?: number;
-    padding?: number;
-    background?: {
-      color: number;
-      alpha?: number;
-    }
+    readonly spacing?: number;
+    readonly padding?: number;
+    readonly background?: {
+      readonly color: number;
+      readonly alpha?: number;
+    };
   } = {}) {
     super();
     this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
@@ -581,20 +581,20 @@ export class HStack extends PIXI.Container {
     this.addChild(this._background);
   }
 
-  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }) {
+  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
     super.destroy(options);
     this._background?.destroy();
   }
 
-  protected onChildrenChange() {
+  protected onChildrenChange(): void {
     this._dirtyLayout = true;
   }
 
-  protected _calculateBounds() {
+  protected _calculateBounds(): void {
     this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
   }
 
-  updateTransform() {
+  updateTransform(): void {
     if (this._dirtyLayout) {
       this.updateLayout();
     }
@@ -602,21 +602,21 @@ export class HStack extends PIXI.Container {
   }
 
   private updateLayout(): void {
-    let max_height = 0;
-    let y = this._padding;
+    let maxHeight = 0;
+    const y = this._padding;
     let x = this._padding;
     let first = true;
-    for (let child of this.children) {
+    for (const child of this.children) {
       if (child === this._background) continue;
       if (!first) x += this._spacing;
       first = false;
       child.position.set(x, y);
       const bounds = child.getBounds();
       x += bounds.width;
-      max_height = Math.max(max_height, bounds.height);
+      maxHeight = Math.max(maxHeight, bounds.height);
     }
     this._width = x + this._padding;
-    this._height = max_height + this._padding * 2;
+    this._height = maxHeight + this._padding * 2;
     this._background.width = this._width;
     this._background.height = this._height;
     this._calculateBounds();

@@ -174,7 +174,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.height = options.height;
     this._x = options.x;
     this._y = options.y;
-    this.view = new DefaultCharacterView(dungeon, options.zIndex, options.width, options.on_position);
+    this.view = new DefaultCharacterView(dungeon, options.zIndex, options.width, options.onPosition);
   }
 
   init(): void {
@@ -220,36 +220,36 @@ export abstract class BaseCharacterAI implements DungeonObject {
 
   protected abstract onDead(): void;
 
-  protected findDropCell(max_distance: number = 5): (MapCell | null) {
-    return this.findCell(max_distance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
+  protected findDropCell(maxDistance: number = 5): (MapCell | null) {
+    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
   }
 
-  protected findSpawnCell(max_distance: number = 5): (MapCell | null) {
-    return this.findCell(max_distance, cell => cell.hasFloor && !cell.hasObject);
+  protected findSpawnCell(maxDistance: number = 5): (MapCell | null) {
+    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject);
   }
 
-  protected findCell(max_distance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
-    const pos_x = this.x;
-    const pos_y = this.y;
-    const is_left = this.view.isLeft;
+  protected findCell(maxDistance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
+    const posX = this.x;
+    const posY = this.y;
+    const isLeft = this.view.isLeft;
 
     let closestCell: MapCell | null = null;
     let closestDistance: number | null = null;
 
-    const metric = (a: MapCell) => {
-      return Math.max(Math.abs(a.x - pos_x), Math.abs(a.y - pos_y)) +
-        (a.y !== pos_y ? 0.5 : 0) + // boost X
-        (a.x === pos_x && a.y === pos_y ? 0 : 1) + // boost self
-        (is_left ? (a.x < pos_x ? 0 : 1) : (a.x > pos_x ? 0 : 0.5)); // boost side
+    const metric = (a: MapCell): number => {
+      return Math.max(Math.abs(a.x - posX), Math.abs(a.y - posY)) +
+        (a.y !== posY ? 0.5 : 0) + // boost X
+        (a.x === posX && a.y === posY ? 0 : 1) + // boost self
+        (isLeft ? (a.x < posX ? 0 : 1) : (a.x > posX ? 0 : 0.5)); // boost side
     };
 
-    const min_x = Math.max(0, pos_x - max_distance);
-    const max_x = Math.min(this.dungeon.width - 1, pos_x + max_distance);
-    const min_y = Math.max(0, pos_y - max_distance);
-    const max_y = Math.min(this.dungeon.width - 1, pos_y + max_distance);
+    const minX = Math.max(0, posX - maxDistance);
+    const maxX = Math.min(this.dungeon.width - 1, posX + maxDistance);
+    const minY = Math.max(0, posY - maxDistance);
+    const maxY = Math.min(this.dungeon.width - 1, posY + maxDistance);
 
-    for (let x = min_x; x <= max_x; x++) {
-      for (let y = min_y; y <= max_y; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
         const cell = this.dungeon.cell(x, y);
         if (cell.hasFloor && predicate(cell)) {
           const distance = metric(cell);
@@ -267,10 +267,10 @@ export abstract class BaseCharacterAI implements DungeonObject {
   protected move(mx: number, my: number): boolean {
     if (mx > 0) this.view.isLeft = false;
     if (mx < 0) this.view.isLeft = true;
-    const new_x = this.x + mx;
-    const new_y = this.y + my;
-    if (this.dungeon.available(new_x, new_y, this)) {
-      this.run(new_x, new_y);
+    const newX = this.x + mx;
+    const newY = this.y + my;
+    if (this.dungeon.available(newX, newY, this)) {
+      this.run(newX, newY);
       return true;
     } else {
       return false;
@@ -301,8 +301,8 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.animation = new IdleAnimationController(this);
   }
 
-  protected run(new_x: number, new_y: number): void {
-    this.animation = new RunAnimationController(this, new_x, new_y);
+  protected run(newX: number, newY: number): void {
+    this.animation = new RunAnimationController(this, newX, newY);
   }
 
   protected hit(): void {
@@ -333,31 +333,31 @@ export abstract class BaseCharacterAI implements DungeonObject {
     if (character.x > this.x) this.view.isLeft = false;
   }
 
-  protected scanObjects(direction: ScanDirection, max_distance: number, predicate: (object: DungeonObject) => boolean): DungeonObject[] {
-    const objects = this.scanCells(direction, max_distance, cell => cell.hasObject && predicate(cell.object!))
+  protected scanObjects(direction: ScanDirection, maxDistance: number, predicate: (object: DungeonObject) => boolean): DungeonObject[] {
+    const objects = this.scanCells(direction, maxDistance, cell => cell.hasObject && predicate(cell.object!))
       .map(cell => cell.object!);
     const set = new Set(objects); // distinct
     return [...set];
   }
 
-  protected scanCells(direction: ScanDirection, max_distance: number, predicate: (cell: MapCell) => boolean): MapCell[] {
-    const pos_x = this.x;
-    const pos_y = this.y;
+  protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: MapCell) => boolean): MapCell[] {
+    const posX = this.x;
+    const posY = this.y;
 
-    const scan_left = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
-    const scan_right = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
+    const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
+    const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
 
-    const scan_x_min = scan_left ? Math.max(0, pos_x - max_distance) : pos_x;
-    const scan_x_max = scan_right ? Math.min(this.dungeon.width - 1, pos_x + max_distance) : pos_x;
+    const scanMinX = scanLeft ? Math.max(0, posX - maxDistance) : posX;
+    const scanMaxX = scanRight ? Math.min(this.dungeon.width - 1, posX + maxDistance) : posX;
 
-    const scan_y_min = Math.max(0, pos_y - max_distance);
-    const scan_y_max = Math.min(this.dungeon.height - 1, pos_y + max_distance);
+    const scanMinY = Math.max(0, posY - maxDistance);
+    const scanMaxY = Math.min(this.dungeon.height - 1, posY + maxDistance);
 
     const cells: MapCell[] = [];
 
-    for (let s_y = scan_y_min; s_y <= scan_y_max; s_y++) {
-      for (let s_x = scan_x_min; s_x <= scan_x_max; s_x++) {
-        const cell = this.dungeon.cell(s_x, s_y);
+    for (let scanY = scanMinY; scanY <= scanMaxY; scanY++) {
+      for (let scanX = scanMinX; scanX <= scanMaxX; scanX++) {
+        const cell = this.dungeon.cell(scanX, scanY);
         if (predicate(cell)) {
           cells.push(cell);
         }
@@ -378,10 +378,10 @@ export abstract class BaseCharacterAI implements DungeonObject {
 
     let err = (dx > dy ? dx : -dy) / 2;
 
-    while (true) {
+    for (; ;) {
       if (x0 === x1 && y0 === y1) break;
 
-      let e2 = err;
+      const e2 = err;
       if (e2 > -dx) {
         err -= dy;
         x0 += sx;
@@ -475,26 +475,26 @@ export class IdleAnimationController extends BaseAnimationController {
 export class RunAnimationController extends BaseAnimationController {
   private readonly _x: number;
   private readonly _y: number;
-  private readonly _new_x: number;
-  private readonly _new_y: number;
+  private readonly _newX: number;
+  private readonly _newY: number;
 
-  constructor(ai: CharacterAI, new_x: number, new_y: number) {
+  constructor(ai: CharacterAI, newX: number, newY: number) {
     super(ai, ai.character.name + '_run');
     this._x = this.ai.x;
     this._y = this.ai.y;
-    this._new_x = new_x;
-    this._new_y = new_y;
+    this._newX = newX;
+    this._newY = newY;
   }
 
   start(): void {
     const clip = this.view.animation(this.spriteName, this.ai.character.speed * 0.2);
-    this.ai.dungeon.set(this._new_x, this._new_y, this.ai);
+    this.ai.dungeon.set(this._newX, this._newY, this.ai);
     this.animation.clear();
     this.animation.add(clip);
     this.animation.add(new AnimationCurveClip(
       LinearCurve.matrix(
         [this._x, this._y],
-        [this._new_x, this._new_y],
+        [this._newX, this._newY],
       ),
       clip.duration,
       clip.animationSpeed,
@@ -512,15 +512,15 @@ export class RunAnimationController extends BaseAnimationController {
   cancel(): void {
     super.cancel();
     this.ai.dungeon.remove(this._x, this._y, this.ai);
-    this.ai.dungeon.remove(this._new_x, this._new_y, this.ai);
+    this.ai.dungeon.remove(this._newX, this._newY, this.ai);
     this.ai.setPosition(this.ai.x, this.ai.y);
   }
 
   finish(): void {
     super.finish();
     this.ai.dungeon.remove(this._x, this._y, this.ai);
-    this.ai.dungeon.remove(this._new_x, this._new_y, this.ai);
-    this.ai.setPosition(this._new_x, this._new_y);
+    this.ai.dungeon.remove(this._newX, this._newY, this.ai);
+    this.ai.setPosition(this._newX, this._newY);
   }
 }
 
@@ -558,12 +558,12 @@ export class HitAnimationController extends BaseAnimationController {
 }
 
 export interface CharacterViewOptions {
-  readonly width: number
-  readonly height: number
-  readonly x: number
-  readonly y: number
-  readonly zIndex: number
-  readonly on_position?: (x: number, y: number) => void;
+  readonly width: number;
+  readonly height: number;
+  readonly x: number;
+  readonly y: number;
+  readonly zIndex: number;
+  readonly onPosition?: (x: number, y: number) => void;
 }
 
 export interface CharacterView {
@@ -574,7 +574,7 @@ export interface CharacterView {
 
   setPosition(x: number, y: number): void;
   animation(spriteName: string, speed: number): AnimationClip;
-  destroy(): void
+  destroy(): void;
 }
 
 export class DefaultCharacterView extends PIXI.Container implements CharacterView {
@@ -627,7 +627,7 @@ export class DefaultCharacterView extends PIXI.Container implements CharacterVie
     }
   }
 
-  private updatePosition() {
+  private updatePosition(): void {
     // process left/right direction
     this.scale.set(this._isLeft ? -1 : 1, 1);
     // if left, add offset x
@@ -669,7 +669,7 @@ export class DefaultWeaponView extends PIXI.Container implements WeaponView {
     this._resources = resources;
   }
 
-  destroy() {
+  destroy(): void {
     this._sprite?.destroy();
     this._sprite = null;
     super.destroy();

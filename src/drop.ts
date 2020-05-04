@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import {RNG} from "./rng";
 import {Hero} from "./hero";
 import {InventoryCell} from "./inventory";
@@ -63,7 +64,7 @@ export class HealthFlask implements UsableDrop {
     return item instanceof HealthFlask;
   }
 
-  use(cell: InventoryCell, character: Character) {
+  use(cell: InventoryCell, character: Character): void {
     character.heal(this._health);
     cell.decrease();
   }
@@ -90,7 +91,7 @@ export class HealthBigFlask implements UsableDrop {
     return item instanceof HealthBigFlask;
   }
 
-  use(cell: InventoryCell, character: Character) {
+  use(cell: InventoryCell, character: Character): void {
     character.heal(this._health);
     cell.decrease();
   }
@@ -585,7 +586,7 @@ export class Weapon implements UsableDrop {
     return hero.inventory.add(this);
   }
 
-  same(_item: UsableDrop): boolean {
+  same(): boolean {
     return false;
   }
 

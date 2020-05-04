@@ -1,9 +1,9 @@
-import {TunnelerCellType, Direction, FillRect, IPoint} from "./model";
+import {TunnelerCellType, Direction, FillRect, ImmutablePoint} from "./model";
 
 export interface CrawlerConfig {
-  readonly location: IPoint;
-  readonly direction: IPoint;
-  readonly intendedDirection: IPoint;
+  readonly location: ImmutablePoint;
+  readonly direction: ImmutablePoint;
+  readonly intendedDirection: ImmutablePoint;
 
   readonly age: number;
   readonly maxAge: number;
@@ -28,9 +28,9 @@ export interface RandCrawlerConfig {
 }
 
 export interface TunnelCrawlerConfig {
-  readonly location: IPoint;
-  readonly direction: IPoint;
-  readonly intendedDirection: IPoint;
+  readonly location: ImmutablePoint;
+  readonly direction: ImmutablePoint;
+  readonly intendedDirection: ImmutablePoint;
 
   readonly age: number;
   readonly maxAge: number;

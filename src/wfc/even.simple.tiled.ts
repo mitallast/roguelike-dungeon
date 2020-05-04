@@ -90,13 +90,13 @@ export class EvenSimpleTiledModel extends Model {
       }
     }
 
-    for (let [first, next] of tileset.right) {
+    for (const [first, next] of tileset.right) {
       const opposite = Model.opposite[Direction.RIGHT];
       tmpPropagator[Direction.RIGHT][first][next] = true;
       tmpPropagator[opposite][next][first] = true;
     }
 
-    for (let [first, next] of tileset.down) {
+    for (const [first, next] of tileset.down) {
       const opposite = Model.opposite[Direction.DOWN];
       tmpPropagator[Direction.DOWN][first][next] = true;
       tmpPropagator[opposite][next][first] = true;
@@ -122,26 +122,26 @@ export class EvenSimpleTiledModel extends Model {
 
   clear(): void {
     super.clear();
-    for (let constraint of this._constraints) {
+    for (const constraint of this._constraints) {
       constraint.onClear();
       this.propagate();
     }
   }
 
   backtrackConstraint(index: number, pattern: number): void {
-    for (let constraint of this._constraints) {
+    for (const constraint of this._constraints) {
       constraint.onBacktrack(index, pattern);
     }
   }
 
   banConstraint(index: number, pattern: number): void {
-    for (let constraint of this._constraints) {
+    for (const constraint of this._constraints) {
       constraint.onBan(index, pattern);
     }
   }
 
   initConstraint(): void {
-    for (let constraint of this._constraints) {
+    for (const constraint of this._constraints) {
       constraint.init(this);
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed init constraint", this.status);
@@ -151,7 +151,7 @@ export class EvenSimpleTiledModel extends Model {
   }
 
   stepConstraint(): void {
-    for (let constraint of this._constraints) {
+    for (const constraint of this._constraints) {
       constraint.check();
       if (this.status != Resolution.Undecided) {
         if (this.debug) console.warn("failed step constraint check");
@@ -167,7 +167,7 @@ export class EvenSimpleTiledModel extends Model {
   }
 
   protected testObserved(i: number): void {
-    let x = i % this.FMX, y = Math.floor(i / this.FMX);
+    const x = i % this.FMX, y = Math.floor(i / this.FMX);
 
     // test 1
     if (!this.onBoundary(x, y)) {
@@ -202,7 +202,7 @@ export class EvenSimpleTiledModel extends Model {
     if (this.observed != null) {
       for (let x = 0; x < this.FMX; x++) {
         for (let y = 0; y < this.FMY; y++) {
-          let [floor, wall] = this.tileset.cells[this.observed[x + y * this.FMX]];
+          const [floor, wall] = this.tileset.cells[this.observed[x + y * this.FMX]];
           if (floor >= 0) {
             const sprite = this._resources.sprite(this.tileset.tiles[floor]);
             sprite.position.set(x * tilesize, y * tilesize);
@@ -220,14 +220,14 @@ export class EvenSimpleTiledModel extends Model {
     } else {
       for (let x = 0; x < this.FMX; x++) {
         for (let y = 0; y < this.FMY; y++) {
-          let a = this.wave![x + y * this.FMX];
-          let weights_sum = 0;
+          const a = this.wave![x + y * this.FMX];
+          let weightsSum = 0;
           for (let t = 0; t < this.T; t++) {
             if (a[t]) {
-              weights_sum += this.weights[t];
+              weightsSum += this.weights[t];
             }
           }
-          const alpha = 1 / weights_sum;
+          const alpha = 1 / weightsSum;
           for (let t = 0; t < this.T; t++) {
             if (a[t]) {
               const [floor, wall] = this.tileset.cells[t];
@@ -255,8 +255,8 @@ export class EvenSimpleTiledModel extends Model {
     const graphics = new PIXI.Graphics();
     container.addChild(graphics);
     graphics.lineStyle(1, 0xFF0000);
-    for (let i of markup) {
-      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+    for (const i of markup) {
+      const x = i % this.FMX, y = Math.floor(i / this.FMX);
       graphics.drawRect(x * tilesize, y * tilesize, tilesize, tilesize);
     }
 
@@ -278,8 +278,8 @@ export class EvenSimpleTiledModel extends Model {
 export interface Constraint {
   init(model: EvenSimpleTiledModel): void;
   onClear(): void;
-  onBan(index: number, pattern: number): void
-  onBacktrack(index: number, pattern: number): void
+  onBan(index: number, pattern: number): void;
+  onBacktrack(index: number, pattern: number): void;
   check(): void;
 }
 
@@ -302,7 +302,7 @@ export class BorderConstraint implements Constraint {
     const indices = model.FMX * model.FMY;
 
     for (let i = 0; i < indices; i++) {
-      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      const x = i % model.FMX, y = Math.floor(i / model.FMX);
       if (x === 0 || x === model.FMX - 1 || y === 0 || y === model.FMY - 1) {
         for (let t = 0; t < model.T; t++) {
           if (model.wave[i][t] && !this._isBorderCell[t]) {
@@ -349,7 +349,7 @@ export class PathConstraint implements Constraint {
   }
 
   onClear(): void {
-    let indices = this._model!.FMX * this._model!.FMY;
+    const indices = this._model!.FMX * this._model!.FMY;
     this._couldBePath = buffer(indices, false);
     this._mustBePath = buffer(indices, false);
     this._refresh = buffer(indices, true);
@@ -375,13 +375,13 @@ export class PathConstraint implements Constraint {
 
       const FMX = this._model!.FMX;
       const FMY = this._model!.FMY;
-      let x = index % FMX, y = Math.floor(index / FMX);
+      const x = index % FMX, y = Math.floor(index / FMX);
 
       this._refresh[index] = true;
       this._refreshQueue.push(index);
 
       for (let direction = 0; direction < 4; direction++) {
-        let dx = Model.DX[direction], dy = Model.DY[direction];
+        const dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
         if (this._model!.onBoundary(sx, sy)) {
           continue;
@@ -392,7 +392,7 @@ export class PathConstraint implements Constraint {
         if (sy < 0) sy += FMY;
         else if (sy >= FMY) sy -= FMY;
 
-        let s = sx + sy * FMX;
+        const s = sx + sy * FMX;
 
         if (!this._refresh[s]) {
           this._refresh[s] = true;
@@ -428,10 +428,10 @@ export class PathConstraint implements Constraint {
   }
 
   check(): void {
-    while (true) {
+    for (; ;) {
       this.refreshAll();
 
-      let isArticulation = this.getArticulationPoints();
+      const isArticulation = this.getArticulationPoints();
       if (isArticulation == null) {
         if (this._model!.debug) console.error("no articulation");
         this._model!.status = Resolution.Contradiction;
@@ -441,7 +441,7 @@ export class PathConstraint implements Constraint {
       if (this.applyArticulationPoints(isArticulation)) {
         if (this._model!.debug) {
           console.log("articulation");
-          let markup: number[] = isArticulation
+          const markup: number[] = isArticulation
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
@@ -458,14 +458,14 @@ export class PathConstraint implements Constraint {
     const model = this._model!;
     const FMX = model.FMX;
     const FMY = model.FMY;
-    let indices = FMX * FMY;
+    const indices = FMX * FMY;
     // All articulation points must be paths,
     // So ban any other possibilities
     let changed = false;
     for (let i = 0; i < indices; i++) {
       if (isArticulation[i] && !this._mustBePath[i]) {
         if (model.debug) console.log("articulation", i);
-        let x = i % model.FMX, y = Math.floor(i / model.FMX);
+        const x = i % model.FMX, y = Math.floor(i / model.FMX);
         if (model.debug) console.log("x, y, i", x, y, i);
 
         for (let t = 0; t < model.T; t++) {
@@ -507,7 +507,7 @@ export class PathConstraint implements Constraint {
       let childRelevantSubtree: boolean = false;
       let childCount = 0;
 
-      while (true) {
+      for (; ;) {
         const frameIndex = stack.length - 1;
         const frame = stack[frameIndex];
         const u = frame.u;
@@ -521,7 +521,7 @@ export class PathConstraint implements Constraint {
             // Initialization
             case 0: {
               // console.log("switch 0");
-              let isRelevant = relevant != null && relevant[u];
+              const isRelevant = relevant != null && relevant[u];
               if (isRelevant) {
                 isArticulation[u] = true;
               }
@@ -537,15 +537,15 @@ export class PathConstraint implements Constraint {
             case 1: {
               // console.log("switch 1");
               // Check loop condition
-              let neighbours = graph.neighbours[u];
-              let neighbourIndex = frame.neighbourIndex;
+              const neighbours = graph.neighbours[u];
+              const neighbourIndex = frame.neighbourIndex;
               if (neighbourIndex >= neighbours.length) {
                 // Exit loop
                 switchState = 3;
                 loop = true;
                 break;
               }
-              let v = neighbours[neighbourIndex];
+              const v = neighbours[neighbourIndex];
               if (!walkable[v]) {
                 // continue to next iteration of loop
                 frame.neighbourIndex = neighbourIndex + 1;
@@ -555,7 +555,7 @@ export class PathConstraint implements Constraint {
               }
 
               // v is a neighbour of u
-              let unvisited = dfsNum[v] === 0;
+              const unvisited = dfsNum[v] === 0;
               if (unvisited) {
                 // Recurse into v
                 stack.push(new CutVertexFrame(v));
@@ -578,9 +578,9 @@ export class PathConstraint implements Constraint {
               // console.log("switch 2");
               // At this point, childRelevantSubtree
               // has been set to the by the recursion call we've just returned from
-              let neighbours = graph.neighbours[u];
-              let neighbourIndex = frame.neighbourIndex;
-              let v = neighbours[neighbourIndex];
+              const neighbours = graph.neighbours[u];
+              const neighbourIndex = frame.neighbourIndex;
+              const v = neighbours[neighbourIndex];
 
               if (frameIndex == 0) {
                 // Root frame
@@ -645,7 +645,7 @@ export class PathConstraint implements Constraint {
       if (relevant[i] && dfsNum[i] == 0) {
         if (model.debug) {
           console.warn("walkable:");
-          let markupW: number[] = walkable
+          const markupW: number[] = walkable
             .map<[boolean, number]>((v, i) => [v, i])
             .filter(a => a[0])
             .map(a => a[1]);
@@ -654,7 +654,7 @@ export class PathConstraint implements Constraint {
           model.graphics(markup);
 
           const w = model.FMX;
-          let x = i % w, y = Math.floor(i / w);
+          const x = i % w, y = Math.floor(i / w);
           console.error(`not visited relevant point i=${i} x=${x} y=${y}`);
           console.warn('graph neighbours', graph.neighbours[i]);
           model.graphics([i]);
@@ -672,7 +672,7 @@ export class PathConstraint implements Constraint {
 
       // console.warn("compute articulation point for ", i);
 
-      let childCount = cutVertex(i);
+      const childCount = cutVertex(i);
       // The root of the tree is an exception to CutVertex's calculations
       // It's an articulation point if it has multiple children
       // as removing it would give multiple subtrees.
@@ -684,15 +684,15 @@ export class PathConstraint implements Constraint {
 
   private createGraph(): SimpleGraph {
     const model = this._model!;
-    let nodeCount = model.FMX * model.FMY;
-    let neighbours: number[][] = [];
+    const nodeCount = model.FMX * model.FMY;
+    const neighbours: number[][] = [];
     for (let i = 0; i < nodeCount; i++) {
       neighbours[i] = [];
 
-      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      const x = i % model.FMX, y = Math.floor(i / model.FMX);
 
       for (let direction = 0; direction < 4; direction++) {
-        let dx = Model.DX[direction], dy = Model.DY[direction];
+        const dx = Model.DX[direction], dy = Model.DY[direction];
         let sx = x + dx, sy = y + dy;
         if (!model.periodic && (sx >= model.FMX || sy >= model.FMY || sx < 0 || sy < 0)) {
           continue;
@@ -703,7 +703,7 @@ export class PathConstraint implements Constraint {
         if (sy < 0) sy += model.FMY;
         else if (sy >= model.FMY) sy -= model.FMY;
 
-        let s = sx + sy * model.FMX;
+        const s = sx + sy * model.FMX;
 
         neighbours[i].push(s);
       }
@@ -821,12 +821,12 @@ export class DungeonCrawlerConstraint implements Constraint {
     }
 
     function onlyFloorAround(i: number): boolean {
-      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      const x = i % model.FMX, y = Math.floor(i / model.FMX);
       for (let dy = 0; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx !== 0 || dy !== 0) {
-            let sx = x + dx;
-            let sy = y + dy;
+            const sx = x + dx;
+            const sy = y + dy;
             if (model.onBoundary(sx, sy)) continue;
             if (!isOpen[sx + sy * model.FMX]) {
               return false;
@@ -838,12 +838,12 @@ export class DungeonCrawlerConstraint implements Constraint {
     }
 
     function hasFloorAround(i: number, h: number = 2): boolean {
-      let x = i % model.FMX, y = Math.floor(i / model.FMX);
+      const x = i % model.FMX, y = Math.floor(i / model.FMX);
       for (let dy = -1; dy <= h; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (dx !== 0 || dy !== 0) {
-            let sx = x + dx;
-            let sy = y + dy;
+            const sx = x + dx;
+            const sy = y + dy;
             if (model.onBoundary(sx, sy)) continue;
             if (isOpen[sx + sy * model.FMX]) {
               return true;
@@ -855,9 +855,9 @@ export class DungeonCrawlerConstraint implements Constraint {
     }
 
     function checkOpen(i: number, dx: number, dy: number): boolean | null {
-      let x = i % model.FMX, y = Math.floor(i / model.FMX);
-      let sx = x + dx;
-      let sy = y + dy;
+      const x = i % model.FMX, y = Math.floor(i / model.FMX);
+      const sx = x + dx;
+      const sy = y + dy;
       if (model.onBoundary(sx, sy)) return null;
       return isOpen[sx + sy * model.FMX];
     }
@@ -919,7 +919,7 @@ export class EvenSimpleTiledModelTest {
 
     console.log("tileset", tileset);
 
-    const filter = (regex: RegExp) => {
+    const filter = (regex: RegExp): boolean[] => {
       const tiles: boolean[] = tileset.tiles.map(t => !!t.match(regex));
       return tileset.cells.map(cell => {
         const [f, w] = cell;
@@ -938,17 +938,17 @@ export class EvenSimpleTiledModelTest {
     const model = new EvenSimpleTiledModel(resources, tileset, RNG.create(), 50, 50, [
       new BorderConstraint(borderCells),
       new RoomConstraint(roomCells, true, {
-        room_max_w: 7,
-        room_max_h: 5,
-        max_corr_dist: 20,
-        min_corr_dist_x: 5,
-        min_corr_dist_y: 10,
+        roomMaxW: 7,
+        roomMaxH: 5,
+        maxCorrDist: 20,
+        minCorrDistX: 5,
+        minCorrDistY: 10,
       }),
       new PathConstraint(pathCells),
     ]);
     console.time("model loop run");
     let state;
-    while (true) {
+    for (; ;) {
       console.time("model run");
       state = await model.run(10000);
       console.timeEnd("model run");

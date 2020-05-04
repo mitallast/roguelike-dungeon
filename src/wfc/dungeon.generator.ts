@@ -41,7 +41,7 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
 
     console.time("model loop run");
     let state;
-    while (true) {
+    for (; ;) {
       console.time("model run");
       state = await this._model.run(10000);
       console.timeEnd("model run");
@@ -83,8 +83,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     this.placeLadder(rng, dungeon, heroAI);
     await yields();
 
-    const is_bonfire = options.level % 5 === 1
-    if (is_bonfire) {
+    const isBonfire = options.level % 5 === 1
+    if (isBonfire) {
       this.placeBonfire(rng, dungeon, heroAI);
       await yields();
     }
@@ -95,8 +95,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     this.placeMonsters(rng, dungeon, heroAI);
     await yields();
 
-    const is_boss = options.level % 5 === 0;
-    if (is_boss) {
+    const isBoss = options.level % 5 === 0;
+    if (isBoss) {
       this.placeBoss(rng, dungeon, heroAI);
       await yields();
     }

@@ -37,11 +37,11 @@ export class Inventory {
     return this.belt.set(item) || this.backpack.set(item);
   }
 
-  add(item: UsableDrop) {
+  add(item: UsableDrop): boolean {
     return this.stack(item) || this.set(item);
   }
 
-  hasSpace(item: UsableDrop) {
+  hasSpace(item: UsableDrop): boolean {
     return this.belt.hasSpace(item) || this.backpack.hasSpace(item);
   }
 }
@@ -206,7 +206,7 @@ export class InventoryCell {
       return true;
     }
     return false;
-  };
+  }
 
   clear(): void {
     if (this._item.get()) {
@@ -510,7 +510,7 @@ export class InventoryView extends PIXI.Container {
     this._card.destroy();
   }
 
-  private show(cell: InventoryCell) {
+  private show(cell: InventoryCell): void {
     this._card.publisher = cell.item;
     this._actions.cell = cell;
   }
@@ -583,7 +583,7 @@ export class BeltInventoryView extends PIXI.Container {
     return this._inventory.length;
   }
 
-  cell(index: number) {
+  cell(index: number): InventoryCellView {
     return this._cells[index];
   }
 }
@@ -639,8 +639,8 @@ export class InventoryCellView extends PIXI.Container implements Selectable {
   private _selected: boolean = false;
 
   constructor(resources: Resources, options: {
-    item: Observable<UsableDrop | null>,
-    count: Observable<number | null>,
+    item: Observable<UsableDrop | null>;
+    count: Observable<number | null>;
   }) {
     super();
     this._item = options.item;
@@ -706,7 +706,7 @@ export class InventoryCellCardView extends PIXI.Container {
   private readonly _controller: InventoryController;
   private readonly _width: number;
   private readonly _height: number;
-  private readonly _sprite_size: number;
+  private readonly _spriteSize: number;
 
   private _sprite: PIXI.Sprite | PIXI.AnimatedSprite | null = null;
   private readonly _title: PIXI.BitmapText;
@@ -715,22 +715,22 @@ export class InventoryCellCardView extends PIXI.Container {
   private _publisher: Publisher<UsableDrop | null> | null = null;
 
   constructor(resources: Resources, controller: InventoryController, options: {
-    width?: number,
-    height?: number,
+    width?: number;
+    height?: number;
   }) {
     super();
     this._resources = resources;
     this._controller = controller;
     this._width = options.width || 400;
     this._height = options.height || 400;
-    this._sprite_size = 128 + (Sizes.uiMargin << 1);
+    this._spriteSize = 128 + (Sizes.uiMargin << 1);
 
     const background = new PIXI.Graphics()
       .beginFill(Colors.uiBackground)
       .drawRect(0, 0, this._width, this._height)
       .endFill()
       .beginFill(Colors.uiNotSelected)
-      .drawRect(Sizes.uiMargin, Sizes.uiMargin + 32 + Sizes.uiMargin, this._sprite_size, this._sprite_size)
+      .drawRect(Sizes.uiMargin, Sizes.uiMargin + 32 + Sizes.uiMargin, this._spriteSize, this._spriteSize)
       .endFill();
 
     this._title = new PIXI.BitmapText("", {font: {name: "alagard", size: 32}});
@@ -739,7 +739,7 @@ export class InventoryCellCardView extends PIXI.Container {
 
     this._description = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
     this._description.position.set(
-      Sizes.uiMargin + this._sprite_size + Sizes.uiMargin,
+      Sizes.uiMargin + this._spriteSize + Sizes.uiMargin,
       Sizes.uiMargin + 32 + Sizes.uiMargin
     );
 
@@ -771,18 +771,16 @@ export class InventoryCellCardView extends PIXI.Container {
       const sprite = this._sprite = this._resources.sprite(drop.spriteName);
       sprite.anchor = new PIXI.Point(0.5, 0.5);
       sprite.position.set(
-        Sizes.uiMargin + (this._sprite_size >> 1),
-        Sizes.uiMargin + (this._sprite_size >> 1) + 32 + Sizes.uiMargin
+        Sizes.uiMargin + (this._spriteSize >> 1),
+        Sizes.uiMargin + (this._spriteSize >> 1) + 32 + Sizes.uiMargin
       );
-      const s_w = sprite.width;
-      const s_h = sprite.height;
-      const max_size = this._sprite_size - Sizes.uiMargin;
-      if (s_w > s_h) {
-        this._sprite.width = max_size;
-        this._sprite.height = (max_size / s_w) * s_h;
+      const maxSize = this._spriteSize - Sizes.uiMargin;
+      if (sprite.width > sprite.height) {
+        this._sprite.width = maxSize;
+        this._sprite.height = (maxSize / sprite.width) * sprite.height;
       } else {
-        this._sprite.height = max_size;
-        this._sprite.width = (max_size / s_h) * s_w;
+        this._sprite.height = maxSize;
+        this._sprite.width = (maxSize / sprite.height) * sprite.width;
       }
       this.addChild(this._sprite);
 
@@ -841,7 +839,7 @@ export class InventoryCellActionsView extends PIXI.Container {
   }
 
   removeButtons(): void {
-    for (let [button, x, y] of this._buttons) {
+    for (const [button, x, y] of this._buttons) {
       this._selectable.unmerge(x, y);
       this._selectable.remove(x, y);
       button.destroy();
@@ -855,8 +853,8 @@ export class InventoryCellActionsView extends PIXI.Container {
     const row = total >> 1;
     const cell = total % 2;
 
-    const merge_width = 5;
-    const selectableX = this._selectableOffsetX + (cell * merge_width);
+    const mergeWidth = 5;
+    const selectableX = this._selectableOffsetX + (cell * mergeWidth);
     const selectableY = this._selectableOffsetY + 10 + row;
     const button = new Button({
       label: label,
@@ -870,7 +868,7 @@ export class InventoryCellActionsView extends PIXI.Container {
 
     this._buttons.push([button, selectableX, selectableY]);
     this._selectable.set(selectableX, selectableY, button, action);
-    this._selectable.merge(selectableX, selectableY, merge_width, 1);
+    this._selectable.merge(selectableX, selectableY, mergeWidth, 1);
     this.addChild(button);
   }
 }

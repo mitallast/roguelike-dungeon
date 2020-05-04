@@ -52,7 +52,7 @@ export class UpdateHeroScene implements Scene {
     this._spriteBg?.destroy();
     this._state?.destroy();
     this._inventory?.destroy();
-    for (let button of this._buttons) {
+    for (const button of this._buttons) {
       button.destroy();
     }
     this._sprite = null;
@@ -69,7 +69,7 @@ export class UpdateHeroScene implements Scene {
   resume(): void {
   }
 
-  private renderTitle(layout: Layout) {
+  private renderTitle(layout: Layout): void {
     this._title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     this._title.anchor = new PIXI.Point(0.5, 0);
     this._title.position.set(this._controller.app.screen.width >> 1, 64);
@@ -78,7 +78,7 @@ export class UpdateHeroScene implements Scene {
     layout.commit();
   }
 
-  private renderState(layout: Layout) {
+  private renderState(layout: Layout): void {
     layout.offset(Sizes.uiMargin, 0);
     layout.commit();
     this._state = new HeroStateView(this._hero, {fixedHPSize: true});
@@ -87,7 +87,7 @@ export class UpdateHeroScene implements Scene {
     layout.offset(0, this._state.getBounds().height);
   }
 
-  private renderIcon(layout: Layout) {
+  private renderIcon(layout: Layout): void {
     this._sprite = this._controller.resources.animated(this._hero.name + "_idle");
     const w = this._sprite.width;
     const h = this._sprite.height;
@@ -95,17 +95,17 @@ export class UpdateHeroScene implements Scene {
     const scale = this._sprite.width / w;
     this._sprite.height = Math.floor(scale * h);
     // compute real height by trimmed size
-    const trimmed_h = Math.floor(scale * this._sprite.texture.trim.height);
-    const offset_y = this._sprite.height - trimmed_h;
+    const trimmedH = Math.floor(scale * this._sprite.texture.trim.height);
+    const offsetY = this._sprite.height - trimmedH;
     layout.offset(0, Sizes.uiMargin);
-    this._sprite.position.set(layout.x + Sizes.uiMargin, layout.y + Sizes.uiMargin - offset_y);
+    this._sprite.position.set(layout.x + Sizes.uiMargin, layout.y + Sizes.uiMargin - offsetY);
     this._spriteBg = new PIXI.Graphics()
       .beginFill(Colors.uiBackground)
-      .drawRect(0, 0, 256, trimmed_h + (Sizes.uiMargin << 1))
+      .drawRect(0, 0, 256, trimmedH + (Sizes.uiMargin << 1))
       .endFill();
     this._spriteBg.position.set(layout.x, layout.y);
     this._controller.stage.addChild(this._spriteBg, this._sprite);
-    layout.offset(0, trimmed_h + (Sizes.uiMargin << 1));
+    layout.offset(0, trimmedH + (Sizes.uiMargin << 1));
   }
 
   private renderIncreaseHealth(layout: Layout): void {
@@ -144,7 +144,7 @@ export class UpdateHeroScene implements Scene {
     this._controller.stage.addChild(this._inventory);
   }
 
-  private handleInput() {
+  private handleInput(): void {
     this._selectable.handleInput();
   }
 }

@@ -25,7 +25,7 @@ export class SimpleTiledModel extends Model {
     const unique = tileset.unique;
 
     function mapTile(f: (x: number, y: number) => Color): Color[] {
-      let result: Color[] = new Array(tilesize * tilesize);
+      const result: Color[] = new Array(tilesize * tilesize);
       for (let y = 0; y < tilesize; y++) {
         for (let x = 0; x < tilesize; x++) {
           result[x + y * tilesize] = f(x, y);
@@ -41,13 +41,13 @@ export class SimpleTiledModel extends Model {
     this.tiles = [];
     this.weights = [];
 
-    let action: number[][] = [];
-    let firstOccurrence: Partial<Record<string, number>> = {};
+    const action: number[][] = [];
+    const firstOccurrence: Partial<Record<string, number>> = {};
 
     const app = new PIXI.Application();
-    let renderTexture = PIXI.RenderTexture.create({width: tilesize, height: tilesize});
+    const renderTexture = PIXI.RenderTexture.create({width: tilesize, height: tilesize});
 
-    for (let tile of tileset.tiles) {
+    for (const tile of tileset.tiles) {
       let a: (i: number) => number;
       let b: (i: number) => number;
       let cardinality: number;
@@ -55,28 +55,28 @@ export class SimpleTiledModel extends Model {
       switch (tile.symmetry) {
         case 'L':
           cardinality = 4;
-          a = i => (i + 1) % 4;
-          b = i => i % 2 === 0 ? i + 1 : i - 1;
+          a = (i): number => (i + 1) % 4;
+          b = (i): number => i % 2 === 0 ? i + 1 : i - 1;
           break;
         case 'T':
           cardinality = 4;
-          a = i => (i + 1) % 4;
-          b = i => i % 2 === 0 ? i : 4 - i;
+          a = (i): number => (i + 1) % 4;
+          b = (i): number => i % 2 === 0 ? i : 4 - i;
           break;
         case 'I':
           cardinality = 2;
-          a = i => 1 - i;
-          b = i => i;
+          a = (i): number => 1 - i;
+          b = (i): number => i;
           break;
         case '\\':
           cardinality = 2;
-          a = i => 1 - i;
-          b = i => 1 - i;
+          a = (i): number => 1 - i;
+          b = (i): number => 1 - i;
           break;
         default:
           cardinality = 1;
-          a = i => i;
-          b = i => i;
+          a = (i): number => i;
+          b = (i): number => i;
           break;
       }
 
@@ -98,15 +98,15 @@ export class SimpleTiledModel extends Model {
 
       if (unique) {
         for (let t = 0; t < cardinality; t++) {
-          let texture: PIXI.Texture = PIXI.Texture.from(`${tile.name}-${t}.png`);
+          const texture: PIXI.Texture = PIXI.Texture.from(`${tile.name}-${t}.png`);
           app.renderer.render(new PIXI.Sprite(texture), renderTexture);
-          let bitmap = app.renderer.plugins.extract.pixels(renderTexture);
+          const bitmap = app.renderer.plugins.extract.pixels(renderTexture);
           this.tiles.push(mapTile((x, y) => Color.fromBuffer(bitmap, tilesize, x, y)));
         }
       } else {
-        let texture: PIXI.Texture = loader.resources[`${tile.name}.png`].texture!;
+        const texture: PIXI.Texture = loader.resources[`${tile.name}.png`].texture!;
         app.renderer.render(new PIXI.Sprite(texture), renderTexture);
-        let bitmap = app.renderer.plugins.extract.pixels(renderTexture);
+        const bitmap = app.renderer.plugins.extract.pixels(renderTexture);
         this.tiles.push(mapTile((x, y) => Color.fromBuffer(bitmap, tilesize, x, y)));
 
         for (let t = 1; t < cardinality; t++) {
@@ -122,7 +122,7 @@ export class SimpleTiledModel extends Model {
     this.T = action.length;
 
     this.propagator = buffer(4, []);
-    let tmpPropagator: boolean[][][] = buffer(4, []);
+    const tmpPropagator: boolean[][][] = buffer(4, []);
     for (let d = 0; d < 4; d++) {
       tmpPropagator[d] = buffer(this.T, []);
       this.propagator[d] = buffer(this.T, []);
@@ -131,14 +131,14 @@ export class SimpleTiledModel extends Model {
       }
     }
 
-    for (let neighbor of tileset.neighbors) {
-      let left = neighbor.left;
-      let right = neighbor.right;
+    for (const neighbor of tileset.neighbors) {
+      const left = neighbor.left;
+      const right = neighbor.right;
 
-      let L = action[firstOccurrence[left[0]]!][left.length === 1 ? 0 : parseInt(left[1])];
-      let D = action[L][1];
-      let R = action[firstOccurrence[right[0]]!][right.length === 1 ? 0 : parseInt(right[1])];
-      let U = action[R][1];
+      const L = action[firstOccurrence[left[0]]!][left.length === 1 ? 0 : parseInt(left[1])];
+      const D = action[L][1];
+      const R = action[firstOccurrence[right[0]]!][right.length === 1 ? 0 : parseInt(right[1])];
+      const U = action[R][1];
 
       tmpPropagator[0][R][L] = true;
       tmpPropagator[0][action[R][6]][action[L][6]] = true;
@@ -158,7 +158,7 @@ export class SimpleTiledModel extends Model {
       }
     }
 
-    let sparsePropagator: number[][][] = [];
+    const sparsePropagator: number[][][] = [];
     for (let d = 0; d < 4; d++) {
       sparsePropagator[d] = [];
       for (let t = 0; t < this.T; t++) {
@@ -168,8 +168,8 @@ export class SimpleTiledModel extends Model {
 
     for (let d = 0; d < 4; d++)
       for (let t1 = 0; t1 < this.T; t1++) {
-        let sp = sparsePropagator[d][t1];
-        let tp = tmpPropagator[d][t1];
+        const sp = sparsePropagator[d][t1];
+        const tp = tmpPropagator[d][t1];
 
         for (let t2 = 0; t2 < this.T; t2++) {
           if (tp[t2]) {
@@ -177,7 +177,7 @@ export class SimpleTiledModel extends Model {
           }
         }
 
-        let ST = sp.length;
+        const ST = sp.length;
         this.propagator[d][t1] = buffer(ST, 0);
         for (let st = 0; st < ST; st++) {
           this.propagator[d][t1][st] = sp[st];
@@ -210,11 +210,11 @@ export class SimpleTiledModel extends Model {
     if (this.observed != null) {
       for (let x = 0; x < this.FMX; x++) {
         for (let y = 0; y < this.FMY; y++) {
-          let tile = this.tiles[this.observed[x + y * this.FMX]];
+          const tile = this.tiles[this.observed[x + y * this.FMX]];
           for (let yt = 0; yt < this.tilesize; yt++) {
             for (let xt = 0; xt < this.tilesize; xt++) {
-              let c = tile[xt + yt * this.tilesize];
-              let offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
+              const c = tile[xt + yt * this.tilesize];
+              const offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
               bitmap[offset * 4] = c.R;
               bitmap[offset * 4 + 1] = c.G;
               bitmap[offset * 4 + 2] = c.B;
@@ -226,27 +226,27 @@ export class SimpleTiledModel extends Model {
     } else {
       for (let x = 0; x < this.FMX; x++) {
         for (let y = 0; y < this.FMY; y++) {
-          let a = this.wave![x + y * this.FMX];
-          let weights_sum = 0;
+          const a = this.wave![x + y * this.FMX];
+          let weightsSum = 0;
           for (let t = 0; t < this.T; t++) {
             if (a[t]) {
-              weights_sum += this.weights[t];
+              weightsSum += this.weights[t];
             }
           }
-          let lambda = 1 / weights_sum;
+          const lambda = 1 / weightsSum;
 
           for (let yt = 0; yt < this.tilesize; yt++) {
             for (let xt = 0; xt < this.tilesize; xt++) {
 
               let r = 0, g = 0, b = 0, aa = 0;
               for (let t = 0; t < this.T; t++) if (a[t]) {
-                let c = this.tiles[t][xt + yt * this.tilesize];
+                const c = this.tiles[t][xt + yt * this.tilesize];
                 r += c.R * this.weights[t] * lambda;
                 g += c.G * this.weights[t] * lambda;
                 b += c.B * this.weights[t] * lambda;
                 aa += c.A * this.weights[t] * lambda;
               }
-              let offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
+              const offset = x * this.tilesize + xt + (y * this.tilesize + yt) * this.FMX * this.tilesize;
               bitmap[offset * 4] = r;
               bitmap[offset * 4 + 1] = g;
               bitmap[offset * 4 + 2] = b;
@@ -258,14 +258,14 @@ export class SimpleTiledModel extends Model {
     }
 
     const scale = 5;
-    let canvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas");
     canvas.width = this.FMX * this.tilesize * scale;
     canvas.height = this.FMY * this.tilesize * scale;
-    let ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d")!;
     ctx.imageSmoothingEnabled = false;
     for (let i = 0, j = 0; j < bitmap.length; i++, j += 4) {
       ctx.fillStyle = `rgb(${bitmap[j]},${bitmap[j + 1]},${bitmap[j + 2]})`;
-      let x = i % (this.FMX * this.tilesize), y = Math.floor(i / (this.FMX * this.tilesize));
+      const x = i % (this.FMX * this.tilesize), y = Math.floor(i / (this.FMX * this.tilesize));
       ctx.fillRect(x * scale, y * scale, scale, scale);
     }
     ctx.strokeStyle = "grey";
@@ -276,8 +276,8 @@ export class SimpleTiledModel extends Model {
     }
 
     ctx.strokeStyle = "red";
-    for (let i of markup) {
-      let x = i % this.FMX, y = Math.floor(i / this.FMX);
+    for (const i of markup) {
+      const x = i % this.FMX, y = Math.floor(i / this.FMX);
       ctx.strokeRect(x * scale * this.tilesize, y * scale * this.tilesize, scale * this.tilesize, scale * this.tilesize);
     }
 
@@ -298,7 +298,7 @@ interface Tileset {
 }
 
 interface TileSettings {
-  name: string
+  name: string;
   symmetry?: string;
   weight?: number;
 }

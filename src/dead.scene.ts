@@ -25,19 +25,19 @@ export class YouDeadScene implements Scene {
   resume(): void {
   }
 
-  renderTitle() {
-    let title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
+  private renderTitle(): void {
+    const title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
     title.position.set(this._controller.app.screen.width >> 1, 64);
     this._controller.stage.addChild(title);
 
-    let youDead = new PIXI.BitmapText("YOU DEAD", {font: {name: "alagard", size: 128}, tint: 0xFF0000});
+    const youDead = new PIXI.BitmapText("YOU DEAD", {font: {name: "alagard", size: 128}, tint: 0xFF0000});
     youDead.anchor = 0.5;
     youDead.position.set(this._controller.app.screen.width >> 1, 256);
     this._controller.stage.addChild(youDead);
   }
 
-  renderHelp() {
+  private renderHelp(): void {
     const line = new PIXI.BitmapText("PRESS F TO RESTART", {font: {name: "alagard", size: 32}});
     line.anchor = 0.5;
     line.position.set(
@@ -47,7 +47,7 @@ export class YouDeadScene implements Scene {
     this._controller.stage.addChild(line);
   }
 
-  handleInput() {
+  private handleInput(): void {
     if (this._controller.joystick.hit.once()) {
       this._controller.selectHero();
     }
