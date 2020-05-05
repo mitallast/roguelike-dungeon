@@ -33,6 +33,7 @@ export class Button extends PIXI.Container implements Selectable {
   private readonly _width: number;
   private readonly _height: number;
   private readonly _textSize: number;
+  private readonly _border: boolean;
   private readonly _text: PIXI.BitmapText;
   private readonly _bg: PIXI.Graphics;
   private _selected: boolean = false;
@@ -43,11 +44,13 @@ export class Button extends PIXI.Container implements Selectable {
     readonly width?: number;
     readonly height?: number;
     readonly textSize?: number;
+    readonly border?: boolean;
   }) {
     super();
     this._width = options.width || 200;
     this._height = options.height || 24;
     this._textSize = options.textSize || 16;
+    this._border = options.border || false;
     this._bg = new PIXI.Graphics();
     this._text = new PIXI.BitmapText(options.label, {font: {name: "alagard", size: this._textSize}});
     this._text.anchor = new PIXI.Point(0.5, 0.5);
@@ -62,14 +65,22 @@ export class Button extends PIXI.Container implements Selectable {
 
   set selected(selected: boolean) {
     this._selected = selected;
-    this._bg
-      .clear()
-      .beginFill(Colors.uiBackground)
-      .drawRect(0, 0, this._width, this._height)
-      .endFill()
-      .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
-      .drawRect(Sizes.uiBorder, Sizes.uiBorder, this._width - Sizes.uiBorder * 2, this._height - Sizes.uiBorder * 2)
-      .endFill();
+    if (this._border) {
+      this._bg
+        .clear()
+        .beginFill(Colors.uiBackground)
+        .drawRect(0, 0, this._width, this._height)
+        .endFill()
+        .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
+        .drawRect(Sizes.uiBorder, Sizes.uiBorder, this._width - Sizes.uiBorder * 2, this._height - Sizes.uiBorder * 2)
+        .endFill();
+    } else {
+      this._bg
+        .clear()
+        .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
+        .drawRect(0, 0, this._width, this._height)
+        .endFill();
+    }
   }
 }
 
@@ -509,7 +520,6 @@ export class VStack extends PIXI.Container {
 
   destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
     super.destroy(options);
-    this._background?.destroy();
   }
 
   protected onChildrenChange(): void {
@@ -527,7 +537,7 @@ export class VStack extends PIXI.Container {
     super.updateTransform();
   }
 
-  private updateLayout(): void {
+  protected updateLayout(): void {
     let maxWidth = 0;
     let y = this._padding;
     const x = this._padding;
@@ -537,6 +547,7 @@ export class VStack extends PIXI.Container {
       if (!first) y += this._spacing;
       first = false;
       child.position.set(x, y);
+      child.updateTransform();
       const bounds = child.getBounds();
       y += bounds.height;
       maxWidth = Math.max(maxWidth, bounds.width);
@@ -583,7 +594,6 @@ export class HStack extends PIXI.Container {
 
   destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
     super.destroy(options);
-    this._background?.destroy();
   }
 
   protected onChildrenChange(): void {
@@ -601,7 +611,7 @@ export class HStack extends PIXI.Container {
     super.updateTransform();
   }
 
-  private updateLayout(): void {
+  protected updateLayout(): void {
     let maxHeight = 0;
     const y = this._padding;
     let x = this._padding;
@@ -611,6 +621,7 @@ export class HStack extends PIXI.Container {
       if (!first) x += this._spacing;
       first = false;
       child.position.set(x, y);
+      child.updateTransform();
       const bounds = child.getBounds();
       x += bounds.width;
       maxHeight = Math.max(maxHeight, bounds.height);

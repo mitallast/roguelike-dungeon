@@ -2,7 +2,7 @@ import {DungeonMap, DungeonObject, DungeonZIndexes} from "./dungeon.map";
 import {Hero, HeroAI} from "./hero";
 import {LightType} from "./dungeon.light";
 import {ModalScene, SceneController} from "./scene";
-import {Button, Colors, Layout, SelectableGrid, Sizes} from "./ui";
+import {Button, Colors, SelectableGrid, VStack} from "./ui";
 import * as PIXI from 'pixi.js';
 
 const TILE_SIZE = 16;
@@ -94,59 +94,36 @@ export class DungeonBonfire implements DungeonObject {
   }
 }
 
-export class DungeonBonfireModal implements ModalScene {
+export class DungeonBonfireModal extends VStack implements ModalScene {
   private readonly _controller: SceneController;
   private readonly _hero: Hero;
 
-  private _container: PIXI.Container | null = null;
-  private _background: PIXI.Graphics | null = null;
   private _selectable: SelectableGrid | null = null;
 
   constructor(controller: SceneController, hero: Hero) {
+    super({background: {color: Colors.background}});
     this._controller = controller;
     this._hero = hero;
   }
 
+  destroy(): void {
+    this._controller.app.ticker.remove(this.handleInput, this);
+    this._selectable = null;
+    super.destroy({children: true});
+  }
+
   init(): void {
-    const width = 400;
-    const height = 400;
-
-    const buttonHeight = 32;
-    const buttonTextSize = 24;
-
     this._selectable = new SelectableGrid(this._controller.joystick);
-
-    this._background = new PIXI.Graphics();
-    this._background.beginFill(0x000000).drawRect(0, 0, width, height).endFill();
-    this._background.zIndex = 0;
-
-    this._container = new PIXI.Container();
-    this._container.addChild(this._background);
-    this._container.sortChildren();
-    this._container.position.set(
-      (this._controller.app.screen.width >> 1) - (width >> 1),
-      (this._controller.app.screen.height >> 1) - (height >> 1),
-    );
-    this._controller.stage.addChild(this._container);
-
-    this._controller.app.ticker.add(this.handleInput, this);
-
-    const layout = new Layout();
-    layout.offset(Sizes.uiMargin, Sizes.uiMargin);
-    layout.commit();
 
     let y = 0;
     const addButton = (label: string, action: () => void): void => {
       const button = new Button({
         label: label,
-        width: width - Sizes.uiMargin * 2,
-        height: buttonHeight,
-        textSize: buttonTextSize
+        width: 400,
+        height: 32,
+        textSize: 24
       });
-      this._container!.addChild(button);
-      button.position.set(layout.x, layout.y);
-      layout.offset(0, buttonHeight);
-      layout.offset(0, Sizes.uiMargin);
+      this.addChild(button);
       this._selectable!.set(0, y, button, action);
       y++;
     };
@@ -155,6 +132,14 @@ export class DungeonBonfireModal implements ModalScene {
       addButton(`Level ${level}`, () => this.goto(level));
     }
     addButton(`Cancel`, () => this.cancel());
+
+    this._controller.stage.addChild(this);
+    this._controller.app.ticker.add(this.handleInput, this);
+
+    this.position.set(
+      (this._controller.app.screen.width >> 1) - (this.width >> 1),
+      (this._controller.app.screen.height >> 1) - (this.height >> 1),
+    );
   }
 
   private goto(level: number): void {
@@ -171,14 +156,5 @@ export class DungeonBonfireModal implements ModalScene {
 
   private handleInput(): void {
     this._selectable?.handleInput();
-  }
-
-  destroy(): void {
-    this._controller.app.ticker.remove(this.handleInput, this);
-    this._container?.destroy();
-    this._container = null;
-    this._background?.destroy();
-    this._background = null;
-    this._selectable = null;
   }
 }

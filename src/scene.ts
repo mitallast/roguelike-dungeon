@@ -14,7 +14,6 @@ import {Hero} from "./hero";
 import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
 import {Npc} from "./npc";
-import * as PIXI from "pixi.js";
 import {DungeonBonfireModal} from "./dungeon.bonfire";
 import {SceneBanner, DungeonBannerOptions} from "./scene.banner";
 import {
@@ -22,6 +21,7 @@ import {
   DefaultInventoryActionsController,
   SellingInventoryActionsController
 } from "./inventory";
+import * as PIXI from "pixi.js";
 
 export interface Scene {
   init(): void;
