@@ -1,4 +1,4 @@
-import {Hero, HeroStateView} from "./hero";
+import {Hero, HeroStateView} from "./characters";
 import {DungeonMap, DungeonTitle} from "./dungeon.map";
 import {Scene, SceneController} from "./scene";
 import {BeltInventoryView} from "./inventory";

@@ -1,6 +1,6 @@
 import {UsableDrop, Weapon} from "../drop";
 import {EventPublisher, Publisher} from "../observable";
-import {Character} from "../character";
+import {Character} from "../characters";
 import {InventoryCell} from "./InventoryCell";
 
 export class Inventory {

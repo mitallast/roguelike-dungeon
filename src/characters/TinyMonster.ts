@@ -1,7 +1,8 @@
-import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {MonsterAI, MonsterCategory, MonsterCharacter, MonsterType} from "./monster";
-import {HitAnimationController, ScanDirection} from "./character";
-import {monsterWeapons, Weapon, WeaponConfig} from "./drop";
+import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {MonsterAI, MonsterCategory, Monster, MonsterType} from "./Monster";
+import {ScanDirection} from "./Character";
+import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
+import {HitAnimationController} from "./AnimationController";
 
 export interface TinyMonsterConfig {
   readonly name: string;
@@ -79,7 +80,7 @@ export const tinyMonsters: TinyMonsterConfig[] = [
   },
 ];
 
-export class TinyMonster extends MonsterCharacter {
+export class TinyMonster extends Monster {
   constructor(config: TinyMonsterConfig, level: number) {
     super({
       name: config.name,

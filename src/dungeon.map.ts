@@ -1,5 +1,5 @@
 import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "./drop";
-import {Hero, HeroAI} from "./hero";
+import {Hero, HeroAI} from "./characters";
 import {DungeonLight} from "./dungeon.light";
 import {SceneController} from "./scene";
 import {RNG} from "./rng";

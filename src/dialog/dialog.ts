@@ -1,5 +1,4 @@
-import {Hero} from "../hero";
-import {Npc} from "../npc";
+import {Hero, Npc} from "../characters";
 import {SceneController} from "../scene";
 import {EventPublisher, Publisher} from "../observable";
 import {Expression} from "../expression";

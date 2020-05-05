@@ -1,4 +1,4 @@
-import {Hero} from "../hero";
+import {Hero} from "../characters";
 import {InventoryCell} from "../inventory";
 import {RNG} from "../rng";
 import {DropInfo, UsableDrop} from "./Drop";

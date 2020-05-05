@@ -1,11 +1,10 @@
-import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {MonsterAI, MonsterCategory, MonsterCharacter, MonsterType} from "./monster";
-import {TinyMonsterAI, tinyMonsters} from "./tiny.monster"
-import {Colors} from "./ui";
-import {BarView} from "./bar.view";
-import {WeaponConfig, monsterWeapons, Weapon} from "./drop";
-import {HitAnimationController} from "./character";
-import * as PIXI from 'pixi.js';
+import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {MonsterAI, MonsterCategory, Monster, MonsterType} from "./Monster";
+import {TinyMonsterAI, tinyMonsters} from "./TinyMonster"
+import {Colors} from "../ui";
+import {WeaponConfig, monsterWeapons, Weapon} from "../drop";
+import {BossHealthView} from "./BossHealthView";
+import {HitAnimationController} from "./AnimationController";
 
 export interface BossConfig {
   readonly name: string;
@@ -35,7 +34,7 @@ export const bossMonsters: BossConfig[] = [
   },
 ];
 
-export class BossMonster extends MonsterCharacter {
+export class BossMonster extends Monster {
   constructor(config: BossConfig, level: number) {
     super({
       name: config.name,
@@ -126,58 +125,5 @@ export class BossMonsterAI extends MonsterAI {
     }
     const config = this.dungeon.rng.select(minions)!;
     return new TinyMonsterAI(config, this.dungeon, x, y);
-  }
-}
-
-export class BossHealthView extends PIXI.Container {
-  private readonly _boss: BossMonster;
-  private readonly _health: BarView;
-
-  private readonly _widthMax: number;
-  private readonly _pointWidth: number;
-
-  private _isDestroyed = false;
-
-  constructor(boss: BossMonster) {
-    super();
-    this._boss = boss;
-
-    const HEALTH_MAX_WIDTH = 500;
-    const HEALTH_WIDTH = 4;
-    this._pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / this._boss.healthMax.get()));
-
-    this._widthMax = this._pointWidth * this._boss.healthMax.get();
-
-    this._health = new BarView({
-      color: Colors.uiRed,
-      widthMax: this._widthMax,
-      labelCenter: true
-    });
-    this._health.position.set(-(this._widthMax >> 1), 0);
-    this.addChild(this._health);
-
-    this._boss.health.subscribe(this.updateHealth, this);
-    this._boss.dead.subscribe(this.updateDead, this);
-  }
-
-  destroy(): void {
-    if (!this._isDestroyed) {
-      this._isDestroyed = true;
-      this._boss.health.unsubscribe(this.updateHealth, this);
-      this._boss.dead.unsubscribe(this.updateDead, this);
-      this._health.destroy();
-      super.destroy();
-    }
-  }
-
-  private updateHealth(health: number): void {
-    this._health.width = this._pointWidth * health;
-    this._health.label = `${this._boss.name} - ${health}`;
-  }
-
-  private updateDead(dead: boolean): void {
-    if (dead) {
-      this.destroy();
-    }
   }
 }

@@ -1,13 +1,20 @@
 import {DungeonMap, MapCell} from "./dungeon.map";
 import {RNG} from "./rng";
-import {Hero, HeroAI} from "./hero";
+import {
+  Hero,
+  HeroAI,
+  TinyMonsterAI,
+  tinyMonsters,
+  BossConfig,
+  BossMonsterAI,
+  bossMonsters,
+  MonsterCategory,
+  NpcAI,
+  NPCs
+} from "./characters";
 import {Resources} from "./resources";
 import {SceneController} from "./scene";
-import {TinyMonsterAI, tinyMonsters} from "./tiny.monster";
-import {BossConfig, BossMonsterAI, bossMonsters} from "./boss.monster";
-import {NpcAI, NPCs} from "./npc";
 import {LightType} from "./dungeon.light";
-import {MonsterCategory} from "./monster";
 import {DungeonBonfire} from "./dungeon.bonfire";
 import * as PIXI from 'pixi.js';
 

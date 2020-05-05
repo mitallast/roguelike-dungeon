@@ -1,5 +1,5 @@
 import {DungeonMap, DungeonObject, DungeonZIndexes} from "./dungeon.map";
-import {Hero, HeroAI} from "./hero";
+import {Hero, HeroAI} from "./characters";
 import {LightType} from "./dungeon.light";
 import {ModalScene, SceneController} from "./scene";
 import {Button, Colors, SelectableGrid, VStack} from "./ui";

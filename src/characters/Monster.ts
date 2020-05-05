@@ -1,13 +1,8 @@
-import {DungeonMap} from "./dungeon.map";
-import {Hero, HeroAI} from "./hero";
-import {
-  BaseCharacterAI,
-  Character,
-  CharacterAI,
-  CharacterViewOptions,
-  IdleAnimationController,
-  ScanDirection
-} from "./character";
+import {DungeonMap} from "../dungeon.map";
+import {Hero, HeroAI} from "./Hero";
+import {BaseCharacterAI, Character, CharacterAI, ScanDirection} from "./Character";
+import {IdleAnimationController} from "./AnimationController";
+import {CharacterViewOptions} from "./CharacterView";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -28,7 +23,7 @@ export enum MonsterState {
   ALARM = 1,
 }
 
-export abstract class MonsterCharacter extends Character {
+export abstract class Monster extends Character {
   readonly level: number;
   readonly luck: number;
   readonly xp: number;
@@ -66,7 +61,7 @@ export abstract class MonsterCharacter extends Character {
 }
 
 export abstract class MonsterAI extends BaseCharacterAI {
-  abstract readonly character: MonsterCharacter;
+  abstract readonly character: Monster;
   abstract readonly max_distance: number;
   readonly interacting: boolean = false;
 

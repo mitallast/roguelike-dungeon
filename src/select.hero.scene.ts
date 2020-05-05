@@ -1,5 +1,5 @@
 import {Scene, SceneController} from "./scene";
-import {heroCharacterNames, Hero} from "./hero";
+import {heroCharacterNames, Hero} from "./characters";
 import {Weapon, weapons} from "./drop";
 import {Colors, Selectable, SelectableGrid} from "./ui";
 import {Resources} from "./resources";

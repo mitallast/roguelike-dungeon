@@ -1,4 +1,4 @@
-import {Character} from "../character";
+import {Character} from "../characters";
 import {EventPublisher, Observable, ObservableVar} from "../observable";
 import {UsableDrop} from "../drop";
 import {BackpackInventory, BeltInventory, EquipmentInventory} from "./Inventory";

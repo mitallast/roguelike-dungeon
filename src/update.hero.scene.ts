@@ -1,6 +1,6 @@
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon.generator";
-import {Hero, HeroStateView} from "./hero";
+import {Hero, HeroStateView} from "./characters";
 import {DefaultInventoryActionsController, InventoryView} from "./inventory";
 import {Button, Layout, SelectableGrid, Colors, Sizes} from "./ui";
 import * as PIXI from "pixi.js";

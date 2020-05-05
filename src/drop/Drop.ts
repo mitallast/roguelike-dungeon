@@ -1,7 +1,6 @@
 import {RNG} from "../rng";
-import {Hero} from "../hero";
+import {Hero, Character} from "../characters";
 import {InventoryCell} from "../inventory";
-import {Character} from "../character";
 
 export interface Drop {
   readonly spriteName: string;

@@ -1,8 +1,8 @@
-import {BaseCharacterAI, Character} from "./character";
-import {DungeonMap, DungeonZIndexes} from "./dungeon.map";
-import {Hero, HeroAI} from "./hero";
-import {SceneController} from "./scene";
-import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "./drop";
+import {BaseCharacterAI, Character} from "./Character";
+import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {Hero, HeroAI} from "./Hero";
+import {SceneController} from "../scene";
+import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "../drop";
 import * as PIXI from "pixi.js";
 
 export abstract class NpcSkill {
