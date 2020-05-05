@@ -9,7 +9,7 @@ import {DungeonMap} from "./dungeon.map";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
 import {UpdateHeroScene} from "./update.hero.scene";
-import {InventoryModalScene} from "./inventory.modal";
+import {InventoryModalScene} from "./inventory";
 import {Hero} from "./hero";
 import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
