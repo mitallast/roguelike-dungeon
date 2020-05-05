@@ -1,5 +1,5 @@
 import {BaseCharacterAI, Character, ScanDirection} from "./Character";
-import {DungeonMap, DungeonZIndexes, MapCell} from "../dungeon.map";
+import {DungeonMap, DungeonZIndexes, DungeonMapCell} from "../dungeon";
 import {UsableDrop, Weapon} from "../drop";
 import {Observable, ObservableVar} from "../observable";
 import {DigitKey, KeyBind} from "../input";
@@ -301,7 +301,7 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected scanInteracting(direction: ScanDirection, maxDistance: number): MapCell[] {
+  protected scanInteracting(direction: ScanDirection, maxDistance: number): DungeonMapCell[] {
     return this.scanCells(direction, maxDistance, c => c.interacting);
   }
 

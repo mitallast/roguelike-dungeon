@@ -1,5 +1,5 @@
 import {Scene, SceneController} from "./scene";
-import {GenerateOptions} from "./dungeon.generator";
+import {GenerateOptions} from "./dungeon";
 import {Hero, HeroStateView} from "./characters";
 import {DefaultInventoryActionsController, InventoryView} from "./inventory";
 import {Button, Layout, SelectableGrid, Colors, Sizes} from "./ui";

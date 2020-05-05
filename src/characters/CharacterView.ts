@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import {AnimationClip, SpriteAnimationClip} from "../animation";
 import {Resources} from "../resources";
-import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Weapon} from "../drop";
 
 const TILE_SIZE = 16;

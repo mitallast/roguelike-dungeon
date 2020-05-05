@@ -1,7 +1,7 @@
-import {Hero, HeroStateView} from "./characters";
-import {DungeonMap, DungeonTitle} from "./dungeon.map";
-import {Scene, SceneController} from "./scene";
-import {BeltInventoryView} from "./inventory";
+import {Hero, HeroStateView} from "../characters";
+import {DungeonMap, DungeonTitle} from "./DungeonMap";
+import {Scene, SceneController} from "../scene";
+import {BeltInventoryView} from "../inventory";
 
 export class DungeonScene implements Scene {
   private readonly _controller: SceneController;

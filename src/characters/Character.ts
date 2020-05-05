@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import {DungeonMap, MapCell, DungeonObject} from "../dungeon.map";
+import {DungeonMap, DungeonMapCell, DungeonObject} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
 import {UsableDrop, Weapon} from "../drop";
 import {PathFinding} from "../pathfinding";
@@ -215,23 +215,23 @@ export abstract class BaseCharacterAI implements DungeonObject {
 
   protected abstract onDead(): void;
 
-  protected findDropCell(maxDistance: number = 5): (MapCell | null) {
+  protected findDropCell(maxDistance: number = 5): (DungeonMapCell | null) {
     return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
   }
 
-  protected findSpawnCell(maxDistance: number = 5): (MapCell | null) {
+  protected findSpawnCell(maxDistance: number = 5): (DungeonMapCell | null) {
     return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject);
   }
 
-  protected findCell(maxDistance: number, predicate: (cell: MapCell) => boolean): (MapCell | null) {
+  protected findCell(maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): (DungeonMapCell | null) {
     const posX = this.x;
     const posY = this.y;
     const isLeft = this.view.isLeft;
 
-    let closestCell: MapCell | null = null;
+    let closestCell: DungeonMapCell | null = null;
     let closestDistance: number | null = null;
 
-    const metric = (a: MapCell): number => {
+    const metric = (a: DungeonMapCell): number => {
       return Math.max(Math.abs(a.x - posX), Math.abs(a.y - posY)) +
         (a.y !== posY ? 0.5 : 0) + // boost X
         (a.x === posX && a.y === posY ? 0 : 1) + // boost self
@@ -335,7 +335,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     return [...set];
   }
 
-  protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: MapCell) => boolean): MapCell[] {
+  protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell[] {
     const posX = this.x;
     const posY = this.y;
 
@@ -348,7 +348,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     const scanMinY = Math.max(0, posY - maxDistance);
     const scanMaxY = Math.min(this.dungeon.height - 1, posY + maxDistance);
 
-    const cells: MapCell[] = [];
+    const cells: DungeonMapCell[] = [];
 
     for (let scanY = scanMinY; scanY <= scanMaxY; scanY++) {
       for (let scanX = scanMinX; scanX <= scanMaxX; scanX++) {

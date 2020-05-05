@@ -1,5 +1,5 @@
 import {Resources} from "./resources";
-import {DungeonZIndexes} from "./dungeon.map";
+import {DungeonZIndexes} from "./dungeon";
 import {CellType, Direction, TilesetRules} from "./wfc/even.simple.tiled";
 import {Indexer} from "./indexer";
 import {Layout} from "./ui";

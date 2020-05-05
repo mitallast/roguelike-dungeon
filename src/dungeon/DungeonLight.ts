@@ -1,10 +1,10 @@
-import {DungeonMap} from "./dungeon.map";
-import {SegmentType, ShadowCaster} from "./shadow.caster";
 import * as PIXI from 'pixi.js';
+import {DungeonMap} from "./DungeonMap";
+import {SegmentType, ShadowCaster} from "./ShadowCaster";
 
 const TILE_SIZE = 16;
 
-export interface LightPoint {
+export interface Point {
   readonly x: number;
   readonly y: number;
 }
@@ -20,7 +20,7 @@ export class DungeonLight {
   private readonly _bonfireTexture: PIXI.Texture;
   private readonly _shadowCaster: ShadowCaster;
 
-  private readonly _lights: LightSource[] = [];
+  private readonly _lights: DungeonLightSource[] = [];
 
   constructor(dungeon: DungeonMap) {
     this._dungeon = dungeon;
@@ -66,10 +66,10 @@ export class DungeonLight {
           const position = new PIXI.Point(x * TILE_SIZE, y * TILE_SIZE);
           switch (cell.floorName) {
             case 'wall_fountain_basin_red':
-              this.addLight(position, LightType.RED_BASIN);
+              this.addLight(position, DungeonLightType.RED_BASIN);
               break;
             case 'wall_fountain_basin_blue':
-              this.addLight(position, LightType.BLUE_BASIN);
+              this.addLight(position, DungeonLightType.BLUE_BASIN);
               break;
             default:
               break;
@@ -81,7 +81,7 @@ export class DungeonLight {
           const hasLeft = x > 0 && dungeon.cell(x - 1, y).hasFloor;
           const hasRight = x + 1 < dungeon.width && dungeon.cell(x + 1, y).hasFloor;
 
-          let config: WallConfig;
+          let config: DungeonWallConfig;
           const cellWall = cell.wallName;
           if (cellWall && this._config[cellWall]) {
             config = this._config[cellWall] || this._wall_default;
@@ -101,34 +101,34 @@ export class DungeonLight {
     this.update();
   }
 
-  addLight(position: LightPoint, type: LightType): void {
+  addLight(position: Point, type: DungeonLightType): void {
     let texture: PIXI.Texture;
     let maxDistance: number;
     switch (type) {
-      case LightType.HERO:
+      case DungeonLightType.HERO:
         texture = this._heroLightTexture;
         maxDistance = 350;
         break;
-      case LightType.RED_BASIN:
+      case DungeonLightType.RED_BASIN:
         texture = this._fountainRedTexture;
         maxDistance = 150;
         break;
-      case LightType.BLUE_BASIN:
+      case DungeonLightType.BLUE_BASIN:
         texture = this._fountainBlueTexture;
         maxDistance = 150;
         break;
-      case LightType.BONFIRE:
+      case DungeonLightType.BONFIRE:
         texture = this._bonfireTexture;
         maxDistance = 250;
         break;
     }
 
-    const light = new LightSource(position, maxDistance, texture, this.container);
+    const light = new DungeonLightSource(position, maxDistance, texture, this.container);
     this._lights.push(light);
     this.renderLight(light);
   }
 
-  private add(x: number, y: number, segments: WallSegment[]): void {
+  private add(x: number, y: number, segments: DungeonWallSegment[]): void {
     for (const segment of segments) {
       this._shadowCaster.addSegment(
         x * TILE_SIZE + segment.x1,
@@ -149,7 +149,7 @@ export class DungeonLight {
     }
   }
 
-  private renderLight(light: LightSource): void {
+  private renderLight(light: DungeonLightSource): void {
     const start = new PIXI.Point(light.position.x + 8, light.position.y + 8);
     this._shadowCaster.setLightLocation(start.x, start.y, light.maxDistance);
     const output = this._shadowCaster.sweep();
@@ -177,7 +177,7 @@ export class DungeonLight {
     return PIXI.Texture.from(c);
   }
 
-  private readonly _wall_top: WallConfig = {
+  private readonly _wall_top: DungeonWallConfig = {
     default: [
       {x1: 0, y1: 12, x2: 16, y2: 12, type: SegmentType.NORMAL},
       {x1: 0, y1: 12, x2: 0, y2: 16, type: SegmentType.NORMAL},
@@ -194,7 +194,7 @@ export class DungeonLight {
     ],
     bottom: []
   };
-  private readonly _wall_side_left: WallConfig = {
+  private readonly _wall_side_left: DungeonWallConfig = {
     default: [
       {x1: 11, y1: 0, x2: 11, y2: 16, type: SegmentType.NORMAL},
       {x1: 11, y1: 0, x2: 16, y2: 0, type: SegmentType.NORMAL},
@@ -211,7 +211,7 @@ export class DungeonLight {
       {x1: 0, y1: 16, x2: 11, y2: 16, type: SegmentType.NORMAL},
     ],
   };
-  private readonly _wall_side_right: WallConfig = {
+  private readonly _wall_side_right: DungeonWallConfig = {
     default: [
       {x1: 5, y1: 0, x2: 5, y2: 16, type: SegmentType.NORMAL},
       {x1: 0, y1: 0, x2: 5, y2: 0, type: SegmentType.NORMAL},
@@ -228,7 +228,7 @@ export class DungeonLight {
       {x1: 5, y1: 16, x2: 16, y2: 16, type: SegmentType.NORMAL},
     ],
   };
-  private readonly _wall_corner_left: WallConfig = {
+  private readonly _wall_corner_left: DungeonWallConfig = {
     default: [
       {x1: 5, y1: 0, x2: 5, y2: 12, type: SegmentType.NORMAL},
       {x1: 5, y1: 12, x2: 16, y2: 12, type: SegmentType.NORMAL},
@@ -243,7 +243,7 @@ export class DungeonLight {
     ],
     bottom: [],
   };
-  private readonly _wall_corner_right: WallConfig = {
+  private readonly _wall_corner_right: DungeonWallConfig = {
     default: [
       {x1: 11, y1: 0, x2: 11, y2: 12, type: SegmentType.NORMAL},
       {x1: 0, y1: 12, x2: 11, y2: 12, type: SegmentType.NORMAL},
@@ -258,7 +258,7 @@ export class DungeonLight {
     right: [],
     bottom: [],
   };
-  private readonly _wall_default: WallConfig = {
+  private readonly _wall_default: DungeonWallConfig = {
     default: [],
     top: [
       {x1: 0, y1: 0, x2: 16, y2: 0, type: SegmentType.TOP},
@@ -274,7 +274,7 @@ export class DungeonLight {
     ],
   };
 
-  private readonly _config: Partial<Record<string, WallConfig>> = {
+  private readonly _config: Partial<Record<string, DungeonWallConfig>> = {
     "wall_top_mid.png": this._wall_top,
     "wall_side_front_left.png": this._wall_side_left,
     "wall_side_front_right.png": this._wall_side_right,
@@ -351,15 +351,15 @@ export class DungeonLight {
   };
 }
 
-interface WallConfig {
-  default: WallSegment[];
-  top: WallSegment[];
-  bottom: WallSegment[];
-  left: WallSegment[];
-  right: WallSegment[];
+export interface DungeonWallConfig {
+  default: DungeonWallSegment[];
+  top: DungeonWallSegment[];
+  bottom: DungeonWallSegment[];
+  left: DungeonWallSegment[];
+  right: DungeonWallSegment[];
 }
 
-interface WallSegment {
+export interface DungeonWallSegment {
   x1: number;
   y1: number;
   x2: number;
@@ -367,22 +367,22 @@ interface WallSegment {
   type: SegmentType;
 }
 
-export enum LightType {
+export enum DungeonLightType {
   HERO = 0,
   RED_BASIN = 1,
   BLUE_BASIN = 2,
   BONFIRE = 3,
 }
 
-class LightSource {
-  readonly position: LightPoint;
+export class DungeonLightSource {
+  readonly position: Point;
   readonly maxDistance: number;
   readonly sprite: PIXI.Sprite;
   readonly mask: PIXI.Graphics;
 
-  private _rendered: LightPoint | null = null;
+  private _rendered: Point | null = null;
 
-  constructor(position: LightPoint, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
+  constructor(position: Point, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
     this.position = position;
     this.maxDistance = maxDistance;
 

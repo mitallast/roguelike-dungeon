@@ -1,4 +1,4 @@
-import {DungeonMap} from "../dungeon.map";
+import {DungeonMap} from "../dungeon";
 import {Hero, HeroAI} from "./Hero";
 import {BaseCharacterAI, Character, CharacterAI, ScanDirection} from "./Character";
 import {IdleAnimationController} from "./AnimationController";

@@ -1,9 +1,9 @@
-import {Scene, SceneController} from "./scene";
-import {DungeonGenerator, GenerateOptions} from "./dungeon.generator";
-import {HybridDungeonGenerator} from "./wfc/dungeon.generator";
-import {DungeonMap} from "./dungeon.map";
-import {Colors} from "./ui";
 import * as PIXI from "pixi.js";
+import {Scene, SceneController} from "../scene";
+import {DungeonGenerator, GenerateOptions} from "./DungeonGenerator";
+import {HybridDungeonGenerator} from "./HybridDungeonGenerator";
+import {DungeonMap} from "./DungeonMap";
+import {Colors} from "../ui";
 
 export class GenerateDungeonScene implements Scene {
   private readonly _controller: SceneController;

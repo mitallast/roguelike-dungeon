@@ -2,10 +2,7 @@ import {RNG} from "./rng";
 import {Joystick} from "./input";
 import {Resources} from "./resources";
 import {YouDeadScene} from "./dead.scene";
-import {GenerateOptions} from "./dungeon.generator";
-import {GenerateDungeonScene} from "./generate.scene";
-import {DungeonScene} from "./dungeon.scene";
-import {DungeonMap} from "./dungeon.map";
+import {GenerateOptions, GenerateDungeonScene, DungeonScene, DungeonMap, DungeonBonfireModal} from "./dungeon";
 import {KeyBindScene} from "./keybind.scene";
 import {SelectHeroScene} from "./select.hero.scene";
 import {UpdateHeroScene} from "./update.hero.scene";
@@ -13,7 +10,6 @@ import {InventoryModalScene} from "./inventory";
 import {Hero, Npc} from "./characters";
 import {PersistentState, SessionPersistentState} from "./persistent.state";
 import {DialogManager, DialogModalScene} from "./dialog";
-import {DungeonBonfireModal} from "./dungeon.bonfire";
 import {SceneBanner, DungeonBannerOptions} from "./scene.banner";
 import {
   BuyingInventoryActionsController,

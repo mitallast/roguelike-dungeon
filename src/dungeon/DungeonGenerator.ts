@@ -1,5 +1,6 @@
-import {DungeonMap, MapCell} from "./dungeon.map";
-import {RNG} from "./rng";
+import * as PIXI from 'pixi.js';
+import {DungeonMap, DungeonMapCell} from "./DungeonMap";
+import {RNG} from "../rng";
 import {
   Hero,
   HeroAI,
@@ -11,12 +12,11 @@ import {
   MonsterCategory,
   NpcAI,
   NPCs
-} from "./characters";
-import {Resources} from "./resources";
-import {SceneController} from "./scene";
-import {LightType} from "./dungeon.light";
-import {DungeonBonfire} from "./dungeon.bonfire";
-import * as PIXI from 'pixi.js';
+} from "../characters";
+import {Resources} from "../resources";
+import {SceneController} from "../scene";
+import {DungeonLightType} from "./DungeonLight";
+import {DungeonBonfire} from "./DungeonBonfire";
 
 export interface GenerateOptions {
   readonly level: number;
@@ -125,8 +125,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   }
 
-  protected findFreePositions(dungeon: DungeonMap, width: number, height: number): MapCell[] {
-    const free: MapCell[] = [];
+  protected findFreePositions(dungeon: DungeonMap, width: number, height: number): DungeonMapCell[] {
+    const free: DungeonMapCell[] = [];
     for (let y = height; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.width - width; x++) {
         let valid = true;
@@ -149,7 +149,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
     const cell = rng.select(free)!;
     const ai = new HeroAI(hero, dungeon, cell.x, cell.y);
-    dungeon.light.addLight(ai.view.point, LightType.HERO);
+    dungeon.light.addLight(ai.view.point, DungeonLightType.HERO);
     return ai;
   }
 
@@ -238,7 +238,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected placeDrop(rng: RNG, dungeon: DungeonMap): void {
-    const free: MapCell[] = [];
+    const free: DungeonMapCell[] = [];
     for (let y = 0; y < dungeon.height; y++) {
       for (let x = 0; x < dungeon.height; x++) {
         const cell = dungeon.cell(x, y);
@@ -258,8 +258,8 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected placeLadder(rng: RNG, dungeon: DungeonMap, hero: HeroAI): void {
-    const free3: [MapCell, number][] = [];
-    const free1: [MapCell, number][] = [];
+    const free3: [DungeonMapCell, number][] = [];
+    const free1: [DungeonMapCell, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
     for (let y = 1; y < dungeon.height - 1; y++) {
       for (let x = 1; x < dungeon.height - 1; x++) {

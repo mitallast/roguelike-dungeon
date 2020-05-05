@@ -1,4 +1,4 @@
-import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {MonsterAI, MonsterCategory, Monster, MonsterType} from "./Monster";
 import {TinyMonsterAI, tinyMonsters} from "./TinyMonster"
 import {Colors} from "../ui";

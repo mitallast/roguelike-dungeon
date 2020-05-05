@@ -1,5 +1,5 @@
 import {BaseCharacterAI, Character} from "./Character";
-import {DungeonMap, DungeonZIndexes} from "../dungeon.map";
+import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Hero, HeroAI} from "./Hero";
 import {SceneController} from "../scene";
 import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "../drop";

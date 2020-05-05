@@ -1,11 +1,11 @@
-import {DungeonMap} from '../dungeon.map';
-import {BaseDungeonGenerator, GenerateOptions} from '../dungeon.generator';
 import {SceneController} from "../scene";
-import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "./even.simple.tiled";
-import {Resolution} from "./model";
+import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "../wfc/even.simple.tiled";
+import {Resolution} from "../wfc/model";
 import {Config} from "../tunneler";
 import {yields} from "../concurency";
 import {RNG} from "../rng";
+import {BaseDungeonGenerator, GenerateOptions} from "./DungeonGenerator";
+import {DungeonMap} from "./DungeonMap";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
   private _model: EvenSimpleTiledModel | null = null;
