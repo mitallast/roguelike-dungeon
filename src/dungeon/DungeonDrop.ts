@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {Drop} from "../drop";
-import {Hero, HeroAI} from "../characters";
+import {Hero, HeroController} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
 const TILE_SIZE = 16;
@@ -41,7 +41,7 @@ export class DungeonDrop implements DungeonObject {
     }
   }
 
-  interact(_: HeroAI): void {
+  interact(_: HeroController): void {
   }
 
   collide(_: DungeonObject): boolean {

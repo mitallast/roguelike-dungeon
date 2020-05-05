@@ -1,12 +1,18 @@
-import {BaseCharacterAI, Character, ScanDirection} from "./Character";
+import * as PIXI from "pixi.js";
+import {BaseCharacterController, Character, ScanDirection} from "./Character";
 import {DungeonMap, DungeonZIndexes, DungeonMapCell} from "../dungeon";
 import {UsableDrop, Weapon} from "../drop";
 import {Observable, ObservableVar} from "../observable";
-import {DigitKey, KeyBind} from "../input";
+import {DigitKey, Joystick, KeyBind} from "../input";
 import {PersistentState} from "../persistent.state";
-import {MonsterAI} from "./Monster";
-import * as PIXI from "pixi.js";
-import {HitAnimationController, IdleAnimationController} from "./AnimationController";
+import {MonsterController} from "./Monster";
+import {
+  CharacterHitController,
+  CharacterHitState,
+  CharacterIdleState,
+  CharacterRunState,
+  CharacterStateMachine
+} from "./CharacterState";
 
 export const heroCharacterNames = [
   "elf_f",
@@ -145,9 +151,11 @@ export class Hero extends Character {
   }
 }
 
-export class HeroAI extends BaseCharacterAI {
+export class HeroController extends BaseCharacterController {
   readonly character: Hero;
   readonly interacting: boolean = false;
+
+  private readonly _fsm: HeroStateMachine;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -159,13 +167,21 @@ export class HeroAI extends BaseCharacterAI {
       onPosition: dungeon.camera.bind(dungeon),
     });
     this.character = character;
+    this._fsm = new HeroStateMachine(this);
     this.init();
+  }
+
+  init(): void {
+    super.init();
     this.character.inventory.drop.subscribe(this.onDrop, this);
+    this._fsm.start();
+    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
   }
 
   destroy(): void {
-    super.destroy();
+    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
     this.character.inventory.drop.unsubscribe(this.onDrop, this);
+    super.destroy();
   }
 
   interact(): void {
@@ -187,109 +203,29 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  action(finished: boolean): boolean {
-    if (!this.character.dead.get()) {
-
-      const idle = this.animation instanceof IdleAnimationController;
-      const hit = this.animation instanceof HitAnimationController;
-
-      if (finished) {
-        if (hit) {
-          this.scanHit();
-        }
-        this.scanDrop();
-      }
-
-      const joystick = this.dungeon.controller.joystick;
-
-      if (idle && joystick.inventory.once()) {
-        this.dungeon.controller.showInventory(this.character);
-        this.idle();
-        return true;
-      }
-
-      for (let d = 0; d <= 9; d++) {
-        const digit = (d + 1) % 10;
-        if (joystick.digit(digit as DigitKey).once()) {
-          const cell = this.character.inventory.belt.cell(d);
-          const item = cell.item.get();
-          if (item && (item instanceof Weapon || idle)) {
-            cell.use();
-          }
-        }
-      }
-
-      if (idle && joystick.drop.once()) {
-        this.character.inventory.equipment.weapon.drop();
-      }
-
-      if (idle || finished) {
-        const triggered = joystick.hit.triggered;
-        const once = joystick.hit.once();
-
-        if (once) {
-          const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
-          const [object] = this.scanInteracting(direction, 1);
-          if (object) {
-            joystick.hit.reset();
-            this.idle();
-            object.interact(this);
-            return true;
-          }
-        }
-
-        if (triggered || once) {
-          this.lookAtMonsters();
-          this.hit();
-          return true;
-        }
-      }
-
-      if (idle || finished) {
-        const velocityX = HeroAI.delta(joystick.moveLeft, joystick.moveRight);
-        const velocityY = HeroAI.delta(joystick.moveUp, joystick.moveDown);
-
-        if (velocityX !== 0 || velocityY !== 0) {
-          if (this.move(velocityX, velocityY)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
-  private static delta(a: KeyBind, b: KeyBind): number {
-    if (a.triggered) {
-      return -1;
-    } else if (b.triggered) {
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-
-  private scanDrop(): void {
+  scanDrop(): void {
     const cell = this.dungeon.cell(this.x, this.y);
     if (cell.drop?.pickedUp(this.character)) {
       PIXI.sound.play('fruit_collect');
     }
   }
 
-  private scanHit(): void {
+  scanHit(combo: number): void {
     const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const monsters = this.scanMonsters(direction, distance);
+
+    const damage = this.character.damage + combo; // @todo improve?
     for (const monster of monsters) {
-      monster.character.hitDamage(this.character, this.character.damage);
+      monster.character.hitDamage(this.character, damage);
     }
     if (monsters.length > 0) {
       PIXI.sound.play('hit_damage', {speed: weapon?.speed || 1});
     }
   }
 
-  protected lookAtMonsters(): void {
+  lookAtMonsters(): void {
     const weapon = this.character.weapon;
     const distance = weapon?.distance || 1;
     const leftHealthSum = this.monstersHealth(ScanDirection.LEFT, distance);
@@ -301,12 +237,12 @@ export class HeroAI extends BaseCharacterAI {
     }
   }
 
-  protected scanInteracting(direction: ScanDirection, maxDistance: number): DungeonMapCell[] {
+  scanInteracting(direction: ScanDirection, maxDistance: number): DungeonMapCell[] {
     return this.scanCells(direction, maxDistance, c => c.interacting);
   }
 
-  protected scanMonsters(direction: ScanDirection, maxDistance: number): MonsterAI[] {
-    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterAI) as MonsterAI[];
+  protected scanMonsters(direction: ScanDirection, maxDistance: number): MonsterController[] {
+    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterController) as MonsterController[];
   }
 
   protected monstersHealth(direction: ScanDirection, maxDistance: number): number {
@@ -314,3 +250,159 @@ export class HeroAI extends BaseCharacterAI {
   }
 }
 
+export class HeroStateMachine implements CharacterStateMachine, CharacterHitController {
+  private readonly _controller: HeroController;
+  private readonly _joystick: Joystick;
+
+  private readonly _idle: CharacterIdleState;
+  private readonly _run: CharacterRunState;
+  private readonly _hit: CharacterHitState;
+
+  private _currentState: CharacterIdleState | CharacterRunState | CharacterHitState;
+
+  constructor(controller: HeroController) {
+    this._controller = controller;
+    this._joystick = controller.dungeon.controller.joystick;
+
+    this._idle = new CharacterIdleState(this, controller);
+    this._run = new CharacterRunState(this, controller);
+    this._hit = new CharacterHitState(this, controller, this);
+
+    this._currentState = this._idle;
+  }
+
+  start(): void {
+    this._currentState.onEnter();
+  }
+
+  private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
+    this._currentState.onExit();
+    this._currentState = state;
+    this._currentState.onEnter();
+  }
+
+  onFinished(): void {
+    this._controller.scanDrop();
+    this.processInput(true);
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+    this.processInput(false);
+  }
+
+  onEvent(_: any): void {
+  }
+
+  private processInput(finished: boolean): void {
+    const idle = this._currentState instanceof CharacterIdleState;
+    const controller = this._controller;
+    const hero = controller.character;
+    const inventory = hero.inventory;
+
+    const joystick = this._joystick;
+
+    for (let d = 0; d <= 9; d++) {
+      const digit = (d + 1) % 10;
+      if (joystick.digit(digit as DigitKey).once()) {
+        const cell = inventory.belt.cell(d);
+        const item = cell.item.get();
+        if (item && (item instanceof Weapon || idle)) {
+          cell.use();
+        }
+      }
+    }
+
+    if ((idle || finished) && joystick.drop.once()) {
+      inventory.equipment.weapon.drop();
+    }
+
+    if ((idle || finished) && joystick.inventory.once()) {
+      controller.dungeon.controller.showInventory(hero);
+      this.transition(this._idle);
+      return;
+    }
+
+    if (idle || finished) {
+      const triggered = joystick.hit.triggered;
+      const once = joystick.hit.once();
+
+      if (once) {
+        const direction = controller.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
+        const [object] = controller.scanInteracting(direction, 1);
+        if (object) {
+          joystick.hit.reset();
+          object.interact(controller);
+          this.transition(this._idle);
+          return;
+        }
+      }
+
+      if (triggered || once) {
+        controller.lookAtMonsters();
+        this.transition(this._hit);
+        return;
+      }
+    }
+
+    if (idle || finished) {
+      const velocityX = this.delta(joystick.moveLeft, joystick.moveRight);
+      const velocityY = this.delta(joystick.moveUp, joystick.moveDown);
+
+      if (velocityX !== 0 || velocityY !== 0) {
+        if (this.move(velocityX, velocityY) || this.move(velocityX, 0) || this.move(0, velocityY)) {
+          return;
+        }
+      }
+    }
+
+    if (finished) {
+      this.transition(this._idle);
+      return;
+    }
+  }
+
+  delta(a: KeyBind, b: KeyBind): number {
+    if (a.triggered) {
+      return -1;
+    } else if (b.triggered) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  private move(velocityX: number, velocityY: number): boolean {
+    if (velocityX > 0) this._controller.view.isLeft = false;
+    if (velocityX < 0) this._controller.view.isLeft = true;
+    const newX = this._controller.x + velocityX;
+    const newY = this._controller.y + velocityY;
+    if (this._controller.dungeon.available(newX, newY, this._controller)) {
+      this._run.setDestination(newX, newY);
+      this.transition(this._run);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // combo:
+
+  continueCombo(): boolean {
+    return this._joystick.hit.once();
+  }
+
+  onComboFinished(): void {
+  }
+
+  onComboHit(combo: number): void {
+    this._controller.scanHit(combo);
+  }
+
+  onComboStarted(): void {
+  }
+
+  onHit(): void {
+    this._controller.scanHit(1);
+  }
+}

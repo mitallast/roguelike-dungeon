@@ -1,9 +1,10 @@
-import {BaseCharacterAI, Character} from "./Character";
+import * as PIXI from "pixi.js";
+import {BaseCharacterController, Character} from "./Character";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {Hero, HeroAI} from "./Hero";
+import {Hero, HeroController} from "./Hero";
 import {SceneController} from "../scene";
 import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "../drop";
-import * as PIXI from "pixi.js";
+import {CharacterIdleState, CharacterStateMachine} from "./CharacterState";
 
 export abstract class NpcSkill {
   protected readonly npc: Npc;
@@ -363,9 +364,11 @@ export class Npc extends Character {
   }
 }
 
-export class NpcAI extends BaseCharacterAI {
+export class NpcController extends BaseCharacterController {
   readonly character: Npc;
   readonly interacting: boolean = true;
+
+  private readonly _fsm: NpcIdleStateMachine;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
     super(dungeon, {
@@ -381,6 +384,7 @@ export class NpcAI extends BaseCharacterAI {
       this.character.inventory.equipment.weapon.set(weapon);
     }
     this.initSkills(controller, config);
+    this._fsm = new NpcIdleStateMachine(this);
     this.init();
   }
 
@@ -420,18 +424,50 @@ export class NpcAI extends BaseCharacterAI {
     }
   }
 
+  init(): void {
+    super.init();
+    this._fsm.start();
+    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
+  }
+
+  destroy(): void {
+    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
+    super.destroy();
+  }
+
   protected onDead(): void {
+    this.destroy();
   }
 
   protected onKilledBy(_: Character): void {
   }
 
-  action(): boolean {
-    return false;
-  }
-
-  interact(hero: HeroAI): void {
+  interact(hero: HeroController): void {
     this.lookAt(hero);
     this.dungeon.controller.showDialog(hero.character, this.character);
+  }
+}
+
+export class NpcIdleStateMachine implements CharacterStateMachine {
+  private readonly _state: CharacterIdleState;
+
+  constructor(controller: NpcController) {
+    this._state = new CharacterIdleState(this, controller);
+  }
+
+  start(): void {
+    this._state.onEnter();
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._state.onUpdate(deltaTime);
+  }
+
+  onFinished(): void {
+    this._state.onExit();
+    this._state.onEnter();
+  }
+
+  onEvent(_: any): void {
   }
 }

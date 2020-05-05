@@ -11,6 +11,7 @@ export interface WeaponAnimationSet {
   readonly idle: WeaponAnimation;
   readonly run: WeaponAnimation;
   readonly hit: WeaponAnimation;
+  readonly combo?: readonly WeaponAnimation[];
 }
 
 export interface WeaponAnimations {
@@ -67,9 +68,6 @@ export const basic: WeaponAnimationSet = {
     ],
     pos: [
       {time: 0, args: [-1, 0]},
-      {time: 1, args: [-1, 0]},
-      {time: 2, args: [-1, 0]},
-      {time: 3, args: [-1, 0]},
     ]
   },
 };
@@ -90,7 +88,43 @@ export const weaponAnimations: WeaponAnimations = {
       ]
     },
   },
-  rusty_sword: basic,
+  rusty_sword: {
+    idle: basic.idle,
+    run: basic.run,
+    hit: basic.hit,
+    combo: [
+      {
+        angle: [
+          {time: 0, args: [0]},
+          {time: 1, args: [120]},
+          {time: 4, args: [120]},
+        ],
+        pos: [
+          {time: 0, args: [-1, 0]},
+        ],
+      },
+      {
+        angle: [
+          {time: 0, args: [120]},
+          {time: 1, args: [30]},
+          {time: 4, args: [30]},
+        ],
+        pos: [
+          {time: 0, args: [-1, 0]},
+        ],
+      },
+      {
+        angle: [
+          {time: 0, args: [0]},
+          {time: 1, args: [90]},
+          {time: 4, args: [90]},
+        ],
+        pos: [
+          {time: 0, args: [-1, 0]},
+        ],
+      },
+    ]
+  },
   regular_sword: basic,
   red_gem_sword: basic,
   hammer: basic,

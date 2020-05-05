@@ -1,4 +1,8 @@
 import {AnimationClip} from "./AnimationClip";
+import {AnimationEventClip} from "./AnimationEventClip";
+import {AnimationKeyFrameClip} from "./AnimationKeyFrameClip";
+import {AnimationCurveClip} from "./AnimationCurveClip";
+import {Curve} from "../curves";
 
 export class Animation {
   private readonly _clips: AnimationClip[] = [];
@@ -10,6 +14,38 @@ export class Animation {
 
   add(clip: AnimationClip): void {
     this._clips.push(clip);
+  }
+
+  addEventClip<Args extends any[]>(
+    animationSpeed: number,
+    method: (...args: Args) => void,
+    context?: any
+  ): AnimationEventClip<Args> {
+    const clip = new AnimationEventClip<Args>(animationSpeed, method, context);
+    this.add(clip);
+    return clip;
+  }
+
+  addKeyFrameClip<Args extends number[]>(
+    animationSpeed: number,
+    method: (...args: Args) => void,
+    context?: any
+  ): AnimationKeyFrameClip<any> {
+    const clip = new AnimationKeyFrameClip<Args>(animationSpeed, method, context);
+    this.add(clip);
+    return clip;
+  }
+
+  addCurveClip<Args extends number[]>(
+    curve: Curve<Args>,
+    duration: number,
+    animationSpeed: number,
+    method: (...args: any[]) => void,
+    context?: any
+  ): AnimationCurveClip<Args> {
+    const clip = new AnimationCurveClip<Args>(curve, duration, animationSpeed, method, context);
+    this.add(clip);
+    return clip;
   }
 
   clear(): void {

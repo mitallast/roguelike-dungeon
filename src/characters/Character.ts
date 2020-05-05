@@ -3,15 +3,9 @@ import {DungeonMap, DungeonMapCell, DungeonObject} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
 import {UsableDrop, Weapon} from "../drop";
 import {PathFinding} from "../pathfinding";
-import {HeroAI} from "./Hero";
+import {HeroController} from "./Hero";
 import {Inventory} from "../inventory";
-import {CharacterView, CharacterViewOptions, DefaultCharacterView} from "./CharacterView";
-import {
-  AnimationController,
-  HitAnimationController,
-  IdleAnimationController,
-  RunAnimationController
-} from "./AnimationController";
+import {CharacterView, CharacterViewOptions} from "./CharacterView";
 
 export abstract class Character {
   readonly name: string;
@@ -105,7 +99,7 @@ export abstract class Character {
   }
 }
 
-export interface CharacterAI extends DungeonObject {
+export interface CharacterController extends DungeonObject {
   readonly x: number;
   readonly y: number;
 
@@ -115,10 +109,8 @@ export interface CharacterAI extends DungeonObject {
   readonly view: CharacterView;
   readonly dungeon: DungeonMap;
 
-  readonly animation: AnimationController;
-
   setPosition(x: number, y: number): void;
-  lookAt(character: CharacterAI): void;
+  lookAt(character: CharacterController): void;
 
   destroy(): void;
 }
@@ -129,7 +121,7 @@ export enum ScanDirection {
   AROUND = 4
 }
 
-export abstract class BaseCharacterAI implements DungeonObject {
+export abstract class BaseCharacterController implements DungeonObject {
   abstract readonly character: Character;
 
   readonly static: boolean = false;
@@ -138,7 +130,6 @@ export abstract class BaseCharacterAI implements DungeonObject {
   readonly view: CharacterView;
   readonly dungeon: DungeonMap;
 
-  private _animation: AnimationController | null = null;
   private _x: number;
   private _y: number;
 
@@ -153,23 +144,13 @@ export abstract class BaseCharacterAI implements DungeonObject {
   readonly width: number;
   readonly height: number;
 
-  set animation(animation: AnimationController) {
-    this._animation?.cancel();
-    this._animation = animation;
-    this._animation.start();
-  }
-
-  get animation(): AnimationController {
-    return this._animation!;
-  }
-
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     this.dungeon = dungeon;
     this.width = options.width;
     this.height = options.height;
     this._x = options.x;
     this._y = options.y;
-    this.view = new DefaultCharacterView(dungeon, options.zIndex, options.width, options.onPosition);
+    this.view = new CharacterView(dungeon, options.zIndex, options.width, options.onPosition);
   }
 
   init(): void {
@@ -177,13 +158,9 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.character.killedBy.subscribe(this.handleKilledBy, this);
     this.character.dead.subscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
-    this.idle();
-    this.dungeon.ticker.add(this.update, this);
   }
 
   destroy(): void {
-    this.dungeon.ticker.remove(this.update, this);
-    this._animation?.cancel();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
@@ -195,7 +172,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     return this !== object;
   }
 
-  abstract interact(hero: HeroAI): void;
+  abstract interact(hero: HeroController): void;
 
   private handleKilledBy(by: Character | null): void {
     if (by) this.onKilledBy(by);
@@ -259,20 +236,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     return closestCell;
   }
 
-  protected move(mx: number, my: number): boolean {
-    if (mx > 0) this.view.isLeft = false;
-    if (mx < 0) this.view.isLeft = true;
-    const newX = this.x + mx;
-    const newY = this.y + my;
-    if (this.dungeon.available(newX, newY, this)) {
-      this.run(newX, newY);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  protected findPath(character: CharacterAI): PIXI.Point[] {
+  findPath(character: CharacterController): PIXI.Point[] {
     const dungeon = this.dungeon;
     const pf = new PathFinding(dungeon.width, dungeon.height);
     for (let y = 0; y < dungeon.height; y++) {
@@ -292,29 +256,6 @@ export abstract class BaseCharacterAI implements DungeonObject {
     return pf.find(start, end);
   }
 
-  protected idle(): void {
-    this.animation = new IdleAnimationController(this);
-  }
-
-  protected run(newX: number, newY: number): void {
-    this.animation = new RunAnimationController(this, newX, newY);
-  }
-
-  protected hit(): void {
-    this.animation = new HitAnimationController(this);
-  }
-
-  abstract action(finished: boolean): boolean;
-
-  private update(deltaTime: number): void {
-    const animation = this._animation!;
-    animation.update(deltaTime);
-    const finished = !animation.isPlaying;
-    if (!this.action(finished) && finished) {
-      this.idle();
-    }
-  }
-
   setPosition(x: number, y: number): void {
     this.dungeon.remove(this._x, this._y, this);
     this._x = Math.floor(x);
@@ -323,7 +264,7 @@ export abstract class BaseCharacterAI implements DungeonObject {
     this.view.setPosition(x, y);
   }
 
-  lookAt(character: CharacterAI): void {
+  lookAt(character: CharacterController): void {
     if (character.x < this.x) this.view.isLeft = true;
     if (character.x > this.x) this.view.isLeft = false;
   }

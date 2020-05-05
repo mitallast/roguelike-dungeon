@@ -1,8 +1,8 @@
 import {DungeonMap} from "../dungeon";
-import {Hero, HeroAI} from "./Hero";
-import {BaseCharacterAI, Character, CharacterAI, ScanDirection} from "./Character";
-import {IdleAnimationController} from "./AnimationController";
+import {Hero, HeroController} from "./Hero";
+import {BaseCharacterController, Character, ScanDirection} from "./Character";
 import {CharacterViewOptions} from "./CharacterView";
+import {CharacterHitController, MonsterAlarmEvent} from "./CharacterState";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -16,11 +16,6 @@ export enum MonsterType {
   NORMAL = 1,
   LEADER = 2,
   MINION = 3,
-}
-
-export enum MonsterState {
-  READY = 0,
-  ALARM = 1,
 }
 
 export abstract class Monster extends Character {
@@ -60,14 +55,12 @@ export abstract class Monster extends Character {
   }
 }
 
-export abstract class MonsterAI extends BaseCharacterAI {
+export abstract class MonsterController extends BaseCharacterController {
   abstract readonly character: Monster;
   abstract readonly max_distance: number;
   readonly interacting: boolean = false;
 
-  private _state: MonsterState = MonsterState.READY;
-  private _lastPath: PIXI.Point[] = [];
-  private readonly _spawned: MonsterAI[] = [];
+  private readonly _spawned: MonsterController[] = [];
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
@@ -83,83 +76,7 @@ export abstract class MonsterAI extends BaseCharacterAI {
     }
   }
 
-  protected ready(): void {
-    this._state = MonsterState.READY;
-  }
-
-  protected sendAlarm(hero: HeroAI): void {
-    this._state = MonsterState.ALARM;
-    for (const monster of this.scanMonsters(ScanDirection.AROUND, this.max_distance)) {
-      monster.alarm(hero);
-    }
-  }
-
-  alarm(hero: HeroAI): void {
-    if (!this.character.dead.get() &&
-      this.character.type !== MonsterType.LEADER &&
-      this._state === MonsterState.READY &&
-      this.animation instanceof IdleAnimationController
-    ) {
-      this.moveTo(hero);
-    }
-  }
-
-  get state(): MonsterState {
-    return this._state;
-  }
-
-  protected randomMove(): boolean {
-    const randomMovePercent = 0.1;
-    if (Math.random() < randomMovePercent) {
-      const moveX = Math.floor(Math.random() * 3) - 1;
-      const moveY = Math.floor(Math.random() * 3) - 1;
-      if (this.move(moveX, moveY)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  protected moveToHero(): boolean {
-    const [hero] = this.scanHero(ScanDirection.AROUND, this.max_distance);
-    if (hero) {
-      this.lookAt(hero);
-      this.sendAlarm(hero);
-      const distX = Math.abs(this.x - hero.x);
-      const distY = Math.abs(this.y - hero.y);
-      if (distX > this.width || distY > this.height) {
-        return this.moveTo(hero);
-      } else if (this.character.luck < this.dungeon.rng.float()) {
-        this.hit();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  protected moveTo(character: CharacterAI): boolean {
-    this._lastPath = this.findPath(character);
-    return this.moveByPath();
-  }
-
-  protected moveByPath(): boolean {
-    if (this._lastPath.length > 0) {
-      const next = this._lastPath[0];
-      const deltaX = next.x - this.x;
-      const deltaY = next.y - this.y;
-      if (this.move(deltaX, deltaY)) {
-        this._lastPath.splice(0, 1);
-        return true;
-      } else {
-        this._lastPath = [];
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  protected scanHit(): void {
+  scanHit(): void {
     const weapon = this.character.weapon;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const distance = weapon?.distance || 1;
@@ -197,14 +114,49 @@ export abstract class MonsterAI extends BaseCharacterAI {
     return false;
   }
 
-  protected abstract spawnMinion(x: number, y: number): MonsterAI | null;
+  protected abstract spawnMinion(x: number, y: number): MonsterController | null;
 
-  protected scanHero(direction: ScanDirection, maxDistance: number): HeroAI[] {
-    return this.scanObjects(direction, maxDistance, c => c instanceof HeroAI)
-      .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroAI[];
+  scanHero(direction: ScanDirection, distance: number = this.max_distance): HeroController[] {
+    return this.scanObjects(direction, distance, c => c instanceof HeroController)
+      .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroController[];
   }
 
-  protected scanMonsters(direction: ScanDirection, maxDistance: number): MonsterAI[] {
-    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterAI) as MonsterAI[];
+  scanMonsters(direction: ScanDirection): MonsterController[] {
+    return this.scanObjects(direction, this.max_distance, c => c instanceof MonsterController) as MonsterController[];
+  }
+
+  abstract onEvent(event: any): void;
+
+  sendAlarm(hero: HeroController): void {
+    const event = new MonsterAlarmEvent(hero);
+    for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
+      monster.onEvent(event);
+    }
+  }
+}
+
+export class MonsterHitController implements CharacterHitController {
+  private readonly _controller: MonsterController;
+
+  constructor(controller: MonsterController) {
+    this._controller = controller;
+  }
+
+  onHit(): void {
+    this._controller.scanHit();
+  }
+
+  onComboFinished(): void {
+  }
+
+  onComboHit(): void {
+    this._controller.scanHit();
+  }
+
+  onComboStarted(): void {
+  }
+
+  continueCombo(): boolean {
+    return true;
   }
 }

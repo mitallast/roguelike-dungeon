@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
 const TILE_SIZE = 16;
@@ -34,7 +34,7 @@ export abstract class DungeonFloor implements DungeonObject {
     }
   }
 
-  abstract interact(hero: HeroAI): void;
+  abstract interact(hero: HeroController): void;
 
   collide(): boolean {
     return false;

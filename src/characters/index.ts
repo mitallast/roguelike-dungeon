@@ -1,4 +1,4 @@
-export * from "./AnimationController";
+export * from "./Animator";
 export * from "./Character";
 export * from "./CharacterView";
 export * from "./Hero";

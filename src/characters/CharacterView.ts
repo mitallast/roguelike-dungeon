@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import {AnimationClip, SpriteAnimationClip} from "../animation";
 import {Resources} from "../resources";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Weapon} from "../drop";
@@ -15,28 +14,28 @@ export interface CharacterViewOptions {
   readonly onPosition?: (x: number, y: number) => void;
 }
 
-export interface CharacterView {
-  readonly point: PIXI.IPoint;
-  isLeft: boolean;
-
-  readonly weapon: WeaponView;
-
-  setPosition(x: number, y: number): void;
-  animation(spriteName: string, speed: number): AnimationClip;
-  destroy(): void;
-}
-
-export class DefaultCharacterView extends PIXI.Container implements CharacterView {
+export class CharacterView {
   private readonly _resources: Resources;
 
   private readonly _baseZIndex: number;
   private readonly _gridWidth: number;
   private _isLeft: boolean = false;
-  private _sprite: PIXI.AnimatedSprite | null = null;
-  private readonly _weapon: DefaultWeaponView;
 
-  readonly point: PIXI.IPoint = new PIXI.Point(0, 0);
+  private readonly _container: PIXI.Container;
+  private readonly _weapon: DefaultWeaponView;
+  private _sprite: PIXI.AnimatedSprite | null = null;
+
+  private _x: number = 0;
+  private _y: number = 0;
   private readonly _onPosition: ((x: number, y: number) => void) | null;
+
+  get x(): number {
+    return this._x;
+  }
+
+  get y(): number {
+    return this._y;
+  }
 
   get isLeft(): boolean {
     return this._isLeft;
@@ -47,48 +46,11 @@ export class DefaultCharacterView extends PIXI.Container implements CharacterVie
     this.updatePosition();
   }
 
-  get weapon(): WeaponView {
-    return this._weapon;
-  }
-
-  constructor(dungeon: DungeonMap, zIndex: number, gridWidth: number, onPosition?: (x: number, y: number) => void) {
-    super();
-    this._resources = dungeon.controller.resources;
-    this._baseZIndex = zIndex;
-    this._gridWidth = gridWidth;
-    this._onPosition = onPosition || null;
-    this._weapon = new DefaultWeaponView(this._resources);
-    this._weapon.zIndex = 2;
-    this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
-    this.addChild(this._weapon);
-    dungeon.container.addChild(this);
-  }
-
-  setPosition(x: number, y: number): void {
-    // pixel perfect
-    const tx = Math.round(x * TILE_SIZE * 2) / 2;
-    const ty = Math.round(y * TILE_SIZE * 2) / 2;
-    this.point.set(tx, ty);
-    this.updatePosition();
-    this.zIndex = this._baseZIndex + Math.floor(y) * DungeonZIndexes.row;
-    if (this._onPosition) {
-      this._onPosition(tx, ty);
-    }
-  }
-
-  private updatePosition(): void {
-    // process left/right direction
-    this.scale.set(this._isLeft ? -1 : 1, 1);
-    // if left, add offset x
-    this.position.set(this.point.x + (this._isLeft ? this._gridWidth * TILE_SIZE : 0), this.point.y);
-  }
-
-  animation(spriteName: string, speed: number): AnimationClip {
+  set sprite(spriteName: string) {
     this._sprite?.destroy();
     this._sprite = this._resources.animated(spriteName, {
       autoUpdate: false,
       loop: false,
-      animationSpeed: speed,
     });
     this._sprite.anchor.set(0, 1);
     this._sprite.position.y = TILE_SIZE - 2;
@@ -97,8 +59,68 @@ export class DefaultCharacterView extends PIXI.Container implements CharacterVie
       this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
     }
     this._sprite.zIndex = 1;
-    this.addChild(this._sprite);
-    return new SpriteAnimationClip(this._sprite);
+    this._container.addChild(this._sprite);
+  }
+
+  get weapon(): WeaponView {
+    return this._weapon;
+  }
+
+  constructor(dungeon: DungeonMap, zIndex: number, gridWidth: number, onPosition?: (x: number, y: number) => void) {
+    this._resources = dungeon.controller.resources;
+    this._baseZIndex = zIndex;
+    this._gridWidth = gridWidth;
+    this._onPosition = onPosition || null;
+    this._weapon = new DefaultWeaponView(this._resources);
+    this._weapon.zIndex = 2;
+    this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
+    this._container = new PIXI.Container();
+    this._container.addChild(this._weapon);
+    dungeon.container.addChild(this._container);
+  }
+
+  destroy(): void {
+    this._container.destroy({children: true});
+  }
+
+  setPosition(x: number, y: number): void {
+    // pixel perfect
+    this._x = Math.round(x * TILE_SIZE * 2) / 2;
+    this._y = Math.round(y * TILE_SIZE * 2) / 2;
+    this.updatePosition();
+    this._container.zIndex = this._baseZIndex + Math.floor(y) * DungeonZIndexes.row;
+    if (this._onPosition) {
+      this._onPosition(this._x, this._y);
+    }
+  }
+
+  setSprite(spriteName: string): void {
+    this._sprite?.destroy();
+    this._sprite = this._resources.animated(spriteName, {
+      autoUpdate: false,
+      loop: false,
+    });
+    this._sprite.anchor.set(0, 1);
+    this._sprite.position.y = TILE_SIZE - 2;
+    this._sprite.position.x = 0;
+    if (this._sprite.width > this._gridWidth * TILE_SIZE) {
+      this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
+    }
+    this._sprite.zIndex = 1;
+    this._container.addChild(this._sprite);
+  }
+
+  setFrame(frame: number): void {
+    if (this._sprite) {
+      this._sprite.gotoAndStop(frame);
+    }
+  }
+
+  private updatePosition(): void {
+    // process left/right direction
+    this._container.scale.set(this._isLeft ? -1 : 1, 1);
+    // if left, add offset x
+    this._container.position.set(this._x + (this._isLeft ? this._gridWidth * TILE_SIZE : 0), this._y);
   }
 }
 

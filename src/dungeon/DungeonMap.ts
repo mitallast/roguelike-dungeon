@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "../drop";
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 import {DungeonLight} from "./DungeonLight";
 import {SceneController} from "../scene";
 import {RNG} from "../rng";
@@ -302,7 +302,7 @@ export class DungeonMapCell {
       this._object?.interacting || false;
   }
 
-  interact(hero: HeroAI): void {
+  interact(hero: HeroController): void {
     if (this._object && this._object.interacting) {
       this._object.interact(hero);
     } else if (this._drop && this._drop.interacting) {

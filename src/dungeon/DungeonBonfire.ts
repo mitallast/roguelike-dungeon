@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 import {DungeonLightType} from "./DungeonLight";
 import {Colors} from "../ui";
 import {DungeonObject} from "./DungeonObject";
@@ -47,7 +47,7 @@ export class DungeonBonfire implements DungeonObject {
     this._sprite.destroy();
   }
 
-  interact(hero: HeroAI): void {
+  interact(hero: HeroController): void {
     switch (this._state) {
       case BonfireState.UNLIT:
         hero.character.bonfires.add(this._dungeon.level);

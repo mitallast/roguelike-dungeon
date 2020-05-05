@@ -1,10 +1,19 @@
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {MonsterAI, MonsterCategory, Monster, MonsterType} from "./Monster";
-import {TinyMonsterAI, tinyMonsters} from "./TinyMonster"
+import {MonsterController, MonsterCategory, Monster, MonsterType, MonsterHitController} from "./Monster";
+import {TinyMonsterController, tinyMonsters} from "./TinyMonster"
 import {Colors} from "../ui";
 import {WeaponConfig, monsterWeapons, Weapon} from "../drop";
 import {BossHealthView} from "./BossHealthView";
-import {HitAnimationController} from "./AnimationController";
+import {
+  CharacterHitState,
+  CharacterIdleState,
+  CharacterRunState,
+  CharacterState,
+  CharacterStateMachine,
+  MonsterAlarmEvent
+} from "./CharacterState";
+import {HeroController} from "./Hero";
+import {ScanDirection} from "./Character";
 
 export interface BossConfig {
   readonly name: string;
@@ -51,9 +60,11 @@ export class BossMonster extends Monster {
   }
 }
 
-export class BossMonsterAI extends MonsterAI {
+export class BossMonsterController extends MonsterController {
   readonly character: BossMonster;
   readonly max_distance: number = 7;
+
+  private readonly _fsm: BossMonsterStateMachine;
 
   constructor(config: BossConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -68,6 +79,7 @@ export class BossMonsterAI extends MonsterAI {
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
+    this._fsm = new BossMonsterStateMachine(this);
     this.init();
 
     const screen = dungeon.controller.app.screen;
@@ -77,33 +89,19 @@ export class BossMonsterAI extends MonsterAI {
     dungeon.controller.stage.addChild(healthView);
   }
 
-  action(finished: boolean): boolean {
-    if (!this.character.dead.get() && finished) {
-      const hit = this.animation instanceof HitAnimationController;
+  init(): void {
+    super.init();
+    this._fsm.start();
+    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
+  }
 
-      if (finished && hit) {
-        this.scanHit();
-      }
+  destroy(): void {
+    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
+    super.destroy();
+  }
 
-      if (this.spawnMinions()) {
-        return false;
-      }
-
-      if (this.moveToHero()) {
-        return true;
-      }
-
-      if (this.moveByPath()) {
-        return true;
-      }
-
-      this.ready();
-
-      if (this.randomMove()) {
-        return true;
-      }
-    }
-    return false;
+  onEvent(hero: HeroController): void {
+    this._fsm.onEvent(new MonsterAlarmEvent(hero));
   }
 
   protected onDead(): void {
@@ -117,13 +115,393 @@ export class BossMonsterAI extends MonsterAI {
     this.destroy();
   }
 
-  protected spawnMinion(x: number, y: number): MonsterAI | null {
+  protected spawnMinion(x: number, y: number): MonsterController | null {
     const minions = tinyMonsters.filter(c => c.category === this.character.category && c.type !== MonsterType.LEADER);
     if (minions.length === 0) {
       console.warn("no minion config found", this.character.category);
       return null;
     }
     const config = this.dungeon.rng.select(minions)!;
-    return new TinyMonsterAI(config, this.dungeon, x, y);
+    return new TinyMonsterController(config, this.dungeon, x, y);
+  }
+}
+
+export class BossMonsterStateMachine implements CharacterStateMachine {
+  private readonly _patrolling: BossMonsterPatrollingState;
+  private readonly _alarm: BossMonsterAlarmState;
+  private readonly _attack: BossMonsterAttackState;
+
+  private _currentState: BossMonsterPatrollingState | BossMonsterAlarmState | BossMonsterAttackState;
+
+  constructor(controller: BossMonsterController) {
+    this._patrolling = new BossMonsterPatrollingState(this, controller);
+    this._alarm = new BossMonsterAlarmState(this, controller);
+    this._attack = new BossMonsterAttackState(this, controller);
+    this._currentState = this._patrolling;
+  }
+
+  start(): void {
+    this._currentState = this._patrolling;
+    this._currentState.onEnter();
+  }
+
+  private transition(state: BossMonsterPatrollingState | BossMonsterAlarmState | BossMonsterAttackState): void {
+    this._currentState.onExit();
+    this._currentState = state;
+    this._currentState.onEnter();
+  }
+
+  patrolling(): void {
+    this.transition(this._patrolling);
+  }
+
+  alarm(hero: HeroController | null): void {
+    if (hero) {
+      this._alarm.onAlarm(hero);
+    }
+    this.transition(this._alarm);
+  }
+
+  attack(hero: HeroController): void {
+    this._attack.attack(hero);
+    this.transition(this._attack);
+  }
+
+  onFinished(): void {
+  }
+
+  onEvent(event: any): void {
+    this._currentState.onEvent(event);
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+  }
+}
+
+export class BossMonsterPatrollingState implements CharacterState, CharacterStateMachine {
+  private readonly _fsm: BossMonsterStateMachine;
+  private readonly _controller: BossMonsterController;
+  private readonly _idle: CharacterIdleState;
+  private readonly _run: CharacterRunState;
+
+  private _currentState: CharacterIdleState | CharacterRunState;
+
+  constructor(fsm: BossMonsterStateMachine, controller: BossMonsterController) {
+    this._fsm = fsm;
+    this._controller = controller;
+    this._idle = new CharacterIdleState(this, controller);
+    this._run = new CharacterRunState(this, controller);
+    this._currentState = this._idle;
+  }
+
+  start(): void {
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+  }
+
+  private transition(state: CharacterIdleState | CharacterRunState): void {
+    this._currentState.onExit();
+    this._currentState = state;
+    this._currentState.onEnter();
+  }
+
+  onEnter(): void {
+    this.start();
+  }
+
+  onExit(): void {
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+  }
+
+  onEvent(event: any): void {
+    if (event instanceof MonsterAlarmEvent) {
+      this._fsm.alarm(event.hero);
+    }
+  }
+
+  onFinished(): void {
+    if (this.scanHero()) {
+      return;
+    }
+    if (this.randomMove()) {
+      return;
+    }
+    this.transition(this._idle);
+  }
+
+  private scanHero(): boolean {
+    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
+    if (hero) {
+      this._fsm.alarm(hero);
+      return true;
+    }
+    return false;
+  }
+
+  private randomMove(): boolean {
+    if (Math.random() < 0.1) {
+      const moveX = Math.floor(Math.random() * 3) - 1;
+      const moveY = Math.floor(Math.random() * 3) - 1;
+      if (this.move(moveX, moveY)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private move(velocityX: number, velocityY: number): boolean {
+    if (velocityX > 0) this._controller.view.isLeft = false;
+    if (velocityX < 0) this._controller.view.isLeft = true;
+    const newX = this._controller.x + velocityX;
+    const newY = this._controller.y + velocityY;
+    if (this._controller.dungeon.available(newX, newY, this._controller)) {
+      this._run.setDestination(newX, newY);
+      this.transition(this._run);
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+export class BossMonsterAlarmState implements CharacterState, CharacterStateMachine {
+  private readonly _fsm: BossMonsterStateMachine;
+  private readonly _controller: BossMonsterController;
+  private readonly _idle: CharacterIdleState;
+  private readonly _run: CharacterRunState;
+
+  private _currentState: CharacterIdleState | CharacterRunState;
+  private _lastPath: PIXI.Point[] = [];
+  private _alarmCountDown = 0;
+
+  constructor(fsm: BossMonsterStateMachine, controller: BossMonsterController) {
+    this._fsm = fsm;
+    this._controller = controller;
+    this._idle = new CharacterIdleState(this, controller);
+    this._run = new CharacterRunState(this, controller);
+    this._currentState = this._idle;
+  }
+
+  onAlarm(hero: HeroController): void {
+    this._controller.lookAt(hero);
+    this._lastPath = this._controller.findPath(hero);
+  }
+
+  start(): void {
+    this._alarmCountDown = 10;
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+    if (this.lookupHero()) {
+      return;
+    }
+    if (this.moveByPath()) {
+      return;
+    }
+  }
+
+  private transition(state: CharacterIdleState | CharacterRunState): void {
+    this._currentState.onExit();
+    this._currentState = state;
+    this._currentState.onEnter();
+  }
+
+  onEnter(): void {
+    this.start();
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+  }
+
+  onExit(): void {
+    this._lastPath = [];
+  }
+
+  onEvent(_: any): void {
+  }
+
+  onFinished(): void {
+    if (this.lookupHero()) {
+      return;
+    }
+    if (this.moveByPath()) {
+      return;
+    }
+    this._alarmCountDown--;
+    if (this._alarmCountDown > 0) {
+      this.transition(this._idle);
+    } else {
+      this._fsm.patrolling();
+    }
+  }
+
+  protected lookupHero(): boolean {
+    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
+    if (hero) {
+      this._fsm.attack(hero);
+      return true;
+    }
+    return false;
+  }
+
+  protected moveByPath(): boolean {
+    if (this._lastPath.length > 0) {
+      const next = this._lastPath[0];
+      const deltaX = next.x - this._controller.x;
+      const deltaY = next.y - this._controller.y;
+      if (this.move(deltaX, deltaY)) {
+        this._lastPath.splice(0, 1);
+        return true;
+      } else {
+        this._lastPath = [];
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  private move(velocityX: number, velocityY: number): boolean {
+    if (velocityX > 0) this._controller.view.isLeft = false;
+    if (velocityX < 0) this._controller.view.isLeft = true;
+    const newX = this._controller.x + velocityX;
+    const newY = this._controller.y + velocityY;
+    if (this._controller.dungeon.available(newX, newY, this._controller)) {
+      this._run.setDestination(newX, newY);
+      this.transition(this._run);
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+export class BossMonsterAttackState implements CharacterState, CharacterStateMachine {
+  private readonly _fsm: BossMonsterStateMachine;
+  private readonly _controller: BossMonsterController;
+  private readonly _idle: CharacterIdleState;
+  private readonly _run: CharacterRunState;
+  private readonly _hit: CharacterHitState;
+
+  private _currentState: CharacterIdleState | CharacterRunState | CharacterHitState;
+  private _hero: HeroController | null = null;
+  private _lastPath: PIXI.Point[] = [];
+
+  constructor(fsm: BossMonsterStateMachine, controller: BossMonsterController) {
+    this._fsm = fsm;
+    this._controller = controller;
+    this._idle = new CharacterIdleState(this, controller);
+    this._run = new CharacterRunState(this, controller);
+    this._hit = new CharacterHitState(this, controller, new MonsterHitController(controller));
+    this._currentState = this._idle;
+  }
+
+  attack(hero: HeroController): void {
+    this._controller.lookAt(hero);
+    this._hero = hero;
+  }
+
+  start(): void {
+    if (!this._hero) {
+      this._fsm.patrolling();
+      return;
+    }
+
+    this._controller.lookAt(this._hero);
+    this._controller.sendAlarm(this._hero);
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+  }
+
+  private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
+    this._currentState.onExit();
+    this._currentState = state;
+    this._currentState.onEnter();
+  }
+
+  onEnter(): void {
+    this.start();
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+  }
+
+  onExit(): void {
+    this._hero = null;
+  }
+
+  onEvent(_: any): void {
+  }
+
+  onFinished(): void {
+    if (!this._hero) {
+      this._fsm.alarm(null);
+      return;
+    }
+
+    const distX = Math.abs(this._controller.x - this._hero.x);
+    const distY = Math.abs(this._controller.y - this._hero.y);
+
+    if (distX > this._controller.max_distance || distY > this._controller.max_distance) {
+      this._fsm.alarm(null);
+      return;
+    }
+
+    if (distX > this._controller.width || distY > this._controller.height) {
+      if (this.moveTo(this._hero)) {
+        return;
+      }
+      if (this.moveByPath()) {
+        return;
+      }
+      this.transition(this._idle);
+    } else {
+      if (this._controller.character.luck < this._controller.dungeon.rng.float()) {
+        this.transition(this._hit);
+        return;
+      }
+      this.transition(this._idle);
+    }
+  }
+
+  private moveTo(hero: HeroController): boolean {
+    this._lastPath = this._controller.findPath(hero);
+    return this.moveByPath();
+  }
+
+  private moveByPath(): boolean {
+    if (this._lastPath.length > 0) {
+      const next = this._lastPath[0];
+      const deltaX = next.x - this._controller.x;
+      const deltaY = next.y - this._controller.y;
+      if (this.move(deltaX, deltaY)) {
+        this._lastPath.splice(0, 1);
+        return true;
+      } else {
+        this._lastPath = [];
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  private move(velocityX: number, velocityY: number): boolean {
+    if (velocityX > 0) this._controller.view.isLeft = false;
+    if (velocityX < 0) this._controller.view.isLeft = true;
+    const newX = this._controller.x + velocityX;
+    const newY = this._controller.y + velocityY;
+    if (this._controller.dungeon.available(newX, newY, this._controller)) {
+      this._run.setDestination(newX, newY);
+      this.transition(this._run);
+      return true;
+    } else {
+      return false;
+    }
   }
 }

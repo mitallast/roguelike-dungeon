@@ -36,18 +36,21 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
     }
   }
 
-  addEvent(event: AnimationEvent<Args>): void {
+  addEvent(event: AnimationEvent<Args>): AnimationEventClip<Args> {
     this._events.push(event);
     this._events.sort(this.compare);
+    return this;
   }
 
-  addEvents(event: AnimationEvent<Args>[]): void {
+  addEvents(event: AnimationEvent<Args>[]): AnimationEventClip<Args> {
     this._events.push(...event);
     this._events.sort(this.compare);
+    return this;
   }
 
-  add(time: number, ...args: Args): void {
+  add(time: number, ...args: Args): AnimationEventClip<Args> {
     this.addEvent({time, args});
+    return this;
   }
 
   private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {

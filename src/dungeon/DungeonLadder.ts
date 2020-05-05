@@ -1,5 +1,5 @@
 import {DungeonMap} from "./DungeonMap";
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 import {DungeonFloor} from "./DungeonFloor";
 
 export class DungeonLadder extends DungeonFloor {
@@ -9,7 +9,7 @@ export class DungeonLadder extends DungeonFloor {
     super(dungeon, x, y, 'floor_ladder.png');
   }
 
-  interact(hero: HeroAI): void {
+  interact(hero: HeroController): void {
     this.dungeon.controller.updateHero(hero.character, this.dungeon.level + 1);
   }
 }

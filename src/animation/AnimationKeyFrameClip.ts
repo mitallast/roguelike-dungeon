@@ -34,8 +34,13 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     if (start !== null && end !== null) {
       // linear interpolation
       const args = [] as number[] as Args;
+      const total = end.time - start.time;
+      const duration = this._time - start.time;
+      const base = duration / total;
+      // console.log(`linear int time=${this._time} start=${start.time} end=${end.time} total=${total} duration=${duration} base=${base}`);
       for (let i = 0; i < start.args.length; i++) {
-        args[i] = start.args[i] * (end.time - this._time) + end.args[i] * (this._time - start.time);
+        args[i] = start.args[i] * (1 - base) + end.args[i] * base;
+        // if (i === 0) console.log(`linear int. args=${start.args[i]} * (1 - ${base}) + ${end.args[i]} * ${base} = ${args[i]}`);
       }
       this._method.call(this._context, ...args);
     } else if (start !== null) {
@@ -46,18 +51,21 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     }
   }
 
-  addFrame(event: AnimationKeyFrame<Args>): void {
+  addFrame(event: AnimationKeyFrame<Args>): AnimationKeyFrameClip<Args> {
     this._frames.push(event);
     this._frames.sort(this.compare);
+    return this;
   }
 
-  addFrames(event: AnimationKeyFrame<Args>[]): void {
+  addFrames(event: AnimationKeyFrame<Args>[]): AnimationKeyFrameClip<Args> {
     this._frames.push(...event);
     this._frames.sort(this.compare);
+    return this;
   }
 
-  add(time: number, ...args: Args): void {
+  add(time: number, ...args: Args): AnimationKeyFrameClip<Args> {
     this.addFrame({time, args});
+    return this;
   }
 
   private compare(a: AnimationKeyFrame<Args>, b: AnimationKeyFrame<Args>): number {

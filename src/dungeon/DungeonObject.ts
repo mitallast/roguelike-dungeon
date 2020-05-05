@@ -1,4 +1,4 @@
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 
 export interface DungeonObject {
   readonly x: number;
@@ -9,7 +9,7 @@ export interface DungeonObject {
   readonly static: boolean;
   readonly interacting: boolean;
 
-  interact(hero: HeroAI): void;
+  interact(hero: HeroController): void;
   collide(object: DungeonObject): boolean;
 
   destroy(): void;

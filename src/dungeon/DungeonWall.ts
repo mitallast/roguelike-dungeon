@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroAI} from "../characters";
+import {HeroController} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
 export class DungeonWall implements DungeonObject {
@@ -26,7 +26,7 @@ export class DungeonWall implements DungeonObject {
     this.sprite.zIndex = DungeonZIndexes.wall + y * DungeonZIndexes.row;
   }
 
-  interact(_: HeroAI): void {
+  interact(_: HeroController): void {
   }
 
   collide(_: DungeonObject): boolean {

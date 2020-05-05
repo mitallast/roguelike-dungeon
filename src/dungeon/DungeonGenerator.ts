@@ -3,14 +3,14 @@ import {DungeonMap, DungeonMapCell} from "./DungeonMap";
 import {RNG} from "../rng";
 import {
   Hero,
-  HeroAI,
-  TinyMonsterAI,
+  HeroController,
+  TinyMonsterController,
   tinyMonsters,
   BossConfig,
-  BossMonsterAI,
+  BossMonsterController,
   bossMonsters,
   MonsterCategory,
-  NpcAI,
+  NpcController,
   NPCs
 } from "../characters";
 import {Resources} from "../resources";
@@ -142,18 +142,18 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     return free;
   }
 
-  protected placeHero(rng: RNG, dungeon: DungeonMap, hero: Hero): HeroAI {
+  protected placeHero(rng: RNG, dungeon: DungeonMap, hero: Hero): HeroController {
     const free = this.findFreePositions(dungeon, 2, 2);
     if (free.length === 0) {
       throw "hero not placed";
     }
     const cell = rng.select(free)!;
-    const ai = new HeroAI(hero, dungeon, cell.x, cell.y);
-    dungeon.light.addLight(ai.view.point, DungeonLightType.HERO);
+    const ai = new HeroController(hero, dungeon, cell.x, cell.y);
+    dungeon.light.addLight(ai.view, DungeonLightType.HERO);
     return ai;
   }
 
-  protected placeNpc(rng: RNG, dungeon: DungeonMap, hero: HeroAI): void {
+  protected placeNpc(rng: RNG, dungeon: DungeonMap, hero: HeroController): void {
     const maxHeroDistance = 10;
     const npcCount = 5;
     for (let n = 0; n < npcCount; n++) {
@@ -166,15 +166,15 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = rng.range(0, free.length);
       const [cell] = free.splice(i, 1);
       const config = rng.select(NPCs)!;
-      new NpcAI(config, dungeon, this.controller, cell.x, cell.y);
+      new NpcController(config, dungeon, this.controller, cell.x, cell.y);
     }
   }
 
-  protected placeMonsters(rng: RNG, dungeon: DungeonMap, hero: HeroAI): void {
+  protected placeMonsters(rng: RNG, dungeon: DungeonMap, hero: HeroController): void {
     const totalSpace = dungeon.width * dungeon.height;
     const floorSpace = Math.floor(totalSpace * 0.4);
     const spawnSpace = Math.floor(floorSpace * 0.2);
-    const monsterCount = Math.floor(spawnSpace * 0.07);
+    const monsterCount = Math.floor(spawnSpace * 0.1);
 
     console.log(`floor_space: ${floorSpace}`);
     console.log(`monster_count: ${monsterCount}`);
@@ -186,7 +186,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeMonster(rng: RNG, dungeon: DungeonMap, hero: HeroAI): boolean {
+  protected placeMonster(rng: RNG, dungeon: DungeonMap, hero: HeroController): boolean {
     const monsterCategory = this.bossConfig(dungeon).category;
     const filteredMonsters = tinyMonsters.filter(config => {
       return config.category === monsterCategory ||
@@ -213,11 +213,11 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const i = rng.range(0, free.length);
     const [cell] = free.splice(i, 1);
     const config = rng.select(filteredMonsters)!;
-    new TinyMonsterAI(config, dungeon, cell.x, cell.y);
+    new TinyMonsterController(config, dungeon, cell.x, cell.y);
     return true;
   }
 
-  protected placeBoss(rng: RNG, dungeon: DungeonMap, hero: HeroAI): void {
+  protected placeBoss(rng: RNG, dungeon: DungeonMap, hero: HeroController): void {
     const minHeroDistance = 20;
     const free = this.findFreePositions(dungeon, 2, 2).filter(cell => {
       return this.distance(hero, cell) > minHeroDistance;
@@ -227,7 +227,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = rng.range(0, free.length);
       const [cell] = free.splice(i, 1);
       const config = this.bossConfig(dungeon);
-      new BossMonsterAI(config, dungeon, cell.x, cell.y);
+      new BossMonsterController(config, dungeon, cell.x, cell.y);
     } else {
       console.error("boss not placed");
     }
@@ -257,7 +257,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     }
   }
 
-  protected placeLadder(rng: RNG, dungeon: DungeonMap, hero: HeroAI): void {
+  protected placeLadder(rng: RNG, dungeon: DungeonMap, hero: HeroController): void {
     const free3: [DungeonMapCell, number][] = [];
     const free1: [DungeonMapCell, number][] = [];
     const directions: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
@@ -293,7 +293,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     rng.select(free)![0].ladder();
   }
 
-  protected placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroAI): DungeonBonfire {
+  protected placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroController): DungeonBonfire {
     const maxHeroDistance = 10;
     const free = this.findFreePositions(dungeon, 2, 2).filter(cell => {
       return this.distance(hero, cell) < maxHeroDistance;
