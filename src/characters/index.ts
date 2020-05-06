@@ -8,3 +8,4 @@ export * from "./Monster";
 export * from "./TinyMonster";
 export * from "./BossMonster";
 export * from "./BossHealthView";
+export * from "./SummonMonster";

@@ -84,7 +84,10 @@ export class CharacterView {
   }
 
   destroy(): void {
-    this._container.destroy({children: true});
+    this._container.destroy();
+    this._weapon.destroy();
+    this._sprite?.destroy();
+    this._sprite = null;
   }
 
   setPosition(x: number, y: number): void {

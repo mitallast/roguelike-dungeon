@@ -37,7 +37,7 @@ export class DungeonBonfire implements DungeonObject {
     this._state = BonfireState.UNLIT;
     this._sprite = this._dungeon.animated(this.x, this.y, `bonfire_unlit`);
     this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
-    this._dungeon.set(this.x, this.y, this);
+    this._dungeon.cell(this.x, this.y).object = this;
 
     if (light) this.light();
   }

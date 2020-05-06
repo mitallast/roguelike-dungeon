@@ -15,77 +15,26 @@ import {
 export interface TinyMonsterConfig {
   readonly name: string;
   readonly category: MonsterCategory;
-  readonly type: MonsterType;
+  readonly type: MonsterType.NORMAL | MonsterType.MINION;
   readonly luck: number;
   readonly weapons: readonly WeaponConfig[];
 }
+
+const knife = monsterWeapons.knife;
 
 export const tinyMonsters: TinyMonsterConfig[] = [
   {name: "chort", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
   {name: "wogol", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
   {name: "imp", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-
-  {
-    name: "ice_zombie",
-    category: MonsterCategory.ZOMBIE,
-    type: MonsterType.NORMAL,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
-  {
-    name: "tiny_zombie",
-    category: MonsterCategory.ZOMBIE,
-    type: MonsterType.NORMAL,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
-  {
-    name: "zombie",
-    category: MonsterCategory.ZOMBIE,
-    type: MonsterType.NORMAL,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
-
-  {
-    name: "orc_shaman",
-    category: MonsterCategory.ORC,
-    type: MonsterType.LEADER,
-    luck: 0.4,
-    weapons: [monsterWeapons.knife]
-  },
-  {
-    name: "masked_orc",
-    category: MonsterCategory.ORC,
-    type: MonsterType.NORMAL,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
-  {
-    name: "orc_warrior",
-    category: MonsterCategory.ORC,
-    type: MonsterType.MINION,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
-  {name: "goblin", category: MonsterCategory.ORC, type: MonsterType.MINION, luck: 0.3, weapons: [monsterWeapons.knife]},
-
+  {name: "ice_zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
+  {name: "tiny_zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
+  {name: "zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
+  {name: "masked_orc", category: MonsterCategory.ORC, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
+  {name: "orc_warrior", category: MonsterCategory.ORC, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
+  {name: "goblin", category: MonsterCategory.ORC, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
   {name: "swampy", category: MonsterCategory.SLIME, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
   {name: "muddy", category: MonsterCategory.SLIME, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {
-    name: "necromancer",
-    category: MonsterCategory.UNDEAD,
-    type: MonsterType.LEADER,
-    luck: 0.4,
-    weapons: [monsterWeapons.knife]
-  },
-  {
-    name: "skeleton",
-    category: MonsterCategory.UNDEAD,
-    type: MonsterType.MINION,
-    luck: 0.3,
-    weapons: [monsterWeapons.knife]
-  },
+  {name: "skeleton", category: MonsterCategory.UNDEAD, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
 ];
 
 export class TinyMonster extends Monster {
@@ -134,19 +83,10 @@ export class TinyMonsterController extends MonsterController {
     }
     this.destroy();
   }
-
-  protected spawnMinion(x: number, y: number): MonsterController | null {
-    const minions = tinyMonsters.filter(c => c.category === this.character.category && c.type === MonsterType.MINION);
-    if (minions.length === 0) {
-      console.warn("no minion config found", this.character.category);
-      return null;
-    }
-    const config = this.dungeon.rng.select(minions)!;
-    return new TinyMonsterController(config, this.dungeon, x, y);
-  }
 }
 
 export class TinyMonsterStateMachine implements CharacterStateMachine {
+  private readonly _controller: TinyMonsterController;
   private readonly _patrolling: TinyMonsterPatrollingState;
   private readonly _alarm: TinyMonsterAlarmState;
   private readonly _attack: TinyMonsterAttackState;
@@ -154,6 +94,7 @@ export class TinyMonsterStateMachine implements CharacterStateMachine {
   private _currentState: TinyMonsterPatrollingState | TinyMonsterAlarmState | TinyMonsterAttackState;
 
   constructor(controller: TinyMonsterController) {
+    this._controller = controller;
     this._patrolling = new TinyMonsterPatrollingState(this, controller);
     this._alarm = new TinyMonsterAlarmState(this, controller);
     this._attack = new TinyMonsterAttackState(this, controller);
@@ -199,6 +140,10 @@ export class TinyMonsterStateMachine implements CharacterStateMachine {
   }
 
   onUpdate(deltaTime: number): void {
+    if (this._controller.character.dead.get()) {
+      this.stop();
+      return;
+    }
     this._currentState.onUpdate(deltaTime);
   }
 }
@@ -246,9 +191,8 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
 
   onEvent(event: any): void {
     if (event instanceof MonsterAlarmEvent) {
-      const distX = Math.abs(this._controller.x - event.hero.x);
-      const distY = Math.abs(this._controller.y - event.hero.y);
-      if (distX > this._controller.max_distance || distY > this._controller.max_distance) {
+      const distance = this._controller.distanceTo(event.hero);
+      if (distance > this._controller.max_distance) {
         this._fsm.alarm(event.hero);
       } else {
         this._fsm.attack(event.hero);
@@ -270,7 +214,7 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
       this._controller.sendAlarm(hero);
-      this._fsm.alarm(hero);
+      this._fsm.attack(hero);
       return true;
     }
     return false;
@@ -293,7 +237,7 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {
@@ -408,7 +352,7 @@ export class TinyMonsterAlarmState implements CharacterState, CharacterStateMach
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {
@@ -457,13 +401,14 @@ export class TinyMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onEnter(): void {
-    if (!this._hero) {
+    if (!this._hero || this._hero.character.dead.get()) {
       this._fsm.patrolling();
       return;
     }
-    this._controller.lookAt(this._hero);
     this._currentState = this._idle;
     this._currentState.onEnter();
+
+    this.decision();
   }
 
   onUpdate(deltaTime: number): void {
@@ -478,20 +423,25 @@ export class TinyMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onFinished(): void {
-    if (!this._hero) {
+    this.decision();
+  }
+
+  private decision(): void {
+    if (!this._hero || this._hero.character.dead.get()) {
       this._fsm.alarm(null);
       return;
     }
 
-    const distX = Math.abs(this._controller.x - this._hero.x);
-    const distY = Math.abs(this._controller.y - this._hero.y);
+    const distance = this._controller.distanceTo(this._hero);
 
-    if (distX > this._controller.max_distance || distY > this._controller.max_distance) {
+    if (distance > this._controller.max_distance) {
       this._fsm.alarm(null);
       return;
     }
 
-    if (distX > this._controller.width || distY > this._controller.height) {
+    this._controller.lookAt(this._hero);
+
+    if (distance > 0) {
       if (this.moveTo(this._hero)) {
         return;
       }
@@ -536,7 +486,7 @@ export class TinyMonsterAttackState implements CharacterState, CharacterStateMac
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {

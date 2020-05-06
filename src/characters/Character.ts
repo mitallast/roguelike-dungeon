@@ -103,6 +103,8 @@ export abstract class Character {
 export interface CharacterController extends DungeonObject {
   readonly x: number;
   readonly y: number;
+  readonly newX: number;
+  readonly newY: number;
 
   readonly width: number;
   readonly height: number;
@@ -111,6 +113,10 @@ export interface CharacterController extends DungeonObject {
   readonly dungeon: DungeonMap;
 
   setPosition(x: number, y: number): void;
+  setDestination(x: number, y: number): void;
+  hasDestination(): boolean;
+  moveToDestination(): void;
+  resetDestination(): void;
   lookAt(character: CharacterController): void;
 
   destroy(): void;
@@ -122,7 +128,7 @@ export enum ScanDirection {
   AROUND = 4
 }
 
-export abstract class BaseCharacterController implements DungeonObject {
+export abstract class BaseCharacterController implements CharacterController {
   abstract readonly character: Character;
 
   readonly static: boolean = false;
@@ -133,6 +139,8 @@ export abstract class BaseCharacterController implements DungeonObject {
 
   private _x: number;
   private _y: number;
+  private _newX: number = -1;
+  private _newY: number = -1;
 
   get x(): number {
     return this._x;
@@ -140,6 +148,14 @@ export abstract class BaseCharacterController implements DungeonObject {
 
   get y(): number {
     return this._y;
+  }
+
+  get newX(): number {
+    return this._newX;
+  }
+
+  get newY(): number {
+    return this._newY;
   }
 
   readonly width: number;
@@ -178,11 +194,35 @@ export abstract class BaseCharacterController implements DungeonObject {
     this.character.dead.unsubscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this.dungeon.remove(this._x, this._y, this);
+    if (this._newX !== -1 && this._newY !== -1) {
+      this.dungeon.remove(this._newX, this._newY, this);
+    }
     this.view.destroy();
   }
 
   collide(object: DungeonObject): boolean {
     return this !== object;
+  }
+
+  distanceTo(that: CharacterController): number {
+    /**
+     * https://stackoverflow.com/questions/4449285/efficient-algorithm-for-shortest-distance-between-two-line-segments-in-1d
+     *
+     * <code>d = (s1 max s2 - e1 min e2) max 0</code>
+     *
+     * @param s1 first segment start
+     * @param e1 first segment end
+     * @param s2 second segment start
+     * @param e2 second segment end
+     * @return distance between two line segments in 1d
+     */
+    const segmentDistance = (s1: number, e1: number, s2: number, e2: number): number => {
+      return Math.max(0, Math.max(s1, s2) - Math.min(e1, e2));
+    };
+    // Chebyshev distance
+    const dx = segmentDistance(this.x, this.x + this.width, that.x, that.x + that.width);
+    const dy = segmentDistance(this.y, this.y + this.height, that.y, that.y + that.height);
+    return Math.max(dx, dy);
   }
 
   onEvent(event: any): void {
@@ -274,11 +314,38 @@ export abstract class BaseCharacterController implements DungeonObject {
   }
 
   setPosition(x: number, y: number): void {
+    this.resetDestination();
     this.dungeon.remove(this._x, this._y, this);
     this._x = Math.floor(x);
     this._y = Math.floor(y);
     this.dungeon.set(this._x, this._y, this);
     this.view.setPosition(x, y);
+  }
+
+  setDestination(x: number, y: number): void {
+    this.resetDestination();
+    this._newX = x;
+    this._newY = y;
+    this.dungeon.set(this._newX, this._newY, this);
+  }
+
+  hasDestination(): boolean {
+    return this._newX !== -1 && this._newY !== -1;
+  }
+
+  moveToDestination(): void {
+    if (this._newX !== -1 && this._newY !== -1) {
+      this.setPosition(this._newX, this._newY);
+    }
+  }
+
+  resetDestination(): void {
+    if (this._newX !== -1 && this._newY !== -1) {
+      this.dungeon.remove(this._newX, this._newY, this);
+      this.dungeon.set(this._x, this._y, this);
+      this._newX = -1;
+      this._newY = -1;
+    }
   }
 
   lookAt(character: CharacterController): void {

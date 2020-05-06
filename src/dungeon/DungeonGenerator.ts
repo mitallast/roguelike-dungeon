@@ -11,6 +11,8 @@ import {
   bossMonsters,
   MonsterCategory,
   NpcController,
+  SummonMonsterController,
+  summonMonsters,
   NPCs
 } from "../characters";
 import {Resources} from "../resources";
@@ -175,21 +177,31 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const floorSpace = Math.floor(totalSpace * 0.4);
     const spawnSpace = Math.floor(floorSpace * 0.2);
     const monsterCount = Math.floor(spawnSpace * 0.1);
+    const summonMonsterCount = Math.floor(spawnSpace * 0.01);
 
-    console.log(`floor_space: ${floorSpace}`);
-    console.log(`monster_count: ${monsterCount}`);
+    console.log(`total space: ${floorSpace}`);
+    console.log(`floor space: ${floorSpace}`);
+    console.log(`spawn space: ${spawnSpace}`);
+    console.log(`monster count: ${monsterCount}`);
+    console.log(`summon monster count: ${summonMonsterCount}`);
+
+    const category = this.bossConfig(dungeon).category;
 
     for (let m = 0; m < monsterCount; m++) {
-      if (!this.placeMonster(rng, dungeon, hero)) {
+      if (!this.placeMonster(rng, dungeon, hero, category)) {
+        break;
+      }
+    }
+    for (let m = 0; m < summonMonsterCount; m++) {
+      if (!this.placeSummonMonster(rng, dungeon, hero, category)) {
         break;
       }
     }
   }
 
-  protected placeMonster(rng: RNG, dungeon: DungeonMap, hero: HeroController): boolean {
-    const monsterCategory = this.bossConfig(dungeon).category;
+  protected placeMonster(rng: RNG, dungeon: DungeonMap, hero: HeroController, category: MonsterCategory): boolean {
     const filteredMonsters = tinyMonsters.filter(config => {
-      return config.category === monsterCategory ||
+      return config.category === category ||
         (config.category != MonsterCategory.DEMON &&
           config.category != MonsterCategory.ORC &&
           config.category != MonsterCategory.ZOMBIE);
@@ -214,6 +226,36 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
     const [cell] = free.splice(i, 1);
     const config = rng.select(filteredMonsters)!;
     new TinyMonsterController(config, dungeon, cell.x, cell.y);
+    return true;
+  }
+
+  protected placeSummonMonster(rng: RNG, dungeon: DungeonMap, hero: HeroController, category: MonsterCategory): boolean {
+    const filteredSummonMonsters = summonMonsters.filter(config => {
+      return config.category === category ||
+        (config.category != MonsterCategory.DEMON &&
+          config.category != MonsterCategory.ORC &&
+          config.category != MonsterCategory.ZOMBIE);
+    });
+
+    if (filteredSummonMonsters.length === 0) {
+      console.warn("no summon monster config found");
+      return false;
+    }
+
+    const minHeroDistance = 15;
+    const free = this.findFreePositions(dungeon, 3, 3).filter(cell => {
+      return this.distance(hero, cell) > minHeroDistance;
+    });
+
+    if (free.length === 0) {
+      console.warn("no free place for summon monster");
+      return false;
+    }
+
+    const i = rng.range(0, free.length);
+    const [cell] = free.splice(i, 1);
+    const config = rng.select(filteredSummonMonsters)!;
+    new SummonMonsterController(config, dungeon, cell.x + 1, cell.y - 1);
     return true;
   }
 

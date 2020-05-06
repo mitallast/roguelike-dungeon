@@ -14,7 +14,7 @@ export enum MonsterCategory {
 
 export enum MonsterType {
   NORMAL = 1,
-  LEADER = 2,
+  SUMMON = 2,
   MINION = 3,
 }
 
@@ -60,8 +60,6 @@ export abstract class MonsterController extends BaseCharacterController {
   abstract readonly max_distance: number;
   readonly interacting: boolean = false;
 
-  private readonly _spawned: MonsterController[] = [];
-
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
   }
@@ -86,36 +84,6 @@ export abstract class MonsterController extends BaseCharacterController {
     }
   }
 
-  protected spawnMinions(): boolean {
-    for (let i = this._spawned.length - 1; i >= 0; i--) {
-      if (this._spawned[i].character.dead.get()) {
-        this._spawned.splice(i, 1);
-      }
-    }
-    if (this._spawned.length < this.character.spawn) {
-      if (Math.random() > 0.1) {
-        return false;
-      }
-      const cell = this.findSpawnCell();
-      if (!cell) {
-        console.warn(`spawn cell not found at ${this.x}:${this.y}`, this.character.category, this.character.type);
-        return false;
-      }
-      const minion = this.spawnMinion(cell.x, cell.y);
-      if (minion) {
-        cell.object = minion;
-        this._spawned.push(minion);
-        return true;
-      } else {
-        console.warn("minion not spawned", this.character.category, this.character.type);
-        return false;
-      }
-    }
-    return false;
-  }
-
-  protected abstract spawnMinion(x: number, y: number): MonsterController | null;
-
   scanHero(direction: ScanDirection, distance: number = this.max_distance): HeroController[] {
     return this.scanObjects(direction, distance, c => c instanceof HeroController)
       .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroController[];
@@ -127,7 +95,6 @@ export abstract class MonsterController extends BaseCharacterController {
 
   sendAlarm(hero: HeroController): void {
     const event = new MonsterAlarmEvent(hero);
-    console.log("send alarm", event);
     for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
       monster.onEvent(event);
     }

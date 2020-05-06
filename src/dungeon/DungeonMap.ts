@@ -279,9 +279,9 @@ export class DungeonMapCell {
 
   set object(object: DungeonObject | null) {
     if (object && !(this._object === null || this._object === object)) {
-      console.log("current char", this._object);
-      console.log("new char", object);
-      throw "error while set char to cell";
+      console.log("current object", this._object);
+      console.log("new object", object);
+      throw "error while set object to cell";
     }
     this._object = object;
   }

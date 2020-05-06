@@ -189,6 +189,7 @@ export class HeroController extends BaseCharacterController {
   }
 
   protected onDead(): void {
+    this.destroy();
     this.dungeon.controller.dead();
   }
 
@@ -288,6 +289,11 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
   }
 
   onUpdate(deltaTime: number): void {
+    if (this._controller.character.dead.get()) {
+      this.stop();
+      return;
+    }
+
     this._currentState.onUpdate(deltaTime);
     this.processInput(false);
   }
@@ -329,8 +335,8 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
       const [object] = controller.scanInteracting(direction, 1);
       if (object) {
         joystick.hit.reset();
-        object.interact(controller);
         this.transition(this._idle);
+        object.interact(controller);
         return;
       }
 
@@ -372,7 +378,7 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {

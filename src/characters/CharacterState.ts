@@ -61,10 +61,6 @@ export class CharacterRunState implements CharacterState {
   private readonly _fsm: CharacterStateMachine;
   private readonly _controller: CharacterController;
   private readonly _animator: Animator;
-  private _startX: number = 0;
-  private _startY: number = 0;
-  private _finishX: number = 0;
-  private _finishY: number = 0;
 
   constructor(fsm: CharacterStateMachine, controller: CharacterController) {
     this._fsm = fsm;
@@ -72,45 +68,35 @@ export class CharacterRunState implements CharacterState {
     this._animator = new Animator(this._controller.view);
   }
 
-  setDestination(x: number, y: number): void {
-    this._finishX = x;
-    this._finishY = y;
-  }
-
   onEnter(): void {
-    this._startX = this._controller.x;
-    this._startY = this._controller.y;
+    if (!this._controller.hasDestination()) {
+      this._fsm.onFinished();
+    }
 
     const character = this._controller.character;
     const speed = character.speed * 0.2;
     this._animator.clear();
     this._animator.animateCharacter(speed, character.name + "_run", 4);
-    this._animator.animateMove(speed, this._startX, this._startY, this._finishX, this._finishY);
+    this._animator.animateMove(speed, this._controller);
     const weapon = character.weapon;
     if (weapon) {
       this._animator.animateWeapon(speed, weapon.animations.run);
     }
     this._animator.start();
-    this._controller.dungeon.set(this._finishX, this._finishY, this._controller);
   }
 
   onUpdate(deltaTime: number): void {
     this._animator.update(deltaTime);
     if (!this._animator.isPlaying) {
-      this._controller.dungeon.remove(this._startX, this._startY, this._controller);
-      this._controller.dungeon.remove(this._finishX, this._finishY, this._controller);
-      this._controller.setPosition(this._finishX, this._finishY);
+      this._controller.moveToDestination();
       this._fsm.onFinished();
     }
   }
 
   onExit(): void {
     if (this._animator.isPlaying) {
-      console.log("clear map on exit");
       this._animator.stop();
-      this._controller.dungeon.remove(this._startX, this._startY, this._controller);
-      this._controller.dungeon.remove(this._finishX, this._finishY, this._controller);
-      this._controller.setPosition(this._startX, this._startY);
+      this._controller.resetDestination();
     }
   }
 }
@@ -180,7 +166,6 @@ export class CharacterHitState implements CharacterState {
         this._hitController.onComboHit(this._comboHits);
 
         if (this._comboHits < this._combo.length && this._hitController.continueCombo()) {
-          console.log("next combo!");
           this.nextCombo();
         } else {
           this._hitController.onComboFinished();

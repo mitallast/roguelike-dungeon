@@ -1,6 +1,5 @@
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {MonsterController, MonsterCategory, Monster, MonsterType, MonsterHitController} from "./Monster";
-import {TinyMonsterController, tinyMonsters} from "./TinyMonster"
+import {MonsterCategory, Monster, MonsterType, MonsterHitController} from "./Monster";
 import {Colors} from "../ui";
 import {WeaponConfig, monsterWeapons, Weapon} from "../drop";
 import {BossHealthView} from "./BossHealthView";
@@ -14,6 +13,7 @@ import {
 } from "./CharacterState";
 import {HeroController} from "./Hero";
 import {ScanDirection} from "./Character";
+import {SpawningMonsterController} from "./SpawningMonsterController";
 
 export interface BossConfig {
   readonly name: string;
@@ -48,7 +48,7 @@ export class BossMonster extends Monster {
     super({
       name: config.name,
       category: config.category,
-      type: MonsterType.LEADER,
+      type: MonsterType.SUMMON,
       speed: 0.5,
       healthMax: 50 + Math.floor(level * 10),
       level: level,
@@ -60,7 +60,7 @@ export class BossMonster extends Monster {
   }
 }
 
-export class BossMonsterController extends MonsterController {
+export class BossMonsterController extends SpawningMonsterController {
   readonly character: BossMonster;
   readonly max_distance: number = 7;
 
@@ -99,19 +99,10 @@ export class BossMonsterController extends MonsterController {
     }
     this.destroy();
   }
-
-  protected spawnMinion(x: number, y: number): MonsterController | null {
-    const minions = tinyMonsters.filter(c => c.category === this.character.category && c.type !== MonsterType.LEADER);
-    if (minions.length === 0) {
-      console.warn("no minion config found", this.character.category);
-      return null;
-    }
-    const config = this.dungeon.rng.select(minions)!;
-    return new TinyMonsterController(config, this.dungeon, x, y);
-  }
 }
 
 export class BossMonsterStateMachine implements CharacterStateMachine {
+  private readonly _controller: BossMonsterController;
   private readonly _patrolling: BossMonsterPatrollingState;
   private readonly _alarm: BossMonsterAlarmState;
   private readonly _attack: BossMonsterAttackState;
@@ -119,6 +110,7 @@ export class BossMonsterStateMachine implements CharacterStateMachine {
   private _currentState: BossMonsterPatrollingState | BossMonsterAlarmState | BossMonsterAttackState;
 
   constructor(controller: BossMonsterController) {
+    this._controller = controller;
     this._patrolling = new BossMonsterPatrollingState(this, controller);
     this._alarm = new BossMonsterAlarmState(this, controller);
     this._attack = new BossMonsterAttackState(this, controller);
@@ -164,6 +156,10 @@ export class BossMonsterStateMachine implements CharacterStateMachine {
   }
 
   onUpdate(deltaTime: number): void {
+    if (this._controller.character.dead.get()) {
+      this.stop();
+      return;
+    }
     this._currentState.onUpdate(deltaTime);
   }
 }
@@ -229,7 +225,7 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
       this._controller.sendAlarm(hero);
-      this._fsm.alarm(hero);
+      this._fsm.attack(hero);
       return true;
     }
     return false;
@@ -252,7 +248,7 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {
@@ -367,7 +363,7 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {
@@ -415,7 +411,7 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onEnter(): void {
-    if (!this._hero) {
+    if (!this._hero || this._hero.character.dead.get()) {
       this._fsm.patrolling();
       return;
     }
@@ -423,6 +419,8 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
     this._controller.lookAt(this._hero);
     this._currentState = this._idle;
     this._currentState.onEnter();
+
+    this.decision();
   }
 
   onUpdate(deltaTime: number): void {
@@ -437,20 +435,29 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onFinished(): void {
-    if (!this._hero) {
+    this.decision();
+  }
+
+  private decision(): void {
+    if (!this._hero || this._hero.character.dead.get()) {
       this._fsm.alarm(null);
       return;
     }
 
-    const distX = Math.abs(this._controller.x - this._hero.x);
-    const distY = Math.abs(this._controller.y - this._hero.y);
+    const distance = this._controller.distanceTo(this._hero);
 
-    if (distX > this._controller.max_distance || distY > this._controller.max_distance) {
+    if (distance > this._controller.max_distance) {
       this._fsm.alarm(null);
       return;
     }
 
-    if (distX > this._controller.width || distY > this._controller.height) {
+    this._controller.lookAt(this._hero);
+
+    if (distance > 0) {
+      if (this._controller.spawnMinions()) {
+        this.transition(this._idle);
+        return;
+      }
       if (this.moveTo(this._hero)) {
         return;
       }
@@ -495,7 +502,7 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
     const newX = this._controller.x + velocityX;
     const newY = this._controller.y + velocityY;
     if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._run.setDestination(newX, newY);
+      this._controller.setDestination(newX, newY);
       this.transition(this._run);
       return true;
     } else {

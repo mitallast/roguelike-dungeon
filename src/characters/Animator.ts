@@ -1,6 +1,7 @@
 import {Animation} from "../animation";
 import {CharacterView} from "./CharacterView";
 import {WeaponAnimation} from "../drop";
+import {CharacterController} from "./Character";
 
 export class Animator {
   private readonly _view: CharacterView;
@@ -17,10 +18,10 @@ export class Animator {
     for (let i = 0; i < totalFrames; i++) frames.add(i, i);
   }
 
-  animateMove(animationSpeed: number, startX: number, startY: number, finishX: number, finishY: number): void {
+  animateMove(animationSpeed: number, controller: CharacterController): void {
     this._animation.addKeyFrameClip(animationSpeed, this._view.setPosition, this._view)
-      .add(0, startX, startY)
-      .add(3, finishX, finishY);
+      .add(0, controller.x, controller.y)
+      .add(3, controller.newX, controller.newY);
   }
 
   animateWeapon(animationSpeed: number, animation: WeaponAnimation): void {
