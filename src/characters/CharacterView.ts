@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import {Resources} from "../resources";
-import {DungeonMap, DungeonZIndexes} from "../dungeon";
+import {DungeonZIndexes} from "../dungeon";
 import {Weapon} from "../drop";
 
 const TILE_SIZE = 16;
@@ -66,8 +66,12 @@ export class CharacterView {
     return this._weapon;
   }
 
-  constructor(dungeon: DungeonMap, zIndex: number, gridWidth: number, onPosition?: (x: number, y: number) => void) {
-    this._resources = dungeon.controller.resources;
+  constructor(parent: PIXI.Container,
+              resources: Resources,
+              zIndex: number,
+              gridWidth: number,
+              onPosition?: (x: number, y: number) => void) {
+    this._resources = resources;
     this._baseZIndex = zIndex;
     this._gridWidth = gridWidth;
     this._onPosition = onPosition || null;
@@ -76,7 +80,7 @@ export class CharacterView {
     this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
     this._container = new PIXI.Container();
     this._container.addChild(this._weapon);
-    dungeon.container.addChild(this._container);
+    parent.addChild(this._container);
   }
 
   destroy(): void {

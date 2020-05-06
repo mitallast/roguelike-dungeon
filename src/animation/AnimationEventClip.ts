@@ -1,4 +1,5 @@
 import {AnimationClip} from "./AnimationClip";
+import {AnimationEvent} from "./AnimationEvent";
 
 export class AnimationEventClip<Args extends any[]> extends AnimationClip {
   private readonly _method: (...args: Args) => void;
@@ -56,9 +57,4 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
   private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {
     return a.time - b.time;
   }
-}
-
-export interface AnimationEvent<Args extends any[]> {
-  readonly time: number;
-  readonly args: Args;
 }

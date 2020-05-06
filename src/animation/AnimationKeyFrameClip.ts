@@ -1,9 +1,10 @@
 import {AnimationClip} from "./AnimationClip";
+import {AnimationEvent} from "./AnimationEvent";
 
 export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip {
   private readonly _method: (...args: Args) => void;
   private readonly _context: any;
-  private readonly _frames: AnimationKeyFrame<Args>[] = [];
+  private readonly _frames: AnimationEvent<Args>[] = [];
 
   get duration(): number {
     if (this._frames.length > 0) {
@@ -20,8 +21,8 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
   }
 
   protected play(): void {
-    let start: AnimationKeyFrame<Args> | null = null;
-    let end: AnimationKeyFrame<Args> | null = null;
+    let start: AnimationEvent<Args> | null = null;
+    let end: AnimationEvent<Args> | null = null;
     for (let i = 0; i < this._frames.length; i++) {
       const frame = this._frames[i];
       if (frame.time <= this._time) {
@@ -51,29 +52,24 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     }
   }
 
-  addFrame(event: AnimationKeyFrame<Args>): AnimationKeyFrameClip<Args> {
+  addEvent(event: AnimationEvent<Args>): AnimationKeyFrameClip<Args> {
     this._frames.push(event);
     this._frames.sort(this.compare);
     return this;
   }
 
-  addFrames(event: AnimationKeyFrame<Args>[]): AnimationKeyFrameClip<Args> {
+  addEvents(event: AnimationEvent<Args>[]): AnimationKeyFrameClip<Args> {
     this._frames.push(...event);
     this._frames.sort(this.compare);
     return this;
   }
 
   add(time: number, ...args: Args): AnimationKeyFrameClip<Args> {
-    this.addFrame({time, args});
+    this.addEvent({time, args});
     return this;
   }
 
-  private compare(a: AnimationKeyFrame<Args>, b: AnimationKeyFrame<Args>): number {
+  private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {
     return a.time - b.time;
   }
-}
-
-export interface AnimationKeyFrame<Args extends number[]> {
-  readonly time: number;
-  readonly args: Args;
 }

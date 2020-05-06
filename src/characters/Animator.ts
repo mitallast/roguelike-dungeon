@@ -25,8 +25,12 @@ export class Animator {
 
   animateWeapon(animationSpeed: number, animation: WeaponAnimation): void {
     const weapon = this._view.weapon;
-    this._animation.addEventClip(animationSpeed, weapon.setPosition, weapon).addEvents(animation.pos);
-    this._animation.addKeyFrameClip(animationSpeed, weapon.setAngle, weapon).addFrames(animation.angle);
+    this._animation.addKeyFrameClip(animationSpeed, weapon.setAngle, weapon).addEvents(animation.angle);
+    if (animation.smoothly) {
+      this._animation.addKeyFrameClip(animationSpeed, weapon.setPosition, weapon).addEvents(animation.pos);
+    } else {
+      this._animation.addEventClip(animationSpeed, weapon.setPosition, weapon).addEvents(animation.pos);
+    }
   }
 
   get isPlaying(): boolean {

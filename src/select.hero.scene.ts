@@ -74,7 +74,7 @@ export class SelectHeroScene implements Scene {
 
   private select(name: string): void {
     const hero = Hero.load(name, this._controller.persistent);
-    const weapon = new Weapon(weapons.rusty_sword);
+    const weapon = new Weapon(weapons.knife);
     hero.inventory.equipment.weapon.set(weapon);
     this._controller.generateDungeon({
       level: 1,

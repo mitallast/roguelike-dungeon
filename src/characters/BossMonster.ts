@@ -64,7 +64,7 @@ export class BossMonsterController extends MonsterController {
   readonly character: BossMonster;
   readonly max_distance: number = 7;
 
-  private readonly _fsm: BossMonsterStateMachine;
+  protected readonly _fsm: BossMonsterStateMachine;
 
   constructor(config: BossConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -87,21 +87,6 @@ export class BossMonsterController extends MonsterController {
     healthView.zIndex = 13;
     healthView.position.set((screen.width >> 1), 64);
     dungeon.controller.stage.addChild(healthView);
-  }
-
-  init(): void {
-    super.init();
-    this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
-  }
-
-  destroy(): void {
-    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
-    super.destroy();
-  }
-
-  onEvent(hero: HeroController): void {
-    this._fsm.onEvent(new MonsterAlarmEvent(hero));
   }
 
   protected onDead(): void {
@@ -143,6 +128,10 @@ export class BossMonsterStateMachine implements CharacterStateMachine {
   start(): void {
     this._currentState = this._patrolling;
     this._currentState.onEnter();
+  }
+
+  stop(): void {
+    this._currentState.stop();
   }
 
   private transition(state: BossMonsterPatrollingState | BossMonsterAlarmState | BossMonsterAttackState): void {
@@ -196,8 +185,10 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
   }
 
   start(): void {
-    this._currentState = this._idle;
-    this._currentState.onEnter();
+  }
+
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState): void {
@@ -207,7 +198,8 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
   }
 
   onEnter(): void {
-    this.start();
+    this._currentState = this._idle;
+    this._currentState.onEnter();
   }
 
   onExit(): void {
@@ -236,6 +228,7 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
   private scanHero(): boolean {
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
+      this._controller.sendAlarm(hero);
       this._fsm.alarm(hero);
       return true;
     }
@@ -292,15 +285,10 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
   }
 
   start(): void {
-    this._alarmCountDown = 10;
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-    if (this.lookupHero()) {
-      return;
-    }
-    if (this.moveByPath()) {
-      return;
-    }
+  }
+
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState): void {
@@ -310,7 +298,15 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
   }
 
   onEnter(): void {
-    this.start();
+    this._alarmCountDown = 10;
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+    if (this.lookupHero()) {
+      return;
+    }
+    if (this.moveByPath()) {
+      return;
+    }
   }
 
   onUpdate(deltaTime: number): void {
@@ -406,15 +402,10 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   start(): void {
-    if (!this._hero) {
-      this._fsm.patrolling();
-      return;
-    }
+  }
 
-    this._controller.lookAt(this._hero);
-    this._controller.sendAlarm(this._hero);
-    this._currentState = this._idle;
-    this._currentState.onEnter();
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
@@ -424,7 +415,14 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onEnter(): void {
-    this.start();
+    if (!this._hero) {
+      this._fsm.patrolling();
+      return;
+    }
+
+    this._controller.lookAt(this._hero);
+    this._currentState = this._idle;
+    this._currentState.onEnter();
   }
 
   onUpdate(deltaTime: number): void {

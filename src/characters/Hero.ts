@@ -155,7 +155,7 @@ export class HeroController extends BaseCharacterController {
   readonly character: Hero;
   readonly interacting: boolean = false;
 
-  private readonly _fsm: HeroStateMachine;
+  protected readonly _fsm: HeroStateMachine;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -174,12 +174,9 @@ export class HeroController extends BaseCharacterController {
   init(): void {
     super.init();
     this.character.inventory.drop.subscribe(this.onDrop, this);
-    this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
   }
 
   destroy(): void {
-    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
     this.character.inventory.drop.unsubscribe(this.onDrop, this);
     super.destroy();
   }
@@ -275,6 +272,10 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
     this._currentState.onEnter();
   }
 
+  stop(): void {
+    this._currentState.onExit();
+  }
+
   private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
     this._currentState.onExit();
     this._currentState = state;
@@ -323,26 +324,19 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
       return;
     }
 
-    if (idle || finished) {
-      const triggered = joystick.hit.triggered;
-      const once = joystick.hit.once();
-
-      if (once) {
-        const direction = controller.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
-        const [object] = controller.scanInteracting(direction, 1);
-        if (object) {
-          joystick.hit.reset();
-          object.interact(controller);
-          this.transition(this._idle);
-          return;
-        }
-      }
-
-      if (triggered || once) {
-        controller.lookAtMonsters();
-        this.transition(this._hit);
+    if ((idle || finished) && joystick.hit.once()) {
+      const direction = controller.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
+      const [object] = controller.scanInteracting(direction, 1);
+      if (object) {
+        joystick.hit.reset();
+        object.interact(controller);
+        this.transition(this._idle);
         return;
       }
+
+      controller.lookAtMonsters();
+      this.transition(this._hit);
+      return;
     }
 
     if (idle || finished) {

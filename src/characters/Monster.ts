@@ -122,13 +122,12 @@ export abstract class MonsterController extends BaseCharacterController {
   }
 
   scanMonsters(direction: ScanDirection): MonsterController[] {
-    return this.scanObjects(direction, this.max_distance, c => c instanceof MonsterController) as MonsterController[];
+    return this.scanObjects(direction, this.max_distance, c => c instanceof MonsterController && c !== this) as MonsterController[];
   }
-
-  abstract onEvent(event: any): void;
 
   sendAlarm(hero: HeroController): void {
     const event = new MonsterAlarmEvent(hero);
+    console.log("send alarm", event);
     for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
       monster.onEvent(event);
     }

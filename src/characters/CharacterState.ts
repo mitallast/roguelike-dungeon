@@ -5,6 +5,7 @@ import {WeaponAnimation} from "../drop";
 
 export interface CharacterStateMachine {
   start(): void;
+  stop(): void;
   onFinished(): void;
   onEvent(event: any): void;
   onUpdate(deltaTime: number): void;
@@ -104,7 +105,13 @@ export class CharacterRunState implements CharacterState {
   }
 
   onExit(): void {
-    this._animator.stop();
+    if (this._animator.isPlaying) {
+      console.log("clear map on exit");
+      this._animator.stop();
+      this._controller.dungeon.remove(this._startX, this._startY, this._controller);
+      this._controller.dungeon.remove(this._finishX, this._finishY, this._controller);
+      this._controller.setPosition(this._startX, this._startY);
+    }
   }
 }
 

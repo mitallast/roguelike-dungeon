@@ -6,6 +6,7 @@ import {PathFinding} from "../pathfinding";
 import {HeroController} from "./Hero";
 import {Inventory} from "../inventory";
 import {CharacterView, CharacterViewOptions} from "./CharacterView";
+import {CharacterStateMachine} from "./CharacterState";
 
 export abstract class Character {
   readonly name: string;
@@ -144,13 +145,21 @@ export abstract class BaseCharacterController implements DungeonObject {
   readonly width: number;
   readonly height: number;
 
+  protected abstract readonly _fsm: CharacterStateMachine;
+
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     this.dungeon = dungeon;
     this.width = options.width;
     this.height = options.height;
     this._x = options.x;
     this._y = options.y;
-    this.view = new CharacterView(dungeon, options.zIndex, options.width, options.onPosition);
+    this.view = new CharacterView(
+      dungeon.container,
+      dungeon.controller.resources,
+      options.zIndex,
+      options.width,
+      options.onPosition
+    );
   }
 
   init(): void {
@@ -158,9 +167,13 @@ export abstract class BaseCharacterController implements DungeonObject {
     this.character.killedBy.subscribe(this.handleKilledBy, this);
     this.character.dead.subscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
+    this._fsm.start();
+    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
   }
 
   destroy(): void {
+    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
+    this._fsm.stop();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
@@ -170,6 +183,10 @@ export abstract class BaseCharacterController implements DungeonObject {
 
   collide(object: DungeonObject): boolean {
     return this !== object;
+  }
+
+  onEvent(event: any): void {
+    this._fsm.onEvent(event);
   }
 
   abstract interact(hero: HeroController): void;
@@ -279,6 +296,7 @@ export abstract class BaseCharacterController implements DungeonObject {
   protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell[] {
     const posX = this.x;
     const posY = this.y;
+    const isLeft = this.view.isLeft;
 
     const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
@@ -299,6 +317,16 @@ export abstract class BaseCharacterController implements DungeonObject {
         }
       }
     }
+
+    const metric = (a: DungeonMapCell): number => {
+      return Math.max(Math.abs(a.x - posX), Math.abs(a.y - posY)) +
+        (a.y !== posY ? 0.5 : 0) + // boost X
+        (a.x === posX && a.y === posY ? 0 : 1) + // boost self
+        (isLeft ? (a.x < posX ? 0 : 1) : (a.x > posX ? 0 : 0.5)); // boost side
+    };
+
+    cells.sort((a: DungeonMapCell, b: DungeonMapCell) => metric(a) - metric(b));
+
     return cells;
   }
 

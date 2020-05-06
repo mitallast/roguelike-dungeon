@@ -109,7 +109,7 @@ export class TinyMonsterController extends MonsterController {
   readonly character: TinyMonster;
   readonly max_distance: number = 5;
 
-  private readonly _fsm: TinyMonsterStateMachine;
+  protected readonly _fsm: TinyMonsterStateMachine;
 
   constructor(config: TinyMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -127,74 +127,6 @@ export class TinyMonsterController extends MonsterController {
     this._fsm = new TinyMonsterStateMachine(this);
     this.init();
   }
-
-  init(): void {
-    super.init();
-    this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
-  }
-
-  destroy(): void {
-    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
-    super.destroy();
-  }
-
-  onEvent(hero: HeroController): void {
-    this._fsm.onEvent(new MonsterAlarmEvent(hero));
-  }
-
-  // action(finished: boolean): boolean {
-  //   if (!this.character.dead.get() && finished) {
-  //     const hit = false;
-  //     if (hit) {
-  //       this.scanHit();
-  //     }
-  //
-  //     const leader = this.character.type === MonsterType.LEADER;
-  //     if (leader) {
-  //       if (this.spawnMinions()) {
-  //         return false;
-  //       }
-  //       if (this.moveFromHeroOrAttack()) {
-  //         return true;
-  //       }
-  //       this.ready();
-  //     } else {
-  //       if (this.moveToHero()) {
-  //         return true;
-  //       }
-  //       if (this.moveByPath()) {
-  //         return true;
-  //       }
-  //       this.ready();
-  //       if (this.randomMove()) {
-  //         return true;
-  //       }
-  //     }
-  //   }
-  //   return false;
-  // }
-
-  // private moveFromHeroOrAttack(): boolean {
-  //   const [hero] = this.scanHero(ScanDirection.AROUND, this.max_distance);
-  //   if (hero) {
-  //     this.lookAt(hero);
-  //     this.sendAlarm(hero);
-  //     const distX = Math.abs(this.x - hero.x);
-  //     const distY = Math.abs(this.y - hero.y);
-  //     if (distX > this.width || distY > this.height) {
-  //       const dx = Math.min(1, Math.max(-1, this.x - hero.x));
-  //       const dy = Math.min(1, Math.max(-1, this.y - hero.y));
-  //       console.log("move from hero");
-  //       return this.move(dx, dy) || this.move(dx, 0) || this.move(0, dy);
-  //     } else if (this.character.luck < this.dungeon.rng.float()) {
-  //       console.log("attack hero");
-  //       this.hit();
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
 
   protected onDead(): void {
     if (Math.random() < this.character.luck) {
@@ -231,6 +163,10 @@ export class TinyMonsterStateMachine implements CharacterStateMachine {
   start(): void {
     this._currentState = this._patrolling;
     this._currentState.onEnter();
+  }
+
+  stop(): void {
+    this._currentState.stop();
   }
 
   private transition(state: TinyMonsterPatrollingState | TinyMonsterAlarmState | TinyMonsterAttackState): void {
@@ -284,8 +220,10 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
   }
 
   start(): void {
-    this._currentState = this._idle;
-    this._currentState.onEnter();
+  }
+
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState): void {
@@ -295,7 +233,8 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
   }
 
   onEnter(): void {
-    this.start();
+    this._currentState = this._idle;
+    this._currentState.onEnter();
   }
 
   onExit(): void {
@@ -307,7 +246,13 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
 
   onEvent(event: any): void {
     if (event instanceof MonsterAlarmEvent) {
-      this._fsm.alarm(event.hero);
+      const distX = Math.abs(this._controller.x - event.hero.x);
+      const distY = Math.abs(this._controller.y - event.hero.y);
+      if (distX > this._controller.max_distance || distY > this._controller.max_distance) {
+        this._fsm.alarm(event.hero);
+      } else {
+        this._fsm.attack(event.hero);
+      }
     }
   }
 
@@ -324,6 +269,7 @@ export class TinyMonsterPatrollingState implements CharacterState, CharacterStat
   private scanHero(): boolean {
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
+      this._controller.sendAlarm(hero);
       this._fsm.alarm(hero);
       return true;
     }
@@ -380,15 +326,10 @@ export class TinyMonsterAlarmState implements CharacterState, CharacterStateMach
   }
 
   start(): void {
-    this._alarmCountDown = 10;
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-    if (this.lookupHero()) {
-      return;
-    }
-    if (this.moveByPath()) {
-      return;
-    }
+  }
+
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState): void {
@@ -398,7 +339,15 @@ export class TinyMonsterAlarmState implements CharacterState, CharacterStateMach
   }
 
   onEnter(): void {
-    this.start();
+    this._alarmCountDown = 10;
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+    if (this.lookupHero()) {
+      return;
+    }
+    if (this.moveByPath()) {
+      return;
+    }
   }
 
   onUpdate(deltaTime: number): void {
@@ -491,18 +440,14 @@ export class TinyMonsterAttackState implements CharacterState, CharacterStateMac
   attack(hero: HeroController): void {
     this._controller.lookAt(hero);
     this._hero = hero;
+    this._lastPath = this._controller.findPath(hero);
   }
 
   start(): void {
-    if (!this._hero) {
-      this._fsm.patrolling();
-      return;
-    }
+  }
 
-    this._controller.lookAt(this._hero);
-    this._controller.sendAlarm(this._hero);
-    this._currentState = this._idle;
-    this._currentState.onEnter();
+  stop(): void {
+    this._currentState.onExit();
   }
 
   private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
@@ -512,7 +457,13 @@ export class TinyMonsterAttackState implements CharacterState, CharacterStateMac
   }
 
   onEnter(): void {
-    this.start();
+    if (!this._hero) {
+      this._fsm.patrolling();
+      return;
+    }
+    this._controller.lookAt(this._hero);
+    this._currentState = this._idle;
+    this._currentState.onEnter();
   }
 
   onUpdate(deltaTime: number): void {

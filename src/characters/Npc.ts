@@ -368,7 +368,7 @@ export class NpcController extends BaseCharacterController {
   readonly character: Npc;
   readonly interacting: boolean = true;
 
-  private readonly _fsm: NpcIdleStateMachine;
+  protected readonly _fsm: NpcIdleStateMachine;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
     super(dungeon, {
@@ -383,8 +383,8 @@ export class NpcController extends BaseCharacterController {
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this.initSkills(controller, config);
     this._fsm = new NpcIdleStateMachine(this);
+    this.initSkills(controller, config);
     this.init();
   }
 
@@ -424,17 +424,6 @@ export class NpcController extends BaseCharacterController {
     }
   }
 
-  init(): void {
-    super.init();
-    this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
-  }
-
-  destroy(): void {
-    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
-    super.destroy();
-  }
-
   protected onDead(): void {
     this.destroy();
   }
@@ -457,6 +446,10 @@ export class NpcIdleStateMachine implements CharacterStateMachine {
 
   start(): void {
     this._state.onEnter();
+  }
+
+  stop(): void {
+    this._state.onExit();
   }
 
   onUpdate(deltaTime: number): void {
