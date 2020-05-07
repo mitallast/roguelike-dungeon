@@ -6,7 +6,8 @@ import {PathFinding} from "../pathfinding";
 import {HeroController} from "./Hero";
 import {Inventory} from "../inventory";
 import {CharacterView, CharacterViewOptions} from "./CharacterView";
-import {CharacterStateMachine} from "./CharacterState";
+import {CharacterStateMachine} from "./CharacterStateMachine";
+import {Animator} from "./Animator";
 
 export abstract class Character {
   readonly name: string;
@@ -110,6 +111,7 @@ export interface CharacterController extends DungeonObject {
   readonly height: number;
   readonly character: Character;
   readonly view: CharacterView;
+  readonly animator: Animator;
   readonly dungeon: DungeonMap;
 
   setPosition(x: number, y: number): void;
@@ -135,6 +137,7 @@ export abstract class BaseCharacterController implements CharacterController {
   abstract readonly interacting: boolean;
 
   readonly view: CharacterView;
+  readonly animator: Animator;
   readonly dungeon: DungeonMap;
 
   private _x: number;
@@ -176,6 +179,7 @@ export abstract class BaseCharacterController implements CharacterController {
       options.width,
       options.onPosition
     );
+    this.animator = new Animator(this.view);
   }
 
   init(): void {
@@ -327,6 +331,30 @@ export abstract class BaseCharacterController implements CharacterController {
     this._newX = x;
     this._newY = y;
     this.dungeon.set(this._newX, this._newY, this);
+  }
+
+  startMove(dx: number, dy: number): boolean {
+    if (dx > 0) this.view.isLeft = false;
+    if (dy < 0) this.view.isLeft = true;
+    const newX = this._x + dx;
+    const newY = this._y + dy;
+    if (this.dungeon.available(newX, newY, this)) {
+      this.setDestination(newX, newY);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  randomMove(): boolean {
+    if (Math.random() < 0.1) {
+      const moveX = Math.floor(Math.random() * 3) - 1;
+      const moveY = Math.floor(Math.random() * 3) - 1;
+      if (this.startMove(moveX, moveY)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   hasDestination(): boolean {

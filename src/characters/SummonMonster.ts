@@ -4,13 +4,13 @@ import {
   CharacterRunState,
   CharacterState,
   CharacterStateMachine
-} from "./CharacterState";
+} from "./CharacterStateMachine";
 import {Monster, MonsterCategory, MonsterHitController, MonsterType} from "./Monster";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
 import {HeroController} from "./Hero";
 import {ScanDirection} from "./Character";
-import {SpawningMonsterController} from "./SpawningMonsterController";
+import {SpawningMonsterController} from "./SpawningMonster";
 
 export interface SummonMonsterConfig {
   readonly name: string;
@@ -165,14 +165,7 @@ export class SummonMonsterPatrollingState implements CharacterStateMachine, Char
   }
 
   onFinished(): void {
-    if (this.scanHero()) {
-      return;
-    }
-    if (this.randomMove()) {
-      return;
-    }
-    this._controller.spawnMinions();
-    this.transition(this._idle);
+    this.decision();
   }
 
   onEvent(_: any): void {
@@ -183,44 +176,25 @@ export class SummonMonsterPatrollingState implements CharacterStateMachine, Char
   onEnter(): void {
     this._currentState = this._idle;
     this._currentState.onEnter();
+    this.decision();
   }
 
   onExit(): void {
   }
 
-  private scanHero(): boolean {
+  private decision(): void {
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
       this._controller.sendAlarm(hero);
       this._fsm.attack(hero);
-      return true;
+      return;
     }
-    return false;
-  }
-
-  private randomMove(): boolean {
-    if (Math.random() < 0.1) {
-      const moveX = Math.floor(Math.random() * 3) - 1;
-      const moveY = Math.floor(Math.random() * 3) - 1;
-      if (this.move(moveX, moveY)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
+    if (this._controller.randomMove()) {
       this.transition(this._run);
-      return true;
-    } else {
-      return false;
+      return;
     }
+    this._controller.spawnMinions();
+    this.transition(this._idle);
   }
 }
 
@@ -274,6 +248,23 @@ export class SummonMonsterAttackState implements CharacterStateMachine, Characte
   onEvent(_: any): void {
   }
 
+  // state
+
+  onEnter(): void {
+    if (!this._hero || this._hero.character.dead.get()) {
+      this._fsm.patrolling();
+      return;
+    }
+    this._controller.lookAt(this._hero);
+    this._currentState = this._idle;
+    this._currentState.onEnter();
+
+    this.decision();
+  }
+
+  onExit(): void {
+  }
+
   private decision(): void {
     if (!this._hero || this._hero.character.dead.get()) {
       this._fsm.patrolling();
@@ -298,7 +289,8 @@ export class SummonMonsterAttackState implements CharacterStateMachine, Characte
     if (distance > 0) {
       const dx = Math.min(1, Math.max(-1, this._controller.x - this._hero.x));
       const dy = Math.min(1, Math.max(-1, this._controller.y - this._hero.y));
-      if (this.move(dx, dy) || this.move(dx, 0) || this.move(0, dy)) {
+      if (this._controller.startMove(dx, dy) || this._controller.startMove(dx, 0) || this._controller.startMove(0, dy)) {
+        this.transition(this._run);
         return;
       }
     }
@@ -313,36 +305,5 @@ export class SummonMonsterAttackState implements CharacterStateMachine, Characte
     this._controller.spawnMinions();
 
     this.transition(this._idle);
-  }
-
-  // state
-
-  onEnter(): void {
-    if (!this._hero || this._hero.character.dead.get()) {
-      this._fsm.patrolling();
-      return;
-    }
-    this._controller.lookAt(this._hero);
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-
-    this.decision();
-  }
-
-  onExit(): void {
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
-      this.transition(this._run);
-      return true;
-    } else {
-      return false;
-    }
   }
 }

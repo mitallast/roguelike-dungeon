@@ -4,7 +4,7 @@ import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
 import {SceneController} from "../scene";
 import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "../drop";
-import {CharacterIdleState, CharacterStateMachine} from "./CharacterState";
+import {CharacterIdleState, CharacterStateMachine} from "./CharacterStateMachine";
 
 export abstract class NpcSkill {
   protected readonly npc: Npc;

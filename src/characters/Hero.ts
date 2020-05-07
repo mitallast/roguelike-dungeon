@@ -12,7 +12,7 @@ import {
   CharacterIdleState,
   CharacterRunState,
   CharacterStateMachine
-} from "./CharacterState";
+} from "./CharacterStateMachine";
 
 export const heroCharacterNames = [
   "elf_f",
@@ -301,6 +301,26 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
   onEvent(_: any): void {
   }
 
+  // combo:
+
+  continueCombo(): boolean {
+    return this._joystick.hit.once();
+  }
+
+  onComboFinished(): void {
+  }
+
+  onComboHit(combo: number): void {
+    this._controller.scanHit(combo);
+  }
+
+  onComboStarted(): void {
+  }
+
+  onHit(): void {
+    this._controller.scanHit(1);
+  }
+
   private processInput(finished: boolean): void {
     const idle = this._currentState instanceof CharacterIdleState;
     const controller = this._controller;
@@ -346,13 +366,14 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
     }
 
     if (idle || finished) {
-      const velocityX = this.delta(joystick.moveLeft, joystick.moveRight);
-      const velocityY = this.delta(joystick.moveUp, joystick.moveDown);
-
-      if (velocityX !== 0 || velocityY !== 0) {
-        if (this.move(velocityX, velocityY) || this.move(velocityX, 0) || this.move(0, velocityY)) {
-          return;
-        }
+      const dx = HeroStateMachine.delta(joystick.moveLeft, joystick.moveRight);
+      const dy = HeroStateMachine.delta(joystick.moveUp, joystick.moveDown);
+      if (
+        (dx !== 0 || dy !== 0) &&
+        (this._controller.startMove(dx, dy) || this._controller.startMove(dx, 0) || this._controller.startMove(0, dy))
+      ) {
+        this.transition(this._run);
+        return;
       }
     }
 
@@ -362,7 +383,7 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
     }
   }
 
-  delta(a: KeyBind, b: KeyBind): number {
+  private static delta(a: KeyBind, b: KeyBind): number {
     if (a.triggered) {
       return -1;
     } else if (b.triggered) {
@@ -370,39 +391,5 @@ export class HeroStateMachine implements CharacterStateMachine, CharacterHitCont
     } else {
       return 0;
     }
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
-      this.transition(this._run);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  // combo:
-
-  continueCombo(): boolean {
-    return this._joystick.hit.once();
-  }
-
-  onComboFinished(): void {
-  }
-
-  onComboHit(combo: number): void {
-    this._controller.scanHit(combo);
-  }
-
-  onComboStarted(): void {
-  }
-
-  onHit(): void {
-    this._controller.scanHit(1);
   }
 }

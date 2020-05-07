@@ -1,4 +1,3 @@
-import {HeroController} from "./Hero";
 import {CharacterController} from "./Character";
 import {Animator} from "./Animator";
 import {WeaponAnimation} from "../drop";
@@ -17,11 +16,6 @@ export interface CharacterState {
   onUpdate(deltaTime: number): void;
 }
 
-export class MonsterAlarmEvent {
-  constructor(readonly hero: HeroController) {
-  }
-}
-
 export class CharacterIdleState implements CharacterState {
   private readonly _fsm: CharacterStateMachine;
   private readonly _controller: CharacterController;
@@ -30,7 +24,7 @@ export class CharacterIdleState implements CharacterState {
   constructor(fsm: CharacterStateMachine, controller: CharacterController) {
     this._fsm = fsm;
     this._controller = controller;
-    this._animator = new Animator(this._controller.view);
+    this._animator = controller.animator;
   }
 
   onEnter(): void {
@@ -185,3 +179,6 @@ export class CharacterHitState implements CharacterState {
     this._animator.stop();
   }
 }
+
+// new FSM
+

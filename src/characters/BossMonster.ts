@@ -1,5 +1,5 @@
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {MonsterCategory, Monster, MonsterType, MonsterHitController} from "./Monster";
+import {MonsterCategory, Monster, MonsterType, MonsterHitController, MonsterAlarmEvent} from "./Monster";
 import {Colors} from "../ui";
 import {WeaponConfig, monsterWeapons, Weapon} from "../drop";
 import {BossHealthView} from "./BossHealthView";
@@ -9,11 +9,10 @@ import {
   CharacterRunState,
   CharacterState,
   CharacterStateMachine,
-  MonsterAlarmEvent
-} from "./CharacterState";
+} from "./CharacterStateMachine";
 import {HeroController} from "./Hero";
 import {ScanDirection} from "./Character";
-import {SpawningMonsterController} from "./SpawningMonsterController";
+import {SpawningMonsterController} from "./SpawningMonster";
 
 export interface BossConfig {
   readonly name: string;
@@ -212,48 +211,17 @@ export class BossMonsterPatrollingState implements CharacterState, CharacterStat
   }
 
   onFinished(): void {
-    if (this.scanHero()) {
-      return;
-    }
-    if (this.randomMove()) {
-      return;
-    }
-    this.transition(this._idle);
-  }
-
-  private scanHero(): boolean {
     const [hero] = this._controller.scanHero(ScanDirection.AROUND);
     if (hero) {
       this._controller.sendAlarm(hero);
       this._fsm.attack(hero);
-      return true;
+      return;
     }
-    return false;
-  }
-
-  private randomMove(): boolean {
-    if (Math.random() < 0.1) {
-      const moveX = Math.floor(Math.random() * 3) - 1;
-      const moveY = Math.floor(Math.random() * 3) - 1;
-      if (this.move(moveX, moveY)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
+    if (this._controller.randomMove()) {
       this.transition(this._run);
-      return true;
-    } else {
-      return false;
+      return;
     }
+    this.transition(this._idle);
   }
 }
 
@@ -264,7 +232,6 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
   private readonly _run: CharacterRunState;
 
   private _currentState: CharacterIdleState | CharacterRunState;
-  private _lastPath: PIXI.Point[] = [];
   private _alarmCountDown = 0;
 
   constructor(fsm: BossMonsterStateMachine, controller: BossMonsterController) {
@@ -277,7 +244,7 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
 
   onAlarm(hero: HeroController): void {
     this._controller.lookAt(hero);
-    this._lastPath = this._controller.findPath(hero);
+    this._controller.startMoveTo(hero);
   }
 
   start(): void {
@@ -297,12 +264,8 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
     this._alarmCountDown = 10;
     this._currentState = this._idle;
     this._currentState.onEnter();
-    if (this.lookupHero()) {
-      return;
-    }
-    if (this.moveByPath()) {
-      return;
-    }
+
+    this.decision();
   }
 
   onUpdate(deltaTime: number): void {
@@ -310,17 +273,23 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
   }
 
   onExit(): void {
-    this._lastPath = [];
   }
 
   onEvent(_: any): void {
   }
 
   onFinished(): void {
-    if (this.lookupHero()) {
+    this.decision();
+  }
+
+  private decision(): void {
+    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
+    if (hero) {
+      this._fsm.attack(hero);
       return;
     }
-    if (this.moveByPath()) {
+    if (this._controller.startMoveByPath()) {
+      this.transition(this._run);
       return;
     }
     this._alarmCountDown--;
@@ -328,46 +297,6 @@ export class BossMonsterAlarmState implements CharacterState, CharacterStateMach
       this.transition(this._idle);
     } else {
       this._fsm.patrolling();
-    }
-  }
-
-  protected lookupHero(): boolean {
-    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
-    if (hero) {
-      this._fsm.attack(hero);
-      return true;
-    }
-    return false;
-  }
-
-  protected moveByPath(): boolean {
-    if (this._lastPath.length > 0) {
-      const next = this._lastPath[0];
-      const deltaX = next.x - this._controller.x;
-      const deltaY = next.y - this._controller.y;
-      if (this.move(deltaX, deltaY)) {
-        this._lastPath.splice(0, 1);
-        return true;
-      } else {
-        this._lastPath = [];
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
-      this.transition(this._run);
-      return true;
-    } else {
-      return false;
     }
   }
 }
@@ -381,7 +310,6 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
 
   private _currentState: CharacterIdleState | CharacterRunState | CharacterHitState;
   private _hero: HeroController | null = null;
-  private _lastPath: PIXI.Point[] = [];
 
   constructor(fsm: BossMonsterStateMachine, controller: BossMonsterController) {
     this._fsm = fsm;
@@ -458,10 +386,12 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
         this.transition(this._idle);
         return;
       }
-      if (this.moveTo(this._hero)) {
+      if (this._controller.startMoveTo(this._hero)) {
+        this.transition(this._run);
         return;
       }
-      if (this.moveByPath()) {
+      if (this._controller.startMoveByPath()) {
+        this.transition(this._run);
         return;
       }
       this.transition(this._idle);
@@ -471,42 +401,6 @@ export class BossMonsterAttackState implements CharacterState, CharacterStateMac
         return;
       }
       this.transition(this._idle);
-    }
-  }
-
-  private moveTo(hero: HeroController): boolean {
-    this._lastPath = this._controller.findPath(hero);
-    return this.moveByPath();
-  }
-
-  private moveByPath(): boolean {
-    if (this._lastPath.length > 0) {
-      const next = this._lastPath[0];
-      const deltaX = next.x - this._controller.x;
-      const deltaY = next.y - this._controller.y;
-      if (this.move(deltaX, deltaY)) {
-        this._lastPath.splice(0, 1);
-        return true;
-      } else {
-        this._lastPath = [];
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  private move(velocityX: number, velocityY: number): boolean {
-    if (velocityX > 0) this._controller.view.isLeft = false;
-    if (velocityX < 0) this._controller.view.isLeft = true;
-    const newX = this._controller.x + velocityX;
-    const newY = this._controller.y + velocityY;
-    if (this._controller.dungeon.available(newX, newY, this._controller)) {
-      this._controller.setDestination(newX, newY);
-      this.transition(this._run);
-      return true;
-    } else {
-      return false;
     }
   }
 }

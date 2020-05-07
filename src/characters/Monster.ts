@@ -2,7 +2,7 @@ import {DungeonMap} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
 import {BaseCharacterController, Character, ScanDirection} from "./Character";
 import {CharacterViewOptions} from "./CharacterView";
-import {CharacterHitController, MonsterAlarmEvent} from "./CharacterState";
+import {CharacterHitController} from "./CharacterStateMachine";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -60,6 +60,8 @@ export abstract class MonsterController extends BaseCharacterController {
   abstract readonly max_distance: number;
   readonly interacting: boolean = false;
 
+  private _lastPath: PIXI.Point[] = [];
+
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
   }
@@ -99,6 +101,28 @@ export abstract class MonsterController extends BaseCharacterController {
       monster.onEvent(event);
     }
   }
+
+  startMoveByPath(): boolean {
+    if (this._lastPath.length > 0) {
+      const next = this._lastPath[0];
+      const deltaX = next.x - this.x;
+      const deltaY = next.y - this.y;
+      if (this.startMove(deltaX, deltaY)) {
+        this._lastPath.splice(0, 1);
+        return true;
+      } else {
+        this._lastPath = [];
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  startMoveTo(hero: HeroController): boolean {
+    this._lastPath = this.findPath(hero);
+    return this.startMoveByPath();
+  }
 }
 
 export class MonsterHitController implements CharacterHitController {
@@ -124,5 +148,10 @@ export class MonsterHitController implements CharacterHitController {
 
   continueCombo(): boolean {
     return true;
+  }
+}
+
+export class MonsterAlarmEvent {
+  constructor(readonly hero: HeroController) {
   }
 }
