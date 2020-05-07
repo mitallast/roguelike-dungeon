@@ -105,16 +105,65 @@ export interface CharacterHitController {
   continueCombo(): boolean;
 }
 
-export class CharacterHitState implements CharacterState {
+export class CharacterHitState implements CharacterStateMachine, CharacterState {
   private readonly _fsm: CharacterStateMachine;
+  private readonly _controller: CharacterController;
+  private readonly _simple: CharacterSimpleHitState;
+  private readonly _combo: CharacterComboHitState;
+
+  private _currentState: CharacterSimpleHitState | CharacterComboHitState;
+
+  constructor(fsm: CharacterStateMachine, controller: CharacterController, hitController: CharacterHitController) {
+    this._fsm = fsm;
+    this._controller = controller;
+    this._simple = new CharacterSimpleHitState(this, controller, hitController);
+    this._combo = new CharacterComboHitState(this, controller, hitController);
+    this._currentState = this._simple;
+  }
+
+  // fsm
+
+  start(): void {
+  }
+
+  stop(): void {
+    this._currentState.onExit();
+  }
+
+  onFinished(): void {
+    this._fsm.onFinished();
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._currentState.onUpdate(deltaTime);
+  }
+
+  onEvent(_: any): void {
+  }
+
+  // state
+
+  onEnter(): void {
+    const weapon = this._controller.character.weapon;
+    if (weapon && weapon.animations.combo) {
+      this._currentState = this._combo;
+    } else {
+      this._currentState = this._simple;
+    }
+    this._currentState.onEnter();
+  }
+
+  onExit(): void {
+  }
+}
+
+export class CharacterSimpleHitState implements CharacterState {
+  private readonly _fsm: CharacterHitState;
   private readonly _controller: CharacterController;
   private readonly _hitController: CharacterHitController;
   private readonly _animator: Animator;
-  private _combo: readonly WeaponAnimation[] | null = null;
-  private _comboHits: number = 0;
-  private _comboSpeed: number = 0;
 
-  constructor(fsm: CharacterStateMachine, controller: CharacterController, hitController: CharacterHitController) {
+  constructor(fsm: CharacterHitState, controller: CharacterController, hitController: CharacterHitController) {
     this._fsm = fsm;
     this._controller = controller;
     this._hitController = hitController;
@@ -123,53 +172,73 @@ export class CharacterHitState implements CharacterState {
 
   onEnter(): void {
     const character = this._controller.character;
-    const speed = character.speed * 0.2;
-    this._animator.clear();
-    this._animator.animateCharacter(speed, character.name + "_idle", 4);
     const weapon = character.weapon;
-    if (weapon) {
-      const combo = weapon.animations.combo;
-      if (combo) {
-        this._combo = combo;
-        this._comboHits = 0;
-        this._comboSpeed = speed;
-        this._animator.animateWeapon(speed, combo[0]);
-        this._hitController.onComboStarted();
-      } else {
-        this._animator.animateWeapon(speed, weapon.animations.hit);
-      }
-    }
-    this._animator.start();
-  }
-
-  private nextCombo(): void {
-    const speed = this._comboSpeed;
-    const character = this._controller.character;
     this._animator.clear();
-    this._animator.animateCharacter(speed, character.name + "_idle", 4);
-    this._animator.animateWeapon(speed, this._combo![this._comboHits]);
+    if (weapon) {
+      const speed = weapon.speed * 0.2;
+      this._animator.animateCharacter(speed, character.name + "_idle", 4);
+      this._animator.animateWeapon(speed, weapon.animations.hit);
+    } else {
+      const speed = character.speed * 0.2;
+      this._animator.animateCharacter(speed, character.name + "_idle", 4);
+    }
     this._animator.start();
   }
 
   onUpdate(deltaTime: number): void {
     this._animator.update(deltaTime);
-
     if (!this._animator.isPlaying) {
-      if (this._combo) {
-        this._comboHits++;
-        this._hitController.onComboHit(this._comboHits);
+      this._hitController.onHit();
+      this._fsm.onFinished();
+    }
+  }
 
-        if (this._comboHits < this._combo.length && this._hitController.continueCombo()) {
-          this.nextCombo();
-        } else {
-          this._hitController.onComboFinished();
-          this._combo = [];
-          this._comboHits = 0;
-          this._comboSpeed = 0;
-          this._fsm.onFinished();
-        }
+  onExit(): void {
+    this._animator.stop();
+  }
+}
+
+export class CharacterComboHitState implements CharacterState {
+  private readonly _fsm: CharacterHitState;
+  private readonly _controller: CharacterController;
+  private readonly _hitController: CharacterHitController;
+  private readonly _animator: Animator;
+  private _combo: readonly WeaponAnimation[] = [];
+  private _hits: number = 0;
+  private _speed: number = 0;
+
+  constructor(fsm: CharacterHitState, controller: CharacterController, hitController: CharacterHitController) {
+    this._fsm = fsm;
+    this._controller = controller;
+    this._hitController = hitController;
+    this._animator = new Animator(this._controller.view);
+  }
+
+  onEnter(): void {
+    const character = this._controller.character;
+    const weapon = character.weapon!;
+    this._hits = 0;
+    this._speed = weapon.speed * 0.2;
+    this._animator.clear();
+    this._animator.animateCharacter(this._speed, character.name + "_idle", 4);
+    this._combo = weapon.animations.combo!;
+    this._animator.animateWeapon(this._speed, this._combo[0]);
+    this._hitController.onComboStarted();
+    this._animator.start();
+  }
+
+  onUpdate(deltaTime: number): void {
+    this._animator.update(deltaTime);
+    if (!this._animator.isPlaying) {
+      this._hits++;
+      this._hitController.onComboHit(this._hits);
+      if (this._hits < this._combo.length && this._hitController.continueCombo()) {
+        this._animator.clear();
+        this._animator.animateCharacter(this._speed, this._controller.character.name + "_idle", 4);
+        this._animator.animateWeapon(this._speed, this._combo![this._hits]);
+        this._animator.start();
       } else {
-        this._hitController.onHit();
+        this._hitController.onComboFinished();
         this._fsm.onFinished();
       }
     }
@@ -179,6 +248,3 @@ export class CharacterHitState implements CharacterState {
     this._animator.stop();
   }
 }
-
-// new FSM
-

@@ -335,7 +335,7 @@ export abstract class BaseCharacterController implements CharacterController {
 
   startMove(dx: number, dy: number): boolean {
     if (dx > 0) this.view.isLeft = false;
-    if (dy < 0) this.view.isLeft = true;
+    if (dx < 0) this.view.isLeft = true;
     const newX = this._x + dx;
     const newY = this._y + dy;
     if (this.dungeon.available(newX, newY, this)) {
