@@ -1,8 +1,7 @@
 import {DungeonMap} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
-import {BaseCharacterController, Character, ScanDirection} from "./Character";
+import {BaseCharacterController, Character, HitController, ScanDirection} from "./Character";
 import {CharacterViewOptions} from "./CharacterView";
-import {CharacterHitController} from "./CharacterStateMachine";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -57,10 +56,15 @@ export abstract class Monster extends Character {
 
 export abstract class MonsterController extends BaseCharacterController {
   abstract readonly character: Monster;
-  abstract readonly max_distance: number;
+  abstract readonly maxDistance: number;
   readonly interacting: boolean = false;
 
-  private _lastPath: PIXI.Point[] = [];
+  private _path: PIXI.Point[] = [];
+  private _hero: HeroController | null = null;
+
+  get hasPath(): boolean {
+    return this._path.length > 0;
+  }
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     super(dungeon, options);
@@ -76,42 +80,100 @@ export abstract class MonsterController extends BaseCharacterController {
     }
   }
 
-  scanHit(): void {
+  scanHit(combo: number): void {
     const weapon = this.character.weapon;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const distance = weapon?.distance || 1;
-    const heroes = this.scanHero(direction, distance);
+    const heroes = this.scanHeroes(direction, distance);
+    const damage = this.character.damage + combo;
     for (const hero of heroes) {
-      hero.character.hitDamage(this.character, this.character.damage);
+      hero.character.hitDamage(this.character, damage);
     }
   }
 
-  scanHero(direction: ScanDirection, distance: number = this.max_distance): HeroController[] {
+  private onAlarm(hero: HeroController): void {
+    this._path = this.findPath(hero);
+  }
+
+  protected scanHeroes(direction: ScanDirection, distance: number = this.maxDistance): HeroController[] {
     return this.scanObjects(direction, distance, c => c instanceof HeroController)
+      .filter(o => !(o as HeroController).character.dead.get())
       .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroController[];
   }
 
-  scanMonsters(direction: ScanDirection): MonsterController[] {
-    return this.scanObjects(direction, this.max_distance, c => c instanceof MonsterController && c !== this) as MonsterController[];
+  protected scanHero(): boolean {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    if (this._hero !== null && this.distanceTo(this._hero) <= this.maxDistance) {
+      return true;
+    }
+    const [hero] = this.scanHeroes(ScanDirection.AROUND, this.maxDistance);
+    if (hero) {
+      this._hero = hero;
+      for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
+        monster.onAlarm(hero);
+      }
+    }
+    return false;
   }
 
-  sendAlarm(hero: HeroController): void {
-    const event = new MonsterAlarmEvent(hero);
-    for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
-      monster.onEvent(event);
+  protected get heroOnAttack(): boolean {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    return this._hero !== null && this.distanceTo(this._hero) === 0;
+  }
+
+  protected get heroIsNear(): boolean {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    return this._hero !== null && this.distanceTo(this._hero) <= this.maxDistance;
+  }
+
+  protected moveToHero(): boolean {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    return this._hero !== null && this.moveTo(this._hero);
+  }
+
+  protected lookAtHero(): void {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    if (this._hero !== null) {
+      this.lookAt(this._hero);
     }
   }
 
-  startMoveByPath(): boolean {
-    if (this._lastPath.length > 0) {
-      const next = this._lastPath[0];
+  protected runAway(): boolean {
+    if (this._hero !== null && this._hero.character.dead.get()) {
+      this._hero = null;
+    }
+    if (this._hero !== null) {
+      const dx = Math.min(1, Math.max(-1, this.x - this._hero.x));
+      const dy = Math.min(1, Math.max(-1, this.y - this._hero.y));
+      return this.tryMove(dx, dy);
+    }
+    return false;
+  }
+
+  private scanMonsters(direction: ScanDirection): MonsterController[] {
+    return this.scanObjects(direction, this.maxDistance, c => c instanceof MonsterController && c !== this) as MonsterController[];
+  }
+
+  protected moveByPath(): boolean {
+    if (this._path.length > 0) {
+      const next = this._path[0];
       const deltaX = next.x - this.x;
       const deltaY = next.y - this.y;
-      if (this.startMove(deltaX, deltaY)) {
-        this._lastPath.splice(0, 1);
+      if (this.move(deltaX, deltaY)) {
+        this._path.splice(0, 1);
         return true;
       } else {
-        this._lastPath = [];
+        this._path = [];
         return false;
       }
     } else {
@@ -119,39 +181,24 @@ export abstract class MonsterController extends BaseCharacterController {
     }
   }
 
-  startMoveTo(hero: HeroController): boolean {
-    this._lastPath = this.findPath(hero);
-    return this.startMoveByPath();
+  protected moveTo(hero: HeroController): boolean {
+    this._path = this.findPath(hero);
+    return this.moveByPath();
   }
 }
 
-export class MonsterHitController implements CharacterHitController {
+export class MonsterHitController implements HitController {
   private readonly _controller: MonsterController;
 
   constructor(controller: MonsterController) {
     this._controller = controller;
   }
 
-  onHit(): void {
-    this._controller.scanHit();
-  }
-
-  onComboFinished(): void {
-  }
-
-  onComboHit(): void {
-    this._controller.scanHit();
-  }
-
-  onComboStarted(): void {
+  onHit(combo: number): void {
+    this._controller.scanHit(combo);
   }
 
   continueCombo(): boolean {
     return true;
-  }
-}
-
-export class MonsterAlarmEvent {
-  constructor(readonly hero: HeroController) {
   }
 }

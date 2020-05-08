@@ -10,7 +10,7 @@ export abstract class SpawningMonsterController extends MonsterController {
     super(dungeon, options);
   }
 
-  spawnMinions(): boolean {
+  protected spawnMinions(): boolean {
     for (let i = this._spawned.length - 1; i >= 0; i--) {
       if (this._spawned[i].character.dead.get()) {
         this._spawned.splice(i, 1);

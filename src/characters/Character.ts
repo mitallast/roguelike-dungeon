@@ -1,13 +1,13 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonMapCell, DungeonObject} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
-import {UsableDrop, Weapon} from "../drop";
+import {UsableDrop, Weapon, WeaponAnimation} from "../drop";
 import {PathFinding} from "../pathfinding";
 import {HeroController} from "./Hero";
 import {Inventory} from "../inventory";
 import {CharacterView, CharacterViewOptions} from "./CharacterView";
-import {CharacterStateMachine} from "./CharacterStateMachine";
 import {Animator} from "./Animator";
+import {FiniteStateMachine} from "../fsm";
 
 export abstract class Character {
   readonly name: string;
@@ -124,7 +124,7 @@ export interface CharacterController extends DungeonObject {
   destroy(): void;
 }
 
-export enum ScanDirection {
+export const enum ScanDirection {
   LEFT = 1,
   RIGHT = 2,
   AROUND = 4
@@ -164,7 +164,7 @@ export abstract class BaseCharacterController implements CharacterController {
   readonly width: number;
   readonly height: number;
 
-  protected abstract readonly _fsm: CharacterStateMachine;
+  protected abstract readonly _fsm: FiniteStateMachine<any>;
 
   protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
     this.dungeon = dungeon;
@@ -188,12 +188,12 @@ export abstract class BaseCharacterController implements CharacterController {
     this.character.dead.subscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.onUpdate, this._fsm);
+    this.dungeon.ticker.add(this._fsm.update, this._fsm);
   }
 
   destroy(): void {
-    this.dungeon.ticker.remove(this._fsm.onUpdate, this._fsm);
-    this._fsm.stop();
+    this.dungeon.ticker.remove(this._fsm.update, this._fsm);
+    // this._fsm.stop(); // @todo implement stop?
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
@@ -226,11 +226,8 @@ export abstract class BaseCharacterController implements CharacterController {
     // Chebyshev distance
     const dx = segmentDistance(this.x, this.x + this.width, that.x, that.x + that.width);
     const dy = segmentDistance(this.y, this.y + this.height, that.y, that.y + that.height);
-    return Math.max(dx, dy);
-  }
 
-  onEvent(event: any): void {
-    this._fsm.onEvent(event);
+    return Math.max(dx, dy);
   }
 
   abstract interact(hero: HeroController): void;
@@ -333,7 +330,13 @@ export abstract class BaseCharacterController implements CharacterController {
     this.dungeon.set(this._newX, this._newY, this);
   }
 
-  startMove(dx: number, dy: number): boolean {
+  tryMove(dx: number, dy: number): boolean {
+    return ((dx !== 0 || dy !== 0) && this.move(dx, dy)) ||
+      (dx !== 0 && this.move(dx, 0)) ||
+      (dy !== 0 && this.move(0, dy))
+  }
+
+  move(dx: number, dy: number): boolean {
     if (dx > 0) this.view.isLeft = false;
     if (dx < 0) this.view.isLeft = true;
     const newX = this._x + dx;
@@ -350,7 +353,7 @@ export abstract class BaseCharacterController implements CharacterController {
     if (Math.random() < 0.1) {
       const moveX = Math.floor(Math.random() * 3) - 1;
       const moveY = Math.floor(Math.random() * 3) - 1;
-      if (this.startMove(moveX, moveY)) {
+      if (this.tryMove(moveX, moveY)) {
         return true;
       }
     }
@@ -391,13 +394,14 @@ export abstract class BaseCharacterController implements CharacterController {
   protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell[] {
     const posX = this.x;
     const posY = this.y;
+    const width = this.width;
     const isLeft = this.view.isLeft;
 
     const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
 
-    const scanMinX = scanLeft ? Math.max(0, posX - maxDistance) : posX;
-    const scanMaxX = scanRight ? Math.min(this.dungeon.width - 1, posX + maxDistance) : posX;
+    const scanMinX = scanLeft ? Math.max(0, posX - maxDistance) : posX + (width - 1);
+    const scanMaxX = scanRight ? Math.min(this.dungeon.width - 1, posX + (width - 1) + maxDistance) : posX;
 
     const scanMinY = Math.max(0, posY - maxDistance);
     const scanMaxY = Math.min(this.dungeon.height - 1, posY + maxDistance);
@@ -459,4 +463,199 @@ export abstract class BaseCharacterController implements CharacterController {
 
     return true;
   }
+
+  protected idle(): FiniteStateMachine<IdleState> {
+    const character = this.character;
+    const animator = this.animator;
+    const fsm = new FiniteStateMachine<IdleState>(IdleState.PLAY, [IdleState.PLAY, IdleState.COMPLETE]);
+    fsm.state(IdleState.PLAY)
+      .onEnter(() => {
+        const speed = character.speed * 0.2;
+        animator.clear();
+        animator.animateCharacter(speed, character.name + "_idle", 4);
+        const weapon = character.weapon;
+        if (weapon) {
+          animator.animateWeapon(speed, weapon.animations.idle);
+        }
+        animator.start();
+      })
+      .onUpdate(deltaTime => animator.update(deltaTime))
+      .onExit(() => animator.stop())
+      .transitionTo(IdleState.COMPLETE)
+      .condition(() => !animator.isPlaying);
+    return fsm;
+  }
+
+  protected run(): FiniteStateMachine<RunState> {
+    const character = this.character;
+    const animator = this.animator;
+    const fsm = new FiniteStateMachine<RunState>(RunState.PLAY, [RunState.PLAY, RunState.PLAY, RunState.COMPLETE]);
+    fsm.state(RunState.PLAY)
+      .onEnter(() => {
+        const speed = character.speed * 0.2;
+        animator.clear();
+        animator.animateCharacter(speed, character.name + "_run", 4);
+        animator.animateMove(speed, this);
+        const weapon = character.weapon;
+        if (weapon) {
+          animator.animateWeapon(speed, weapon.animations.run);
+        }
+        animator.start();
+      })
+      .onExit(() => {
+        if (animator.isPlaying) {
+          this.resetDestination();
+          animator.stop();
+        } else {
+          this.moveToDestination();
+        }
+      })
+      .onUpdate(deltaTime => animator.update(deltaTime))
+      .transitionTo(RunState.COMPLETE).condition(() => !animator.isPlaying);
+    return fsm;
+  }
+
+  protected hit(hitController: HitController): FiniteStateMachine<HitState> {
+    const character = this.character;
+    const simple = this.simpleHit(hitController);
+    const combo = this.comboHit(hitController);
+    let state: FiniteStateMachine<any> = simple;
+    const fsm = new FiniteStateMachine<HitState>(HitState.HIT, [HitState.HIT, HitState.COMPLETE]);
+    fsm.state(HitState.HIT)
+      .onEnter(() => {
+        const weapon = character.weapon;
+        if (weapon && weapon.animations.combo) {
+          state = combo;
+        } else {
+          state = simple;
+        }
+        state.start();
+      })
+      .onUpdate(deltaTime => state.update(deltaTime))
+      .transitionTo(HitState.COMPLETE).condition(() => state.isFinal);
+    return fsm;
+  }
+
+  private simpleHit(hitController: HitController): FiniteStateMachine<SimpleHitState> {
+    const character = this.character;
+    const animator = this.animator;
+    const fsm = new FiniteStateMachine<SimpleHitState>(SimpleHitState.INITIAL, [SimpleHitState.INITIAL, SimpleHitState.PLAY, SimpleHitState.COMPLETE]);
+    fsm.state(SimpleHitState.INITIAL)
+      .onEnter(() => {
+        const weapon = character.weapon;
+        animator.clear();
+        if (weapon) {
+          const speed = weapon.speed * 0.2;
+          animator.animateCharacter(speed, character.name + "_idle", 4);
+          animator.animateWeapon(speed, weapon.animations.hit);
+        } else {
+          const speed = character.speed * 0.2;
+          animator.animateCharacter(speed, character.name + "_idle", 4);
+        }
+        animator.start();
+      })
+      .transitionTo(SimpleHitState.PLAY);
+    fsm.state(SimpleHitState.PLAY).onUpdate(deltaTime => animator.update(deltaTime));
+    fsm.state(SimpleHitState.PLAY).transitionTo(SimpleHitState.COMPLETE).condition(() => !animator.isPlaying);
+    fsm.state(SimpleHitState.COMPLETE).onEnter(() => hitController.onHit(1)).onEnter(() => animator.stop());
+    return fsm;
+  }
+
+  private comboHit(hitController: HitController): FiniteStateMachine<ComboHitState> {
+    const character = this.character;
+    const animator = this.animator;
+    let hits = 0;
+    let speed = 0;
+    let combo: readonly WeaponAnimation[] = [];
+    const fsm = new FiniteStateMachine<ComboHitState>(ComboHitState.FIRST_HIT, [ComboHitState.FIRST_HIT, ComboHitState.NEXT_HIT, ComboHitState.COMPLETE]);
+
+    // first hit
+    fsm.state(ComboHitState.FIRST_HIT)
+      .onEnter(() => {
+        const weapon = character.weapon!;
+        combo = weapon.animations.combo!;
+        speed = weapon.speed * 0.2;
+        hits = 0;
+        animator.clear();
+        animator.animateCharacter(speed, character.name + "_idle", 4);
+        animator.animateWeapon(speed, combo[0]);
+        animator.start();
+        hits++
+      })
+      .onUpdate(deltaTime => animator.update(deltaTime))
+      .onExit(() => hitController.onHit(hits));
+
+    fsm.state(ComboHitState.FIRST_HIT)
+      .transitionTo(ComboHitState.NEXT_HIT)
+      .condition(() => !animator.isPlaying)
+      .condition(() => hitController.continueCombo());
+
+    fsm.state(ComboHitState.FIRST_HIT)
+      .transitionTo(ComboHitState.COMPLETE)
+      .condition(() => !animator.isPlaying)
+      .condition(() => !hitController.continueCombo());
+
+    // next hit
+    fsm.state(ComboHitState.NEXT_HIT)
+      .onEnter(() => {
+        animator.clear();
+        animator.animateCharacter(speed, character.name + "_idle", 4);
+        animator.animateWeapon(speed, combo[hits]);
+        animator.start();
+        hits++;
+      })
+      .onUpdate(deltaTime => animator.update(deltaTime))
+      .onExit(() => hitController.onHit(hits));
+
+    fsm.state(ComboHitState.NEXT_HIT)
+      .transitionTo(ComboHitState.NEXT_HIT)
+      .condition(() => !animator.isPlaying)
+      .condition(() => hits < combo.length)
+      .condition(() => hitController.continueCombo());
+
+    fsm.state(ComboHitState.NEXT_HIT)
+      .transitionTo(ComboHitState.NEXT_HIT)
+      .condition(() => !animator.isPlaying)
+      .condition(() => hits < combo.length)
+      .condition(() => !hitController.continueCombo());
+
+    fsm.state(ComboHitState.NEXT_HIT)
+      .transitionTo(ComboHitState.COMPLETE)
+      .condition(() => !animator.isPlaying)
+      .condition(() => hits === combo.length);
+
+    return fsm;
+  }
+}
+
+export const enum IdleState {
+  PLAY = 0,
+  COMPLETE = 1,
+}
+
+export const enum RunState {
+  PLAY = 0,
+  COMPLETE = 1,
+}
+
+export const enum HitState {
+  HIT = 0,
+  COMPLETE = 1,
+}
+
+export const enum SimpleHitState {
+  INITIAL = 0,
+  PLAY = 1,
+  COMPLETE = 2,
+}
+
+export const enum ComboHitState {
+  FIRST_HIT = 0,
+  NEXT_HIT = 1,
+  COMPLETE = 2,
+}
+
+export interface HitController {
+  onHit(combo: number): void;
+  continueCombo(): boolean;
 }

@@ -276,7 +276,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
   }
 
   protected bossConfig(dungeon: DungeonMap): BossConfig {
-    return bossMonsters[Math.floor(dungeon.level / 5) % bossMonsters.length];
+    return bossMonsters[Math.floor((dungeon.level - 1) / 5) % bossMonsters.length];
   }
 
   protected placeDrop(rng: RNG, dungeon: DungeonMap): void {

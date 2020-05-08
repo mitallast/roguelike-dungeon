@@ -15,13 +15,16 @@ export class Animator {
   animateCharacter(animationSpeed: number, spriteName: string, totalFrames: number): void {
     this._animation.addEventClip(animationSpeed, this._view.setSprite, this._view).add(0, spriteName);
     const frames = this._animation.addEventClip(animationSpeed, this._view.setFrame, this._view);
-    for (let i = 0; i < totalFrames; i++) frames.add(i, i);
+    for (let i = 0; i < totalFrames; i++) {
+      frames.add(i, i);
+    }
+    frames.add(totalFrames, 0);
   }
 
   animateMove(animationSpeed: number, controller: CharacterController): void {
     this._animation.addKeyFrameClip(animationSpeed, this._view.setPosition, this._view)
       .add(0, controller.x, controller.y)
-      .add(3, controller.newX, controller.newY);
+      .add(4, controller.newX, controller.newY);
   }
 
   animateWeapon(animationSpeed: number, animation: WeaponAnimation): void {

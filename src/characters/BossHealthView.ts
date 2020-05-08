@@ -16,11 +16,11 @@ export class BossHealthView extends PIXI.Container {
     super();
     this._boss = boss;
 
-    const HEALTH_MAX_WIDTH = 500;
+    const HEALTH_MAX_WIDTH = 550;
     const HEALTH_WIDTH = 4;
-    this._pointWidth = Math.min(HEALTH_WIDTH, Math.floor(HEALTH_MAX_WIDTH / this._boss.healthMax.get()));
+    this._pointWidth = Math.min(HEALTH_WIDTH, HEALTH_MAX_WIDTH / this._boss.healthMax.get());
 
-    this._widthMax = this._pointWidth * this._boss.healthMax.get();
+    this._widthMax = Math.floor(this._pointWidth * this._boss.healthMax.get());
 
     this._health = new BarView({
       color: Colors.uiRed,
@@ -45,7 +45,7 @@ export class BossHealthView extends PIXI.Container {
   }
 
   private updateHealth(health: number): void {
-    this._health.width = this._pointWidth * health;
+    this._health.width = Math.floor(this._pointWidth * health);
     this._health.label = `${this._boss.name} - ${health}`;
   }
 

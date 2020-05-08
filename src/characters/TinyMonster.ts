@@ -1,22 +1,13 @@
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {
-  MonsterController,
-  MonsterCategory,
   Monster,
-  MonsterType,
+  MonsterCategory,
+  MonsterController,
   MonsterHitController,
-  MonsterAlarmEvent
+  MonsterType
 } from "./Monster";
-import {ScanDirection} from "./Character";
 import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
-import {HeroController} from "./Hero";
-import {
-  CharacterHitState,
-  CharacterIdleState,
-  CharacterRunState,
-  CharacterState,
-  CharacterStateMachine,
-} from "./CharacterStateMachine";
+import {FiniteStateMachine} from "../fsm";
 
 export interface TinyMonsterConfig {
   readonly name: string;
@@ -62,9 +53,9 @@ export class TinyMonster extends Monster {
 
 export class TinyMonsterController extends MonsterController {
   readonly character: TinyMonster;
-  readonly max_distance: number = 5;
+  readonly maxDistance: number = 5;
 
-  protected readonly _fsm: TinyMonsterStateMachine;
+  protected readonly _fsm: FiniteStateMachine<TinyMonsterState>;
 
   constructor(config: TinyMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -79,7 +70,7 @@ export class TinyMonsterController extends MonsterController {
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = new TinyMonsterStateMachine(this);
+    this._fsm = this.fsm();
     this.init();
   }
 
@@ -89,312 +80,319 @@ export class TinyMonsterController extends MonsterController {
     }
     this.destroy();
   }
+
+  private fsm(): FiniteStateMachine<TinyMonsterState> {
+    const fsm = new FiniteStateMachine<TinyMonsterState>(TinyMonsterState.PATROLLING, [
+      TinyMonsterState.PATROLLING,
+      TinyMonsterState.ALARM,
+      TinyMonsterState.ATTACK,
+    ]);
+
+    const patrolling = this.patrolling();
+    const alarm = this.alarm();
+    const attack = this.attack();
+
+    // patrolling
+
+    fsm.state(TinyMonsterState.PATROLLING)
+      .onEnter(() => patrolling.start())
+      .onUpdate(deltaTime => patrolling.update(deltaTime))
+      .onEvent(event => patrolling.handle(event));
+
+    fsm.state(TinyMonsterState.PATROLLING)
+      .transitionTo(TinyMonsterState.ATTACK)
+      .condition(() => patrolling.isFinal)
+      .condition(() => patrolling.current === TinyMonsterPatrollingState.GO_ATTACK);
+
+    fsm.state(TinyMonsterState.PATROLLING)
+      .transitionTo(TinyMonsterState.ALARM)
+      .condition(() => patrolling.isFinal)
+      .condition(() => patrolling.current === TinyMonsterPatrollingState.GO_ALARM);
+
+    // alarm
+
+    fsm.state(TinyMonsterState.ALARM)
+      .onEnter(() => alarm.start())
+      .onUpdate(deltaTime => alarm.update(deltaTime));
+
+    fsm.state(TinyMonsterState.ALARM)
+      .transitionTo(TinyMonsterState.ATTACK)
+      .condition(() => alarm.isFinal)
+      .condition(() => alarm.current === TinyMonsterAlarmState.GO_ATTACK)
+
+    fsm.state(TinyMonsterState.ALARM)
+      .transitionTo(TinyMonsterState.PATROLLING)
+      .condition(() => alarm.isFinal)
+      .condition(() => alarm.current === TinyMonsterAlarmState.GO_PATROLLING);
+
+    // attack
+
+    fsm.state(TinyMonsterState.ATTACK)
+      .onEnter(() => attack.start())
+      .onUpdate(deltaTime => attack.update(deltaTime));
+
+    fsm.state(TinyMonsterState.ATTACK)
+      .transitionTo(TinyMonsterState.ALARM)
+      .condition(() => attack.isFinal)
+      .condition(() => attack.current === TinyMonsterAttackState.GO_ALARM);
+
+    return fsm;
+  }
+
+  private patrolling(): FiniteStateMachine<TinyMonsterPatrollingState> {
+    const fsm = new FiniteStateMachine<TinyMonsterPatrollingState>(TinyMonsterPatrollingState.IDLE, [
+      TinyMonsterPatrollingState.IDLE,
+      TinyMonsterPatrollingState.RANDOM_MOVE,
+      TinyMonsterPatrollingState.GO_ALARM,
+      TinyMonsterPatrollingState.GO_ATTACK,
+    ]);
+
+    const idle = this.idle();
+    const run = this.run();
+
+    // idle
+    fsm.state(TinyMonsterPatrollingState.IDLE)
+      .onEnter(() => idle.start())
+      .onUpdate(deltaTime => idle.update(deltaTime));
+
+    fsm.state(TinyMonsterPatrollingState.IDLE)
+      .transitionTo(TinyMonsterPatrollingState.GO_ATTACK)
+      .condition(() => idle.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(TinyMonsterPatrollingState.IDLE)
+      .transitionTo(TinyMonsterPatrollingState.GO_ALARM)
+      .condition(() => idle.isFinal)
+      .condition(() => this.hasPath);
+
+    fsm.state(TinyMonsterPatrollingState.IDLE)
+      .transitionTo(TinyMonsterPatrollingState.RANDOM_MOVE)
+      .condition(() => idle.isFinal)
+      .condition(() => this.randomMove());
+
+    fsm.state(TinyMonsterPatrollingState.IDLE)
+      .transitionTo(TinyMonsterPatrollingState.IDLE)
+      .condition(() => idle.isFinal);
+
+    // random move
+    fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
+      .onEnter(() => run.start())
+      .onUpdate(deltaTime => run.update(deltaTime));
+
+    fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
+      .transitionTo(TinyMonsterPatrollingState.GO_ATTACK)
+      .condition(() => run.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
+      .transitionTo(TinyMonsterPatrollingState.GO_ALARM)
+      .condition(() => run.isFinal)
+      .condition(() => this.hasPath);
+
+    fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
+      .transitionTo(TinyMonsterPatrollingState.IDLE)
+      .condition(() => run.isFinal);
+
+    return fsm;
+  }
+
+  private alarm(): FiniteStateMachine<TinyMonsterAlarmState> {
+    const fsm = new FiniteStateMachine<TinyMonsterAlarmState>(TinyMonsterAlarmState.IDLE, [
+      TinyMonsterAlarmState.INITIAL,
+      TinyMonsterAlarmState.IDLE,
+      TinyMonsterAlarmState.RUN,
+      TinyMonsterAlarmState.GO_ATTACK,
+      TinyMonsterAlarmState.GO_PATROLLING,
+    ]);
+
+    const idle = this.idle();
+    const run = this.run();
+
+    let alarmCountdown = 0;
+
+    // initial
+    fsm.state(TinyMonsterAlarmState.INITIAL)
+      .onEnter(() => alarmCountdown = 10);
+
+    fsm.state(TinyMonsterAlarmState.INITIAL)
+      .transitionTo(TinyMonsterAlarmState.RUN)
+      .condition(() => this.moveByPath());
+
+    fsm.state(TinyMonsterAlarmState.INITIAL)
+      .transitionTo(TinyMonsterAlarmState.IDLE);
+
+    // idle
+    fsm.state(TinyMonsterAlarmState.IDLE)
+      .onEnter(() => idle.start())
+      .onUpdate(deltaTime => idle.update(deltaTime));
+
+    fsm.state(TinyMonsterAlarmState.IDLE)
+      .transitionTo(TinyMonsterAlarmState.GO_ATTACK)
+      .condition(() => run.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(TinyMonsterAlarmState.IDLE)
+      .transitionTo(TinyMonsterAlarmState.RUN)
+      .condition(() => idle.isFinal)
+      .condition(() => this.moveByPath());
+
+    fsm.state(TinyMonsterAlarmState.IDLE)
+      .transitionTo(TinyMonsterAlarmState.IDLE)
+      .condition(() => idle.isFinal)
+      .condition(() => --alarmCountdown > 0)
+
+    fsm.state(TinyMonsterAlarmState.IDLE)
+      .transitionTo(TinyMonsterAlarmState.GO_PATROLLING)
+      .condition(() => idle.isFinal)
+
+    // run
+    fsm.state(TinyMonsterAlarmState.RUN)
+      .onEnter(() => run.start())
+      .onUpdate(deltaTime => run.update(deltaTime));
+
+    fsm.state(TinyMonsterAlarmState.RUN)
+      .transitionTo(TinyMonsterAlarmState.GO_ATTACK)
+      .condition(() => run.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(TinyMonsterAlarmState.RUN)
+      .transitionTo(TinyMonsterAlarmState.RUN)
+      .condition(() => run.isFinal)
+      .condition(() => this.moveByPath());
+
+    fsm.state(TinyMonsterAlarmState.RUN)
+      .transitionTo(TinyMonsterAlarmState.IDLE)
+      .condition(() => run.isFinal)
+
+    return fsm;
+  }
+
+  private attack(): FiniteStateMachine<TinyMonsterAttackState> {
+    const rng = this.dungeon.rng;
+
+    const fsm = new FiniteStateMachine<TinyMonsterAttackState>(TinyMonsterAttackState.INITIAL, [
+      TinyMonsterAttackState.INITIAL,
+      TinyMonsterAttackState.IDLE,
+      TinyMonsterAttackState.RUN,
+      TinyMonsterAttackState.HIT,
+      TinyMonsterAttackState.GO_ALARM,
+    ]);
+
+    const idle = this.idle();
+    const run = this.run();
+    const hit = this.hit(new MonsterHitController(this));
+
+    // initial
+    fsm.state(TinyMonsterAttackState.INITIAL)
+      .transitionTo(TinyMonsterAttackState.HIT)
+      .condition(() => this.heroOnAttack)
+      .condition(() => rng.float() < this.character.luck);
+
+    fsm.state(TinyMonsterAttackState.INITIAL)
+      .transitionTo(TinyMonsterAttackState.RUN)
+      .condition(() => this.heroIsNear)
+      .condition(() => this.moveToHero());
+
+    fsm.state(TinyMonsterAttackState.INITIAL)
+      .transitionTo(TinyMonsterAttackState.IDLE)
+      .condition(() => this.heroIsNear)
+
+    fsm.state(TinyMonsterAttackState.INITIAL)
+      .transitionTo(TinyMonsterAttackState.GO_ALARM)
+
+    // idle
+    fsm.state(TinyMonsterAttackState.IDLE)
+      .onEnter(() => this.lookAtHero())
+      .onEnter(() => idle.start())
+      .onUpdate(deltaTime => idle.update(deltaTime));
+
+    fsm.state(TinyMonsterAttackState.IDLE)
+      .transitionTo(TinyMonsterAttackState.HIT)
+      .condition(() => idle.isFinal)
+      .condition(() => this.heroOnAttack)
+      .condition(() => rng.float() < this.character.luck);
+
+    fsm.state(TinyMonsterAttackState.IDLE)
+      .transitionTo(TinyMonsterAttackState.RUN)
+      .condition(() => idle.isFinal)
+      .condition(() => this.heroIsNear)
+      .condition(() => this.moveToHero());
+
+    fsm.state(TinyMonsterAttackState.IDLE)
+      .transitionTo(TinyMonsterAttackState.IDLE)
+      .condition(() => idle.isFinal)
+      .condition(() => this.heroIsNear);
+
+    fsm.state(TinyMonsterAttackState.IDLE)
+      .transitionTo(TinyMonsterAttackState.GO_ALARM)
+      .condition(() => idle.isFinal);
+
+    // run
+    fsm.state(TinyMonsterAttackState.RUN)
+      .onEnter(() => run.start())
+      .onUpdate(deltaTime => run.update(deltaTime));
+
+    fsm.state(TinyMonsterAttackState.RUN)
+      .transitionTo(TinyMonsterAttackState.HIT)
+      .condition(() => run.isFinal)
+      .condition(() => this.heroOnAttack)
+      .condition(() => rng.float() < this.character.luck);
+
+    fsm.state(TinyMonsterAttackState.RUN)
+      .transitionTo(TinyMonsterAttackState.RUN)
+      .condition(() => run.isFinal)
+      .condition(() => this.heroIsNear)
+      .condition(() => this.moveToHero());
+
+    fsm.state(TinyMonsterAttackState.RUN)
+      .transitionTo(TinyMonsterAttackState.IDLE)
+      .condition(() => run.isFinal);
+
+    // hit
+    fsm.state(TinyMonsterAttackState.HIT)
+      .onEnter(() => this.lookAtHero())
+      .onEnter(() => hit.start())
+      .onUpdate(deltaTime => hit.update(deltaTime));
+
+    fsm.state(TinyMonsterAttackState.HIT)
+      .transitionTo(TinyMonsterAttackState.RUN)
+      .condition(() => hit.isFinal)
+      .condition(() => this.heroIsNear)
+      .condition(() => this.moveToHero());
+
+    fsm.state(TinyMonsterAttackState.HIT)
+      .transitionTo(TinyMonsterAttackState.IDLE)
+      .condition(() => hit.isFinal);
+
+    return fsm;
+  }
 }
 
-export class TinyMonsterStateMachine implements CharacterStateMachine {
-  private readonly _controller: TinyMonsterController;
-  private readonly _patrolling: TinyMonsterPatrollingState;
-  private readonly _alarm: TinyMonsterAlarmState;
-  private readonly _attack: TinyMonsterAttackState;
-
-  private _currentState: TinyMonsterPatrollingState | TinyMonsterAlarmState | TinyMonsterAttackState;
-
-  constructor(controller: TinyMonsterController) {
-    this._controller = controller;
-    this._patrolling = new TinyMonsterPatrollingState(this, controller);
-    this._alarm = new TinyMonsterAlarmState(this, controller);
-    this._attack = new TinyMonsterAttackState(this, controller);
-    this._currentState = this._patrolling;
-  }
-
-  start(): void {
-    this._currentState = this._patrolling;
-    this._currentState.onEnter();
-  }
-
-  stop(): void {
-    this._currentState.stop();
-  }
-
-  private transition(state: TinyMonsterPatrollingState | TinyMonsterAlarmState | TinyMonsterAttackState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  patrolling(): void {
-    this.transition(this._patrolling);
-  }
-
-  alarm(hero: HeroController | null): void {
-    if (hero) {
-      this._alarm.onAlarm(hero);
-    }
-    this.transition(this._alarm);
-  }
-
-  attack(hero: HeroController): void {
-    this._attack.attack(hero);
-    this.transition(this._attack);
-  }
-
-  onFinished(): void {
-  }
-
-  onEvent(event: any): void {
-    this._currentState.onEvent(event);
-  }
-
-  onUpdate(deltaTime: number): void {
-    if (this._controller.character.dead.get()) {
-      this.stop();
-      return;
-    }
-    this._currentState.onUpdate(deltaTime);
-  }
+const enum TinyMonsterState {
+  PATROLLING = 0,
+  ALARM = 1,
+  ATTACK = 2,
 }
 
-export class TinyMonsterPatrollingState implements CharacterState, CharacterStateMachine {
-  private readonly _fsm: TinyMonsterStateMachine;
-  private readonly _controller: TinyMonsterController;
-  private readonly _idle: CharacterIdleState;
-  private readonly _run: CharacterRunState;
-
-  private _currentState: CharacterIdleState | CharacterRunState;
-
-  constructor(fsm: TinyMonsterStateMachine, controller: TinyMonsterController) {
-    this._fsm = fsm;
-    this._controller = controller;
-    this._idle = new CharacterIdleState(this, controller);
-    this._run = new CharacterRunState(this, controller);
-    this._currentState = this._idle;
-  }
-
-  start(): void {
-  }
-
-  stop(): void {
-    this._currentState.onExit();
-  }
-
-  private transition(state: CharacterIdleState | CharacterRunState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  onEnter(): void {
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-  }
-
-  onExit(): void {
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onEvent(event: any): void {
-    if (event instanceof MonsterAlarmEvent) {
-      const distance = this._controller.distanceTo(event.hero);
-      if (distance > this._controller.max_distance) {
-        this._fsm.alarm(event.hero);
-      } else {
-        this._fsm.attack(event.hero);
-      }
-    }
-  }
-
-  onFinished(): void {
-    this.decision();
-  }
-
-  private decision(): void {
-    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
-    if (hero) {
-      this._controller.sendAlarm(hero);
-      this._fsm.attack(hero);
-      return;
-    }
-    if (this._controller.randomMove()) {
-      this.transition(this._run);
-      return;
-    }
-    this.transition(this._idle);
-  }
+const enum TinyMonsterPatrollingState {
+  IDLE = 0,
+  RANDOM_MOVE = 1,
+  GO_ALARM = 2,
+  GO_ATTACK = 3,
 }
 
-export class TinyMonsterAlarmState implements CharacterState, CharacterStateMachine {
-  private readonly _fsm: TinyMonsterStateMachine;
-  private readonly _controller: TinyMonsterController;
-  private readonly _idle: CharacterIdleState;
-  private readonly _run: CharacterRunState;
-
-  private _currentState: CharacterIdleState | CharacterRunState;
-  private _alarmCountDown = 0;
-
-  constructor(fsm: TinyMonsterStateMachine, controller: TinyMonsterController) {
-    this._fsm = fsm;
-    this._controller = controller;
-    this._idle = new CharacterIdleState(this, controller);
-    this._run = new CharacterRunState(this, controller);
-    this._currentState = this._idle;
-  }
-
-  onAlarm(hero: HeroController): void {
-    this._controller.lookAt(hero);
-    this._controller.startMoveTo(hero);
-  }
-
-  start(): void {
-  }
-
-  stop(): void {
-    this._currentState.onExit();
-  }
-
-  private transition(state: CharacterIdleState | CharacterRunState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  onEnter(): void {
-    this._alarmCountDown = 10;
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-
-    this.decision();
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onExit(): void {
-  }
-
-  onEvent(_: any): void {
-  }
-
-  onFinished(): void {
-    this.decision();
-  }
-
-  private decision(): void {
-    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
-    if (hero) {
-      this._fsm.attack(hero);
-      return;
-    }
-    if (this._controller.startMoveByPath()) {
-      this.transition(this._run);
-      return;
-    }
-    this._alarmCountDown--;
-    if (this._alarmCountDown > 0) {
-      this.transition(this._idle);
-    } else {
-      this._fsm.patrolling();
-    }
-  }
+const enum TinyMonsterAlarmState {
+  INITIAL = 0,
+  IDLE = 1,
+  RUN = 2,
+  GO_ATTACK = 3,
+  GO_PATROLLING = 4,
 }
 
-export class TinyMonsterAttackState implements CharacterState, CharacterStateMachine {
-  private readonly _fsm: TinyMonsterStateMachine;
-  private readonly _controller: TinyMonsterController;
-  private readonly _idle: CharacterIdleState;
-  private readonly _run: CharacterRunState;
-  private readonly _hit: CharacterHitState;
-
-  private _currentState: CharacterIdleState | CharacterRunState | CharacterHitState;
-  private _hero: HeroController | null = null;
-
-  constructor(fsm: TinyMonsterStateMachine, controller: TinyMonsterController) {
-    this._fsm = fsm;
-    this._controller = controller;
-    this._idle = new CharacterIdleState(this, controller);
-    this._run = new CharacterRunState(this, controller);
-    this._hit = new CharacterHitState(this, controller, new MonsterHitController(controller));
-    this._currentState = this._idle;
-  }
-
-  attack(hero: HeroController): void {
-    this._controller.lookAt(hero);
-    this._hero = hero;
-    this._controller.startMoveTo(hero);
-  }
-
-  start(): void {
-  }
-
-  stop(): void {
-    this._currentState.onExit();
-  }
-
-  private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  onEnter(): void {
-    if (!this._hero || this._hero.character.dead.get()) {
-      this._fsm.patrolling();
-      return;
-    }
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-
-    this.decision();
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onExit(): void {
-    this._hero = null;
-  }
-
-  onEvent(_: any): void {
-  }
-
-  onFinished(): void {
-    this.decision();
-  }
-
-  private decision(): void {
-    if (!this._hero || this._hero.character.dead.get()) {
-      this._fsm.alarm(null);
-      return;
-    }
-
-    const distance = this._controller.distanceTo(this._hero);
-
-    if (distance > this._controller.max_distance) {
-      this._fsm.alarm(null);
-      return;
-    }
-
-    this._controller.lookAt(this._hero);
-
-    if (distance > 0) {
-      if (this._controller.startMoveTo(this._hero)) {
-        this.transition(this._run);
-        return;
-      }
-      if (this._controller.startMoveByPath()) {
-        return;
-      }
-      this.transition(this._idle);
-    } else {
-      if (this._controller.character.luck < this._controller.dungeon.rng.float()) {
-        this.transition(this._hit);
-        return;
-      }
-      this.transition(this._idle);
-    }
-  }
+const enum TinyMonsterAttackState {
+  INITIAL = 0,
+  IDLE = 1,
+  RUN = 2,
+  HIT = 3,
+  GO_ALARM = 4,
 }

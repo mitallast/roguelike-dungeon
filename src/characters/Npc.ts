@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js";
-import {BaseCharacterController, Character} from "./Character";
+import {BaseCharacterController, Character, IdleState} from "./Character";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
 import {SceneController} from "../scene";
 import {HealthBigFlask, HealthFlask, npcWeapons, Weapon, WeaponConfig, weaponConfigs} from "../drop";
-import {CharacterIdleState, CharacterStateMachine} from "./CharacterStateMachine";
+import {FiniteStateMachine} from "../fsm";
 
 export abstract class NpcSkill {
   protected readonly npc: Npc;
@@ -368,7 +368,7 @@ export class NpcController extends BaseCharacterController {
   readonly character: Npc;
   readonly interacting: boolean = true;
 
-  protected readonly _fsm: NpcIdleStateMachine;
+  protected readonly _fsm: FiniteStateMachine<IdleState>;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
     super(dungeon, {
@@ -383,7 +383,11 @@ export class NpcController extends BaseCharacterController {
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = new NpcIdleStateMachine(this);
+    this._fsm = this.idle();
+    this._fsm.state(IdleState.COMPLETE)
+      .transitionTo(IdleState.PLAY)
+      .action(() => "npc idle complete");
+
     this.initSkills(controller, config);
     this.init();
   }
@@ -434,33 +438,5 @@ export class NpcController extends BaseCharacterController {
   interact(hero: HeroController): void {
     this.lookAt(hero);
     this.dungeon.controller.showDialog(hero.character, this.character);
-  }
-}
-
-export class NpcIdleStateMachine implements CharacterStateMachine {
-  private readonly _state: CharacterIdleState;
-
-  constructor(controller: NpcController) {
-    this._state = new CharacterIdleState(this, controller);
-  }
-
-  start(): void {
-    this._state.onEnter();
-  }
-
-  stop(): void {
-    this._state.onExit();
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._state.onUpdate(deltaTime);
-  }
-
-  onFinished(): void {
-    this._state.onExit();
-    this._state.onEnter();
-  }
-
-  onEvent(_: any): void {
   }
 }

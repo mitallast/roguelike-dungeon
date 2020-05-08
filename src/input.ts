@@ -17,6 +17,13 @@ export class KeyBind {
     } else return false;
   }
 
+  repeat(): boolean {
+    if (!this._processed) {
+      this._processed = true;
+      return true;
+    } else return this._triggered;
+  }
+
   constructor(code: string) {
     this.code = code;
     this._state = KeyBindState.Await;

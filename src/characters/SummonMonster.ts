@@ -1,16 +1,8 @@
-import {
-  CharacterHitState,
-  CharacterIdleState,
-  CharacterRunState,
-  CharacterState,
-  CharacterStateMachine
-} from "./CharacterStateMachine";
 import {Monster, MonsterCategory, MonsterHitController, MonsterType} from "./Monster";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
-import {HeroController} from "./Hero";
-import {ScanDirection} from "./Character";
 import {SpawningMonsterController} from "./SpawningMonster";
+import {FiniteStateMachine} from "../fsm";
 
 export interface SummonMonsterConfig {
   readonly name: string;
@@ -46,9 +38,9 @@ export class SummonMonster extends Monster {
 export class SummonMonsterController extends SpawningMonsterController {
   readonly character: SummonMonster;
 
-  readonly max_distance: number = 7;
+  readonly maxDistance: number = 7;
 
-  protected readonly _fsm: SummonMonsterStateMachine;
+  protected readonly _fsm: FiniteStateMachine<SummonMonsterFsmState>;
 
   constructor(config: SummonMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -63,7 +55,7 @@ export class SummonMonsterController extends SpawningMonsterController {
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = new SummonMonsterStateMachine(this);
+    this._fsm = this.fsm();
     this.init();
   }
 
@@ -73,237 +65,175 @@ export class SummonMonsterController extends SpawningMonsterController {
     }
     this.destroy();
   }
+
+  private fsm(): FiniteStateMachine<SummonMonsterFsmState> {
+    const fsm = new FiniteStateMachine<SummonMonsterFsmState>(SummonMonsterFsmState.PATROLLING, [
+      SummonMonsterFsmState.PATROLLING,
+      SummonMonsterFsmState.ATTACK,
+    ]);
+
+    const patrolling = this.patrolling();
+    const attack = this.attack();
+
+    fsm.state(SummonMonsterFsmState.PATROLLING)
+      .onEnter(() => patrolling.start())
+      .onUpdate(deltaTime => patrolling.update(deltaTime))
+      .transitionTo(SummonMonsterFsmState.ATTACK)
+      .condition(() => patrolling.isFinal)
+      .condition(() => patrolling.current === SummonMonsterPatrollingFsmState.GO_ATTACK);
+
+    fsm.state(SummonMonsterFsmState.ATTACK)
+      .onEnter(() => attack.start())
+      .onUpdate(deltaTime => attack.update(deltaTime))
+      .transitionTo(SummonMonsterFsmState.PATROLLING)
+      .condition(() => attack.isFinal)
+      .condition(() => attack.current === SummonMonsterAttackFsmState.GO_PATROLLING);
+
+    return fsm;
+  }
+
+  private patrolling(): FiniteStateMachine<SummonMonsterPatrollingFsmState> {
+    const fsm = new FiniteStateMachine<SummonMonsterPatrollingFsmState>(SummonMonsterPatrollingFsmState.INITIAL, [
+      SummonMonsterPatrollingFsmState.INITIAL,
+      SummonMonsterPatrollingFsmState.IDLE,
+      SummonMonsterPatrollingFsmState.RANDOM_MOVE,
+      SummonMonsterPatrollingFsmState.GO_ATTACK,
+    ]);
+
+    const idle = this.idle();
+    const run = this.run();
+
+    // initial
+    fsm.state(SummonMonsterPatrollingFsmState.INITIAL)
+      .transitionTo(SummonMonsterPatrollingFsmState.IDLE);
+
+    // idle
+    fsm.state(SummonMonsterPatrollingFsmState.IDLE)
+      .onEnter(() => idle.start())
+      .onUpdate(deltaTime => idle.update(deltaTime))
+    // .onExit(() => controller.spawnMinions())
+
+    fsm.state(SummonMonsterPatrollingFsmState.IDLE)
+      .transitionTo(SummonMonsterPatrollingFsmState.GO_ATTACK)
+      .condition(() => idle.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(SummonMonsterPatrollingFsmState.IDLE)
+      .transitionTo(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
+      .condition(() => idle.isFinal)
+      .condition(() => this.randomMove());
+
+    fsm.state(SummonMonsterPatrollingFsmState.IDLE)
+      .transitionTo(SummonMonsterPatrollingFsmState.IDLE)
+      .condition(() => idle.isFinal);
+
+    // random move
+    fsm.state(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
+      .onEnter(() => run.start())
+      .onUpdate(deltaTime => run.update(deltaTime));
+
+    fsm.state(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
+      .transitionTo(SummonMonsterPatrollingFsmState.GO_ATTACK)
+      .condition(() => run.isFinal)
+      .condition(() => this.scanHero());
+
+    fsm.state(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
+      .transitionTo(SummonMonsterPatrollingFsmState.IDLE)
+      .condition(() => run.isFinal);
+
+    return fsm;
+  }
+
+  private attack(): FiniteStateMachine<SummonMonsterAttackFsmState> {
+    const rng = this.dungeon.rng;
+
+    const fsm = new FiniteStateMachine<SummonMonsterAttackFsmState>(SummonMonsterAttackFsmState.INITIAL, [
+      SummonMonsterAttackFsmState.INITIAL,
+      SummonMonsterAttackFsmState.DECISION,
+      SummonMonsterAttackFsmState.IDLE,
+      SummonMonsterAttackFsmState.RUN_AWAY,
+      SummonMonsterAttackFsmState.HIT,
+      SummonMonsterAttackFsmState.GO_PATROLLING,
+    ]);
+
+    const idle = this.idle();
+    const run = this.run();
+    const hit = this.hit(new MonsterHitController(this));
+
+    // initial
+    fsm.state(SummonMonsterAttackFsmState.INITIAL);
+
+    fsm.state(SummonMonsterAttackFsmState.INITIAL)
+      .transitionTo(SummonMonsterAttackFsmState.GO_PATROLLING)
+      .condition(() => !this.heroIsNear);
+
+    fsm.state(SummonMonsterAttackFsmState.INITIAL)
+      .transitionTo(SummonMonsterAttackFsmState.DECISION)
+      .condition(() => this.heroIsNear);
+
+    // decision
+    fsm.state(SummonMonsterAttackFsmState.DECISION)
+      .transitionTo(SummonMonsterAttackFsmState.HIT)
+      .condition(() => this.heroOnAttack)
+      .condition(() => rng.float() < this.character.luck);
+
+    fsm.state(SummonMonsterAttackFsmState.DECISION)
+      .transitionTo(SummonMonsterAttackFsmState.RUN_AWAY)
+      .condition(() => this.heroIsNear)
+      .condition(() => this.runAway());
+
+    fsm.state(SummonMonsterAttackFsmState.DECISION)
+      .transitionTo(SummonMonsterAttackFsmState.IDLE)
+      .condition(() => this.heroIsNear);
+
+    fsm.state(SummonMonsterAttackFsmState.DECISION)
+      .transitionTo(SummonMonsterAttackFsmState.GO_PATROLLING);
+
+    // idle
+    fsm.state(SummonMonsterAttackFsmState.IDLE)
+      .onEnter(() => this.lookAtHero())
+      // .onEnter(() => controller.spawnMinions())
+      .onEnter(() => idle.start())
+      .onUpdate(deltaTime => idle.update(deltaTime))
+      .transitionTo(SummonMonsterAttackFsmState.DECISION)
+      .condition(() => idle.isFinal)
+
+    // run away
+    fsm.state(SummonMonsterAttackFsmState.RUN_AWAY)
+      .onEnter(() => run.start())
+      .onUpdate(deltaTime => run.update(deltaTime))
+      .transitionTo(SummonMonsterAttackFsmState.DECISION)
+      .condition(() => run.isFinal)
+
+    // hit
+    fsm.state(SummonMonsterAttackFsmState.HIT)
+      .onEnter(() => this.lookAtHero())
+      .onEnter(() => hit.start())
+      .onUpdate(deltaTime => hit.update(deltaTime))
+      .transitionTo(SummonMonsterAttackFsmState.IDLE)
+      .condition(() => hit.isFinal)
+
+    return fsm;
+  }
 }
 
-export class SummonMonsterStateMachine implements CharacterStateMachine {
-  private readonly _controller: SummonMonsterController;
-  private readonly _patrolling: SummonMonsterPatrollingState;
-  private readonly _attack: SummonMonsterAttackState;
-
-  private _currentState: SummonMonsterPatrollingState | SummonMonsterAttackState;
-
-  constructor(controller: SummonMonsterController) {
-    this._controller = controller;
-    this._patrolling = new SummonMonsterPatrollingState(this, controller);
-    this._attack = new SummonMonsterAttackState(this, controller);
-    this._currentState = this._patrolling;
-  }
-
-  start(): void {
-    this._currentState = this._patrolling;
-    this._currentState.onEnter();
-  }
-
-  stop(): void {
-    this._currentState.stop();
-  }
-
-  private transition(state: SummonMonsterPatrollingState | SummonMonsterAttackState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  patrolling(): void {
-    this.transition(this._patrolling);
-  }
-
-  attack(hero: HeroController): void {
-    this._attack.attack(hero);
-    this.transition(this._attack);
-  }
-
-  onUpdate(deltaTime: number): void {
-    if (this._controller.character.dead.get()) {
-      this.stop();
-      return;
-    }
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onFinished(): void {
-  }
-
-  onEvent(event: any): void {
-    this._currentState.onEvent(event);
-  }
+const enum SummonMonsterFsmState {
+  PATROLLING = 0,
+  ATTACK = 1,
 }
 
-export class SummonMonsterPatrollingState implements CharacterStateMachine, CharacterState {
-  private readonly _fsm: SummonMonsterStateMachine;
-  private readonly _controller: SummonMonsterController;
-  private readonly _idle: CharacterIdleState;
-  private readonly _run: CharacterRunState;
-
-  private _currentState: CharacterIdleState | CharacterRunState;
-
-  constructor(fsm: SummonMonsterStateMachine, controller: SummonMonsterController) {
-    this._fsm = fsm;
-    this._controller = controller;
-    this._idle = new CharacterIdleState(this, controller);
-    this._run = new CharacterRunState(this, controller);
-    this._currentState = this._idle;
-  }
-
-  // fsm
-
-  start(): void {
-  }
-
-  stop(): void {
-    this._currentState.onExit();
-  }
-
-  private transition(state: CharacterIdleState | CharacterRunState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onFinished(): void {
-    this.decision();
-  }
-
-  onEvent(_: any): void {
-  }
-
-  // state
-
-  onEnter(): void {
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-    this.decision();
-  }
-
-  onExit(): void {
-  }
-
-  private decision(): void {
-    const [hero] = this._controller.scanHero(ScanDirection.AROUND);
-    if (hero) {
-      this._controller.sendAlarm(hero);
-      this._fsm.attack(hero);
-      return;
-    }
-    if (this._controller.randomMove()) {
-      this.transition(this._run);
-      return;
-    }
-    this._controller.spawnMinions();
-    this.transition(this._idle);
-  }
+const enum SummonMonsterPatrollingFsmState {
+  INITIAL = 0,
+  IDLE = 1,
+  RANDOM_MOVE = 2,
+  GO_ATTACK = 3,
 }
 
-export class SummonMonsterAttackState implements CharacterStateMachine, CharacterState {
-  private readonly _fsm: SummonMonsterStateMachine;
-  private readonly _controller: SummonMonsterController;
-  private readonly _idle: CharacterIdleState;
-  private readonly _run: CharacterRunState;
-  private readonly _hit: CharacterHitState;
-
-  private _currentState: CharacterIdleState | CharacterRunState | CharacterHitState;
-  private _hero: HeroController | null = null;
-
-  constructor(fsm: SummonMonsterStateMachine, controller: SummonMonsterController) {
-    this._fsm = fsm;
-    this._controller = controller;
-    this._idle = new CharacterIdleState(this, controller);
-    this._run = new CharacterRunState(this, controller);
-    this._hit = new CharacterHitState(this, controller, new MonsterHitController(controller));
-    this._currentState = this._idle;
-  }
-
-  attack(hero: HeroController): void {
-    this._controller.lookAt(hero);
-    this._hero = hero;
-  }
-
-  // fsm
-
-  start(): void {
-  }
-
-  stop(): void {
-    this._currentState.onExit();
-  }
-
-  private transition(state: CharacterIdleState | CharacterRunState | CharacterHitState): void {
-    this._currentState.onExit();
-    this._currentState = state;
-    this._currentState.onEnter();
-  }
-
-  onUpdate(deltaTime: number): void {
-    this._currentState.onUpdate(deltaTime);
-  }
-
-  onFinished(): void {
-    this.decision();
-  }
-
-  onEvent(_: any): void {
-  }
-
-  // state
-
-  onEnter(): void {
-    if (!this._hero || this._hero.character.dead.get()) {
-      this._fsm.patrolling();
-      return;
-    }
-    this._controller.lookAt(this._hero);
-    this._currentState = this._idle;
-    this._currentState.onEnter();
-
-    this.decision();
-  }
-
-  onExit(): void {
-  }
-
-  private decision(): void {
-    if (!this._hero || this._hero.character.dead.get()) {
-      this._fsm.patrolling();
-      return;
-    }
-
-    const distance = this._controller.distanceTo(this._hero);
-
-    if (distance > this._controller.max_distance) {
-      this._fsm.patrolling();
-      return;
-    }
-
-    this._controller.lookAt(this._hero);
-
-    if (distance === this._controller.max_distance) {
-      this._controller.spawnMinions();
-      this.transition(this._idle);
-      return;
-    }
-
-    if (distance > 0) {
-      const dx = Math.min(1, Math.max(-1, this._controller.x - this._hero.x));
-      const dy = Math.min(1, Math.max(-1, this._controller.y - this._hero.y));
-      if (this._controller.startMove(dx, dy) || this._controller.startMove(dx, 0) || this._controller.startMove(0, dy)) {
-        this.transition(this._run);
-        return;
-      }
-    }
-
-    if (distance === 0) {
-      if (this._controller.character.luck < this._controller.dungeon.rng.float()) {
-        this.transition(this._hit);
-        return;
-      }
-    }
-
-    this._controller.spawnMinions();
-
-    this.transition(this._idle);
-  }
+const enum SummonMonsterAttackFsmState {
+  INITIAL = 0,
+  DECISION = 1,
+  IDLE = 2,
+  RUN_AWAY = 3,
+  HIT = 4,
+  GO_PATROLLING = 5,
 }
