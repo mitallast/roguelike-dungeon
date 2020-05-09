@@ -95,9 +95,7 @@ export class TinyMonsterController extends MonsterController {
     // patrolling
 
     fsm.state(TinyMonsterState.PATROLLING)
-      .onEnter(() => patrolling.start())
-      .onUpdate(deltaTime => patrolling.update(deltaTime))
-      .onEvent(event => patrolling.handle(event));
+      .nested(patrolling);
 
     fsm.state(TinyMonsterState.PATROLLING)
       .transitionTo(TinyMonsterState.ATTACK)
@@ -112,8 +110,7 @@ export class TinyMonsterController extends MonsterController {
     // alarm
 
     fsm.state(TinyMonsterState.ALARM)
-      .onEnter(() => alarm.start())
-      .onUpdate(deltaTime => alarm.update(deltaTime));
+      .nested(alarm);
 
     fsm.state(TinyMonsterState.ALARM)
       .transitionTo(TinyMonsterState.ATTACK)
@@ -128,8 +125,7 @@ export class TinyMonsterController extends MonsterController {
     // attack
 
     fsm.state(TinyMonsterState.ATTACK)
-      .onEnter(() => attack.start())
-      .onUpdate(deltaTime => attack.update(deltaTime));
+      .nested(attack);
 
     fsm.state(TinyMonsterState.ATTACK)
       .transitionTo(TinyMonsterState.ALARM)
@@ -152,8 +148,7 @@ export class TinyMonsterController extends MonsterController {
 
     // idle
     fsm.state(TinyMonsterPatrollingState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle);
 
     fsm.state(TinyMonsterPatrollingState.IDLE)
       .transitionTo(TinyMonsterPatrollingState.GO_ATTACK)
@@ -176,8 +171,7 @@ export class TinyMonsterController extends MonsterController {
 
     // random move
     fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(TinyMonsterPatrollingState.RANDOM_MOVE)
       .transitionTo(TinyMonsterPatrollingState.GO_ATTACK)
@@ -223,8 +217,7 @@ export class TinyMonsterController extends MonsterController {
 
     // idle
     fsm.state(TinyMonsterAlarmState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle);
 
     fsm.state(TinyMonsterAlarmState.IDLE)
       .transitionTo(TinyMonsterAlarmState.GO_ATTACK)
@@ -247,8 +240,7 @@ export class TinyMonsterController extends MonsterController {
 
     // run
     fsm.state(TinyMonsterAlarmState.RUN)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(TinyMonsterAlarmState.RUN)
       .transitionTo(TinyMonsterAlarmState.GO_ATTACK)
@@ -302,9 +294,8 @@ export class TinyMonsterController extends MonsterController {
 
     // idle
     fsm.state(TinyMonsterAttackState.IDLE)
-      .onEnter(() => this.lookAtHero())
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle)
+      .onEnter(() => this.lookAtHero());
 
     fsm.state(TinyMonsterAttackState.IDLE)
       .transitionTo(TinyMonsterAttackState.HIT)
@@ -329,8 +320,7 @@ export class TinyMonsterController extends MonsterController {
 
     // run
     fsm.state(TinyMonsterAttackState.RUN)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(TinyMonsterAttackState.RUN)
       .transitionTo(TinyMonsterAttackState.HIT)
@@ -350,9 +340,8 @@ export class TinyMonsterController extends MonsterController {
 
     // hit
     fsm.state(TinyMonsterAttackState.HIT)
-      .onEnter(() => this.lookAtHero())
-      .onEnter(() => hit.start())
-      .onUpdate(deltaTime => hit.update(deltaTime));
+      .nested(hit)
+      .onEnter(() => this.lookAtHero());
 
     fsm.state(TinyMonsterAttackState.HIT)
       .transitionTo(TinyMonsterAttackState.RUN)

@@ -263,10 +263,9 @@ export class HeroController extends BaseCharacterController {
 
     // idle
     fsm.state(HeroState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime))
-      .onUpdate(() => this.processInventory())
-      .onExit(() => this.scanDrop());
+      .nested(idle)
+      .onEnter(() => this.scanDrop())
+      .onUpdate(() => this.processInventory());
 
     fsm.state(HeroState.IDLE)
       .transitionTo(HeroState.ON_HIT)
@@ -282,10 +281,9 @@ export class HeroController extends BaseCharacterController {
 
     // run
     fsm.state(HeroState.RUN)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime))
-      .onUpdate(() => this.processInventory())
-      .onExit(() => this.scanDrop());
+      .nested(run)
+      .onEnter(() => this.scanDrop())
+      .onUpdate(() => this.processInventory());
 
     fsm.state(HeroState.RUN)
       .transitionTo(HeroState.ON_HIT)
@@ -303,11 +301,10 @@ export class HeroController extends BaseCharacterController {
 
     // hit
     fsm.state(HeroState.HIT)
+      .nested(hit)
+      .onEnter(() => this.scanDrop())
       .onEnter(() => this.lookAtMonsters())
-      .onEnter(() => hit.start())
-      .onUpdate(deltaTime => hit.update(deltaTime))
-      .onUpdate(() => this.processInventory())
-      .onExit(() => this.scanDrop());
+      .onUpdate(() => this.processInventory());
 
     fsm.state(HeroState.HIT)
       .transitionTo(HeroState.ON_HIT)

@@ -76,15 +76,13 @@ export class SummonMonsterController extends SpawningMonsterController {
     const attack = this.attack();
 
     fsm.state(SummonMonsterFsmState.PATROLLING)
-      .onEnter(() => patrolling.start())
-      .onUpdate(deltaTime => patrolling.update(deltaTime))
+      .nested(patrolling)
       .transitionTo(SummonMonsterFsmState.ATTACK)
       .condition(() => patrolling.isFinal)
       .condition(() => patrolling.current === SummonMonsterPatrollingFsmState.GO_ATTACK);
 
     fsm.state(SummonMonsterFsmState.ATTACK)
-      .onEnter(() => attack.start())
-      .onUpdate(deltaTime => attack.update(deltaTime))
+      .nested(attack)
       .transitionTo(SummonMonsterFsmState.PATROLLING)
       .condition(() => attack.isFinal)
       .condition(() => attack.current === SummonMonsterAttackFsmState.GO_PATROLLING);
@@ -93,8 +91,7 @@ export class SummonMonsterController extends SpawningMonsterController {
   }
 
   private patrolling(): FiniteStateMachine<SummonMonsterPatrollingFsmState> {
-    const fsm = new FiniteStateMachine<SummonMonsterPatrollingFsmState>(SummonMonsterPatrollingFsmState.INITIAL, [
-      SummonMonsterPatrollingFsmState.INITIAL,
+    const fsm = new FiniteStateMachine<SummonMonsterPatrollingFsmState>(SummonMonsterPatrollingFsmState.IDLE, [
       SummonMonsterPatrollingFsmState.IDLE,
       SummonMonsterPatrollingFsmState.RANDOM_MOVE,
       SummonMonsterPatrollingFsmState.GO_ATTACK,
@@ -103,15 +100,10 @@ export class SummonMonsterController extends SpawningMonsterController {
     const idle = this.idle();
     const run = this.run();
 
-    // initial
-    fsm.state(SummonMonsterPatrollingFsmState.INITIAL)
-      .transitionTo(SummonMonsterPatrollingFsmState.IDLE);
-
     // idle
     fsm.state(SummonMonsterPatrollingFsmState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime))
-    // .onExit(() => controller.spawnMinions())
+      .nested(idle)
+      .onEnter(() => this.spawnMinions());
 
     fsm.state(SummonMonsterPatrollingFsmState.IDLE)
       .transitionTo(SummonMonsterPatrollingFsmState.GO_ATTACK)
@@ -129,8 +121,7 @@ export class SummonMonsterController extends SpawningMonsterController {
 
     // random move
     fsm.state(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(SummonMonsterPatrollingFsmState.RANDOM_MOVE)
       .transitionTo(SummonMonsterPatrollingFsmState.GO_ATTACK)
@@ -191,25 +182,22 @@ export class SummonMonsterController extends SpawningMonsterController {
 
     // idle
     fsm.state(SummonMonsterAttackFsmState.IDLE)
+      .nested(idle)
       .onEnter(() => this.lookAtHero())
-      // .onEnter(() => controller.spawnMinions())
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime))
+      .onEnter(() => this.spawnMinions())
       .transitionTo(SummonMonsterAttackFsmState.DECISION)
       .condition(() => idle.isFinal)
 
     // run away
     fsm.state(SummonMonsterAttackFsmState.RUN_AWAY)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime))
+      .nested(run)
       .transitionTo(SummonMonsterAttackFsmState.DECISION)
       .condition(() => run.isFinal)
 
     // hit
     fsm.state(SummonMonsterAttackFsmState.HIT)
+      .nested(hit)
       .onEnter(() => this.lookAtHero())
-      .onEnter(() => hit.start())
-      .onUpdate(deltaTime => hit.update(deltaTime))
       .transitionTo(SummonMonsterAttackFsmState.IDLE)
       .condition(() => hit.isFinal)
 
@@ -223,10 +211,9 @@ const enum SummonMonsterFsmState {
 }
 
 const enum SummonMonsterPatrollingFsmState {
-  INITIAL = 0,
-  IDLE = 1,
-  RANDOM_MOVE = 2,
-  GO_ATTACK = 3,
+  IDLE = 0,
+  RANDOM_MOVE = 1,
+  GO_ATTACK = 2,
 }
 
 const enum SummonMonsterAttackFsmState {

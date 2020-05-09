@@ -162,8 +162,7 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // idle
     fsm.state(BossPatrollingState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle);
 
     fsm.state(BossPatrollingState.IDLE)
       .transitionTo(BossPatrollingState.GO_ATTACK)
@@ -191,8 +190,7 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // random move
     fsm.state(BossPatrollingState.RANDOM_MOVE)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(BossPatrollingState.RANDOM_MOVE)
       .transitionTo(BossPatrollingState.GO_ATTACK)
@@ -238,8 +236,7 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // idle
     fsm.state(BossAlarmState.IDLE)
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle);
 
     fsm.state(BossAlarmState.IDLE)
       .transitionTo(BossAlarmState.GO_ATTACK)
@@ -262,8 +259,7 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // run
     fsm.state(BossAlarmState.RUN)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(BossAlarmState.RUN)
       .transitionTo(BossAlarmState.GO_ATTACK)
@@ -317,9 +313,8 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // idle
     fsm.state(BossAttackState.IDLE)
-      .onEnter(() => this.lookAtHero())
-      .onEnter(() => idle.start())
-      .onUpdate(deltaTime => idle.update(deltaTime));
+      .nested(idle)
+      .onEnter(() => this.lookAtHero());
 
     fsm.state(BossAttackState.IDLE)
       .transitionTo(BossAttackState.HIT)
@@ -344,8 +339,7 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // run
     fsm.state(BossAttackState.RUN)
-      .onEnter(() => run.start())
-      .onUpdate(deltaTime => run.update(deltaTime));
+      .nested(run);
 
     fsm.state(BossAttackState.RUN)
       .transitionTo(BossAttackState.HIT)
@@ -365,9 +359,8 @@ export class BossMonsterController extends SpawningMonsterController {
 
     // hit
     fsm.state(BossAttackState.HIT)
-      .onEnter(() => this.lookAtHero())
-      .onEnter(() => hit.start())
-      .onUpdate(deltaTime => hit.update(deltaTime));
+      .nested(hit)
+      .onEnter(() => this.lookAtHero());
 
     fsm.state(BossAttackState.HIT)
       .transitionTo(BossAttackState.RUN)

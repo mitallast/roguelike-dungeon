@@ -517,22 +517,34 @@ export abstract class BaseCharacterController implements CharacterController {
 
   protected hit(hitController: HitController): FiniteStateMachine<HitState> {
     const character = this.character;
+
     const simple = this.simpleHit(hitController);
     const combo = this.comboHit(hitController);
-    let state: FiniteStateMachine<any> = simple;
-    const fsm = new FiniteStateMachine<HitState>(HitState.HIT, [HitState.HIT, HitState.COMPLETE]);
-    fsm.state(HitState.HIT)
-      .onEnter(() => {
-        const weapon = character.weapon;
-        if (weapon && weapon.animations.combo) {
-          state = combo;
-        } else {
-          state = simple;
-        }
-        state.start();
-      })
-      .onUpdate(deltaTime => state.update(deltaTime))
-      .transitionTo(HitState.COMPLETE).condition(() => state.isFinal);
+
+    const fsm = new FiniteStateMachine<HitState>(HitState.INITIAL, [
+      HitState.INITIAL,
+      HitState.SIMPLE_HIT,
+      HitState.COMBO_HIT,
+      HitState.COMPLETE
+    ]);
+
+    fsm.state(HitState.INITIAL)
+      .transitionTo(HitState.COMBO_HIT)
+      .condition(() => character.weapon !== null)
+      .condition(() => character.weapon!.animations.combo !== undefined);
+
+    fsm.state(HitState.INITIAL)
+      .transitionTo(HitState.SIMPLE_HIT);
+
+    fsm.state(HitState.SIMPLE_HIT)
+      .nested(simple)
+      .transitionTo(HitState.COMPLETE)
+      .condition(() => simple.isFinal);
+
+    fsm.state(HitState.COMBO_HIT)
+      .nested(combo)
+      .transitionTo(HitState.COMPLETE)
+      .condition(() => combo.isFinal);
     return fsm;
   }
 
@@ -639,8 +651,10 @@ export const enum RunState {
 }
 
 export const enum HitState {
-  HIT = 0,
-  COMPLETE = 1,
+  INITIAL = 0,
+  SIMPLE_HIT = 1,
+  COMBO_HIT = 2,
+  COMPLETE = 3,
 }
 
 export const enum SimpleHitState {

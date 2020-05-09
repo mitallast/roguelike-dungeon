@@ -31,6 +31,10 @@ export class FiniteStateMachine<StateType extends keyof any> {
     this.transition();
   }
 
+  stop(): void {
+    this._states[this._current].exit();
+  }
+
   update(deltaTime: number): void {
     this._states[this._current].update(deltaTime);
     this.transition();
@@ -61,6 +65,7 @@ export class FiniteState<StateType extends keyof any> {
   private readonly _onEvent: ((event: any) => void)[] = [];
   private readonly _onExit: (() => void)[] = [];
   private readonly _transitions: FiniteStateTransition<StateType>[] = [];
+  private readonly _nested: FiniteStateMachine<any>[] = [];
 
   get isFinal(): boolean {
     return this._transitions.length === 0;
@@ -86,6 +91,11 @@ export class FiniteState<StateType extends keyof any> {
     return this;
   }
 
+  nested(machine: FiniteStateMachine<any>): FiniteState<StateType> {
+    this._nested.push(machine);
+    return this;
+  }
+
   transitionTo(state: StateType): FiniteStateTransition<StateType> {
     const transition = new FiniteStateTransition<StateType>(state);
     this._transitions.push(transition);
@@ -96,11 +106,17 @@ export class FiniteState<StateType extends keyof any> {
     for (const action of this._onEnter) {
       action();
     }
+    for (const nested of this._nested) {
+      nested.start();
+    }
   }
 
   update(deltaTime: number): void {
     for (const action of this._onUpdate) {
       action(deltaTime);
+    }
+    for (const nested of this._nested) {
+      nested.update(deltaTime);
     }
   }
 
@@ -108,11 +124,17 @@ export class FiniteState<StateType extends keyof any> {
     for (const action of this._onExit) {
       action();
     }
+    for (const nested of this._nested) {
+      nested.stop();
+    }
   }
 
   handle(event: any): void {
     for (const action of this._onEvent) {
       action(event);
+    }
+    for (const nested of this._nested) {
+      nested.handle(event);
     }
   }
 
