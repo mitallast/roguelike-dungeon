@@ -58,7 +58,7 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     return this;
   }
 
-  addEvents(event: AnimationEvent<Args>[]): AnimationKeyFrameClip<Args> {
+  addEvents(event: readonly AnimationEvent<Args>[]): AnimationKeyFrameClip<Args> {
     this._frames.push(...event);
     this._frames.sort(this.compare);
     return this;

@@ -43,7 +43,7 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
     return this;
   }
 
-  addEvents(event: AnimationEvent<Args>[]): AnimationEventClip<Args> {
+  addEvents(event: readonly AnimationEvent<Args>[]): AnimationEventClip<Args> {
     this._events.push(...event);
     this._events.sort(this.compare);
     return this;

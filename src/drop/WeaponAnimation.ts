@@ -4,8 +4,8 @@ import {AnimationEvent} from "../animation";
 
 export interface WeaponAnimation {
   readonly smoothly: boolean;
-  readonly angle: AnimationEvent<[number]>[];
-  readonly pos: AnimationEvent<[number, number]>[];
+  readonly angle: readonly AnimationEvent<[number]>[];
+  readonly pos: readonly AnimationEvent<[number, number]>[];
 }
 
 export interface WeaponAnimationSet {
