@@ -19,8 +19,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
   }
 
   async generate(options: GenerateOptions): Promise<DungeonMap> {
-    const tileset: TilesetRules = this.controller.app.loader.resources['dungeon.rules.4.json'].data;
-    const config: Config = this.controller.app.loader.resources['dungeon.design.json'].data;
+    const tileset: TilesetRules = this.controller.loader.resources['dungeon.rules.4.json'].data;
+    const config: Config = this.controller.loader.resources['dungeon.design.json'].data;
 
     const hero = options.hero;
     let seed: number;

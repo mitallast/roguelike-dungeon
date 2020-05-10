@@ -1,3 +1,3 @@
-export * from "./config";
-export * from "./dialog";
-export * from "./modal";
+export * from "./DialogConfig";
+export * from "./DialogManager";
+export * from "./DialogModalScene";

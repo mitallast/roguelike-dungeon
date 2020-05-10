@@ -1,5 +1,4 @@
 export class Template {
-
   private readonly _context: Partial<Record<string, any>> = {};
 
   add(key: string, value: any): void {

@@ -1,12 +1,12 @@
 import * as PIXI from 'pixi.js';
-import {SceneController} from "./scene";
+import {SceneController} from "./index";
 
-export interface DungeonBannerOptions {
+export interface BannerOptions {
   readonly text: string;
   readonly color: number;
 }
 
-export class SceneBanner extends PIXI.Container {
+export class Banner extends PIXI.Container {
   private readonly _controller: SceneController;
   private readonly _text: PIXI.BitmapText;
   private readonly _textShadow: PIXI.BitmapText;
@@ -16,14 +16,14 @@ export class SceneBanner extends PIXI.Container {
   private _show: number = 120;
   private _fadeOut: number = 60;
 
-  constructor(controller: SceneController, options: DungeonBannerOptions) {
+  constructor(controller: SceneController, options: BannerOptions) {
     super();
 
     this._controller = controller;
 
     const size = 64;
     const height = size << 1;
-    const screen = this._controller.app.screen;
+    const screen = controller.screen;
     const y = Math.floor(screen.height * 0.7);
 
     this._text = new PIXI.BitmapText(options.text, {
@@ -51,12 +51,11 @@ export class SceneBanner extends PIXI.Container {
     this._textShadow.filters = [blur];
     this._textShadow.filterArea = this._textShadow.getBounds().clone().pad(50, 0);
 
-    this._texture = SceneBanner.gradient(1, height);
+    this._texture = Banner.gradient(1, height);
     this._background = new PIXI.TilingSprite(this._texture, screen.width, height);
     this._background.position.set(0, y - (height >> 1));
     this.addChild(this._background, this._textShadow, this._text);
-    this._controller.stage.addChild(this);
-    this._controller.app.ticker.add(this.update, this);
+    this._controller.ticker.add(this.update, this);
   }
 
   private update(deltaTime: number): void {
@@ -72,7 +71,7 @@ export class SceneBanner extends PIXI.Container {
 
   destroy(): void {
     super.destroy();
-    this._controller.app.ticker.remove(this.update, this);
+    this._controller.ticker.remove(this.update, this);
     this._text.destroy();
     this._background.destroy();
     this._texture.destroy(true);

@@ -1,35 +1,32 @@
+import * as PIXI from "pixi.js";
 import {Scene, SceneController} from "./scene";
 import {heroCharacterNames, Hero} from "./characters";
 import {Weapon, weapons} from "./drop";
-import {Colors, Selectable, SelectableGrid} from "./ui";
+import {Colors, UISelectable, UISelectableGrid} from "./ui";
 import {Resources} from "./resources";
-import * as PIXI from "pixi.js";
 
 const MARGIN = 40;
 const TITLE_H = 32;
 const TILE_W = 16;
 const TILE_H = 28;
 
-export class SelectHeroScene implements Scene {
-  private readonly _controller: SceneController;
-  private readonly _heroes: SelectHeroView[] = [];
-  private readonly _selectable: SelectableGrid;
+export class SelectHeroScene extends Scene {
+  private readonly _selectable: UISelectableGrid;
 
   constructor(controller: SceneController) {
-    this._controller = controller;
-    this._selectable = new SelectableGrid(controller.joystick);
+    super(controller);
+    this._selectable = new UISelectableGrid(controller.joystick);
   }
 
   init(): void {
     this.renderTitle();
     this.renderHeroes();
-    this._controller.app.ticker.add(this._selectable.handleInput, this._selectable);
+    this._controller.ticker.add(this._selectable.handleInput, this._selectable);
   }
 
   destroy(): void {
-    this._controller.app.ticker.remove(this._selectable.handleInput, this._selectable);
-    this._heroes.forEach(h => h.destroy());
-    this._controller.stage.removeChildren();
+    this._controller.ticker.remove(this._selectable.handleInput, this._selectable);
+    super.destroy({children: true});
   }
 
   pause(): void {
@@ -41,12 +38,12 @@ export class SelectHeroScene implements Scene {
   private renderTitle(): void {
     const title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     title.anchor = new PIXI.Point(0.5, 0);
-    title.position.set(this._controller.app.screen.width >> 1, 64);
-    this._controller.stage.addChild(title);
+    title.position.set(this._controller.screen.width >> 1, 64);
+    this.addChild(title);
   }
 
   private renderHeroes(): void {
-    const screen = this._controller.app.screen;
+    const screen = this._controller.screen;
 
     const total = heroCharacterNames.length;
 
@@ -64,8 +61,7 @@ export class SelectHeroScene implements Scene {
 
       const view = new SelectHeroView(rectWidth, rectHeight, heroName, this._controller.resources);
       view.position.set(posX, posY);
-      this._heroes.push(view);
-      this._controller.stage.addChild(view);
+      this.addChild(view);
 
       this._selectable.set(i, 0, view, () => this.select(heroName));
     }
@@ -83,7 +79,7 @@ export class SelectHeroScene implements Scene {
   }
 }
 
-class SelectHeroView extends PIXI.Container implements Selectable {
+class SelectHeroView extends PIXI.Container implements UISelectable {
   private readonly _selectedBg: PIXI.Graphics;
   private readonly _notSelectedBg: PIXI.Graphics;
   private readonly _title: PIXI.BitmapText;

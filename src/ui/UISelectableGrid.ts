@@ -1,121 +1,7 @@
-import {Joystick} from "./input";
 import * as PIXI from "pixi.js";
+import {Joystick} from "../input";
 
-export interface ColorScheme {
-  readonly background: number;
-  readonly uiBackground: number;
-  readonly uiSelected: number;
-  readonly uiNotSelected: number;
-  readonly uiRed: number;
-  readonly uiYellow: number;
-}
-
-export const Colors: ColorScheme = {
-  background: 0x101010,
-  uiBackground: 0x202020,
-  uiSelected: 0x505050,
-  uiNotSelected: 0x404040,
-  uiRed: 0xFF0000,
-  uiYellow: 0xBF9E00,
-};
-
-export interface SizeScheme {
-  readonly uiBorder: number;
-  readonly uiMargin: number;
-}
-
-export const Sizes: SizeScheme = {
-  uiBorder: 4,
-  uiMargin: 16,
-};
-
-export class Button extends PIXI.Container implements Selectable {
-  private readonly _width: number;
-  private readonly _height: number;
-  private readonly _textSize: number;
-  private readonly _border: boolean;
-  private readonly _text: PIXI.BitmapText;
-  private readonly _bg: PIXI.Graphics;
-  private _selected: boolean = false;
-
-  constructor(options: {
-    readonly label: string;
-    readonly selected?: boolean;
-    readonly width?: number;
-    readonly height?: number;
-    readonly textSize?: number;
-    readonly border?: boolean;
-  }) {
-    super();
-    this._width = options.width || 200;
-    this._height = options.height || 24;
-    this._textSize = options.textSize || 16;
-    this._border = options.border || false;
-    this._bg = new PIXI.Graphics();
-    this._text = new PIXI.BitmapText(options.label, {font: {name: "alagard", size: this._textSize}});
-    this._text.anchor = new PIXI.Point(0.5, 0.5);
-    this._text.position.set(this._width >> 1, this._height >> 1);
-    this.selected = options.selected || false;
-    super.addChild(this._bg, this._text);
-  }
-
-  get selected(): boolean {
-    return this._selected;
-  }
-
-  set selected(selected: boolean) {
-    this._selected = selected;
-    if (this._border) {
-      this._bg
-        .clear()
-        .beginFill(Colors.uiBackground)
-        .drawRect(0, 0, this._width, this._height)
-        .endFill()
-        .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
-        .drawRect(Sizes.uiBorder, Sizes.uiBorder, this._width - Sizes.uiBorder * 2, this._height - Sizes.uiBorder * 2)
-        .endFill();
-    } else {
-      this._bg
-        .clear()
-        .beginFill(selected ? Colors.uiSelected : Colors.uiNotSelected)
-        .drawRect(0, 0, this._width, this._height)
-        .endFill();
-    }
-  }
-}
-
-export class Layout {
-  private _commitX: number = 0;
-  private _commitY: number = 0;
-
-  private _offsetX: number = 0;
-  private _offsetY: number = 0;
-
-  commit(): void {
-    this._commitX = this._offsetX;
-    this._commitY = this._offsetY;
-  }
-
-  reset(): void {
-    this._offsetX = this._commitX;
-    this._offsetY = this._commitY;
-  }
-
-  offset(x: number, y: number): void {
-    this._offsetX += x;
-    this._offsetY += y;
-  }
-
-  get x(): number {
-    return this._offsetX;
-  }
-
-  get y(): number {
-    return this._offsetY;
-  }
-}
-
-export interface Selectable {
+export interface UISelectable {
   selected: boolean;
 }
 
@@ -147,9 +33,9 @@ function nonEmptyCount(counts: number[], curr: number | null): number | null {
   return null;
 }
 
-export class SelectableGrid {
+export class UISelectableGrid {
   private readonly _joystick: Joystick;
-  private readonly _cells: SelectableCell[][] = []; // y => x => cell
+  private readonly _cells: UISelectableCell[][] = []; // y => x => cell
   private readonly _countsX: number[] = [];
   private readonly _countsY: number[] = [];
   private _limitX: number = -1;
@@ -281,6 +167,15 @@ export class SelectableGrid {
     this.mark();
   }
 
+  select(x: number, y: number): void {
+    if (this.cell(x, y).isSelectable) {
+      this.unmark();
+      this._selectedX = x;
+      this._selectedY = y;
+      this.mark();
+    }
+  }
+
   private unmark(): void {
     this.selectedCell?.unmark();
   }
@@ -289,11 +184,11 @@ export class SelectableGrid {
     this.selectedCell?.mark();
   }
 
-  get selected(): [Selectable, () => void] | null {
+  get selected(): [UISelectable, () => void] | null {
     return this.selectedCell?.value || null;
   }
 
-  private get selectedCell(): SelectableCell | null {
+  private get selectedCell(): UISelectableCell | null {
     if (this._selectedX !== null && this._selectedY !== null) {
       const cell = this.cell(this._selectedX, this._selectedY);
       if (cell.merged && cell.isRef) {
@@ -305,7 +200,7 @@ export class SelectableGrid {
     return null;
   }
 
-  set(x: number, y: number, selectable: Selectable, action: () => void): void {
+  set(x: number, y: number, selectable: UISelectable, action: () => void): void {
     if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
     const cell = this.cell(x, y);
     if (cell.isRef) throw `cell is ref: ${x}:${y}`;
@@ -333,7 +228,7 @@ export class SelectableGrid {
   merge(x: number, y: number, width: number, height: number): void {
     if (x < 0 || y < 0) throw `illegal coordinate: ${x}:${y}`;
     if (width < 1 || height < 1) throw `illegal size: ${width}:${height}`;
-    const merged = new MergedRegion(x, y, x + width - 1, y + height - 1);
+    const merged = new UIMergedRegion(x, y, x + width - 1, y + height - 1);
     const origin = this.cell(x, y);
     if (origin.isRef) throw `cell is ref: ${x}:${y}`;
     if (origin.merged) throw `cell is merged: ${JSON.stringify(origin.merged)}`;
@@ -398,7 +293,7 @@ export class SelectableGrid {
     }
   }
 
-  private cell(x: number, y: number): SelectableCell {
+  private cell(x: number, y: number): UISelectableCell {
     if (x < 0 || y < 0) throw "illegal coordinate";
     this.expand(x, y);
     return this._cells[y][x];
@@ -410,14 +305,14 @@ export class SelectableGrid {
       this._countsY[this._limitY] = 0;
       this._cells[this._limitY] = [];
       for (let x = 0; x <= this._limitX; x++) {
-        this._cells[this._limitY][x] = new SelectableCell(x, this._limitY);
+        this._cells[this._limitY][x] = new UISelectableCell(x, this._limitY);
       }
     }
     while (this._limitX < toX) {
       this._limitX++;
       this._countsX[this._limitX] = 0;
       for (let y = 0; y <= this._limitY; y++) {
-        this._cells[y][this._limitX] = new SelectableCell(this._limitX, y);
+        this._cells[y][this._limitX] = new UISelectableCell(this._limitX, y);
       }
     }
   }
@@ -450,10 +345,10 @@ export class SelectableGrid {
   }
 }
 
-class SelectableCell {
-  merged: MergedRegion | null = null;
+class UISelectableCell {
+  merged: UIMergedRegion | null = null;
 
-  value: [Selectable, () => void] | null = null;
+  value: [UISelectable, () => void] | null = null;
 
   unmark(): void {
     if (this.value) {
@@ -479,158 +374,11 @@ class SelectableCell {
   }
 }
 
-class MergedRegion {
+class UIMergedRegion {
   constructor(readonly from_x: number, readonly from_y: number, readonly to_x: number, readonly to_y: number) {
   }
 
   contains(x: number, y: number): boolean {
     return x >= this.from_x && x <= this.to_x && y >= this.from_y && y <= this.to_y;
-  }
-}
-
-export class VStack extends PIXI.Container {
-  private _width: number = 0;
-  private _height: number = 0;
-
-  private _dirtyLayout: boolean = false;
-  private readonly _padding: number;
-  private readonly _spacing: number;
-  private readonly _background: PIXI.Container;
-
-  constructor(options: {
-    readonly spacing?: number;
-    readonly padding?: number;
-    readonly background?: {
-      readonly color: number;
-    };
-  } = {}) {
-    super();
-    this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
-    this._padding = options.padding !== undefined ? options.padding : Sizes.uiMargin;
-    if (options.background) {
-      this._background = new PIXI.Graphics()
-        .beginFill(options.background.color)
-        .drawRect(0, 0, 1, 1)
-        .endFill()
-    } else {
-      this._background = new PIXI.Container();
-    }
-    this.addChild(this._background);
-  }
-
-  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
-    super.destroy(options);
-  }
-
-  protected onChildrenChange(): void {
-    this._dirtyLayout = true;
-  }
-
-  protected _calculateBounds(): void {
-    this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
-  }
-
-  updateTransform(): void {
-    if (this._dirtyLayout) {
-      this.updateLayout();
-    }
-    super.updateTransform();
-  }
-
-  protected updateLayout(): void {
-    let maxWidth = 0;
-    let y = this._padding;
-    const x = this._padding;
-    let first = true;
-    for (const child of this.children) {
-      if (child === this._background) continue;
-      if (!first) y += this._spacing;
-      first = false;
-      child.position.set(x, y);
-      child.updateTransform();
-      const bounds = child.getBounds();
-      y += bounds.height;
-      maxWidth = Math.max(maxWidth, bounds.width);
-    }
-    this._height = y + this._padding;
-    this._width = maxWidth + this._padding * 2;
-    this._background.width = this._width;
-    this._background.height = this._height;
-    this._calculateBounds();
-    this._dirtyLayout = false;
-  }
-}
-
-export class HStack extends PIXI.Container {
-  private _width: number = 0;
-  private _height: number = 0;
-
-  private _dirtyLayout: boolean = false;
-  private readonly _padding: number;
-  private readonly _spacing: number;
-  private readonly _background: PIXI.Container;
-
-  constructor(options: {
-    readonly spacing?: number;
-    readonly padding?: number;
-    readonly background?: {
-      readonly color: number;
-      readonly alpha?: number;
-    };
-  } = {}) {
-    super();
-    this._spacing = options.spacing !== undefined ? options.spacing : Sizes.uiMargin;
-    this._padding = options.padding !== undefined ? options.padding : Sizes.uiMargin;
-    if (options.background) {
-      this._background = new PIXI.Graphics()
-        .beginFill(options.background.color, options.background.alpha || 1)
-        .drawRect(0, 0, 1, 1)
-        .endFill();
-    } else {
-      this._background = new PIXI.Container();
-    }
-    this.addChild(this._background);
-  }
-
-  destroy(options?: { children?: boolean; texture?: boolean; baseTexture?: boolean }): void {
-    super.destroy(options);
-  }
-
-  protected onChildrenChange(): void {
-    this._dirtyLayout = true;
-  }
-
-  protected _calculateBounds(): void {
-    this._bounds.addFrame(this.transform, 0, 0, this._width, this._height);
-  }
-
-  updateTransform(): void {
-    if (this._dirtyLayout) {
-      this.updateLayout();
-    }
-    super.updateTransform();
-  }
-
-  protected updateLayout(): void {
-    let maxHeight = 0;
-    const y = this._padding;
-    let x = this._padding;
-    let first = true;
-    for (const child of this.children) {
-      if (child === this._background) continue;
-      if (!first) x += this._spacing;
-      first = false;
-      child.position.set(x, y);
-      child.updateTransform();
-      const bounds = child.getBounds();
-      x += bounds.width;
-      maxHeight = Math.max(maxHeight, bounds.height);
-    }
-    this._width = x + this._padding;
-    this._height = maxHeight + this._padding * 2;
-    this._background.width = this._width;
-    this._background.height = this._height;
-    this._calculateBounds();
-    this._dirtyLayout = false;
   }
 }

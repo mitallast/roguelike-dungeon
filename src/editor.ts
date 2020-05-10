@@ -2,7 +2,7 @@ import {Resources} from "./resources";
 import {DungeonZIndexes} from "./dungeon";
 import {CellType, Direction, TilesetRules} from "./wfc/even.simple.tiled";
 import {Indexer} from "./indexer";
-import {Layout} from "./ui";
+import {UILayout} from "./ui";
 import {RNG} from "./rng";
 import {buffer, Model} from "./wfc/model";
 import {DungeonCrawler} from "./tunneler";
@@ -87,7 +87,7 @@ export class Editor {
     div.appendChild(this._app.view);
     document.body.appendChild(div);
 
-    const layout = new Layout();
+    const layout = new UILayout();
     layout.offset(BORDER, BORDER);
     layout.commit();
 
@@ -111,7 +111,7 @@ export class Editor {
     this._app.renderer.resize(screenWidth, screenHeight);
   }
 
-  private initPalette(layout: Layout): void {
+  private initPalette(layout: UILayout): void {
     const mapWidth = this.width * SPRITE_SIZE + BORDER * 2;
     const paletteWidth = Math.floor((mapWidth - BORDER) / (SPRITE_SIZE + BORDER));
 
@@ -155,7 +155,7 @@ export class Editor {
     layout.commit();
   }
 
-  private initMap(layout: Layout): void {
+  private initMap(layout: UILayout): void {
     for (let y = 0; y < this.height; y++) {
       this._cells.push([]);
       for (let x = 0; x < this.width; x++) {

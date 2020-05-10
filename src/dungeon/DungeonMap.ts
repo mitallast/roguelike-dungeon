@@ -142,7 +142,7 @@ export class DungeonMap {
   }
 
   camera(x: number, y: number): void {
-    const screen = this.controller.app.screen;
+    const screen = this.controller.screen;
     const posX = (screen.width >> 1) - x * this.scale;
     const posY = (screen.height >> 1) - y * this.scale;
     this.container.position.set(posX, posY);
@@ -324,19 +324,11 @@ export class DungeonMapCell {
 export class DungeonTitle extends PIXI.Container {
   private readonly _title: PIXI.BitmapText;
 
-  constructor() {
+  constructor(level: number) {
     super();
-    this._title = new PIXI.BitmapText("", {font: {name: 'alagard', size: 32}});
+    this._title = new PIXI.BitmapText(`LEVEL ${level}`, {font: {name: 'alagard', size: 32}});
     this._title.anchor = 0.5;
     this._title.position.set(0, 16);
     this.addChild(this._title);
-  }
-
-  set level(level: number) {
-    this._title.text = `LEVEL ${level}`;
-  }
-
-  destroy(): void {
-    this._title.destroy();
   }
 }

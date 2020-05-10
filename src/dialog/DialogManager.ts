@@ -3,7 +3,7 @@ import {SceneController} from "../scene";
 import {EventPublisher, Publisher} from "../observable";
 import {Expression} from "../expression";
 import {Template} from "../template";
-import {DialogConfig} from "./config"
+import {DialogConfig} from "./DialogConfig"
 
 export class DialogManager {
   private readonly _controller: SceneController;
@@ -13,7 +13,7 @@ export class DialogManager {
   }
 
   dialog(hero: Hero, npc: Npc): Dialog {
-    const dialogs: Record<string, DialogConfig> = this._controller.app.loader.resources['dialogs.json'].data;
+    const dialogs: Record<string, DialogConfig> = this._controller.loader.resources['dialogs.json'].data;
     const config = dialogs[npc.name] || dialogs["default"]!;
     return new Dialog(this._controller, hero, npc, config);
   }

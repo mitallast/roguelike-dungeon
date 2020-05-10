@@ -1,12 +1,11 @@
 import * as PIXI from "pixi.js";
-import {BarView} from "../bar.view";
-import {Colors, Sizes} from "../ui";
+import {UIBarView, Colors, Sizes} from "../ui";
 import {Hero} from "./Hero";
 
 export class HeroStateView extends PIXI.Container {
   private readonly _heroState: Hero;
-  private readonly _health: BarView;
-  private readonly _xp: BarView;
+  private readonly _health: UIBarView;
+  private readonly _xp: UIBarView;
   private readonly _coins: PIXI.BitmapText;
 
   private readonly _fixedHPSize: boolean;
@@ -21,7 +20,7 @@ export class HeroStateView extends PIXI.Container {
   }) {
     super();
     this._fixedHPSize = options.fixedHPSize;
-    this._hpBarSize = options.hpBarSize || 8;
+    this._hpBarSize = options.hpBarSize || ((256 - (Sizes.uiBorder << 1)) / 30);
     this._maxBarSize = options.maxBarSize || 256;
     this._maxBarInnerSize = this._maxBarSize - (Sizes.uiBorder << 1);
 
@@ -29,15 +28,15 @@ export class HeroStateView extends PIXI.Container {
     const offsetY = barHeight + Sizes.uiMargin;
 
     this._heroState = heroState;
-    this._health = new BarView({
+    this._health = new UIBarView({
       color: Colors.uiRed,
-      width: 0,
-      widthMax: this._maxBarInnerSize
+      width: this._maxBarInnerSize,
+      valueMax: heroState.healthMax.get(),
     });
-    this._xp = new BarView({
+    this._xp = new UIBarView({
       color: Colors.uiYellow,
-      width: 0,
-      widthMax: this._maxBarInnerSize
+      width: this._maxBarInnerSize,
+      valueMax: heroState.levelXp.get(),
     });
     this._xp.position.set(0, offsetY);
 
@@ -68,30 +67,27 @@ export class HeroStateView extends PIXI.Container {
 
   private updateHealthMax(healthMax: number): void {
     const health = this._heroState.health.get();
-    if (!this._fixedHPSize) {
-      this._health.widthMax = this._hpBarSize * healthMax;
-    }
+    this._health.valueMax = healthMax;
     this._health.label = `${health}/${healthMax}`;
+    if (!this._fixedHPSize) {
+      this._health.rectWidth = this._hpBarSize * healthMax;
+    }
   }
 
   private updateHealth(health: number): void {
     const healthMax = this._heroState.healthMax.get();
-    if (this._fixedHPSize) {
-      this._health.width = Math.floor(this._maxBarInnerSize * health / healthMax);
-    } else {
-      this._health.width = this._hpBarSize * health;
-    }
+    this._health.value = health;
     this._health.label = `${health}/${healthMax}`;
   }
 
   private updateXp(): void {
-    const level = this._heroState.level.get();
-    const levelXp = this._heroState.levelXp.get();
-    const skillPoints = this._heroState.skillPoints.get();
-    const xp = this._heroState.xp.get();
-
-    this._xp.widthMax = this._maxBarInnerSize;
-    this._xp.width = Math.floor(this._maxBarInnerSize * xp / levelXp);
+    const heroState = this._heroState;
+    const level = heroState.level.get();
+    const levelXp = heroState.levelXp.get();
+    const skillPoints = heroState.skillPoints.get();
+    const xp = heroState.xp.get();
+    this._xp.valueMax = levelXp;
+    this._xp.value = xp;
     this._xp.label = `L:${level} XP:${xp}/${levelXp} SP:${skillPoints}`;
   }
 

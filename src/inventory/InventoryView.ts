@@ -1,5 +1,5 @@
 import {Resources} from "../resources";
-import {Button, Colors, HStack, Selectable, SelectableGrid, Sizes, VStack} from "../ui";
+import {UIButton, Colors, HStack, UISelectable, UISelectableGrid, Sizes, VStack} from "../ui";
 import {Observable, ObservableVar, Publisher} from "../observable";
 import {UsableDrop} from "../drop";
 import {InventoryController} from "./InventoryController";
@@ -13,7 +13,7 @@ const BUTTON_WIDTH = 170;
 const BUTTON_HEIGHT = 32;
 
 export class InventoryView extends PIXI.Container {
-  private readonly _selectable: SelectableGrid;
+  private readonly _selectable: UISelectableGrid;
   private readonly _selectableOffsetX: number;
   private readonly _selectableOffsetY: number;
 
@@ -26,7 +26,7 @@ export class InventoryView extends PIXI.Container {
   constructor(
     resources: Resources,
     controller: InventoryController,
-    selectable: SelectableGrid,
+    selectable: UISelectableGrid,
     selectableOffsetX: number,
     selectableOffsetY: number,
   ) {
@@ -200,7 +200,7 @@ export class BackpackInventoryView extends PIXI.Container {
   }
 }
 
-export class InventoryCellView extends PIXI.Container implements Selectable {
+export class InventoryCellView extends PIXI.Container implements UISelectable {
   private readonly _item: Observable<UsableDrop | null>;
   private readonly _count: Observable<number | null>;
 
@@ -375,15 +375,15 @@ export class InventoryCellCardView extends PIXI.Container {
 }
 
 export class InventoryCellActionsView extends PIXI.Container {
-  private readonly _selectable: SelectableGrid;
+  private readonly _selectable: UISelectableGrid;
   private readonly _selectableOffsetX: number;
   private readonly _selectableOffsetY: number;
   private readonly _controller: InventoryController;
-  private readonly _buttons: [Button, number, number][] = [];
+  private readonly _buttons: [UIButton, number, number][] = [];
 
   private _cell: InventoryCell | null = null;
 
-  constructor(selectable: SelectableGrid, selectableOffsetX: number, selectableOffsetY: number, controller: InventoryController) {
+  constructor(selectable: UISelectableGrid, selectableOffsetX: number, selectableOffsetY: number, controller: InventoryController) {
     super();
     this._selectable = selectable;
     this._selectableOffsetX = selectableOffsetX;
@@ -431,7 +431,7 @@ export class InventoryCellActionsView extends PIXI.Container {
     const mergeWidth = 5;
     const selectableX = this._selectableOffsetX + (cell * mergeWidth);
     const selectableY = this._selectableOffsetY + 10 + row;
-    const button = new Button({
+    const button = new UIButton({
       label: label,
       width: BUTTON_WIDTH,
       height: BUTTON_HEIGHT,

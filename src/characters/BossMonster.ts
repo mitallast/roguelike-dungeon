@@ -73,11 +73,11 @@ export class BossMonsterController extends SpawningMonsterController {
     this._fsm = this.fsm();
     this.init();
 
-    const screen = dungeon.controller.app.screen;
+    const screen = dungeon.controller.screen;
     const healthView = new BossHealthView(this.character);
     healthView.zIndex = 13;
     healthView.position.set((screen.width >> 1), 64);
-    dungeon.controller.stage.addChild(healthView);
+    dungeon.controller.scene!.addChild(healthView);
   }
 
   protected onDead(): void {

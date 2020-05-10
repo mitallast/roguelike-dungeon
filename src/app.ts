@@ -12,18 +12,12 @@ import {SceneController} from "./scene";
   const app = new PIXI.Application({
     width: 1200,
     height: 700,
-    resolution: 1,
     antialias: false,
   });
 
-  // create the stage instead of container
-  const stage = new PIXI.display.Stage();
-  app.stage = stage;
-  app.renderer.backgroundColor = 0x000000;
-
   document.getElementById("container")!.appendChild(app.view);
 
-  const controller = new SceneController(app, stage);
+  const controller = new SceneController(app);
   await controller.init();
   controller.keyBind();
 })();

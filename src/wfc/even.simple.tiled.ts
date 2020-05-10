@@ -1,10 +1,9 @@
-import {buffer, Model, Resolution} from "./model";
-import {RNG} from "../rng";
-import {Resources} from "../resources";
-import {TunnelingAlgorithm, TunnelingOptions} from "../tunneling";
-import {Indexer} from "../indexer";
-import {Config, DungeonCrawler} from "../tunneler";
 import * as PIXI from "pixi.js";
+import {RNG} from "../rng";
+import {Indexer} from "../indexer";
+import {Resources} from "../resources";
+import {buffer, Model, Resolution} from "./model";
+import {Config, DungeonCrawler} from "../tunneler";
 
 export enum Direction {
   RIGHT = 2,
@@ -732,63 +731,6 @@ interface SimpleGraph {
   readonly neighbours: number[][];
 }
 
-export class RoomConstraint implements Constraint {
-  private readonly _tunnelingOptions: TunnelingOptions;
-  private readonly _isRoomCell: boolean[] = [];
-  private readonly _denyOther: boolean;
-
-  private _model: EvenSimpleTiledModel | null = null;
-
-  constructor(isRoomCell: boolean[], denyOther: boolean, tunneling: TunnelingOptions) {
-    this._isRoomCell = isRoomCell;
-    this._denyOther = denyOther;
-    this._tunnelingOptions = tunneling;
-  }
-
-  init(model: EvenSimpleTiledModel): void {
-    this._model = model;
-  }
-
-  onClear(): void {
-    const model = this._model!;
-    const tunneling = new TunnelingAlgorithm(model.rng, model.FMX, model.FMY, this._tunnelingOptions);
-    tunneling.generate();
-
-    const isRoom = buffer(model.FMX * model.FMY, false);
-
-    for (const room of tunneling.rooms) {
-      for (let y = room.y; y < room.y + room.h; y++) {
-        for (let x = room.x; x < room.x + room.w; x++) {
-          isRoom[x + y * model.FMX] = true;
-        }
-      }
-    }
-
-    for (let i = 0; i < isRoom.length; i++) {
-      for (let t = 0; t < model.T; t++) {
-        if (isRoom[i]) {
-          if (!this._isRoomCell[t]) {
-            model.ban(i, t);
-          }
-        } else if (this._denyOther) {
-          if (this._isRoomCell[t]) {
-            model.ban(i, t);
-          }
-        }
-      }
-    }
-  }
-
-  check(): void {
-  }
-
-  onBacktrack(_index: number, _pattern: number): void {
-  }
-
-  onBan(_index: number, _pattern: number): void {
-  }
-}
-
 export class DungeonCrawlerConstraint implements Constraint {
   private readonly _config: Config;
 
@@ -906,61 +848,5 @@ export class DungeonCrawlerConstraint implements Constraint {
   }
 
   onBan(_index: number, _pattern: number): void {
-  }
-}
-
-export class EvenSimpleTiledModelTest {
-  static async test(resources: Resources): Promise<void> {
-    const loader = new PIXI.Loader();
-    loader.add("village.rules.json");
-    await new Promise((resolve) => loader.load(() => resolve()));
-
-    const tileset: TilesetRules = loader.resources["village.rules.json"].data!;
-
-    console.log("tileset", tileset);
-
-    const filter = (regex: RegExp): boolean[] => {
-      const tiles: boolean[] = tileset.tiles.map(t => !!t.match(regex));
-      return tileset.cells.map(cell => {
-        const [f, w] = cell;
-        return f >= 0 && tiles[f]! && w === -1;
-      });
-    };
-
-    const borderCells = filter(/^grass_\d+\.png$/);
-    const pathCells = filter(/^road_\d+\.png$/);
-    const roomCells = filter(/^wood_floor_\d+\.png$/);
-
-    console.log("borderCells", borderCells);
-    console.log("pathCells", pathCells);
-    console.log("roomCells", roomCells);
-
-    const model = new EvenSimpleTiledModel(resources, tileset, RNG.create(), 50, 50, [
-      new BorderConstraint(borderCells),
-      new RoomConstraint(roomCells, true, {
-        roomMaxW: 7,
-        roomMaxH: 5,
-        maxCorrDist: 20,
-        minCorrDistX: 5,
-        minCorrDistY: 10,
-      }),
-      new PathConstraint(pathCells),
-    ]);
-    console.time("model loop run");
-    let state;
-    for (; ;) {
-      console.time("model run");
-      state = await model.run(10000);
-      console.timeEnd("model run");
-      if (state !== Resolution.Decided) {
-        console.error("failed run model");
-      } else {
-        console.log("success run model");
-        break;
-      }
-    }
-    console.timeEnd("model loop run");
-    console.log("model", model);
-    model.graphics([]);
   }
 }

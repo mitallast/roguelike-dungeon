@@ -12,7 +12,7 @@ export interface InventoryController {
   handleInfo(drop: UsableDrop): DropInfo;
 }
 
-export abstract class BaseInventoryActionsController implements InventoryController {
+export abstract class BaseInventoryController implements InventoryController {
   readonly title: string;
   readonly inventory: Inventory;
 
@@ -33,7 +33,7 @@ export abstract class BaseInventoryActionsController implements InventoryControl
   protected abstract buttons(view: InventoryCellActionsView, drop: UsableDrop): void;
 }
 
-export abstract class BaseHeroInventoryActionsController extends BaseInventoryActionsController {
+export abstract class BaseHeroInventoryController extends BaseInventoryController {
   protected constructor(inventory: Inventory, title: string) {
     super(inventory, title);
   }
@@ -53,7 +53,7 @@ export abstract class BaseHeroInventoryActionsController extends BaseInventoryAc
   }
 }
 
-export class DefaultInventoryActionsController extends BaseHeroInventoryActionsController {
+export class HeroInventoryController extends BaseHeroInventoryController {
   constructor(inventory: Inventory) {
     super(inventory, "Inventory");
   }
@@ -69,7 +69,7 @@ export class DefaultInventoryActionsController extends BaseHeroInventoryActionsC
   }
 }
 
-export class SellingInventoryActionsController extends BaseHeroInventoryActionsController {
+export class SellingInventoryController extends BaseHeroInventoryController {
   private readonly _hero: Hero;
   private readonly _npc: Npc;
 
@@ -109,7 +109,7 @@ export class SellingInventoryActionsController extends BaseHeroInventoryActionsC
   }
 }
 
-export class BuyingInventoryActionsController extends BaseInventoryActionsController {
+export class BuyingInventoryController extends BaseInventoryController {
   private readonly _hero: Hero;
   private readonly _npc: Npc;
 

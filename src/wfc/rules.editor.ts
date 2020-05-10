@@ -1,6 +1,6 @@
 import {Resources} from "../resources";
 import {CellType, Direction, TilesetRules, TilesetRulesBuilder} from "./even.simple.tiled";
-import {Button, Colors, Layout} from "../ui";
+import {UIButton, Colors, UILayout} from "../ui";
 import * as PIXI from "pixi.js";
 
 interface TileConfig {
@@ -80,7 +80,7 @@ export class RulesEditor {
     div.appendChild(this._app.view);
     document.body.appendChild(div);
 
-    const layout = new Layout();
+    const layout = new UILayout();
     layout.offset(BORDER, BORDER);
     layout.commit();
     this.initButtons(layout);
@@ -104,8 +104,8 @@ export class RulesEditor {
     ).map(c => c.name);
   }
 
-  private initButtons(layout: Layout): void {
-    const dump = new Button({
+  private initButtons(layout: UILayout): void {
+    const dump = new UIButton({
       label: "Dump rules"
     });
     dump.position.set(layout.x, layout.y);
@@ -117,7 +117,7 @@ export class RulesEditor {
     layout.offset(dump.width, 0);
     layout.offset(BORDER, 0);
 
-    const load = new Button({
+    const load = new UIButton({
       label: "Load rules"
     });
     load.position.set(layout.x, layout.y);
@@ -129,7 +129,7 @@ export class RulesEditor {
     layout.offset(dump.width, 0);
     layout.offset(BORDER, 0);
 
-    const saveState = new Button({
+    const saveState = new UIButton({
       label: "Save state"
     });
     saveState.position.set(layout.x, layout.y);
@@ -141,7 +141,7 @@ export class RulesEditor {
     layout.offset(saveState.width, 0);
     layout.offset(BORDER, 0);
 
-    const loadState = new Button({
+    const loadState = new UIButton({
       label: "Load state"
     });
     loadState.position.set(layout.x, layout.y);
@@ -153,7 +153,7 @@ export class RulesEditor {
     layout.offset(loadState.width, 0);
     layout.offset(BORDER, 0);
 
-    const clear = new Button({
+    const clear = new UIButton({
       label: "Clear"
     });
     clear.position.set(layout.x, layout.y);
@@ -272,7 +272,7 @@ export class RulesEditor {
     this.refresh();
   }
 
-  private initMap(layout: Layout, direction: Direction, bottom: boolean): void {
+  private initMap(layout: UILayout, direction: Direction, bottom: boolean): void {
     // init top line
     layout.reset();
     layout.offset(SPRITE_SIZE + BORDER, 0);

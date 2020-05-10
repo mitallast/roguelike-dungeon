@@ -1,55 +1,42 @@
-import {ModalScene, SceneController} from "../scene";
-import {Button, Colors, HStack, SelectableGrid, Sizes, VStack} from "../ui";
-import {Dialog, DialogQuestion} from "./dialog";
 import * as PIXI from "pixi.js";
+import {ModalScene, SceneController} from "../scene";
+import {UIButton, HStack, VStack, Colors, Sizes} from "../ui";
+import {Dialog, DialogQuestion} from "./DialogManager";
 
-export class DialogModalScene extends HStack implements ModalScene {
-  private readonly _controller: SceneController;
+export class DialogModalScene extends ModalScene {
   private readonly _dialog: Dialog;
-
-  private _selectable: SelectableGrid | null = null;
 
   private _dialogView: VStack | null = null;
   private _questionView: DialogQuestionView | null = null;
-  private _answers: Button[] = [];
+  private _answers: UIButton[] = [];
 
   constructor(controller: SceneController, dialog: Dialog) {
-    super({
-      background: {color: Colors.background},
-    });
-    this._controller = controller;
+    super(controller, "Dialog");
     this._dialog = dialog;
   }
 
   init(): void {
-    this._selectable = new SelectableGrid(this._controller.joystick);
+    super.init();
+
+    const container = new HStack({padding: 0});
+    this.addChild(container);
 
     const iconView = new VStack({
       spacing: 0,
-      background: {color: Colors.uiBackground},
+      backgroundColor: Colors.uiBackground,
     });
-    this.addChild(iconView);
+    container.addChild(iconView);
 
     const icon = this._controller.resources.animated(this._dialog.npc.name + "_idle");
     icon.width = icon.width * 4;
     icon.height = icon.height * 4;
     iconView.addChild(icon);
 
-    this._dialogView = new VStack({
-      padding: 0
-    });
-    this.addChild(this._dialogView);
+    this._dialogView = new VStack({padding: 0});
+    container.addChild(this._dialogView);
 
     this._questionView = new DialogQuestionView(300);
     this._dialogView.addChild(this._questionView);
-
-    this.position.set(
-      (this._controller.app.screen.width >> 1) - (this.width >> 1),
-      (this._controller.app.screen.height >> 1) - (this.height >> 1),
-    );
-
-    this._controller.stage.addChild(this);
-    this._controller.app.ticker.add(this.handleInput, this);
 
     this._dialog.question.subscribe(this.onQuestion, this);
     this._dialog.start();
@@ -57,16 +44,14 @@ export class DialogModalScene extends HStack implements ModalScene {
 
   destroy(): void {
     this._dialog.question.unsubscribe(this.onQuestion, this);
-    this._controller.app.ticker.remove(this.handleInput, this);
-    this._selectable = null;
-    super.destroy({children: true});
+    super.destroy();
   }
 
   private onQuestion(question: DialogQuestion): void {
     for (let i = 0; i < this._answers.length; i++) {
       const answer = this._answers[i];
       answer.destroy();
-      this._selectable!.remove(0, i);
+      this._selectable!.remove(0, i + 1);
     }
     this._selectable!.reset();
     this._answers = [];
@@ -75,22 +60,19 @@ export class DialogModalScene extends HStack implements ModalScene {
 
     for (let i = 0; i < question.answers.length; i++) {
       const answer = question.answers[i];
-      const answerView = new Button({
+      const answerView = new UIButton({
         label: answer.text,
         width: 300,
       })
-      this._selectable!.set(0, i, answerView, answer.action.bind(answer));
+      this._selectable!.set(0, i + 1, answerView, answer.action.bind(answer));
       this._answers.push(answerView);
       this._dialogView!.addChild(answerView);
     }
+    this._selectable.select(0, 1);
 
     this.updateLayout();
 
     this._selectable!.reset();
-  }
-
-  private handleInput(): void {
-    this._selectable?.handleInput();
   }
 }
 

@@ -1,12 +1,11 @@
+import * as PIXI from "pixi.js";
 import {Scene, SceneController} from "./scene";
 import {GenerateOptions} from "./dungeon";
 import {Hero, HeroStateView} from "./characters";
-import {DefaultInventoryActionsController, InventoryView} from "./inventory";
-import {Button, Layout, SelectableGrid, Colors, Sizes} from "./ui";
-import * as PIXI from "pixi.js";
+import {HeroInventoryController, InventoryView} from "./inventory";
+import {UIButton, UILayout, UISelectableGrid, Colors, Sizes} from "./ui";
 
-export class UpdateHeroScene implements Scene {
-  private readonly _controller: SceneController;
+export class UpdateHeroScene extends Scene {
   private readonly _hero: Hero;
   private readonly _options: GenerateOptions;
 
@@ -16,19 +15,17 @@ export class UpdateHeroScene implements Scene {
   private _state: HeroStateView | null = null;
   private _inventory: InventoryView | null = null;
 
-  private readonly _selectable: SelectableGrid;
-
-  private readonly _buttons: Button[] = [];
+  private readonly _selectable: UISelectableGrid;
 
   constructor(controller: SceneController, options: GenerateOptions) {
-    this._controller = controller;
+    super(controller);
     this._hero = options.hero;
     this._options = options;
-    this._selectable = new SelectableGrid(controller.joystick);
+    this._selectable = new UISelectableGrid(controller.joystick);
   }
 
   init(): void {
-    const layout = new Layout();
+    const layout = new UILayout();
     this.renderTitle(layout);
     this.renderState(layout);
     this.renderIcon(layout);
@@ -42,25 +39,12 @@ export class UpdateHeroScene implements Scene {
     layout.commit();
     this.renderInventory(layout);
     this._selectable.reset();
-    this._controller.app.ticker.add(this.handleInput, this);
+    this._controller.ticker.add(this.handleInput, this);
   }
 
   destroy(): void {
-    this._controller.app.ticker.remove(this.handleInput, this);
-    this._title?.destroy();
-    this._sprite?.destroy();
-    this._spriteBg?.destroy();
-    this._state?.destroy();
-    this._inventory?.destroy();
-    for (const button of this._buttons) {
-      button.destroy();
-    }
-    this._sprite = null;
-    this._spriteBg = null;
-    this._title = null;
-    this._state = null;
-    this._inventory = null;
-    this._buttons.splice(0, 1000);
+    this._controller.ticker.remove(this.handleInput, this);
+    super.destroy({children: true});
   }
 
   pause(): void {
@@ -69,25 +53,25 @@ export class UpdateHeroScene implements Scene {
   resume(): void {
   }
 
-  private renderTitle(layout: Layout): void {
+  private renderTitle(layout: UILayout): void {
     this._title = new PIXI.BitmapText("ROGUELIKE DUNGEON", {font: {name: 'alagard', size: 64}});
     this._title.anchor = new PIXI.Point(0.5, 0);
-    this._title.position.set(this._controller.app.screen.width >> 1, 64);
-    this._controller.stage.addChild(this._title);
+    this._title.position.set(this._controller.screen.width >> 1, 64);
+    this.addChild(this._title);
     layout.offset(0, 128 + Sizes.uiMargin);
     layout.commit();
   }
 
-  private renderState(layout: Layout): void {
+  private renderState(layout: UILayout): void {
     layout.offset(Sizes.uiMargin, 0);
     layout.commit();
     this._state = new HeroStateView(this._hero, {fixedHPSize: true});
     this._state.position.set(layout.x, layout.y);
-    this._controller.stage.addChild(this._state);
+    this.addChild(this._state);
     layout.offset(0, this._state.getBounds().height);
   }
 
-  private renderIcon(layout: Layout): void {
+  private renderIcon(layout: UILayout): void {
     this._sprite = this._controller.resources.animated(this._hero.name + "_idle");
     const w = this._sprite.width;
     const h = this._sprite.height;
@@ -104,12 +88,12 @@ export class UpdateHeroScene implements Scene {
       .drawRect(0, 0, 256, trimmedH + (Sizes.uiMargin << 1))
       .endFill();
     this._spriteBg.position.set(layout.x, layout.y);
-    this._controller.stage.addChild(this._spriteBg, this._sprite);
+    this.addChild(this._spriteBg, this._sprite);
     layout.offset(0, trimmedH + (Sizes.uiMargin << 1));
   }
 
-  private renderIncreaseHealth(layout: Layout): void {
-    const button = new Button({
+  private renderIncreaseHealth(layout: UILayout): void {
+    const button = new UIButton({
       label: "+",
       width: 24,
       height: 24
@@ -117,14 +101,13 @@ export class UpdateHeroScene implements Scene {
     button.position.set(layout.x, layout.y);
     this._selectable.set(1, 0, button, () => this._hero.increaseHealth());
     this._selectable.merge(1, 0, 1, 12);
-    this._buttons.push(button);
-    this._controller.stage.addChild(button);
+    this.addChild(button);
     layout.offset(0, 24);
   }
 
-  private renderContinue(layout: Layout): void {
+  private renderContinue(layout: UILayout): void {
     layout.offset(0, Sizes.uiMargin);
-    const button = new Button({
+    const button = new UIButton({
       label: "Continue ...",
       width: 256,
       height: 32,
@@ -132,16 +115,15 @@ export class UpdateHeroScene implements Scene {
     button.position.set(layout.x, layout.y);
     this._selectable.set(0, 0, button, () => this._controller.generateDungeon(this._options));
     this._selectable.merge(0, 0, 1, 12);
-    this._buttons.push(button);
-    this._controller.stage.addChild(button);
+    this.addChild(button);
     layout.offset(0, 32);
   }
 
-  private renderInventory(layout: Layout): void {
-    const controller = new DefaultInventoryActionsController(this._hero.inventory);
+  private renderInventory(layout: UILayout): void {
+    const controller = new HeroInventoryController(this._hero.inventory);
     this._inventory = new InventoryView(this._controller.resources, controller, this._selectable, 2, 0);
     this._inventory.position.set(layout.x, layout.y);
-    this._controller.stage.addChild(this._inventory);
+    this.addChild(this._inventory);
   }
 
   private handleInput(): void {
