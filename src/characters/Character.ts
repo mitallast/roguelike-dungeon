@@ -173,7 +173,7 @@ export abstract class BaseCharacterController implements CharacterController {
     this._x = options.x;
     this._y = options.y;
     this.view = new CharacterView(
-      dungeon.container,
+      dungeon.layer,
       dungeon.controller.resources,
       options.zIndex,
       options.width,

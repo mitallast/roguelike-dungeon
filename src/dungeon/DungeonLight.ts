@@ -11,8 +11,7 @@ export interface Point {
 
 export class DungeonLight {
   readonly layer: PIXI.display.Layer;
-  readonly sprite: PIXI.Sprite;
-  readonly container: PIXI.Container;
+  readonly shadow: PIXI.Sprite;
 
   private readonly _dungeon: DungeonMap;
 
@@ -33,11 +32,8 @@ export class DungeonLight {
     });
     this.layer.clearColor = [0, 0, 0, 1];
 
-    this.container = new PIXI.Container();
-    this.layer.addChild(this.container);
-
-    this.sprite = new PIXI.Sprite(this.layer.getRenderTexture());
-    this.sprite.blendMode = PIXI.BLEND_MODES.MULTIPLY;
+    this.shadow = new PIXI.Sprite(this.layer.getRenderTexture());
+    this.shadow.blendMode = PIXI.BLEND_MODES.MULTIPLY;
 
     this._heroLightTexture = DungeonLight.gradient("white", 150);
     this._fountainRedTexture = DungeonLight.gradient("rgb(211,78,56)", 50);
@@ -56,9 +52,8 @@ export class DungeonLight {
     this._fountainBlueTexture.destroy();
     this._fountainRedTexture.destroy();
     this._bonfireTexture.destroy();
-    this.container.destroy();
     this.layer.destroy();
-    this.sprite.destroy();
+    this.shadow.destroy();
   }
 
   loadMap(): void {
@@ -129,7 +124,9 @@ export class DungeonLight {
         break;
     }
 
-    const light = new DungeonLightSource(position, maxDistance, texture, this.container);
+    const light = new DungeonLightSource(position, maxDistance, texture);
+    this.layer.addChild(light.mask);
+    this.layer.addChild(light.sprite);
     this._lights.push(light);
     this.renderLight(light);
   }
@@ -388,7 +385,7 @@ export class DungeonLightSource {
 
   private _rendered: Point | null = null;
 
-  constructor(position: Point, maxDistance: number, texture: PIXI.Texture, container: PIXI.Container) {
+  constructor(position: Point, maxDistance: number, texture: PIXI.Texture) {
     this.position = position;
     this.maxDistance = maxDistance;
 
@@ -399,9 +396,6 @@ export class DungeonLightSource {
     this.sprite.anchor.set(0.5, 0.5);
     this.sprite.mask = this.mask;
     this.sprite.blendMode = PIXI.BLEND_MODES.ADD;
-
-    container.addChild(this.mask);
-    container.addChild(this.sprite);
   }
 
   get dirty(): boolean {

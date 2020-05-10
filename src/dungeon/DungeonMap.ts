@@ -45,7 +45,7 @@ export class DungeonMap {
   readonly height: number;
   private readonly _cells: DungeonMapCell[][];
 
-  readonly container: PIXI.Container;
+  readonly layer: PIXI.display.Layer;
 
   readonly floorContainer: PIXI.Container;
   readonly light: DungeonLight;
@@ -70,22 +70,20 @@ export class DungeonMap {
       }
     }
 
-    this.container = new PIXI.Container();
-    this.container.zIndex = 0;
-    this.container.sortableChildren = true;
+    this.layer = new PIXI.display.Layer();
+    this.layer.sortableChildren = true;
 
     this.floorContainer = new PIXI.Container();
     this.floorContainer.zIndex = DungeonZIndexes.floor;
     this.floorContainer.sortableChildren = false;
     this.floorContainer.cacheAsBitmap = true;
-    this.container.addChild(this.floorContainer);
+    this.layer.addChild(this.floorContainer);
 
     this.light = new DungeonLight(this);
-    this.light.layer.zIndex = 1;
 
     this.camera = new DungeonCamera(controller);
-    this.camera.add(this.container);
-    this.camera.add(this.light.container);
+    this.camera.add(this.layer);
+    this.camera.add(this.light.layer);
   }
 
   destroy(): void {
@@ -95,7 +93,7 @@ export class DungeonMap {
       }
     }
     this.light.destroy();
-    this.container.destroy({children: true});
+    this.layer.destroy({children: true});
   }
 
   log(message: string): void {
@@ -141,7 +139,7 @@ export class DungeonMap {
   sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {
     const sprite = this.controller.resources.sprite(name);
     sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-    this.container.addChild(sprite);
+    this.layer.addChild(sprite);
     return sprite;
   }
 
@@ -149,7 +147,7 @@ export class DungeonMap {
     const animated = this.controller.resources.animated(name);
     animated.position.set(x * TILE_SIZE, y * TILE_SIZE);
     animated.play();
-    this.container.addChild(animated);
+    this.layer.addChild(animated);
     return animated;
   }
 }

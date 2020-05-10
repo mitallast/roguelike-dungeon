@@ -32,15 +32,15 @@ export class DungeonScene extends Scene {
     healthView.zIndex = 12;
     this.addChild(healthView);
 
-    this._dungeon.container.zIndex = 0;
-    this.addChild(this._dungeon.container);
+    this._dungeon.layer.zIndex = 0;
+    this.addChild(this._dungeon.layer);
 
     this._dungeon.light.layer.zIndex = 1;
     this.addChild(this._dungeon.light.layer);
 
-    this._dungeon.light.sprite.zIndex = 2;
-    this._dungeon.light.sprite.alpha = 0.8;
-    this.addChild(this._dungeon.light.sprite);
+    this._dungeon.light.shadow.zIndex = 2;
+    this._dungeon.light.shadow.alpha = 0.8;
+    this.addChild(this._dungeon.light.shadow);
 
     this.sortChildren();
 

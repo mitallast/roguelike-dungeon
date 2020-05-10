@@ -2,7 +2,7 @@ import {SceneController} from "../scene";
 
 export class DungeonCamera {
   private readonly _controller: SceneController;
-  private readonly _containers: PIXI.Container[] = [];
+  private readonly _layer: PIXI.display.Layer[] = [];
 
   private _x: number = 0;
   private _y: number = 0;
@@ -12,19 +12,19 @@ export class DungeonCamera {
     this._controller = controller;
   }
 
-  add(container: PIXI.Container): void {
-    this._containers.push(container);
+  add(layer: PIXI.display.Layer): void {
+    this._layer.push(layer);
     const screen = this._controller.screen;
     const x = (screen.width >> 1) - this._x * this._scale;
     const y = (screen.height >> 1) - this._y * this._scale;
-    container.position.set(x, y);
-    container.scale.set(this._scale, this._scale);
+    layer.position.set(x, y);
+    layer.scale.set(this._scale, this._scale);
   }
 
   set scale(scale: number) {
     this._scale = scale;
-    for (const container of this._containers) {
-      container.scale.set(scale, scale);
+    for (const layer of this._layer) {
+      layer.scale.set(scale, scale);
     }
   }
 
@@ -34,8 +34,8 @@ export class DungeonCamera {
     const screen = this._controller.screen;
     const posX = (screen.width >> 1) - this._x * this._scale;
     const posY = (screen.height >> 1) - this._y * this._scale;
-    for (const container of this._containers) {
-      container.position.set(posX, posY);
+    for (const layer of this._layer) {
+      layer.position.set(posX, posY);
     }
   }
 }

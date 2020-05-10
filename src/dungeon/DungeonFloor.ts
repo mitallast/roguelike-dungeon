@@ -28,7 +28,7 @@ export abstract class DungeonFloor implements DungeonObject {
     this.sprite.zIndex = DungeonZIndexes.floor;
     this.sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
     if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.dungeon.container.addChild(this.sprite);
+      this.dungeon.layer.addChild(this.sprite);
     } else {
       this.dungeon.floorContainer.addChild(this.sprite);
     }

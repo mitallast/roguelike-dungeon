@@ -76,13 +76,11 @@ export class DungeonBonfire implements DungeonObject {
       this._sprite.zIndex = DungeonZIndexes.static + this.y * DungeonZIndexes.row;
       this._sprite.loop = false;
       this._sprite.onComplete = (): void => this.lit();
-      this._dungeon.light.addLight(
-        {
-          x: this.x * TILE_SIZE + 8,
-          y: this.y * TILE_SIZE - TILE_SIZE,
-        },
-        DungeonLightType.BONFIRE
+      const point = new PIXI.Point(
+        this.x * TILE_SIZE + (TILE_SIZE >> 1),
+        this.y * TILE_SIZE - TILE_SIZE
       );
+      this._dungeon.light.addLight(point, DungeonLightType.BONFIRE);
     }
   }
 
