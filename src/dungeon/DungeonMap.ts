@@ -4,13 +4,12 @@ import {HeroController} from "../characters";
 import {DungeonLight} from "./DungeonLight";
 import {SceneController} from "../scene";
 import {RNG} from "../rng";
-import {
-  DungeonObject
-} from "./DungeonObject";
+import {DungeonObject} from "./DungeonObject";
 import {DefaultDungeonFloor, DungeonFloor} from "./DungeonFloor";
 import {DungeonWall} from "./DungeonWall";
 import {DungeonDrop} from "./DungeonDrop";
 import {DungeonLadder} from "./DungeonLadder";
+import {DungeonCamera} from "./DungeonCamera";
 
 const TILE_SIZE = 16;
 
@@ -38,20 +37,21 @@ export class DungeonMap {
   readonly controller: SceneController;
   readonly ticker: PIXI.Ticker;
   readonly rng: RNG;
-
   readonly seed: number;
+
   readonly level: number;
-
   readonly width: number;
-  readonly height: number;
 
+  readonly height: number;
   private readonly _cells: DungeonMapCell[][];
 
   readonly container: PIXI.Container;
+
   readonly floorContainer: PIXI.Container;
   readonly light: DungeonLight;
-  readonly lighting: PIXI.Sprite;
   readonly scale: number = 2;
+
+  readonly camera: DungeonCamera;
 
   constructor(controller: SceneController, ticker: PIXI.Ticker, rng: RNG, seed: number, level: number, width: number, height: number) {
     this.controller = controller;
@@ -73,7 +73,6 @@ export class DungeonMap {
     this.container = new PIXI.Container();
     this.container.zIndex = 0;
     this.container.sortableChildren = true;
-    this.container.scale.set(this.scale, this.scale);
 
     this.floorContainer = new PIXI.Container();
     this.floorContainer.zIndex = DungeonZIndexes.floor;
@@ -83,11 +82,10 @@ export class DungeonMap {
 
     this.light = new DungeonLight(this);
     this.light.layer.zIndex = 1;
-    this.light.container.scale.set(this.scale, this.scale);
 
-    this.lighting = new PIXI.Sprite(this.light.layer.getRenderTexture());
-    this.lighting.blendMode = PIXI.BLEND_MODES.MULTIPLY;
-    this.lighting.zIndex = 2;
+    this.camera = new DungeonCamera(controller);
+    this.camera.add(this.container);
+    this.camera.add(this.light.container);
   }
 
   destroy(): void {
@@ -96,7 +94,6 @@ export class DungeonMap {
         this._cells[y][x].destroy();
       }
     }
-    this.lighting.destroy();
     this.light.destroy();
     this.container.destroy({children: true});
   }
@@ -139,14 +136,6 @@ export class DungeonMap {
       }
     }
     return true;
-  }
-
-  camera(x: number, y: number): void {
-    const screen = this.controller.screen;
-    const posX = (screen.width >> 1) - x * this.scale;
-    const posY = (screen.height >> 1) - y * this.scale;
-    this.container.position.set(posX, posY);
-    this.light.container.position.set(posX, posY);
   }
 
   sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {

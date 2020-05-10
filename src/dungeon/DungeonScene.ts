@@ -38,9 +38,9 @@ export class DungeonScene extends Scene {
     this._dungeon.light.layer.zIndex = 1;
     this.addChild(this._dungeon.light.layer);
 
-    this._dungeon.lighting.zIndex = 2;
-    this._dungeon.lighting.alpha = 0.8;
-    this.addChild(this._dungeon.lighting);
+    this._dungeon.light.sprite.zIndex = 2;
+    this._dungeon.light.sprite.alpha = 0.8;
+    this.addChild(this._dungeon.light.sprite);
 
     this.sortChildren();
 

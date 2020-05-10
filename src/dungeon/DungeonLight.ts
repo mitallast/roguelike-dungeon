@@ -11,7 +11,9 @@ export interface Point {
 
 export class DungeonLight {
   readonly layer: PIXI.display.Layer;
+  readonly sprite: PIXI.Sprite;
   readonly container: PIXI.Container;
+
   private readonly _dungeon: DungeonMap;
 
   private readonly _heroLightTexture: PIXI.Texture;
@@ -34,6 +36,9 @@ export class DungeonLight {
     this.container = new PIXI.Container();
     this.layer.addChild(this.container);
 
+    this.sprite = new PIXI.Sprite(this.layer.getRenderTexture());
+    this.sprite.blendMode = PIXI.BLEND_MODES.MULTIPLY;
+
     this._heroLightTexture = DungeonLight.gradient("white", 150);
     this._fountainRedTexture = DungeonLight.gradient("rgb(211,78,56)", 50);
     this._fountainBlueTexture = DungeonLight.gradient("rgb(86,152,204)", 50);
@@ -53,6 +58,7 @@ export class DungeonLight {
     this._bonfireTexture.destroy();
     this.container.destroy();
     this.layer.destroy();
+    this.sprite.destroy();
   }
 
   loadMap(): void {

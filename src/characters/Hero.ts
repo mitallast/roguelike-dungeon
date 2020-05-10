@@ -158,7 +158,7 @@ export class HeroController extends BaseCharacterController {
       width: 1,
       height: 1,
       zIndex: DungeonZIndexes.hero,
-      onPosition: dungeon.camera.bind(dungeon),
+      onPosition: (x: number, y: number) => dungeon.camera.setPosition(x, y),
     });
     this.character = character;
     this._fsm = this.fsm();

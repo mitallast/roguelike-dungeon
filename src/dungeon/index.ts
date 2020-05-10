@@ -1,5 +1,6 @@
 export * from "./DungeonBonfire"
 export * from "./DungeonBonfireModalScene";
+export * from "./DungeonCamera";
 export * from "./DungeonDrop";
 export * from "./DungeonFloor";
 export * from "./DungeonGenerator"
