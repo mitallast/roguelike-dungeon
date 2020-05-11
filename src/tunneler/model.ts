@@ -103,6 +103,33 @@ export class Room {
     return this.inside[Math.floor(Math.random() * this.inside.length)];
   }
 
+  center(): Point {
+    // find centroid
+    let centroidX = 0;
+    let centroidY = 0;
+    for (const point of this.inside) {
+      centroidX += point.x;
+      centroidY += point.y;
+    }
+    centroidX /= this.inside.length;
+    centroidY /= this.inside.length;
+
+    // chebyshev distance
+    const distance = (point: Point): number => Math.max(Math.abs(centroidX - point.x), Math.abs(centroidY - point.y));
+
+    // find closest to centroid
+    let closest = this.inside[0];
+    let closestDistance = distance(closest);
+    for (const point of this.inside) {
+      const pointDistance = distance(point);
+      if (pointDistance < closestDistance) {
+        closest = point;
+        closestDistance = pointDistance;
+      }
+    }
+    return closest;
+  }
+
   static compare(first: Room, second: Room): number {
     return first.inside.length - second.inside.length;
   }

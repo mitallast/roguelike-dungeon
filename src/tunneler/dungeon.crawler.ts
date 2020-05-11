@@ -135,6 +135,10 @@ export class DungeonCrawler {
     this._rooms.push(r);
   }
 
+  get rooms(): Room[] {
+    return [...this._rooms];
+  }
+
   private isChecked(pos: Point): boolean {
     console.assert((pos.x < this.config.width) && (pos.y < this.config.height) && (pos.x >= 0) && (pos.y >= 0));
     return this._mapFlagsDirections[pos.x * this.config.height + pos.y];

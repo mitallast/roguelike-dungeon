@@ -735,6 +735,11 @@ export class DungeonCrawlerConstraint implements Constraint {
   private readonly _config: Config;
 
   private _model: EvenSimpleTiledModel | null = null;
+  private _crawler: DungeonCrawler | null = null;
+
+  get crawler(): DungeonCrawler | null {
+    return this._crawler;
+  }
 
   constructor(config: Config) {
     this._config = config;
@@ -747,7 +752,7 @@ export class DungeonCrawlerConstraint implements Constraint {
   onClear(): void {
     const model = this._model!;
     console.time("crawler");
-    const crawler = new DungeonCrawler(this._config, model.rng);
+    const crawler = this._crawler = new DungeonCrawler(this._config, model.rng);
     crawler.generate();
     console.timeEnd("crawler");
 
