@@ -1,14 +1,30 @@
+export interface FsmCondition {
+  (): boolean;
+}
+
+export interface FsmAction {
+  (): void;
+}
+
+export interface FsmUpdate {
+  (deltaTime: number): void;
+}
+
+export interface FsmHandle {
+  (event: any): void;
+}
+
 export class FiniteStateMachine<StateType extends keyof any> {
-  private readonly _states: Record<StateType, FiniteState<StateType>>;
+  private readonly _states: Record<StateType, FsmState<StateType>>;
   private readonly _initial: StateType;
   private _current: StateType;
 
   constructor(initial: StateType, states: StateType[]) {
-    const builder: Partial<Record<StateType, FiniteState<StateType>>> = {};
+    const builder: Partial<Record<StateType, FsmState<StateType>>> = {};
     for (const state of states) {
-      builder[state] = new FiniteState();
+      builder[state] = new FsmState();
     }
-    this._states = builder as Record<StateType, FiniteState<StateType>>;
+    this._states = builder as Record<StateType, FsmState<StateType>>;
     this._initial = initial;
     this._current = this._initial;
   }
@@ -21,7 +37,7 @@ export class FiniteStateMachine<StateType extends keyof any> {
     return this._current;
   }
 
-  state(state: StateType): FiniteState<StateType> {
+  state(state: StateType): FsmState<StateType> {
     return this._states[state];
   }
 
@@ -59,34 +75,34 @@ export class FiniteStateMachine<StateType extends keyof any> {
   }
 }
 
-export class FiniteState<StateType extends keyof any> {
-  private readonly _onEnter: (() => void)[] = [];
-  private readonly _onUpdate: ((deltaTime: number) => void)[] = [];
-  private readonly _onEvent: ((event: any) => void)[] = [];
-  private readonly _onExit: (() => void)[] = [];
-  private readonly _transitions: FiniteStateTransition<StateType>[] = [];
+export class FsmState<StateType extends keyof any> {
+  private readonly _onEnter: FsmAction[] = [];
+  private readonly _onUpdate: FsmUpdate[] = [];
+  private readonly _onEvent: FsmHandle[] = [];
+  private readonly _onExit: FsmAction[] = [];
+  private readonly _transitions: FsmTransition<StateType>[] = [];
   private readonly _nested: FiniteStateMachine<any>[] = [];
 
   get isFinal(): boolean {
     return this._transitions.length === 0;
   }
 
-  onEnter(listener: () => void): this {
-    this._onEnter.push(listener);
+  onEnter(action: FsmAction): this {
+    this._onEnter.push(action);
     return this;
   }
 
-  onUpdate(listener: (deltaTime: number) => void): this {
-    this._onUpdate.push(listener);
+  onUpdate(update: FsmUpdate): this {
+    this._onUpdate.push(update);
     return this;
   }
 
-  onEvent(listener: (event: any) => void): this {
-    this._onEvent.push(listener);
+  onEvent(handler: FsmHandle): this {
+    this._onEvent.push(handler);
     return this;
   }
 
-  onExit(listener: () => void): this {
+  onExit(listener: FsmAction): this {
     this._onExit.push(listener);
     return this;
   }
@@ -96,8 +112,8 @@ export class FiniteState<StateType extends keyof any> {
     return this;
   }
 
-  transitionTo(state: StateType): FiniteStateTransition<StateType> {
-    const transition = new FiniteStateTransition<StateType>(state);
+  transitionTo(state: StateType): FsmTransition<StateType> {
+    const transition = new FsmTransition<StateType>(state);
     this._transitions.push(transition);
     return transition;
   }
@@ -149,9 +165,9 @@ export class FiniteState<StateType extends keyof any> {
   }
 }
 
-export class FiniteStateTransition<StateType extends keyof any> {
-  private readonly _conditions: (() => boolean)[] = [];
-  private readonly _actions: (() => void)[] = [];
+export class FsmTransition<StateType extends keyof any> {
+  private readonly _conditions: FsmCondition[] = [];
+  private readonly _actions: FsmAction[] = [];
 
   readonly to: StateType;
 
@@ -164,7 +180,7 @@ export class FiniteStateTransition<StateType extends keyof any> {
     return this;
   }
 
-  action(action: () => void): this {
+  action(action: FsmAction): this {
     this._actions.push(action);
     return this;
   }
