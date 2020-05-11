@@ -113,16 +113,16 @@ export interface CharacterControllerOptions extends DungeonObjectOptions {
 }
 
 export abstract class CharacterController extends DungeonObject {
-  abstract readonly character: Character;
-
-  readonly view: CharacterView;
-  readonly animator: Animator;
-  readonly dungeon: DungeonMap;
-
+  protected readonly _fsm: FiniteStateMachine<any>;
+  protected readonly _dungeon: DungeonMap;
   private _x: number;
   private _y: number;
   private _newX: number = -1;
   private _newY: number = -1;
+
+  abstract readonly character: Character;
+  readonly view: CharacterView;
+  readonly animator: Animator;
 
   get x(): number {
     return this._x;
@@ -140,8 +140,6 @@ export abstract class CharacterController extends DungeonObject {
     return this._newY;
   }
 
-  protected abstract readonly _fsm: FiniteStateMachine<any>;
-
   protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
     super(dungeon.registry, {
       static: false,
@@ -149,7 +147,7 @@ export abstract class CharacterController extends DungeonObject {
       height: options.height,
       width: options.width,
     });
-    this.dungeon = dungeon;
+    this._dungeon = dungeon;
     this._x = options.x;
     this._y = options.y;
     this.view = new CharacterView(
@@ -160,6 +158,7 @@ export abstract class CharacterController extends DungeonObject {
       options.onPosition
     );
     this.animator = new Animator(this.view);
+    this._fsm = this.fsm();
   }
 
   init(): void {
@@ -168,19 +167,19 @@ export abstract class CharacterController extends DungeonObject {
     this.character.dead.subscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this._fsm.start();
-    this.dungeon.ticker.add(this._fsm.update, this._fsm);
+    this._dungeon.ticker.add(this._fsm.update, this._fsm);
   }
 
   destroy(): void {
     super.destroy();
-    this.dungeon.ticker.remove(this._fsm.update, this._fsm);
-    // this._fsm.stop(); // @todo implement stop?
+    this._dungeon.ticker.remove(this._fsm.update, this._fsm);
+    this._fsm.stop();
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
     this.character.dead.unsubscribe(this.handleDead, this);
     this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
-    this.dungeon.remove(this._x, this._y, this);
+    this._dungeon.remove(this._x, this._y, this);
     if (this._newX !== -1 && this._newY !== -1) {
-      this.dungeon.remove(this._newX, this._newY, this);
+      this._dungeon.remove(this._newX, this._newY, this);
     }
     this.view.destroy();
   }
@@ -209,10 +208,10 @@ export abstract class CharacterController extends DungeonObject {
 
   setPosition(x: number, y: number): void {
     this.resetDestination();
-    this.dungeon.remove(this._x, this._y, this);
+    this._dungeon.remove(this._x, this._y, this);
     this._x = Math.floor(x);
     this._y = Math.floor(y);
-    this.dungeon.set(this._x, this._y, this);
+    this._dungeon.set(this._x, this._y, this);
     this.view.setPosition(x, y);
   }
 
@@ -220,7 +219,7 @@ export abstract class CharacterController extends DungeonObject {
     this.resetDestination();
     this._newX = x;
     this._newY = y;
-    this.dungeon.set(this._newX, this._newY, this);
+    this._dungeon.set(this._newX, this._newY, this);
   }
 
   tryMove(dx: number, dy: number): boolean {
@@ -234,7 +233,7 @@ export abstract class CharacterController extends DungeonObject {
     if (dx < 0) this.view.isLeft = true;
     const newX = this._x + dx;
     const newY = this._y + dy;
-    if (this.dungeon.available(newX, newY, this)) {
+    if (this._dungeon.available(newX, newY, this)) {
       this.setDestination(newX, newY);
       return true;
     } else {
@@ -261,8 +260,8 @@ export abstract class CharacterController extends DungeonObject {
 
   resetDestination(): void {
     if (this._newX !== -1 && this._newY !== -1) {
-      this.dungeon.remove(this._newX, this._newY, this);
-      this.dungeon.set(this._x, this._y, this);
+      this._dungeon.remove(this._newX, this._newY, this);
+      this._dungeon.set(this._x, this._y, this);
       this._newX = -1;
       this._newY = -1;
     }
@@ -274,7 +273,7 @@ export abstract class CharacterController extends DungeonObject {
   }
 
   findPath(character: CharacterController, maxDistance: number = 15): PathPoint[] {
-    const dungeon = this.dungeon;
+    const dungeon = this._dungeon;
     const pf = new PathFinding(dungeon.width, dungeon.height);
 
     const minX = Math.max(0, this._x - maxDistance);
@@ -309,14 +308,14 @@ export abstract class CharacterController extends DungeonObject {
    * @param e2 second segment end
    * @return distance between two line segments in 1d
    */
-  static segmentDistance(s1: number, e1: number, s2: number, e2: number): number {
+  segmentDistance(s1: number, e1: number, s2: number, e2: number): number {
     return Math.max(0, Math.max(s1, s2) - Math.min(e1, e2));
   }
 
   distanceTo(that: CharacterController): number {
     // Chebyshev distance
-    const dx = CharacterController.segmentDistance(this.x, this.x + this.width - 1, that.x, that.x + that.width - 1);
-    const dy = CharacterController.segmentDistance(this.y - this.height + 1, this.y, that.y - that.height + 1, that.y);
+    const dx = this.segmentDistance(this.x, this.x + this.width - 1, that.x, that.x + that.width - 1);
+    const dy = this.segmentDistance(this.y - this.height + 1, this.y, that.y - that.height + 1, that.y);
     return Math.max(dx, dy);
   }
 
@@ -328,12 +327,12 @@ export abstract class CharacterController extends DungeonObject {
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
 
     const aMin = scanLeft ? 0 : posX + (width - 1);
-    const aMax = scanRight ? this.dungeon.width - 1 : posX + (width - 1);
+    const aMax = scanRight ? this._dungeon.width - 1 : posX + (width - 1);
     const bMin = object.x;
     const bMax = bMin + object.width - 1;
 
     // check distance as direction cast
-    return CharacterController.segmentDistance(aMin, aMax, bMin, bMax) === 0;
+    return this.segmentDistance(aMin, aMax, bMin, bMax) === 0;
   }
 
   metric(a: DungeonMapCell): number {
@@ -353,16 +352,16 @@ export abstract class CharacterController extends DungeonObject {
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
 
     const scanMinX = scanLeft ? Math.max(0, posX - maxDistance) : posX + (width - 1);
-    const scanMaxX = scanRight ? Math.min(this.dungeon.width - 1, posX + (width - 1) + maxDistance) : posX;
+    const scanMaxX = scanRight ? Math.min(this._dungeon.width - 1, posX + (width - 1) + maxDistance) : posX;
 
     const scanMinY = Math.max(0, posY - height + 1 - maxDistance);
-    const scanMaxY = Math.min(this.dungeon.height - 1, posY + maxDistance);
+    const scanMaxY = Math.min(this._dungeon.height - 1, posY + maxDistance);
 
     const cells: DungeonMapCell[] = [];
 
     for (let scanY = scanMinY; scanY <= scanMaxY; scanY++) {
       for (let scanX = scanMinX; scanX <= scanMaxX; scanX++) {
-        const cell = this.dungeon.cell(scanX, scanY);
+        const cell = this._dungeon.cell(scanX, scanY);
         if (predicate(cell)) {
           cells.push(cell);
         }
@@ -416,13 +415,15 @@ export abstract class CharacterController extends DungeonObject {
 
       if (x0 === x1 && y0 === y1) break;
 
-      const cell = this.dungeon.cell(x0, y0);
+      const cell = this._dungeon.cell(x0, y0);
       if (!cell.hasFloor) return false;
       if (cell.collide(this)) return false;
     }
 
     return true;
   }
+
+  protected abstract fsm(): FiniteStateMachine<any>;
 
   protected idle(): FiniteStateMachine<IdleState> {
     const character = this.character;

@@ -366,9 +366,6 @@ export class Npc extends Character {
 
 export class NpcController extends CharacterController {
   readonly character: Npc;
-  readonly interacting: boolean = true;
-
-  protected readonly _fsm: FiniteStateMachine<IdleState>;
 
   constructor(config: NpcConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -377,19 +374,14 @@ export class NpcController extends CharacterController {
       x: x,
       y: y,
       static: false,
-      interacting: false,
+      interacting: true,
       zIndex: DungeonZIndexes.character
     });
     this.character = new Npc(config);
-    const weapon = Weapon.select(this.dungeon.rng, config.weapons);
+    const weapon = Weapon.select(this._dungeon.rng, config.weapons);
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = this.idle();
-    this._fsm.state(IdleState.COMPLETE)
-      .transitionTo(IdleState.PLAY)
-      .action(() => "npc idle complete");
-
     this.initSkills(dungeon.controller, config);
     this.init();
   }
@@ -415,7 +407,7 @@ export class NpcController extends CharacterController {
                 break;
               case TradingType.WEAPONS:
                 for (const config of weaponConfigs) {
-                  if (config.level <= this.dungeon.level + 2) {
+                  if (config.level <= this._dungeon.level + 2) {
                     backpack.add(new Weapon(config));
                   }
                 }
@@ -439,6 +431,14 @@ export class NpcController extends CharacterController {
 
   interact(hero: HeroController): void {
     this.lookAt(hero);
-    this.dungeon.controller.showDialog(hero.character, this.character);
+    this._dungeon.controller.showDialog(hero.character, this.character);
+  }
+
+  protected fsm(): FiniteStateMachine<any> {
+    const fsm = this.idle();
+    fsm.state(IdleState.COMPLETE)
+      .transitionTo(IdleState.PLAY)
+      .action(() => "npc idle complete");
+    return fsm;
   }
 }

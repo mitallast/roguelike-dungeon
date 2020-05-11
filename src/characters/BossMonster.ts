@@ -1,9 +1,8 @@
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {MonsterCategory, Monster, MonsterType, MonsterHitController} from "./Monster";
+import {Monster, MonsterCategory, MonsterController, MonsterHitController, MonsterType} from "./Monster";
 import {Colors} from "../ui";
-import {WeaponConfig, monsterWeapons, Weapon} from "../drop";
+import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
 import {BossHealthView} from "./BossHealthView";
-import {SpawningMonsterController} from "./SpawningMonster";
 import {FiniteStateMachine} from "../fsm";
 
 export interface BossConfig {
@@ -34,28 +33,8 @@ export const bossMonsters: BossConfig[] = [
   {name: "big_demon", category: MonsterCategory.DEMON, weapons: []},
 ];
 
-export class BossMonster extends Monster {
-  constructor(config: BossConfig, level: number) {
-    super({
-      name: config.name,
-      category: config.category,
-      type: MonsterType.SUMMON,
-      speed: 0.5,
-      healthMax: 50 + Math.floor(level * 10),
-      level: level,
-      luck: 0.9,
-      baseDamage: 5 + 0.5 * level,
-      xp: 100 + 50 * level,
-      spawn: 5,
-    });
-  }
-}
-
-export class BossMonsterController extends SpawningMonsterController {
-  readonly character: BossMonster;
-  readonly maxDistance: number = 7;
-
-  protected readonly _fsm: FiniteStateMachine<BossState>;
+export class BossMonsterController extends MonsterController {
+  readonly character: Monster;
 
   constructor(config: BossConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -65,14 +44,26 @@ export class BossMonsterController extends SpawningMonsterController {
       y: y,
       zIndex: DungeonZIndexes.character,
       static: false,
-      interacting: false
+      interacting: false,
+      maxDistance: 7,
     });
-    this.character = new BossMonster(config, dungeon.level);
-    const weapon = Weapon.select(this.dungeon.rng, config.weapons);
+    this.character = new Monster({
+      name: config.name,
+      category: config.category,
+      type: MonsterType.SUMMON,
+      speed: 0.7,
+      healthMax: 200 + 20 * dungeon.level,
+      level: dungeon.level,
+      luck: 0.9,
+      baseDamage: 5 + 0.5 * dungeon.level,
+      xp: 200 + 20 * dungeon.level,
+    });
+
+    const weapon = Weapon.select(this._dungeon.rng, config.weapons);
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = this.fsm();
+
     this.init();
 
     const screen = dungeon.controller.screen;
@@ -83,8 +74,8 @@ export class BossMonsterController extends SpawningMonsterController {
   }
 
   protected onDead(): void {
-    this.dungeon.controller.showBanner({
-      text: this.dungeon.rng.boolean() ? "VICTORY ACHIEVED" : "YOU DEFEATED",
+    this._dungeon.controller.showBanner({
+      text: this._dungeon.rng.boolean() ? "VICTORY ACHIEVED" : "YOU DEFEATED",
       color: Colors.uiYellow
     });
     for (let i = 0; i < 9; i++) {
@@ -93,7 +84,7 @@ export class BossMonsterController extends SpawningMonsterController {
     this.destroy();
   }
 
-  private fsm(): FiniteStateMachine<BossState> {
+  protected fsm(): FiniteStateMachine<BossState> {
     const fsm = new FiniteStateMachine<BossState>(BossState.PATROLLING, [
       BossState.PATROLLING,
       BossState.ALARM,
@@ -173,11 +164,6 @@ export class BossMonsterController extends SpawningMonsterController {
     fsm.state(BossPatrollingState.IDLE)
       .transitionTo(BossPatrollingState.GO_ALARM)
       .condition(() => this.hasPath);
-
-    fsm.state(BossPatrollingState.IDLE)
-      .transitionTo(BossPatrollingState.IDLE)
-      .condition(() => idle.isFinal)
-      .condition(() => this.spawnMinions());
 
     fsm.state(BossPatrollingState.IDLE)
       .transitionTo(BossPatrollingState.RANDOM_MOVE)
@@ -278,7 +264,7 @@ export class BossMonsterController extends SpawningMonsterController {
   }
 
   private attack(): FiniteStateMachine<BossAttackState> {
-    const rng = this.dungeon.rng;
+    const rng = this._dungeon.rng;
 
     const fsm = new FiniteStateMachine<BossAttackState>(BossAttackState.INITIAL, [
       BossAttackState.INITIAL,

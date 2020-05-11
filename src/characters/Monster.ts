@@ -17,16 +17,15 @@ export enum MonsterType {
   MINION = 3,
 }
 
-export abstract class Monster extends Character {
+export class Monster extends Character {
   readonly level: number;
   readonly luck: number;
   readonly xp: number;
 
   readonly category: MonsterCategory;
   readonly type: MonsterType;
-  readonly spawn: number;
 
-  protected constructor(options: {
+  constructor(options: {
     name: string;
     speed: number;
     healthMax: number;
@@ -36,7 +35,6 @@ export abstract class Monster extends Character {
     xp: number;
     category: MonsterCategory;
     type: MonsterType;
-    spawn: number;
   }) {
     super({
       name: options.name,
@@ -50,8 +48,11 @@ export abstract class Monster extends Character {
     this.xp = options.xp;
     this.category = options.category;
     this.type = options.type;
-    this.spawn = options.spawn;
   }
+}
+
+export interface MonsterControllerOptions extends CharacterControllerOptions {
+  readonly maxDistance: number;
 }
 
 export abstract class MonsterController extends CharacterController {
@@ -61,9 +62,8 @@ export abstract class MonsterController extends CharacterController {
     };
 
   abstract readonly character: Monster;
-  abstract readonly maxDistance: number;
-  readonly interacting: boolean = false;
 
+  readonly maxDistance: number;
   private _path: PathPoint[] = [];
   private _hero: HeroController | null = null;
 
@@ -71,13 +71,14 @@ export abstract class MonsterController extends CharacterController {
     return this._path.length > 0;
   }
 
-  protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
+  protected constructor(dungeon: DungeonMap, options: MonsterControllerOptions) {
     super(dungeon, options);
+    this.maxDistance = options.maxDistance
   }
 
   protected onKilledBy(by: Character): void {
     if (by && by instanceof Hero) {
-      this.dungeon.log(`${this.character.name} killed by ${by.name}`);
+      this._dungeon.log(`${this.character.name} killed by ${by.name}`);
       by.addXp(this.character.xp);
     }
   }
@@ -98,7 +99,7 @@ export abstract class MonsterController extends CharacterController {
   }
 
   protected scanHeroes(direction: ScanDirection, maxDistance: number = this.maxDistance): HeroController[] {
-    return this.dungeon.registry.query<HeroController>({
+    return this._dungeon.registry.query<HeroController>({
       type: HeroController.type,
       filter: hero => {
         return !hero.character.dead.get() &&
@@ -170,7 +171,7 @@ export abstract class MonsterController extends CharacterController {
   }
 
   private scanMonsters(): MonsterController[] {
-    return this.dungeon.registry.query<MonsterController>({
+    return this._dungeon.registry.query<MonsterController>({
       type: MonsterController.type,
       filter: monster => {
         return !monster.character.dead.get() &&

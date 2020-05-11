@@ -17,7 +17,7 @@ export const heroCharacterNames = [
   "wizard_m",
 ];
 
-export interface GlobalHeroState {
+export interface HeroSave {
   readonly coins: number;
   readonly baseDamage: number;
   readonly level: number;
@@ -28,7 +28,7 @@ export interface GlobalHeroState {
   readonly speed: number;
 }
 
-const defaultGlobalState: GlobalHeroState = {
+const initial: HeroSave = {
   coins: 0,
   baseDamage: 3,
   level: 1,
@@ -95,7 +95,7 @@ export class Hero extends Character {
     });
   }
 
-  private constructor(name: string, state: GlobalHeroState, persistent: PersistentState) {
+  private constructor(name: string, state: HeroSave, persistent: PersistentState) {
     super({
       name: name,
       speed: state.speed,
@@ -126,7 +126,7 @@ export class Hero extends Character {
     this._persistent.global.save(this.name, this.state);
   }
 
-  private get state(): GlobalHeroState {
+  private get state(): HeroSave {
     return {
       coins: this._coins.get(),
       baseDamage: this._baseDamage.get(),
@@ -140,7 +140,7 @@ export class Hero extends Character {
   }
 
   static load(name: string, persistent: PersistentState): Hero {
-    const state: GlobalHeroState = persistent.global.load(name) || defaultGlobalState;
+    const state: HeroSave = persistent.global.load(name) || initial;
     return new Hero(name, state, persistent);
   }
 }
@@ -152,9 +152,6 @@ export class HeroController extends CharacterController {
     };
 
   readonly character: Hero;
-  readonly interacting: boolean = false;
-
-  protected readonly _fsm: FiniteStateMachine<HeroState>;
 
   constructor(character: Hero, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -168,7 +165,6 @@ export class HeroController extends CharacterController {
       onPosition: (x: number, y: number) => dungeon.camera.setPosition(x, y),
     });
     this.character = character;
-    this._fsm = this.fsm();
     this.init();
   }
 
@@ -182,16 +178,13 @@ export class HeroController extends CharacterController {
     super.destroy();
   }
 
-  interact(): void {
-  }
-
   protected onKilledBy(by: Character): void {
-    this.dungeon.log(`${this.character.name} killed by ${by.name}`);
+    this._dungeon.log(`${this.character.name} killed by ${by.name}`);
   }
 
   protected onDead(): void {
     this.destroy();
-    this.dungeon.controller.dead();
+    this._dungeon.controller.dead();
   }
 
   private onDrop(event: [UsableDrop, number]): void {
@@ -203,7 +196,7 @@ export class HeroController extends CharacterController {
   }
 
   private scanDrop(): void {
-    const cell = this.dungeon.cell(this.x, this.y);
+    const cell = this._dungeon.cell(this.x, this.y);
     if (cell.drop?.pickedUp(this.character)) {
       PIXI.sound.play('fruit_collect');
     }
@@ -247,7 +240,7 @@ export class HeroController extends CharacterController {
   }
 
   private scanMonsters(direction: ScanDirection, maxDistance: number): MonsterController[] {
-    return this.dungeon.registry.query<MonsterController>({
+    return this._dungeon.registry.query<MonsterController>({
       type: MonsterController.type,
       filter: m => {
         return this.distanceTo(m) <= maxDistance && this.checkDirection(direction, m);
@@ -259,8 +252,8 @@ export class HeroController extends CharacterController {
     return this.scanMonsters(direction, maxDistance).map(m => m.character.health.get()).reduce((a, b) => a + b, 0);
   }
 
-  private fsm(): FiniteStateMachine<HeroState> {
-    const joystick = this.dungeon.controller.joystick;
+  protected fsm(): FiniteStateMachine<HeroState> {
+    const joystick = this._dungeon.controller.joystick;
 
     const fsm = new FiniteStateMachine<HeroState>(HeroState.IDLE, [
       HeroState.IDLE,
@@ -271,7 +264,7 @@ export class HeroController extends CharacterController {
 
     const idle = this.idle();
     const run = this.run();
-    const hit = this.hit(new HeroHitController(this));
+    const hit = this.hit(new HeroHitController(this, this._dungeon.controller.joystick));
 
     // idle
     fsm.state(HeroState.IDLE)
@@ -348,7 +341,7 @@ export class HeroController extends CharacterController {
     return fsm;
   }
 
-  private static delta(a: KeyBind, b: KeyBind): number {
+  private delta(a: KeyBind, b: KeyBind): number {
     if (a.repeat()) {
       return -1;
     } else if (b.repeat()) {
@@ -359,14 +352,14 @@ export class HeroController extends CharacterController {
   }
 
   private processMove(): boolean {
-    const joystick = this.dungeon.controller.joystick;
-    const dx = HeroController.delta(joystick.moveLeft, joystick.moveRight);
-    const dy = HeroController.delta(joystick.moveUp, joystick.moveDown);
+    const joystick = this._dungeon.controller.joystick;
+    const dx = this.delta(joystick.moveLeft, joystick.moveRight);
+    const dy = this.delta(joystick.moveUp, joystick.moveDown);
     return this.tryMove(dx, dy);
   }
 
   private processInventory(): void {
-    const joystick = this.dungeon.controller.joystick;
+    const joystick = this._dungeon.controller.joystick;
     const inventory = this.character.inventory;
     for (let d = 0; d <= 9; d++) {
       const digit = (d + 1) % 10;
@@ -378,7 +371,7 @@ export class HeroController extends CharacterController {
       inventory.equipment.weapon.drop();
     }
     if (joystick.inventory.once()) {
-      this.dungeon.controller.showInventory(this.character);
+      this._dungeon.controller.showInventory(this.character);
     }
   }
 }
@@ -387,9 +380,9 @@ class HeroHitController implements HitController {
   private readonly _controller: HeroController;
   private readonly _joystick: Joystick
 
-  constructor(controller: HeroController) {
+  constructor(controller: HeroController, joystick: Joystick) {
     this._controller = controller;
-    this._joystick = controller.dungeon.controller.joystick;
+    this._joystick = joystick;
   }
 
   continueCombo(): boolean {

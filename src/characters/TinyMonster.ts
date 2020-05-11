@@ -34,28 +34,8 @@ export const tinyMonsters: TinyMonsterConfig[] = [
   {name: "skeleton", category: MonsterCategory.UNDEAD, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
 ];
 
-export class TinyMonster extends Monster {
-  constructor(config: TinyMonsterConfig, level: number) {
-    super({
-      name: config.name,
-      category: config.category,
-      type: config.type,
-      speed: 0.8,
-      healthMax: 10 + Math.floor(level * 2),
-      level: level,
-      luck: config.luck,
-      baseDamage: 1 + 0.5 * level,
-      xp: 35 + 5 * level,
-      spawn: 3,
-    });
-  }
-}
-
 export class TinyMonsterController extends MonsterController {
-  readonly character: TinyMonster;
-  readonly maxDistance: number = 5;
-
-  protected readonly _fsm: FiniteStateMachine<TinyMonsterState>;
+  readonly character: Monster;
 
   constructor(config: TinyMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
@@ -65,14 +45,24 @@ export class TinyMonsterController extends MonsterController {
       height: 1,
       static: false,
       interacting: false,
-      zIndex: DungeonZIndexes.character
+      zIndex: DungeonZIndexes.character,
+      maxDistance: 7,
     });
-    this.character = new TinyMonster(config, dungeon.level);
-    const weapon = config.luck < this.dungeon.rng.float() ? Weapon.select(this.dungeon.rng, config.weapons) : null;
+    this.character = new Monster({
+      name: config.name,
+      category: config.category,
+      type: config.type,
+      speed: 0.8,
+      healthMax: 20 + 2 * dungeon.level * 2,
+      level: dungeon.level,
+      luck: config.luck,
+      baseDamage: 1 + 0.5 * dungeon.level,
+      xp: 35 + 5 * dungeon.level,
+    });
+    const weapon = config.luck < this._dungeon.rng.float() ? Weapon.select(this._dungeon.rng, config.weapons) : null;
     if (weapon) {
       this.character.inventory.equipment.weapon.set(weapon);
     }
-    this._fsm = this.fsm();
     this.init();
   }
 
@@ -83,7 +73,7 @@ export class TinyMonsterController extends MonsterController {
     this.destroy();
   }
 
-  private fsm(): FiniteStateMachine<TinyMonsterState> {
+  protected fsm(): FiniteStateMachine<TinyMonsterState> {
     const fsm = new FiniteStateMachine<TinyMonsterState>(TinyMonsterState.PATROLLING, [
       TinyMonsterState.PATROLLING,
       TinyMonsterState.ALARM,
@@ -260,7 +250,7 @@ export class TinyMonsterController extends MonsterController {
   }
 
   private attack(): FiniteStateMachine<TinyMonsterAttackState> {
-    const rng = this.dungeon.rng;
+    const rng = this._dungeon.rng;
 
     const fsm = new FiniteStateMachine<TinyMonsterAttackState>(TinyMonsterAttackState.INITIAL, [
       TinyMonsterAttackState.INITIAL,
