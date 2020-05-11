@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
-import {BaseCharacterController, Character, HitController, ScanDirection} from "./Character";
-import {DungeonMap, DungeonZIndexes} from "../dungeon";
+import {Character, CharacterController, HitController, ScanDirection} from "./Character";
+import {DungeonMap, DungeonObject, DungeonZIndexes} from "../dungeon";
 import {UsableDrop} from "../drop";
 import {Observable, ObservableVar} from "../observable";
 import {DigitKey, Joystick, KeyBind} from "../input";
@@ -145,7 +145,12 @@ export class Hero extends Character {
   }
 }
 
-export class HeroController extends BaseCharacterController {
+export class HeroController extends CharacterController {
+  static type: (o: DungeonObject) => o is HeroController =
+    (o: DungeonObject): o is HeroController => {
+      return o instanceof HeroController;
+    };
+
   readonly character: Hero;
   readonly interacting: boolean = false;
 
@@ -158,6 +163,8 @@ export class HeroController extends BaseCharacterController {
       width: 1,
       height: 1,
       zIndex: DungeonZIndexes.hero,
+      static: false,
+      interacting: false,
       onPosition: (x: number, y: number) => dungeon.camera.setPosition(x, y),
     });
     this.character = character;
@@ -240,7 +247,12 @@ export class HeroController extends BaseCharacterController {
   }
 
   private scanMonsters(direction: ScanDirection, maxDistance: number): MonsterController[] {
-    return this.scanObjects(direction, maxDistance, c => c instanceof MonsterController) as MonsterController[];
+    return this.dungeon.registry.query<MonsterController>({
+      type: MonsterController.type,
+      filter: m => {
+        return this.distanceTo(m) <= maxDistance && this.checkDirection(direction, m);
+      }
+    });
   }
 
   protected monstersHealth(direction: ScanDirection, maxDistance: number): number {

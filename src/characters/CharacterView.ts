@@ -5,15 +5,6 @@ import {Weapon} from "../drop";
 
 const TILE_SIZE = 16;
 
-export interface CharacterViewOptions {
-  readonly width: number;
-  readonly height: number;
-  readonly x: number;
-  readonly y: number;
-  readonly zIndex: number;
-  readonly onPosition?: (x: number, y: number) => void;
-}
-
 export class CharacterView {
   private readonly _resources: Resources;
 

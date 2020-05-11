@@ -1,7 +1,6 @@
-import {DungeonMap} from "../dungeon";
+import {DungeonMap, DungeonObject} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
-import {BaseCharacterController, Character, HitController, ScanDirection} from "./Character";
-import {CharacterViewOptions} from "./CharacterView";
+import {Character, CharacterController, CharacterControllerOptions, HitController, ScanDirection} from "./Character";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -54,7 +53,12 @@ export abstract class Monster extends Character {
   }
 }
 
-export abstract class MonsterController extends BaseCharacterController {
+export abstract class MonsterController extends CharacterController {
+  static type: (o: DungeonObject) => o is MonsterController =
+    (o: DungeonObject): o is MonsterController => {
+      return o instanceof MonsterController;
+    };
+
   abstract readonly character: Monster;
   abstract readonly maxDistance: number;
   readonly interacting: boolean = false;
@@ -66,11 +70,8 @@ export abstract class MonsterController extends BaseCharacterController {
     return this._path.length > 0;
   }
 
-  protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
+  protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
     super(dungeon, options);
-  }
-
-  interact(): void {
   }
 
   protected onKilledBy(by: Character): void {
@@ -95,10 +96,16 @@ export abstract class MonsterController extends BaseCharacterController {
     this._path = this.findPath(hero);
   }
 
-  protected scanHeroes(direction: ScanDirection, distance: number = this.maxDistance): HeroController[] {
-    return this.scanObjects(direction, distance, c => c instanceof HeroController)
-      .filter(o => !(o as HeroController).character.dead.get())
-      .filter(o => this.raycastIsVisible(o.x, o.y)) as HeroController[];
+  protected scanHeroes(direction: ScanDirection, maxDistance: number = this.maxDistance): HeroController[] {
+    return this.dungeon.registry.query<HeroController>({
+      type: HeroController.type,
+      filter: hero => {
+        return !hero.character.dead.get() &&
+          this.distanceTo(hero) <= maxDistance &&
+          this.checkDirection(direction, hero) &&
+          this.raycastIsVisible(hero);
+      }
+    });
   }
 
   protected scanHero(): boolean {
@@ -111,7 +118,7 @@ export abstract class MonsterController extends BaseCharacterController {
     const [hero] = this.scanHeroes(ScanDirection.AROUND, this.maxDistance);
     if (hero) {
       this._hero = hero;
-      for (const monster of this.scanMonsters(ScanDirection.AROUND)) {
+      for (const monster of this.scanMonsters()) {
         monster.onAlarm(hero);
       }
     }
@@ -122,7 +129,8 @@ export abstract class MonsterController extends BaseCharacterController {
     if (this._hero !== null && this._hero.character.dead.get()) {
       this._hero = null;
     }
-    return this._hero !== null && this.distanceTo(this._hero) === 0;
+    const maxDistance = this.character.weapon?.distance || 1;
+    return this._hero !== null && this.distanceTo(this._hero) <= maxDistance;
   }
 
   protected get heroIsNear(): boolean {
@@ -160,8 +168,14 @@ export abstract class MonsterController extends BaseCharacterController {
     return false;
   }
 
-  private scanMonsters(direction: ScanDirection): MonsterController[] {
-    return this.scanObjects(direction, this.maxDistance, c => c instanceof MonsterController && c !== this) as MonsterController[];
+  private scanMonsters(): MonsterController[] {
+    return this.dungeon.registry.query<MonsterController>({
+      type: MonsterController.type,
+      filter: monster => {
+        return !monster.character.dead.get() &&
+          this.distanceTo(monster) <= this.maxDistance;
+      }
+    });
   }
 
   protected moveByPath(): boolean {

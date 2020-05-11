@@ -168,7 +168,7 @@ export abstract class BaseDungeonGenerator implements DungeonGenerator {
       const i = rng.range(0, free.length);
       const [cell] = free.splice(i, 1);
       const config = rng.select(NPCs)!;
-      new NpcController(config, dungeon, this.controller, cell.x, cell.y);
+      new NpcController(config, dungeon, cell.x, cell.y);
     }
   }
 

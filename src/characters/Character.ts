@@ -1,11 +1,10 @@
 import * as PIXI from "pixi.js";
-import {DungeonMap, DungeonMapCell, DungeonObject} from "../dungeon";
+import {DungeonMap, DungeonMapCell, DungeonObject, DungeonObjectOptions} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
 import {UsableDrop, Weapon, WeaponAnimation} from "../drop";
 import {PathFinding} from "../pathfinding";
-import {HeroController} from "./Hero";
 import {Inventory} from "../inventory";
-import {CharacterView, CharacterViewOptions} from "./CharacterView";
+import {CharacterView} from "./CharacterView";
 import {Animator} from "./Animator";
 import {FiniteStateMachine} from "../fsm";
 
@@ -101,40 +100,21 @@ export abstract class Character {
   }
 }
 
-export interface CharacterController extends DungeonObject {
-  readonly x: number;
-  readonly y: number;
-  readonly newX: number;
-  readonly newY: number;
-
-  readonly width: number;
-  readonly height: number;
-  readonly character: Character;
-  readonly view: CharacterView;
-  readonly animator: Animator;
-  readonly dungeon: DungeonMap;
-
-  setPosition(x: number, y: number): void;
-  setDestination(x: number, y: number): void;
-  hasDestination(): boolean;
-  moveToDestination(): void;
-  resetDestination(): void;
-  lookAt(character: CharacterController): void;
-
-  destroy(): void;
-}
-
 export const enum ScanDirection {
   LEFT = 1,
   RIGHT = 2,
   AROUND = 4
 }
 
-export abstract class BaseCharacterController implements CharacterController {
-  abstract readonly character: Character;
+export interface CharacterControllerOptions extends DungeonObjectOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly zIndex: number;
+  readonly onPosition?: (x: number, y: number) => void;
+}
 
-  readonly static: boolean = false;
-  abstract readonly interacting: boolean;
+export abstract class CharacterController extends DungeonObject {
+  abstract readonly character: Character;
 
   readonly view: CharacterView;
   readonly animator: Animator;
@@ -161,15 +141,16 @@ export abstract class BaseCharacterController implements CharacterController {
     return this._newY;
   }
 
-  readonly width: number;
-  readonly height: number;
-
   protected abstract readonly _fsm: FiniteStateMachine<any>;
 
-  protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
+  protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
+    super(dungeon.registry, {
+      static: false,
+      interacting: options.interacting,
+      height: options.height,
+      width: options.width,
+    });
     this.dungeon = dungeon;
-    this.width = options.width;
-    this.height = options.height;
     this._x = options.x;
     this._y = options.y;
     this.view = new CharacterView(
@@ -192,6 +173,7 @@ export abstract class BaseCharacterController implements CharacterController {
   }
 
   destroy(): void {
+    super.destroy();
     this.dungeon.ticker.remove(this._fsm.update, this._fsm);
     // this._fsm.stop(); // @todo implement stop?
     this.character.killedBy.unsubscribe(this.handleKilledBy, this);
@@ -207,30 +189,6 @@ export abstract class BaseCharacterController implements CharacterController {
   collide(object: DungeonObject): boolean {
     return this !== object;
   }
-
-  distanceTo(that: CharacterController): number {
-    /**
-     * https://stackoverflow.com/questions/4449285/efficient-algorithm-for-shortest-distance-between-two-line-segments-in-1d
-     *
-     * <code>d = (s1 max s2 - e1 min e2) max 0</code>
-     *
-     * @param s1 first segment start
-     * @param e1 first segment end
-     * @param s2 second segment start
-     * @param e2 second segment end
-     * @return distance between two line segments in 1d
-     */
-    const segmentDistance = (s1: number, e1: number, s2: number, e2: number): number => {
-      return Math.max(0, Math.max(s1, s2) - Math.min(e1, e2));
-    };
-    // Chebyshev distance
-    const dx = segmentDistance(this.x, this.x + this.width, that.x, that.x + that.width);
-    const dy = segmentDistance(this.y, this.y + this.height, that.y, that.y + that.height);
-
-    return Math.max(dx, dy);
-  }
-
-  abstract interact(hero: HeroController): void;
 
   private handleKilledBy(by: Character | null): void {
     if (by) this.onKilledBy(by);
@@ -249,70 +207,6 @@ export abstract class BaseCharacterController implements CharacterController {
   protected abstract onKilledBy(by: Character): void;
 
   protected abstract onDead(): void;
-
-  protected findDropCell(maxDistance: number = 5): (DungeonMapCell | null) {
-    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
-  }
-
-  protected findSpawnCell(maxDistance: number = 5): (DungeonMapCell | null) {
-    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject);
-  }
-
-  protected findCell(maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): (DungeonMapCell | null) {
-    const posX = this.x;
-    const posY = this.y;
-    const isLeft = this.view.isLeft;
-
-    let closestCell: DungeonMapCell | null = null;
-    let closestDistance: number | null = null;
-
-    const metric = (a: DungeonMapCell): number => {
-      return Math.max(Math.abs(a.x - posX), Math.abs(a.y - posY)) +
-        (a.y !== posY ? 0.5 : 0) + // boost X
-        (a.x === posX && a.y === posY ? 0 : 1) + // boost self
-        (isLeft ? (a.x < posX ? 0 : 1) : (a.x > posX ? 0 : 0.5)); // boost side
-    };
-
-    const minX = Math.max(0, posX - maxDistance);
-    const maxX = Math.min(this.dungeon.width - 1, posX + maxDistance);
-    const minY = Math.max(0, posY - maxDistance);
-    const maxY = Math.min(this.dungeon.width - 1, posY + maxDistance);
-
-    for (let x = minX; x <= maxX; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        const cell = this.dungeon.cell(x, y);
-        if (cell.hasFloor && predicate(cell)) {
-          const distance = metric(cell);
-          if (closestDistance === null || closestDistance > distance) {
-            closestCell = cell;
-            closestDistance = distance;
-          }
-        }
-      }
-    }
-
-    return closestCell;
-  }
-
-  findPath(character: CharacterController): PIXI.Point[] {
-    const dungeon = this.dungeon;
-    const pf = new PathFinding(dungeon.width, dungeon.height);
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.width; x++) {
-        const cell = dungeon.cell(x, y);
-        const m = cell.object;
-        if (cell.hasFloor && (!cell.collide(this) || m === character)) {
-          pf.clear(x, y);
-        } else {
-          pf.mark(x, y);
-        }
-      }
-    }
-
-    const start = new PIXI.Point(this.x, this.y);
-    const end = new PIXI.Point(character.x, character.y);
-    return pf.find(start, end);
-  }
 
   setPosition(x: number, y: number): void {
     this.resetDestination();
@@ -360,10 +254,6 @@ export abstract class BaseCharacterController implements CharacterController {
     return false;
   }
 
-  hasDestination(): boolean {
-    return this._newX !== -1 && this._newY !== -1;
-  }
-
   moveToDestination(): void {
     if (this._newX !== -1 && this._newY !== -1) {
       this.setPosition(this._newX, this._newY);
@@ -384,18 +274,75 @@ export abstract class BaseCharacterController implements CharacterController {
     if (character.x > this.x) this.view.isLeft = false;
   }
 
-  protected scanObjects(direction: ScanDirection, maxDistance: number, predicate: (object: DungeonObject) => boolean): DungeonObject[] {
-    const objects = this.scanCells(direction, maxDistance, cell => cell.hasObject && predicate(cell.object!))
-      .map(cell => cell.object!);
-    const set = new Set(objects); // distinct
-    return [...set];
+  findPath(character: CharacterController): PIXI.Point[] {
+    const dungeon = this.dungeon;
+    const pf = new PathFinding(dungeon.width, dungeon.height);
+    for (let y = 0; y < dungeon.height; y++) {
+      for (let x = 0; x < dungeon.width; x++) {
+        const cell = dungeon.cell(x, y);
+        const m = cell.object;
+        if (cell.hasFloor && (!cell.collide(this) || m === character)) {
+          pf.clear(x, y);
+        } else {
+          pf.mark(x, y);
+        }
+      }
+    }
+
+    const start = new PIXI.Point(this.x, this.y);
+    const end = new PIXI.Point(character.x, character.y);
+    return pf.find(start, end);
   }
 
-  protected scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell[] {
+  /**
+   * https://stackoverflow.com/questions/4449285/efficient-algorithm-for-shortest-distance-between-two-line-segments-in-1d
+   *
+   * <code>d = (s1 max s2 - e1 min e2) max 0</code>
+   *
+   * @param s1 first segment start
+   * @param e1 first segment end
+   * @param s2 second segment start
+   * @param e2 second segment end
+   * @return distance between two line segments in 1d
+   */
+  static segmentDistance(s1: number, e1: number, s2: number, e2: number): number {
+    return Math.max(0, Math.max(s1, s2) - Math.min(e1, e2));
+  }
+
+  distanceTo(that: CharacterController): number {
+    // Chebyshev distance
+    const dx = CharacterController.segmentDistance(this.x, this.x + this.width - 1, that.x, that.x + that.width - 1);
+    const dy = CharacterController.segmentDistance(this.y, this.y + this.height - 1, that.y, that.y + that.height - 1);
+    return Math.max(dx, dy);
+  }
+
+  checkDirection(direction: ScanDirection, object: DungeonObject): boolean {
+    const posX = this.x;
+    const width = this.width;
+
+    const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
+    const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
+
+    const aMin = scanLeft ? 0 : posX + (width - 1);
+    const aMax = scanRight ? this.dungeon.width - 1 : posX + (width - 1);
+    const bMin = object.x;
+    const bMax = bMin + object.width - 1;
+
+    // check distance as direction cast
+    return CharacterController.segmentDistance(aMin, aMax, bMin, bMax) === 0;
+  }
+
+  metric(a: DungeonMapCell): number {
+    return Math.max(Math.abs(a.x - this._x), Math.abs(a.y - this._y)) +
+      (a.y !== this._y ? 0.5 : 0) + // boost X
+      (a.x === this._x && a.y === this._y ? 0 : 1) + // boost self
+      (this.view.isLeft ? (a.x < this._x ? 0 : 1) : (a.x > this._x ? 0 : 0.5)); // boost side
+  }
+
+  scanCells(direction: ScanDirection, maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell[] {
     const posX = this.x;
     const posY = this.y;
     const width = this.width;
-    const isLeft = this.view.isLeft;
 
     const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
@@ -417,21 +364,29 @@ export abstract class BaseCharacterController implements CharacterController {
       }
     }
 
-    const metric = (a: DungeonMapCell): number => {
-      return Math.max(Math.abs(a.x - posX), Math.abs(a.y - posY)) +
-        (a.y !== posY ? 0.5 : 0) + // boost X
-        (a.x === posX && a.y === posY ? 0 : 1) + // boost self
-        (isLeft ? (a.x < posX ? 0 : 1) : (a.x > posX ? 0 : 0.5)); // boost side
-    };
-
-    cells.sort((a: DungeonMapCell, b: DungeonMapCell) => metric(a) - metric(b));
+    cells.sort((a: DungeonMapCell, b: DungeonMapCell) => this.metric(a) - this.metric(b));
 
     return cells;
   }
 
-  protected raycastIsVisible(x1: number, y1: number): boolean {
+  findCell(maxDistance: number, predicate: (cell: DungeonMapCell) => boolean): DungeonMapCell | null {
+    const [cell] = this.scanCells(ScanDirection.AROUND, maxDistance, predicate);
+    return cell || null;
+  }
+
+  findDropCell(maxDistance: number = 5): (DungeonMapCell | null) {
+    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject && !cell.hasDrop);
+  }
+
+  findSpawnCell(maxDistance: number = 5): (DungeonMapCell | null) {
+    return this.findCell(maxDistance, cell => cell.hasFloor && !cell.hasObject);
+  }
+
+  raycastIsVisible(object: DungeonObject): boolean {
     let x0 = this.x;
     let y0 = this.y;
+    const x1 = object.x;
+    const y1 = object.y;
 
     const dx = Math.abs(x1 - x0);
     const dy = Math.abs(y1 - y0);

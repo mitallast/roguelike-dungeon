@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
-import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroController} from "../characters";
-import {DungeonLightType} from "./DungeonLight";
 import {Colors} from "../ui";
+import {HeroController} from "../characters";
+import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {DungeonObject} from "./DungeonObject";
+import {DungeonLightType} from "./DungeonLight";
 
 const TILE_SIZE = 16;
 
@@ -13,24 +13,25 @@ export enum BonfireState {
   LIT = 2
 }
 
-export class DungeonBonfire implements DungeonObject {
+export class DungeonBonfire extends DungeonObject {
   private readonly _dungeon: DungeonMap;
   private _sprite: PIXI.AnimatedSprite;
   private _state: BonfireState;
 
   readonly x: number;
   readonly y: number;
-  readonly width: number = 1;
-  readonly height: number = 1;
-
-  readonly static: boolean = true;
-  readonly interacting: boolean = true;
 
   get state(): BonfireState {
     return this._state;
   }
 
   constructor(dungeon: DungeonMap, x: number, y: number, light: boolean) {
+    super(dungeon.registry, {
+      static: false,
+      interacting: true,
+      width: 1,
+      height: 1,
+    });
     this._dungeon = dungeon;
     this.x = x;
     this.y = y;
@@ -43,6 +44,7 @@ export class DungeonBonfire implements DungeonObject {
   }
 
   destroy(): void {
+    super.destroy();
     this._dungeon.remove(this.x, this.y, this);
     this._sprite.destroy();
   }

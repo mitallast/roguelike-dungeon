@@ -1,12 +1,12 @@
 import {MonsterController, MonsterType} from "./Monster";
 import {DungeonMap} from "../dungeon";
-import {CharacterViewOptions} from "./CharacterView";
 import {TinyMonsterController, tinyMonsters} from "./TinyMonster";
+import {CharacterControllerOptions} from "./Character";
 
 export abstract class SpawningMonsterController extends MonsterController {
   private readonly _spawned: MonsterController[] = [];
 
-  protected constructor(dungeon: DungeonMap, options: CharacterViewOptions) {
+  protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
     super(dungeon, options);
   }
 

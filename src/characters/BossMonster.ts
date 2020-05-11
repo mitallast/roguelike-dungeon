@@ -63,7 +63,9 @@ export class BossMonsterController extends SpawningMonsterController {
       height: 2,
       x: x,
       y: y,
-      zIndex: DungeonZIndexes.character
+      zIndex: DungeonZIndexes.character,
+      static: false,
+      interacting: false
     });
     this.character = new BossMonster(config, dungeon.level);
     const weapon = Weapon.select(this.dungeon.rng, config.weapons);

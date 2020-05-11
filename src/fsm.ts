@@ -71,27 +71,27 @@ export class FiniteState<StateType extends keyof any> {
     return this._transitions.length === 0;
   }
 
-  onEnter(listener: () => void): FiniteState<StateType> {
+  onEnter(listener: () => void): this {
     this._onEnter.push(listener);
     return this;
   }
 
-  onUpdate(listener: (deltaTime: number) => void): FiniteState<StateType> {
+  onUpdate(listener: (deltaTime: number) => void): this {
     this._onUpdate.push(listener);
     return this;
   }
 
-  onEvent(listener: (event: any) => void): FiniteState<StateType> {
+  onEvent(listener: (event: any) => void): this {
     this._onEvent.push(listener);
     return this;
   }
 
-  onExit(listener: () => void): FiniteState<StateType> {
+  onExit(listener: () => void): this {
     this._onExit.push(listener);
     return this;
   }
 
-  nested(machine: FiniteStateMachine<any>): FiniteState<StateType> {
+  nested(machine: FiniteStateMachine<any>): this {
     this._nested.push(machine);
     return this;
   }
@@ -159,12 +159,12 @@ export class FiniteStateTransition<StateType extends keyof any> {
     this.to = to;
   }
 
-  condition(condition: () => boolean): FiniteStateTransition<StateType> {
+  condition(condition: () => boolean): this {
     this._conditions.push(condition);
     return this;
   }
 
-  action(action: () => void): FiniteStateTransition<StateType> {
+  action(action: () => void): this {
     this._actions.push(action);
     return this;
   }

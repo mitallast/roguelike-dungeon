@@ -9,6 +9,7 @@ export * from "./DungeonLight"
 export * from "./DungeonMap"
 export * from "./DungeonObject";
 export * from "./DungeonScene"
+export * from "./DungeonTitle"
 export * from "./DungeonWall";
 export * from "./GenerateDungeonScene"
 export * from "./ShadowCaster"

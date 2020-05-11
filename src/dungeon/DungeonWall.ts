@@ -1,39 +1,37 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroController} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
-export class DungeonWall implements DungeonObject {
-  readonly dungeon: DungeonMap;
-
+export class DungeonWall extends DungeonObject {
   readonly x: number;
   readonly y: number;
-  readonly height: number = 1;
-  readonly width: number = 1;
-
-  readonly static: boolean = true;
-  readonly interacting: boolean = false;
 
   readonly name: string;
-  protected readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+
+  private readonly _dungeon: DungeonMap;
+  private readonly _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
 
   constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
-    this.dungeon = dungeon;
+    super(dungeon.registry, {
+      width: 1,
+      height: 1,
+      static: true,
+      interacting: false,
+    });
     this.x = x;
     this.y = y;
     this.name = name;
-    this.sprite = dungeon.sprite(x, y, name);
-    this.sprite.zIndex = DungeonZIndexes.wall + y * DungeonZIndexes.row;
-  }
-
-  interact(_: HeroController): void {
+    this._dungeon = dungeon;
+    this._sprite = dungeon.sprite(x, y, name);
+    this._sprite.zIndex = DungeonZIndexes.wall + y * DungeonZIndexes.row;
   }
 
   collide(_: DungeonObject): boolean {
-    return !this.dungeon.cell(this.x, this.y).hasFloor;
+    return !this._dungeon.cell(this.x, this.y).hasFloor;
   }
 
   destroy(): void {
-    this.sprite.destroy();
+    super.destroy();
+    this._sprite.destroy();
   }
 }

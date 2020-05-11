@@ -48,6 +48,8 @@ export class SummonMonsterController extends SpawningMonsterController {
       y: y,
       width: 1,
       height: 1,
+      static: false,
+      interacting: false,
       zIndex: DungeonZIndexes.character
     });
     this.character = new SummonMonster(config, dungeon.level);

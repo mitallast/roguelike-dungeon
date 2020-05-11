@@ -1,30 +1,31 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {Drop} from "../drop";
-import {Hero, HeroController} from "../characters";
+import {Hero} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
 const TILE_SIZE = 16;
 
-export class DungeonDrop implements DungeonObject {
-  readonly dungeon: DungeonMap;
+export class DungeonDrop extends DungeonObject {
   readonly drop: Drop;
 
   readonly x: number;
   readonly y: number;
-  readonly height: number = 1;
-  readonly width: number = 1;
 
-  readonly static: boolean = true;
-  readonly interacting: boolean = false;
-
+  private readonly _dungeon: DungeonMap;
   private readonly _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
 
   constructor(dungeon: DungeonMap, x: number, y: number, drop: Drop) {
-    this.dungeon = dungeon;
+    super(dungeon.registry, {
+      width: 1,
+      height: 1,
+      static: false,
+      interacting: false,
+    })
     this.x = x;
     this.y = y;
     this.drop = drop;
+    this._dungeon = dungeon;
     this._sprite = dungeon.sprite(x, y, drop.spriteName);
     this._sprite.zIndex = DungeonZIndexes.drop + y * DungeonZIndexes.row;
     this._sprite.x += (TILE_SIZE >> 1);
@@ -34,21 +35,15 @@ export class DungeonDrop implements DungeonObject {
 
   pickedUp(hero: Hero): boolean {
     if (this.drop.pickedUp(hero)) {
-      this.dungeon.cell(this.x, this.y).dropItem = null;
+      this._dungeon.cell(this.x, this.y).dropItem = null;
       return true;
     } else {
       return false;
     }
   }
 
-  interact(_: HeroController): void {
-  }
-
-  collide(_: DungeonObject): boolean {
-    return false;
-  }
-
   destroy(): void {
+    super.destroy();
     this._sprite.destroy();
   }
 }

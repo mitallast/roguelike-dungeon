@@ -10,7 +10,7 @@ module.exports = merge(common, {
   },
   devtool: 'source-map',
   optimization: {
-    concatenateModules: false,
+    concatenateModules: true,
     minimize: false,
   },
 });

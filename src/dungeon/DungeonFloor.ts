@@ -1,57 +1,41 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
-import {HeroController} from "../characters";
 import {DungeonObject} from "./DungeonObject";
 
 const TILE_SIZE = 16;
 
-export abstract class DungeonFloor implements DungeonObject {
-  readonly dungeon: DungeonMap;
-
+export class DungeonFloor extends DungeonObject {
   readonly x: number;
   readonly y: number;
-  readonly height: number = 1;
-  readonly width: number = 1;
-
-  readonly static: boolean = true;
-  abstract readonly interacting: boolean;
 
   readonly name: string;
-  protected readonly sprite: PIXI.Sprite | PIXI.AnimatedSprite;
 
-  protected constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
-    this.dungeon = dungeon;
+  protected readonly _dungeon: DungeonMap;
+  protected readonly _sprite: PIXI.Sprite | PIXI.AnimatedSprite;
+
+  constructor(dungeon: DungeonMap, x: number, y: number, name: string, interacting: boolean = false) {
+    super(dungeon.registry, {
+      width: 1,
+      height: 1,
+      static: true,
+      interacting: interacting,
+    });
     this.x = x;
     this.y = y;
     this.name = name;
-    this.sprite = this.dungeon.controller.resources.sprite(name);
-    this.sprite.zIndex = DungeonZIndexes.floor;
-    this.sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
-    if (this.sprite instanceof PIXI.AnimatedSprite) {
-      this.dungeon.layer.addChild(this.sprite);
+    this._dungeon = dungeon;
+    this._sprite = this._dungeon.controller.resources.sprite(name);
+    this._sprite.zIndex = DungeonZIndexes.floor;
+    this._sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
+    if (this._sprite instanceof PIXI.AnimatedSprite) {
+      this._dungeon.layer.addChild(this._sprite);
     } else {
-      this.dungeon.floorContainer.addChild(this.sprite);
+      this._dungeon.floorContainer.addChild(this._sprite);
     }
   }
 
-  abstract interact(hero: HeroController): void;
-
-  collide(): boolean {
-    return false;
-  }
-
   destroy(): void {
-    this.sprite.destroy();
-  }
-}
-
-export class DefaultDungeonFloor extends DungeonFloor {
-  readonly interacting: boolean = false;
-
-  constructor(dungeon: DungeonMap, x: number, y: number, name: string) {
-    super(dungeon, x, y, name);
-  }
-
-  interact(): void {
+    super.destroy();
+    this._sprite.destroy();
   }
 }

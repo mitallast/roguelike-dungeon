@@ -1,15 +1,15 @@
 import * as PIXI from 'pixi.js';
 import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "../drop";
 import {HeroController} from "../characters";
-import {DungeonLight} from "./DungeonLight";
 import {SceneController} from "../scene";
 import {RNG} from "../rng";
-import {DungeonObject} from "./DungeonObject";
-import {DefaultDungeonFloor, DungeonFloor} from "./DungeonFloor";
-import {DungeonWall} from "./DungeonWall";
-import {DungeonDrop} from "./DungeonDrop";
-import {DungeonLadder} from "./DungeonLadder";
 import {DungeonCamera} from "./DungeonCamera";
+import {DungeonDrop} from "./DungeonDrop";
+import {DungeonFloor} from "./DungeonFloor";
+import {DungeonLadder} from "./DungeonLadder";
+import {DungeonLight} from "./DungeonLight";
+import {DungeonObject, DungeonObjectRegistry} from "./DungeonObject";
+import {DungeonWall} from "./DungeonWall";
 
 const TILE_SIZE = 16;
 
@@ -43,7 +43,6 @@ export class DungeonMap {
   readonly width: number;
 
   readonly height: number;
-  private readonly _cells: DungeonMapCell[][];
 
   readonly layer: PIXI.display.Layer;
 
@@ -52,6 +51,10 @@ export class DungeonMap {
   readonly scale: number = 2;
 
   readonly camera: DungeonCamera;
+
+  readonly registry: DungeonObjectRegistry;
+
+  private readonly _cells: DungeonMapCell[][];
 
   constructor(controller: SceneController, ticker: PIXI.Ticker, rng: RNG, seed: number, level: number, width: number, height: number) {
     this.controller = controller;
@@ -84,6 +87,8 @@ export class DungeonMap {
     this.camera = new DungeonCamera(controller);
     this.camera.add(this.layer);
     this.camera.add(this.light.layer);
+
+    this.registry = new DungeonObjectRegistry();
   }
 
   destroy(): void {
@@ -182,7 +187,7 @@ export class DungeonMapCell {
     this._floor?.destroy();
     this._floor = null;
     if (name) {
-      this._floor = new DefaultDungeonFloor(this._dungeon, this.x, this.y, name);
+      this._floor = new DungeonFloor(this._dungeon, this.x, this.y, name);
     }
   }
 
@@ -305,17 +310,5 @@ export class DungeonMapCell {
     return (this._object && this._object.collide(object)) ||
       (this._wall && this._wall.collide(object)) ||
       false;
-  }
-}
-
-export class DungeonTitle extends PIXI.Container {
-  private readonly _title: PIXI.BitmapText;
-
-  constructor(level: number) {
-    super();
-    this._title = new PIXI.BitmapText(`LEVEL ${level}`, {font: {name: 'alagard', size: 32}});
-    this._title.anchor = 0.5;
-    this._title.position.set(0, 16);
-    this.addChild(this._title);
   }
 }

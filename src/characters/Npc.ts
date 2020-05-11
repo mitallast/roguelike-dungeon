@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import {BaseCharacterController, Character, IdleState} from "./Character";
+import {CharacterController, Character, IdleState} from "./Character";
 import {DungeonMap, DungeonZIndexes} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
 import {SceneController} from "../scene";
@@ -364,18 +364,20 @@ export class Npc extends Character {
   }
 }
 
-export class NpcController extends BaseCharacterController {
+export class NpcController extends CharacterController {
   readonly character: Npc;
   readonly interacting: boolean = true;
 
   protected readonly _fsm: FiniteStateMachine<IdleState>;
 
-  constructor(config: NpcConfig, dungeon: DungeonMap, controller: SceneController, x: number, y: number) {
+  constructor(config: NpcConfig, dungeon: DungeonMap, x: number, y: number) {
     super(dungeon, {
       width: config.width,
       height: config.height,
       x: x,
       y: y,
+      static: false,
+      interacting: false,
       zIndex: DungeonZIndexes.character
     });
     this.character = new Npc(config);
@@ -388,7 +390,7 @@ export class NpcController extends BaseCharacterController {
       .transitionTo(IdleState.PLAY)
       .action(() => "npc idle complete");
 
-    this.initSkills(controller, config);
+    this.initSkills(dungeon.controller, config);
     this.init();
   }
 
