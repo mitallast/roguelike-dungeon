@@ -1,6 +1,7 @@
 import {DungeonMap, DungeonObject} from "../dungeon";
 import {Hero, HeroController} from "./Hero";
 import {Character, CharacterController, CharacterControllerOptions, HitController, ScanDirection} from "./Character";
+import {PathPoint} from "../pathfinding";
 
 export enum MonsterCategory {
   DEMON = 1,
@@ -63,7 +64,7 @@ export abstract class MonsterController extends CharacterController {
   abstract readonly maxDistance: number;
   readonly interacting: boolean = false;
 
-  private _path: PIXI.Point[] = [];
+  private _path: PathPoint[] = [];
   private _hero: HeroController | null = null;
 
   get hasPath(): boolean {

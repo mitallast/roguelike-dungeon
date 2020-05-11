@@ -1,8 +1,7 @@
-import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonMapCell, DungeonObject, DungeonObjectOptions} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
 import {UsableDrop, Weapon, WeaponAnimation} from "../drop";
-import {PathFinding} from "../pathfinding";
+import {PathFinding, PathPoint} from "../pathfinding";
 import {Inventory} from "../inventory";
 import {CharacterView} from "./CharacterView";
 import {Animator} from "./Animator";
@@ -274,11 +273,18 @@ export abstract class CharacterController extends DungeonObject {
     if (character.x > this.x) this.view.isLeft = false;
   }
 
-  findPath(character: CharacterController): PIXI.Point[] {
+  findPath(character: CharacterController, maxDistance: number = 15): PathPoint[] {
     const dungeon = this.dungeon;
     const pf = new PathFinding(dungeon.width, dungeon.height);
-    for (let y = 0; y < dungeon.height; y++) {
-      for (let x = 0; x < dungeon.width; x++) {
+
+    const minX = Math.max(0, this._x - maxDistance);
+    const maxX = Math.min(dungeon.width - 1, this._x + this.width - 1 + maxDistance);
+
+    const minY = Math.max(0, this._y - this.height - maxDistance);
+    const maxY = Math.min(dungeon.width - 1, this._y + maxDistance);
+
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
         const cell = dungeon.cell(x, y);
         const m = cell.object;
         if (cell.hasFloor && (!cell.collide(this) || m === character)) {
@@ -289,9 +295,7 @@ export abstract class CharacterController extends DungeonObject {
       }
     }
 
-    const start = new PIXI.Point(this.x, this.y);
-    const end = new PIXI.Point(character.x, character.y);
-    return pf.find(start, end);
+    return pf.find(this, character);
   }
 
   /**
@@ -312,7 +316,7 @@ export abstract class CharacterController extends DungeonObject {
   distanceTo(that: CharacterController): number {
     // Chebyshev distance
     const dx = CharacterController.segmentDistance(this.x, this.x + this.width - 1, that.x, that.x + that.width - 1);
-    const dy = CharacterController.segmentDistance(this.y, this.y + this.height - 1, that.y, that.y + that.height - 1);
+    const dy = CharacterController.segmentDistance(this.y - this.height + 1, this.y, that.y - that.height + 1, that.y);
     return Math.max(dx, dy);
   }
 
@@ -343,6 +347,7 @@ export abstract class CharacterController extends DungeonObject {
     const posX = this.x;
     const posY = this.y;
     const width = this.width;
+    const height = this.height;
 
     const scanLeft = direction === ScanDirection.AROUND || direction === ScanDirection.LEFT;
     const scanRight = direction === ScanDirection.AROUND || direction === ScanDirection.RIGHT;
@@ -350,7 +355,7 @@ export abstract class CharacterController extends DungeonObject {
     const scanMinX = scanLeft ? Math.max(0, posX - maxDistance) : posX + (width - 1);
     const scanMaxX = scanRight ? Math.min(this.dungeon.width - 1, posX + (width - 1) + maxDistance) : posX;
 
-    const scanMinY = Math.max(0, posY - maxDistance);
+    const scanMinY = Math.max(0, posY - height + 1 - maxDistance);
     const scanMaxY = Math.min(this.dungeon.height - 1, posY + maxDistance);
 
     const cells: DungeonMapCell[] = [];

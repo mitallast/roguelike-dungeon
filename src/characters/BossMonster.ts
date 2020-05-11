@@ -168,12 +168,10 @@ export class BossMonsterController extends SpawningMonsterController {
 
     fsm.state(BossPatrollingState.IDLE)
       .transitionTo(BossPatrollingState.GO_ATTACK)
-      .condition(() => idle.isFinal)
       .condition(() => this.scanHero());
 
     fsm.state(BossPatrollingState.IDLE)
       .transitionTo(BossPatrollingState.GO_ALARM)
-      .condition(() => idle.isFinal)
       .condition(() => this.hasPath);
 
     fsm.state(BossPatrollingState.IDLE)
@@ -242,7 +240,6 @@ export class BossMonsterController extends SpawningMonsterController {
 
     fsm.state(BossAlarmState.IDLE)
       .transitionTo(BossAlarmState.GO_ATTACK)
-      .condition(() => run.isFinal)
       .condition(() => this.scanHero());
 
     fsm.state(BossAlarmState.IDLE)

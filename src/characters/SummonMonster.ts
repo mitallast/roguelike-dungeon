@@ -109,7 +109,6 @@ export class SummonMonsterController extends SpawningMonsterController {
 
     fsm.state(SummonMonsterPatrollingFsmState.IDLE)
       .transitionTo(SummonMonsterPatrollingFsmState.GO_ATTACK)
-      .condition(() => idle.isFinal)
       .condition(() => this.scanHero());
 
     fsm.state(SummonMonsterPatrollingFsmState.IDLE)

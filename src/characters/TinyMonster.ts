@@ -154,7 +154,6 @@ export class TinyMonsterController extends MonsterController {
 
     fsm.state(TinyMonsterPatrollingState.IDLE)
       .transitionTo(TinyMonsterPatrollingState.GO_ATTACK)
-      .condition(() => idle.isFinal)
       .condition(() => this.scanHero());
 
     fsm.state(TinyMonsterPatrollingState.IDLE)
@@ -223,7 +222,6 @@ export class TinyMonsterController extends MonsterController {
 
     fsm.state(TinyMonsterAlarmState.IDLE)
       .transitionTo(TinyMonsterAlarmState.GO_ATTACK)
-      .condition(() => run.isFinal)
       .condition(() => this.scanHero());
 
     fsm.state(TinyMonsterAlarmState.IDLE)
