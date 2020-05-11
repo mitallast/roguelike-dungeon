@@ -18,6 +18,7 @@ import {
 } from "../characters";
 import {DungeonBonfire} from "./DungeonBonfire";
 import {DungeonLightType} from "./DungeonLight";
+import {Coins, HealthBigFlask, HealthFlask, Weapon, weaponConfigs} from "../drop";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
   private _model: EvenSimpleTiledModel | null = null;
@@ -272,11 +273,32 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
       }
     }
 
-    const dropCount = Math.floor(free.length * 0.01);
-
-    for (let d = 0; d < dropCount && free.length > 0; d++) {
+    const nextCell = (): DungeonMapCell => {
       const i = rng.range(0, free.length);
-      free.splice(i, 1)[0].randomDrop();
+      return free.splice(i, 1)[0];
+    }
+
+    const coinsCount = Math.floor(free.length * 0.01);
+    const healthFlaskCount = Math.floor(free.length * 0.008);
+    const healthBigFlaskCount = Math.floor(free.length * 0.004);
+    const weaponCount = Math.floor(free.length * 0.002);
+
+    console.log(`coins       = ${coinsCount}`);
+    console.log(`big healths = ${healthBigFlaskCount}`);
+    console.log(`healths     = ${healthFlaskCount}`);
+    console.log(`weapons     = ${weaponCount}`);
+
+    for (let i = 0; i < weaponCount && free.length > 0; i++) {
+      nextCell().dropItem = Weapon.select(rng, weaponConfigs);
+    }
+    for (let i = 0; i < healthBigFlaskCount && free.length > 0; i++) {
+      nextCell().dropItem = new HealthBigFlask();
+    }
+    for (let i = 0; i < healthFlaskCount && free.length > 0; i++) {
+      nextCell().dropItem = new HealthFlask();
+    }
+    for (let i = 0; i < coinsCount && free.length > 0; i++) {
+      nextCell().dropItem = new Coins(rng);
     }
   }
 

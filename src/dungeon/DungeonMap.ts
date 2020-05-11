@@ -246,10 +246,10 @@ export class DungeonMapCell {
 
     const rng = this._dungeon.rng;
 
-    const weightCoins = 100;
+    const weightCoins = 70;
     const weightHealthFlask = 50;
-    const weightHealthBigFlask = 10;
-    const weightWeapon = 5;
+    const weightHealthBigFlask = 30;
+    const weightWeapon = 20;
     const sum = weightCoins + weightHealthFlask + weightHealthBigFlask + weightWeapon;
 
     let remainingDistance = rng.float() * sum;
