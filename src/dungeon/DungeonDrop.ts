@@ -34,7 +34,7 @@ export class DungeonDrop extends DungeonObject {
   }
 
   pickedUp(hero: Hero): boolean {
-    if (this.drop.pickedUp(hero)) {
+    if (this.drop.pickedUp(hero.state)) {
       this._dungeon.cell(this.x, this.y).dropItem = null;
       return true;
     } else {

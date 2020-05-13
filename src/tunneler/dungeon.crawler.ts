@@ -1,5 +1,5 @@
 import {Point, TunnelerCellType, Direction, RoomSize, FillRect, Room, ImmutablePoint} from "./model";
-import {Config} from "./config"
+import {DungeonCrawlerConfig} from "./config"
 import {WallCrawler} from "./wall.crawler";
 import {TunnelCrawler} from "./tunnel.crawler";
 import {RoomCrawler} from "./room.crawler";
@@ -8,7 +8,7 @@ import {RNG} from "../rng";
 
 export class DungeonCrawler {
   readonly rng: RNG;
-  readonly config: Config;
+  readonly config: DungeonCrawlerConfig;
 
   private readonly _map: TunnelerCellType[];
   private readonly _rooms: Room[] = [];
@@ -157,7 +157,7 @@ export class DungeonCrawler {
     this._mapFlagsDirections[pos.x * this.config.height + pos.y] = true;
   }
 
-  constructor(config: Config, rng: RNG) {
+  constructor(config: DungeonCrawlerConfig, rng: RNG) {
     this.rng = rng;
     this.config = config;
 

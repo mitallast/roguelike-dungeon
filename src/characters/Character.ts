@@ -1,103 +1,12 @@
 import {DungeonMap, DungeonMapCell, DungeonObject, DungeonObjectOptions} from "../dungeon";
 import {Observable, ObservableVar} from "../observable";
-import {UsableDrop, Weapon, WeaponAnimation} from "../drop";
+import {UsableDrop} from "../drop";
+import {Weapon, WeaponAnimation} from "../weapon";
 import {PathFinding, PathPoint} from "../pathfinding";
-import {Inventory} from "../inventory";
+import {FiniteStateMachine} from "../fsm";
 import {CharacterView} from "./CharacterView";
 import {Animator} from "./Animator";
-import {FiniteStateMachine} from "../fsm";
-
-export abstract class Character {
-  readonly name: string;
-
-  protected readonly _speed: ObservableVar<number>;
-  get speed(): number {
-    return this._speed.get();
-  }
-
-  protected readonly _healthMax: ObservableVar<number>;
-  get healthMax(): Observable<number> {
-    return this._healthMax;
-  }
-
-  protected readonly _health: ObservableVar<number>;
-  get health(): Observable<number> {
-    return this._health;
-  }
-
-  protected readonly _dead: ObservableVar<boolean>;
-  get dead(): Observable<boolean> {
-    return this._dead;
-  }
-
-  protected readonly _killedBy: ObservableVar<Character | null>;
-  get killedBy(): Observable<Character | null> {
-    return this._killedBy;
-  }
-
-  protected readonly _coins: ObservableVar<number>;
-
-  get coins(): Observable<number> {
-    return this._coins;
-  }
-
-  addCoins(coins: number): void {
-    this._coins.update(c => c + coins);
-  }
-
-  decreaseCoins(coins: number): boolean {
-    const current = this._coins.get();
-    if (current >= coins) {
-      this._coins.set(current - coins);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  protected readonly _baseDamage: ObservableVar<number>;
-
-  readonly inventory: Inventory = new Inventory(this);
-
-  get weapon(): Weapon | null {
-    return this.inventory.equipment.weapon.item.get() as Weapon || null;
-  }
-
-  get damage(): number {
-    return this._baseDamage.get() + (this.weapon?.damage || 0);
-  }
-
-  protected constructor(options: {
-    readonly name: string;
-    readonly speed: number;
-    readonly healthMax: number;
-    readonly baseDamage: number;
-    readonly coins: number;
-  }) {
-    this.name = options.name;
-    this._speed = new ObservableVar(options.speed);
-    this._healthMax = new ObservableVar(options.healthMax);
-    this._health = new ObservableVar(options.healthMax);
-    this._dead = new ObservableVar<boolean>(false);
-    this._killedBy = new ObservableVar<Character | null>(null);
-    this._baseDamage = new ObservableVar<number>(options.baseDamage);
-    this._coins = new ObservableVar(options.coins);
-  }
-
-  heal(health: number): void {
-    this._health.update(h => Math.min(this._healthMax.get(), h + health));
-  }
-
-  hitDamage(by: Character, damage: number): void {
-    if (!this._dead.get()) {
-      this._health.update((h) => Math.max(0, h - damage));
-      if (this._health.get() === 0) {
-        this._killedBy.set(by);
-        this._dead.set(true);
-      }
-    }
-  }
-}
+import {CharacterState} from "./CharacterState";
 
 export const enum ScanDirection {
   LEFT = 1,
@@ -105,24 +14,28 @@ export const enum ScanDirection {
   AROUND = 4
 }
 
-export interface CharacterControllerOptions extends DungeonObjectOptions {
+export interface CharacterOptions extends DungeonObjectOptions {
   readonly x: number;
   readonly y: number;
   readonly zIndex: number;
+  readonly animation: string;
   readonly onPosition?: (x: number, y: number) => void;
 }
 
-export abstract class CharacterController extends DungeonObject {
+export abstract class Character extends DungeonObject {
+  readonly view: CharacterView;
+  readonly animator: Animator;
+
+  abstract readonly state: CharacterState;
+
+  protected readonly _dead: ObservableVar<boolean> = new ObservableVar<boolean>(false);
+
   protected readonly _fsm: FiniteStateMachine<any>;
   protected readonly _dungeon: DungeonMap;
   private _x: number;
   private _y: number;
   private _newX: number = -1;
   private _newY: number = -1;
-
-  abstract readonly character: Character;
-  readonly view: CharacterView;
-  readonly animator: Animator;
 
   get x(): number {
     return this._x;
@@ -140,7 +53,15 @@ export abstract class CharacterController extends DungeonObject {
     return this._newY;
   }
 
-  protected constructor(dungeon: DungeonMap, options: CharacterControllerOptions) {
+  get dead(): Observable<boolean> {
+    return this._dead;
+  }
+
+  get isDead(): boolean {
+    return this._dead.get();
+  }
+
+  protected constructor(dungeon: DungeonMap, options: CharacterOptions) {
     super(dungeon.registry, {
       static: false,
       interacting: options.interacting,
@@ -153,6 +74,7 @@ export abstract class CharacterController extends DungeonObject {
     this.view = new CharacterView(
       dungeon.layer,
       dungeon.controller.resources,
+      options.animation,
       options.zIndex,
       options.width,
       options.onPosition
@@ -163,9 +85,8 @@ export abstract class CharacterController extends DungeonObject {
 
   init(): void {
     this.setPosition(this._x, this._y);
-    this.character.killedBy.subscribe(this.handleKilledBy, this);
-    this.character.dead.subscribe(this.handleDead, this);
-    this.character.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
+    this._dead.subscribe(this.handleDead, this);
+    this.state.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this._fsm.start();
     this._dungeon.ticker.add(this._fsm.update, this._fsm);
   }
@@ -174,9 +95,8 @@ export abstract class CharacterController extends DungeonObject {
     super.destroy();
     this._dungeon.ticker.remove(this._fsm.update, this._fsm);
     this._fsm.stop();
-    this.character.killedBy.unsubscribe(this.handleKilledBy, this);
-    this.character.dead.unsubscribe(this.handleDead, this);
-    this.character.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
+    this._dead.unsubscribe(this.handleDead, this);
+    this.state.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this._dungeon.remove(this._x, this._y, this);
     if (this._newX !== -1 && this._newY !== -1) {
       this._dungeon.remove(this._newX, this._newY, this);
@@ -186,6 +106,20 @@ export abstract class CharacterController extends DungeonObject {
 
   collide(object: DungeonObject): boolean {
     return this !== object;
+  }
+
+  hitDamage(by: Character, damage: number): void {
+    if (!this.isDead) {
+      this.state.health.update((h) => {
+        const hp = parseFloat(Math.max(0, h - damage).toFixed(1));
+        console.log(`${this.state.name} damaged by ${by.state.name} damage=${damage} hp=${hp}`);
+        return hp
+      });
+      if (this.state.health.get() === 0) {
+        this.handleKilledBy(by);
+        this._dead.set(true);
+      }
+    }
   }
 
   private handleKilledBy(by: Character | null): void {
@@ -267,12 +201,16 @@ export abstract class CharacterController extends DungeonObject {
     }
   }
 
-  lookAt(character: CharacterController): void {
+  lookAt(character: Character): void {
     if (character.x < this.x) this.view.isLeft = true;
     if (character.x > this.x) this.view.isLeft = false;
   }
 
-  findPath(character: CharacterController, maxDistance: number = 15): PathPoint[] {
+  findPath(
+    character: Character,
+    maxDistance: number = 15,
+    maxPathLength: number = 15,
+  ): PathPoint[] {
     const dungeon = this._dungeon;
     const pf = new PathFinding(dungeon.width, dungeon.height);
 
@@ -294,7 +232,12 @@ export abstract class CharacterController extends DungeonObject {
       }
     }
 
-    return pf.find(this, character);
+    const path = pf.find(this, character);
+    if (path.length <= maxPathLength) {
+      return path;
+    } else {
+      return [];
+    }
   }
 
   /**
@@ -312,7 +255,7 @@ export abstract class CharacterController extends DungeonObject {
     return Math.max(0, Math.max(s1, s2) - Math.min(e1, e2));
   }
 
-  distanceTo(that: CharacterController): number {
+  distanceTo(that: Character): number {
     // Chebyshev distance
     const dx = this.segmentDistance(this.x, this.x + this.width - 1, that.x, that.x + that.width - 1);
     const dy = this.segmentDistance(this.y - this.height + 1, this.y, that.y - that.height + 1, that.y);
@@ -426,15 +369,14 @@ export abstract class CharacterController extends DungeonObject {
   protected abstract fsm(): FiniteStateMachine<any>;
 
   protected idle(): FiniteStateMachine<IdleState> {
-    const character = this.character;
     const animator = this.animator;
     const fsm = new FiniteStateMachine<IdleState>(IdleState.PLAY, [IdleState.PLAY, IdleState.COMPLETE]);
     fsm.state(IdleState.PLAY)
       .onEnter(() => {
-        const speed = character.speed * 0.2;
+        const speed = this.state.speed.get() * 0.2;
         animator.clear();
-        animator.animateCharacter(speed, character.name + "_idle", 4);
-        const weapon = character.weapon;
+        animator.animateCharacter(speed, this.state.name + "_idle", 4);
+        const weapon = this.state.weapon;
         if (weapon) {
           animator.animateWeapon(speed, weapon.animations.idle);
         }
@@ -448,16 +390,15 @@ export abstract class CharacterController extends DungeonObject {
   }
 
   protected run(): FiniteStateMachine<RunState> {
-    const character = this.character;
     const animator = this.animator;
     const fsm = new FiniteStateMachine<RunState>(RunState.PLAY, [RunState.PLAY, RunState.PLAY, RunState.COMPLETE]);
     fsm.state(RunState.PLAY)
       .onEnter(() => {
-        const speed = character.speed * 0.2;
+        const speed = this.state.speed.get() * 0.2;
         animator.clear();
-        animator.animateCharacter(speed, character.name + "_run", 4);
+        animator.animateCharacter(speed, this.state.name + "_run", 4);
         animator.animateMove(speed, this);
-        const weapon = character.weapon;
+        const weapon = this.state.weapon;
         if (weapon) {
           animator.animateWeapon(speed, weapon.animations.run);
         }
@@ -477,8 +418,6 @@ export abstract class CharacterController extends DungeonObject {
   }
 
   protected hit(hitController: HitController): FiniteStateMachine<HitState> {
-    const character = this.character;
-
     const simple = this.simpleHit(hitController);
     const combo = this.comboHit(hitController);
 
@@ -491,8 +430,8 @@ export abstract class CharacterController extends DungeonObject {
 
     fsm.state(HitState.INITIAL)
       .transitionTo(HitState.COMBO_HIT)
-      .condition(() => character.weapon !== null)
-      .condition(() => character.weapon!.animations.combo !== undefined);
+      .condition(() => this.state.weapon !== null)
+      .condition(() => this.state.weapon!.animations.hit.length > 1);
 
     fsm.state(HitState.INITIAL)
       .transitionTo(HitState.SIMPLE_HIT);
@@ -510,20 +449,19 @@ export abstract class CharacterController extends DungeonObject {
   }
 
   private simpleHit(hitController: HitController): FiniteStateMachine<SimpleHitState> {
-    const character = this.character;
     const animator = this.animator;
     const fsm = new FiniteStateMachine<SimpleHitState>(SimpleHitState.INITIAL, [SimpleHitState.INITIAL, SimpleHitState.PLAY, SimpleHitState.COMPLETE]);
     fsm.state(SimpleHitState.INITIAL)
       .onEnter(() => {
-        const weapon = character.weapon;
+        const weapon = this.state.weapon;
         animator.clear();
         if (weapon) {
           const speed = weapon.speed * 0.2;
-          animator.animateCharacter(speed, character.name + "_idle", 4);
-          animator.animateWeapon(speed, weapon.animations.hit);
+          animator.animateCharacter(speed, this.state.name + "_idle", 4);
+          animator.animateWeapon(speed, weapon.animations.hit[0]);
         } else {
-          const speed = character.speed * 0.2;
-          animator.animateCharacter(speed, character.name + "_idle", 4);
+          const speed = this.state.speed.get() * 0.2;
+          animator.animateCharacter(speed, this.state.name + "_idle", 4);
         }
         animator.start();
       })
@@ -535,7 +473,6 @@ export abstract class CharacterController extends DungeonObject {
   }
 
   private comboHit(hitController: HitController): FiniteStateMachine<ComboHitState> {
-    const character = this.character;
     const animator = this.animator;
     let hits = 0;
     let speed = 0;
@@ -545,12 +482,12 @@ export abstract class CharacterController extends DungeonObject {
     // first hit
     fsm.state(ComboHitState.FIRST_HIT)
       .onEnter(() => {
-        const weapon = character.weapon!;
-        combo = weapon.animations.combo!;
+        const weapon = this.state.weapon!;
+        combo = weapon.animations.hit;
         speed = weapon.speed * 0.2;
         hits = 0;
         animator.clear();
-        animator.animateCharacter(speed, character.name + "_idle", 4);
+        animator.animateCharacter(speed, this.state.name + "_idle", 4);
         animator.animateWeapon(speed, combo[0]);
         animator.start();
         hits++
@@ -572,7 +509,7 @@ export abstract class CharacterController extends DungeonObject {
     fsm.state(ComboHitState.NEXT_HIT)
       .onEnter(() => {
         animator.clear();
-        animator.animateCharacter(speed, character.name + "_idle", 4);
+        animator.animateCharacter(speed, this.state.name + "_idle", 4);
         animator.animateWeapon(speed, combo[hits]);
         animator.start();
         hits++;

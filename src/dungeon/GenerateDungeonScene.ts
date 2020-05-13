@@ -2,13 +2,12 @@ import * as PIXI from "pixi.js";
 import {Scene, SceneController} from "../scene";
 import {DungeonGenerator, GenerateOptions} from "./DungeonGenerator";
 import {HybridDungeonGenerator} from "./HybridDungeonGenerator";
-import {DungeonMap} from "./DungeonMap";
 import {UIBarView, Colors, Sizes} from "../ui";
 
 export class GenerateDungeonScene extends Scene {
   private readonly _generator: DungeonGenerator;
   private readonly _progressBar: UIBarView;
-  private readonly _promise: Promise<DungeonMap>;
+  private readonly _options: GenerateOptions;
 
   constructor(controller: SceneController, options: GenerateOptions) {
     super(controller)
@@ -32,12 +31,18 @@ export class GenerateDungeonScene extends Scene {
       screen.height - (Sizes.uiMargin << 1) - 64
     );
     this.addChild(this._progressBar);
-    this._promise = this._generator.generate(options);
-    this._promise.then(dungeon => this._controller.dungeon(options.hero, dungeon));
+
+    this._options = options;
+  }
+
+  private async generate(): Promise<void> {
+    const dungeon = await this._generator.generate(this._options);
+    this._controller.dungeon(dungeon);
   }
 
   init(): void {
     this._controller.ticker.add(this.update, this);
+    this.generate();
   }
 
   destroy(): void {

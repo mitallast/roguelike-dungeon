@@ -1,4 +1,4 @@
-import {Config} from "./config";
+import {DungeonCrawlerConfig} from "./config";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {TunnelerCellType} from "./model";
 import {RNG} from "../rng";
@@ -17,7 +17,7 @@ export class DungeonDesignEditor {
   constructor(
     resources: Resources,
     rulesEditor: RulesEditor,
-    config: Config,
+    config: DungeonCrawlerConfig,
   ) {
     this._resources = resources;
     this._rulesEditor = rulesEditor;
@@ -81,7 +81,7 @@ export class DungeonDesignEditor {
   }
 
   private async evaluateWfc(): Promise<void> {
-    const config: Config = JSON.parse(this._text.value);
+    const config: DungeonCrawlerConfig = JSON.parse(this._text.value);
     console.log("config", config);
 
     const tileset: TilesetRules = this._rulesEditor.buildRules();
@@ -117,7 +117,7 @@ export class DungeonDesignEditor {
   }
 
   private async sampleWfc(): Promise<void> {
-    const config: Config = JSON.parse(this._text.value);
+    const config: DungeonCrawlerConfig = JSON.parse(this._text.value);
     console.log("config", config);
 
     const tileset: TilesetRules = this._rulesEditor.buildRules();
@@ -136,7 +136,7 @@ export class DungeonDesignEditor {
   }
 
   private async measureWfc(): Promise<void> {
-    const config: Config = JSON.parse(this._text.value);
+    const config: DungeonCrawlerConfig = JSON.parse(this._text.value);
     console.log("config", config);
 
     const tileset: TilesetRules = this._rulesEditor.buildRules();

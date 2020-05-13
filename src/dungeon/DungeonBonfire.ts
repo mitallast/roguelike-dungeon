@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import {Colors} from "../ui";
-import {HeroController} from "../characters";
+import {Hero} from "../characters";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {DungeonObject} from "./DungeonObject";
 import {DungeonLightType} from "./DungeonLight";
@@ -49,10 +49,10 @@ export class DungeonBonfire extends DungeonObject {
     this._sprite.destroy();
   }
 
-  interact(hero: HeroController): void {
+  interact(hero: Hero): void {
     switch (this._state) {
       case BonfireState.UNLIT:
-        hero.character.bonfires.add(this._dungeon.level);
+        hero.state.dungeons.litBonfire(this._dungeon.level);
         this._dungeon.controller.showBanner({
           text: 'BONFIRE LIT',
           color: Colors.uiYellow
@@ -61,7 +61,7 @@ export class DungeonBonfire extends DungeonObject {
         break;
       case BonfireState.LIGHT:
       case BonfireState.LIT:
-        this._dungeon.controller.showBonfire(hero.character);
+        this._dungeon.controller.showBonfire(hero.state);
         break;
     }
   }

@@ -1,4 +1,4 @@
-import {Hero, Npc} from "../characters";
+import {HeroState, NpcState} from "../characters";
 import {DropInfo, UsableDrop} from "../drop";
 import {BackpackInventory, BeltInventory, Inventory} from "./Inventory";
 import {InventoryCellActionsView} from "./InventoryView";
@@ -34,8 +34,11 @@ export abstract class BaseInventoryController implements InventoryController {
 }
 
 export abstract class BaseHeroInventoryController extends BaseInventoryController {
-  protected constructor(inventory: Inventory, title: string) {
-    super(inventory, title);
+  protected readonly _hero: HeroState
+
+  protected constructor(hero: HeroState, title: string) {
+    super(hero.inventory, title);
+    this._hero = hero;
   }
 
   protected basicButtons(view: InventoryCellActionsView, item: UsableDrop): void {
@@ -44,7 +47,7 @@ export abstract class BaseHeroInventoryController extends BaseInventoryControlle
       if (this.inventory.equipment.weapon.supports(item)) {
         view.addButton("Equip", () => cell.equip());
       } else {
-        view.addButton("Use item", () => cell.use());
+        view.addButton("Use item", () => cell.use(this._hero));
       }
     }
     if (!(cell.parent instanceof BeltInventory)) view.addButton("To belt", () => cell.toBelt());
@@ -54,8 +57,8 @@ export abstract class BaseHeroInventoryController extends BaseInventoryControlle
 }
 
 export class HeroInventoryController extends BaseHeroInventoryController {
-  constructor(inventory: Inventory) {
-    super(inventory, "Inventory");
+  constructor(hero: HeroState) {
+    super(hero, "Inventory");
   }
 
   protected buttons(view: InventoryCellActionsView, item: UsableDrop): void {
@@ -70,12 +73,10 @@ export class HeroInventoryController extends BaseHeroInventoryController {
 }
 
 export class SellingInventoryController extends BaseHeroInventoryController {
-  private readonly _hero: Hero;
-  private readonly _npc: Npc;
+  private readonly _npc: NpcState;
 
-  constructor(hero: Hero, npc: Npc) {
-    super(hero.inventory, "Selling");
-    this._hero = hero;
+  constructor(hero: HeroState, npc: NpcState) {
+    super(hero, "Selling");
     this._npc = npc;
   }
 
@@ -91,7 +92,7 @@ export class SellingInventoryController extends BaseHeroInventoryController {
         if (this._npc.coins.get() >= price && this._npc.inventory.backpack.hasSpace(item)) {
           this._npc.decreaseCoins(price);
           this._npc.inventory.backpack.add(item);
-          this._hero.addCoins(price);
+          this._hero.coins.update(c => c + price);
           view.cell.decrease();
         } else {
           console.warn("failed sell item");
@@ -110,10 +111,10 @@ export class SellingInventoryController extends BaseHeroInventoryController {
 }
 
 export class BuyingInventoryController extends BaseInventoryController {
-  private readonly _hero: Hero;
-  private readonly _npc: Npc;
+  private readonly _hero: HeroState;
+  private readonly _npc: NpcState;
 
-  constructor(hero: Hero, npc: Npc) {
+  constructor(hero: HeroState, npc: NpcState) {
     super(npc.inventory, "Buying");
     this._hero = hero;
     this._npc = npc;
@@ -130,7 +131,7 @@ export class BuyingInventoryController extends BaseInventoryController {
     if (price !== undefined && this._hero.coins.get() >= price && this._hero.inventory.hasSpace(drop)) {
       view.addButton('Buy', () => {
         if (this._npc.coins.get() >= price && this._hero.inventory.hasSpace(drop)) {
-          this._hero.decreaseCoins(price);
+          this._hero.coins.update(c => Math.max(0, c - price));
           this._hero.inventory.backpack.add(drop);
           this._npc.addCoins(price);
           view.cell.decrease();

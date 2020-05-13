@@ -1,28 +1,32 @@
-import {Hero, Npc} from "../characters";
+import {HeroState, NpcState} from "../characters";
 import {SceneController} from "../scene";
 import {EventPublisher, Publisher} from "../observable";
 import {Expression} from "../expression";
 import {Template} from "../template";
-import {DialogConfig} from "./DialogConfig"
+import {DialogConfig} from "./DialogConfig";
 
 export class DialogManager {
   private readonly _controller: SceneController;
+  private _dialogs!: Record<string, DialogConfig>;
 
   constructor(controller: SceneController) {
     this._controller = controller;
   }
 
-  dialog(hero: Hero, npc: Npc): Dialog {
-    const dialogs: Record<string, DialogConfig> = this._controller.loader.resources['dialogs.json'].data;
-    const config = dialogs[npc.name] || dialogs["default"]!;
+  init(): void {
+    this._dialogs = this._controller.loader.resources['dialogs.json'].data;
+  }
+
+  dialog(hero: HeroState, npc: NpcState): Dialog {
+    const config = this._dialogs[npc.name] || this._dialogs["default"]!;
     return new Dialog(this._controller, hero, npc, config);
   }
 }
 
 export class Dialog {
   private readonly _controller: SceneController;
-  readonly hero: Hero;
-  readonly npc: Npc;
+  readonly hero: HeroState;
+  readonly npc: NpcState;
 
   private readonly _config: DialogConfig;
   private readonly _question: EventPublisher<DialogQuestion> = new EventPublisher<DialogQuestion>();
@@ -33,7 +37,7 @@ export class Dialog {
     return this._question;
   }
 
-  constructor(controller: SceneController, hero: Hero, npc: Npc, config: DialogConfig) {
+  constructor(controller: SceneController, hero: HeroState, npc: NpcState, config: DialogConfig) {
     this._controller = controller;
     this.hero = hero;
     this.npc = npc;
@@ -79,7 +83,7 @@ export class Dialog {
   private goto(...ids: string[]): void {
     for (const id of ids) {
       const config = this._config.questions[id]!;
-      if (this.check(config.conditions || [])) {
+      if (this.check(config.conditions)) {
         const text = this._template.render(config.text);
         const question = new DialogQuestion(this, text);
         for (const answer of config.answers) {

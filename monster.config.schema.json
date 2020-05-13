@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://mitallast.github.io/roguelike-dungeon/monster.config.schema.json",
+  "title": "NPC configuration schema",
+  "type": "object",
+  "properties": {
+    "boss": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BossMonster"
+      }
+    },
+    "tiny": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TinyMonster"
+      }
+    },
+    "summon": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SummonMonster"
+      }
+    }
+  },
+  "required": [
+    "boss",
+    "tiny",
+    "summon"
+  ],
+  "definitions": {
+    "BossMonster": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/Identifier"
+        },
+        "race": {
+          "$ref": "#/definitions/MonsterRace"
+        },
+        "health": {
+          "type": "number",
+          "minimum": 10
+        },
+        "damage": {
+          "type": "number",
+          "minimum": 1
+        },
+        "luck": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "xp": {
+          "type": "number",
+          "minimum": 1
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "weapons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "race",
+        "health",
+        "damage",
+        "luck",
+        "xp",
+        "speed",
+        "weapons"
+      ]
+    },
+    "TinyMonster": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/Identifier"
+        },
+        "race": {
+          "$ref": "#/definitions/MonsterRace"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "minion"
+          ]
+        },
+        "health": {
+          "type": "number",
+          "minimum": 1
+        },
+        "damage": {
+          "type": "number",
+          "minimum": 1
+        },
+        "luck": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "xp": {
+          "type": "number",
+          "minimum": 1
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "weapons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "race",
+        "type",
+        "health",
+        "damage",
+        "luck",
+        "xp",
+        "speed",
+        "weapons"
+      ]
+    },
+    "SummonMonster": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/Identifier"
+        },
+        "race": {
+          "$ref": "#/definitions/MonsterRace"
+        },
+        "health": {
+          "type": "number",
+          "minimum": 10
+        },
+        "damage": {
+          "type": "number",
+          "minimum": 1
+        },
+        "luck": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "xp": {
+          "type": "number",
+          "minimum": 1
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "spawn": {
+          "type": "number",
+          "minimum": 0
+        },
+        "weapons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "race",
+        "health",
+        "damage",
+        "luck",
+        "xp",
+        "speed",
+        "spawn",
+        "weapons"
+      ]
+    },
+    "MonsterRace": {
+      "type": "string",
+      "enum": [
+        "demon",
+        "zombie",
+        "orc",
+        "slime",
+        "undead"
+      ]
+    },
+    "MonsterType": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "summon",
+        "minion",
+        "boss"
+      ]
+    },
+    "Identifier": {
+      "type": "string",
+      "pattern": "^[a-z]+(_[a-z0-9]+)*$"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
-import {Coins, Drop, HealthBigFlask, HealthFlask, Weapon} from "../drop";
-import {HeroController} from "../characters";
+import {Coins, Drop, HealthBigFlask, HealthFlask} from "../drop";
+import {Hero} from "../characters";
 import {SceneController} from "../scene";
 import {RNG} from "../rng";
 import {DungeonCamera} from "./DungeonCamera";
@@ -142,14 +142,14 @@ export class DungeonMap {
   }
 
   sprite(x: number, y: number, name: string): PIXI.Sprite | PIXI.AnimatedSprite {
-    const sprite = this.controller.resources.sprite(name);
+    const sprite = this.controller.resources.spriteOrAnimation(name);
     sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
     this.layer.addChild(sprite);
     return sprite;
   }
 
   animated(x: number, y: number, name: string): PIXI.AnimatedSprite {
-    const animated = this.controller.resources.animated(name);
+    const animated = this.controller.resources.animatedSprite(name);
     animated.position.set(x * TILE_SIZE, y * TILE_SIZE);
     animated.play();
     this.layer.addChild(animated);
@@ -254,7 +254,7 @@ export class DungeonMapCell {
 
     let remainingDistance = rng.float() * sum;
     if ((remainingDistance -= weightWeapon) <= 0) {
-      this.dropItem = Weapon.create(rng, this._dungeon.level);
+      this.dropItem = this._dungeon.controller.weaponManager.randomHeroWeapon(this._dungeon);
     } else if ((remainingDistance -= weightHealthBigFlask) <= 0) {
       this.dropItem = new HealthBigFlask();
     } else if ((remainingDistance -= weightHealthFlask) <= 0) {
@@ -294,7 +294,7 @@ export class DungeonMapCell {
       this._object?.interacting || false;
   }
 
-  interact(hero: HeroController): void {
+  interact(hero: Hero): void {
     if (this._object && this._object.interacting) {
       this._object.interact(hero);
     } else if (this._drop && this._drop.interacting) {

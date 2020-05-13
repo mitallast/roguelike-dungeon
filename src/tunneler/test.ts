@@ -1,4 +1,4 @@
-import {Config} from "./config";
+import {DungeonCrawlerConfig} from "./config";
 import {DungeonCrawler} from "./dungeon.crawler";
 import {RNG} from "../rng";
 import * as PIXI from "pixi.js";
@@ -29,7 +29,7 @@ export class DungeonMakerTest {
     this.testDesign(loader.resources['designs/empty.2.json'].data);
   }
 
-  static testDesign(config: Config): void {
+  static testDesign(config: DungeonCrawlerConfig): void {
     console.log("config", config);
 
     console.time("crawler");

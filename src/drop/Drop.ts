@@ -1,16 +1,58 @@
 import {RNG} from "../rng";
-import {Hero, Character} from "../characters";
 import {InventoryCell} from "../inventory";
+import {Serializer} from "../persistent";
+import {Weapon, WeaponManager} from "../weapon";
+import {CharacterState} from "../characters/CharacterState";
 
 export interface Drop {
   readonly spriteName: string;
-  pickedUp(hero: Hero): boolean;
+  pickedUp(character: CharacterState): boolean;
 }
 
 export interface UsableDrop extends Drop {
   info(): DropInfo;
   same(item: UsableDrop): boolean;
-  use(cell: InventoryCell, character: Character): void;
+  use(cell: InventoryCell, character: CharacterState): void;
+}
+
+export interface UsableDropState {
+  readonly type: "HealthFlask" | "HealthBigFlask" | "Weapon";
+  readonly name?: string;
+}
+
+export class UsableDropSerializer implements Serializer<UsableDrop> {
+  private readonly _weaponManager: WeaponManager;
+
+  constructor(weaponManager: WeaponManager) {
+    this._weaponManager = weaponManager;
+  }
+
+  deserialize(value: string): UsableDrop {
+    const state: UsableDropState = JSON.parse(value);
+    switch (state.type) {
+      case "HealthFlask":
+        return new HealthFlask();
+      case "HealthBigFlask":
+        return new HealthBigFlask()
+      case "Weapon":
+        return this._weaponManager.heroWeapon(state.name!);
+    }
+  }
+
+  serialize(value: UsableDrop): string {
+    let state: UsableDropState;
+    if (value instanceof HealthFlask) {
+      state = {type: "HealthFlask"};
+    } else if (value instanceof HealthBigFlask) {
+      state = {type: "HealthBigFlask"};
+    } else if (value instanceof Weapon) {
+      state = {type: "Weapon", name: value.name};
+    } else {
+      throw "unexpected value";
+    }
+
+    return JSON.stringify(state);
+  }
 }
 
 export interface DropInfo {
@@ -34,8 +76,8 @@ export class Coins implements Drop {
     this._coins = rng.range(1, 30);
   }
 
-  pickedUp(hero: Hero): boolean {
-    hero.addCoins(this._coins);
+  pickedUp(character: CharacterState): boolean {
+    character.coins.update(c => c + this._coins);
     return true;
   }
 }
@@ -53,16 +95,16 @@ export class HealthFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: Hero): boolean {
-    return hero.inventory.add(this);
+  pickedUp(character: CharacterState): boolean {
+    return character.inventory.add(this);
   }
 
   same(item: UsableDrop): boolean {
     return item instanceof HealthFlask;
   }
 
-  use(cell: InventoryCell, character: Character): void {
-    character.heal(this._health);
+  use(cell: InventoryCell, character: CharacterState): void {
+    character.health.update(h => Math.min(character.healthMax.get(), h + this._health));
     cell.decrease();
   }
 }
@@ -80,16 +122,16 @@ export class HealthBigFlask implements UsableDrop {
     };
   }
 
-  pickedUp(hero: Hero): boolean {
-    return hero.inventory.add(this);
+  pickedUp(character: CharacterState): boolean {
+    return character.inventory.add(this);
   }
 
   same(item: UsableDrop): boolean {
     return item instanceof HealthBigFlask;
   }
 
-  use(cell: InventoryCell, character: Character): void {
-    character.heal(this._health);
+  use(cell: InventoryCell, character: CharacterState): void {
+    character.health.update(h => Math.min(character.healthMax.get(), h + this._health));
     cell.decrease();
   }
 }

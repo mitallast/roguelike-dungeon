@@ -263,7 +263,7 @@ export class InventoryCellView extends PIXI.Container implements UISelectable {
     this._sprite?.destroy();
     this._sprite = null;
     if (item) {
-      this._sprite = this._resources.sprite(item.spriteName);
+      this._sprite = this._resources.spriteOrAnimation(item.spriteName);
       const max = CELL_SIZE - (Sizes.uiBorder << 1);
       const scale = max / Math.max(this._sprite.width, this._sprite.height);
       this._sprite.scale.set(scale, scale);
@@ -341,7 +341,7 @@ export class InventoryCellCardView extends PIXI.Container {
     this._description.text = "";
 
     if (drop) {
-      const sprite = this._sprite = this._resources.sprite(drop.spriteName);
+      const sprite = this._sprite = this._resources.spriteOrAnimation(drop.spriteName);
       sprite.anchor = new PIXI.Point(0.5, 0.5);
       sprite.position.set(
         Sizes.uiMargin + (this._spriteSize >> 1),

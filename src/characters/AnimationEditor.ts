@@ -1,13 +1,14 @@
+import * as PIXI from "pixi.js";
 import {Resources} from "../resources";
 import {CharacterView} from "./CharacterView";
 import {Animator} from "./Animator";
-import {Weapon, WeaponAnimation, weapons} from "../drop";
-import InteractionEvent = PIXI.interaction.InteractionEvent;
+import {Weapon, WeaponAnimation, WeaponManager} from "../weapon";
 import {AnimationEvent} from "../animation";
 
 export class AnimationEditor {
   private readonly app: PIXI.Application;
   private readonly resources: Resources;
+  private readonly weaponManager: WeaponManager;
   private readonly view: CharacterView;
   private readonly animator: Animator;
 
@@ -15,9 +16,11 @@ export class AnimationEditor {
   private readonly xEditor: AnimationClipEditor;
   private readonly yEditor: AnimationClipEditor;
   private readonly weaponEditor: HTMLTextAreaElement;
-  private weaponAnimationQueue: WeaponAnimation[] = [];
 
-  constructor(resources: Resources) {
+  private weaponAnimationQueue: WeaponAnimation[] = [];
+  private weapon: Weapon;
+
+  constructor(resources: Resources, weaponManager: WeaponManager) {
     this.app = new PIXI.Application({
       width: 1100,
       height: 800,
@@ -29,6 +32,7 @@ export class AnimationEditor {
     this.app.ticker.start();
 
     this.resources = resources;
+    this.weaponManager = weaponManager;
 
     const viewContainer = new PIXI.Container();
     viewContainer.position.set(16, 16);
@@ -41,12 +45,13 @@ export class AnimationEditor {
       .endFill();
     viewContainer.addChild(viewBg);
 
-    this.view = new CharacterView(viewContainer, this.resources, 1, 1, () => null);
+    this.weapon = this.weaponManager.heroWeapon("rusty_sword");
+
+    this.view = new CharacterView(viewContainer, this.resources, 'knight_f_idle', 1, 1, () => null);
     this.view.setPosition(1, 2);
-    this.view.setSprite("knight_f_idle");
     this.view.setFrame(0);
     this.view.isLeft = false;
-    this.view.weapon.setWeapon(new Weapon(weapons.rusty_sword));
+    this.view.weapon.setWeapon(this.weapon);
 
     this.animator = new Animator(this.view);
 
@@ -106,7 +111,7 @@ export class AnimationEditor {
     this.weaponEditor.style.margin = "16px";
     this.weaponEditor.rows = 20;
     this.weaponEditor.cols = 80;
-    this.weaponEditor.value = JSON.stringify(weapons.rusty_sword.animations.combo, undefined, 4);
+    this.weaponEditor.value = JSON.stringify(this.weapon.animations.hit, undefined, 4);
     this.weaponEditor.addEventListener("keydown", e => e.stopPropagation());
     this.weaponEditor.addEventListener("keyup", e => e.stopPropagation());
     right.append(this.weaponEditor);
@@ -188,7 +193,7 @@ export class AnimationEditor {
   }
 
   private update(deltaTime: number): void {
-    const animationSpeed = weapons.rusty_sword.speed * 0.01
+    const animationSpeed = 0.01;
     this.animator.update(deltaTime);
     if (!this.animator.isPlaying) {
       if (this.weaponAnimationQueue.length > 0) {
@@ -225,7 +230,7 @@ export class AnimationEditor {
         // default animation
         this.animator.clear();
         this.animator.animateCharacter(animationSpeed, "knight_f_idle", 4);
-        this.animator.animateWeapon(animationSpeed, weapons.rusty_sword.animations.idle);
+        this.animator.animateWeapon(animationSpeed, this.weapon.animations.idle);
         this.animator.start();
       }
     }
@@ -458,7 +463,7 @@ class AnimationClipEditorFrame extends PIXI.Graphics {
     this._drag = false;
   }
 
-  private dragMove(event: InteractionEvent): void {
+  private dragMove(event: PIXI.interaction.InteractionEvent): void {
     if (this._drag) {
       const pos = event.data.getLocalPosition(this.parent);
       const time = this._editor.xToTime(pos.x);

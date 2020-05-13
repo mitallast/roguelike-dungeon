@@ -6,10 +6,8 @@ import {YouDeadScene} from "../dead.scene";
 import {GenerateOptions, GenerateDungeonScene, DungeonScene, DungeonMap, DungeonBonfireModal} from "../dungeon";
 import {KeyBindScene} from "../keybind.scene";
 import {SelectHeroScene} from "../select.hero.scene";
-import {UpdateHeroScene} from "../update.hero.scene";
 import {InventoryModalScene} from "../inventory";
-import {Hero, Npc} from "../characters";
-import {PersistentState, SessionPersistentState} from "../persistent.state";
+import {HeroState, HeroStateManager, NpcManager, NpcState} from "../characters";
 import {DialogManager, DialogModalScene} from "../dialog";
 import {Banner, BannerOptions} from "./Banner";
 import {
@@ -19,6 +17,9 @@ import {
 } from "../inventory";
 import {Scene} from "./Scene";
 import {ModalScene} from "./ModalScene";
+import {PersistentStore} from "../persistent";
+import {MonsterManager} from "../characters/monsters";
+import {WeaponManager} from "../weapon";
 
 export class SceneController {
   private readonly _app: PIXI.Application;
@@ -26,17 +27,21 @@ export class SceneController {
   private _modalScene: ModalScene | null = null;
   private _banner: Banner | null = null;
 
-  readonly persistent: PersistentState;
   readonly rng: RNG;
   readonly joystick: Joystick;
   readonly resources: Resources;
   readonly ticker: PIXI.Ticker;
   readonly loader: PIXI.Loader;
   readonly screen: PIXI.Rectangle;
-  readonly dialogs: DialogManager;
+  readonly store: PersistentStore;
+
+  readonly dialogManager: DialogManager;
+  readonly heroManager: HeroStateManager;
+  readonly npcManager: NpcManager;
+  readonly monsterManager: MonsterManager;
+  readonly weaponManager: WeaponManager;
 
   constructor(app: PIXI.Application) {
-    this.persistent = new SessionPersistentState();
     this.rng = RNG.create();
     this.joystick = new Joystick();
     this.resources = new Resources(app.loader);
@@ -44,14 +49,20 @@ export class SceneController {
     this.ticker = app.ticker;
     this.loader = app.loader;
     this.screen = app.screen;
-    this.dialogs = new DialogManager(this);
-
-    this.ticker.add(this.persistent.global.commit, this.persistent.global, PIXI.UPDATE_PRIORITY.LOW);
-    this.ticker.add(this.persistent.session.commit, this.persistent.session, PIXI.UPDATE_PRIORITY.LOW);
+    this.store = PersistentStore.init("#");
+    this.dialogManager = new DialogManager(this);
+    this.heroManager = new HeroStateManager(this);
+    this.npcManager = new NpcManager(this);
+    this.monsterManager = new MonsterManager(this);
+    this.weaponManager = new WeaponManager(this);
   }
 
   async init(): Promise<void> {
     await this.resources.load();
+    this.weaponManager.init();
+    this.npcManager.init();
+    this.monsterManager.init();
+    this.dialogManager.init();
   }
 
   destroy(): void {
@@ -78,10 +89,6 @@ export class SceneController {
     this.setScene(new SelectHeroScene(this));
   }
 
-  updateHero(hero: Hero, level: number): void {
-    this.setScene(new UpdateHeroScene(this, {level: level, hero: hero}));
-  }
-
   dead(): void {
     this.setScene(new YouDeadScene(this));
   }
@@ -90,8 +97,8 @@ export class SceneController {
     this.setScene(new GenerateDungeonScene(this, options));
   }
 
-  dungeon(hero: Hero, dungeon: DungeonMap): void {
-    this.setScene(new DungeonScene(this, hero, dungeon));
+  dungeon(dungeon: DungeonMap): void {
+    this.setScene(new DungeonScene(this, dungeon));
   }
 
   private modal(scene: ModalScene): void {
@@ -114,27 +121,27 @@ export class SceneController {
     this._scene?.resume();
   }
 
-  showInventory(hero: Hero): void {
-    const actions = new HeroInventoryController(hero.inventory);
+  showInventory(hero: HeroState): void {
+    const actions = new HeroInventoryController(hero);
     this.modal(new InventoryModalScene(this, actions));
   }
 
-  sellInventory(hero: Hero, npc: Npc): void {
+  sellInventory(hero: HeroState, npc: NpcState): void {
     const actions = new SellingInventoryController(hero, npc);
     this.modal(new InventoryModalScene(this, actions));
   }
 
-  buyInventory(hero: Hero, npc: Npc): void {
+  buyInventory(hero: HeroState, npc: NpcState): void {
     const actions = new BuyingInventoryController(hero, npc);
     this.modal(new InventoryModalScene(this, actions));
   }
 
-  showDialog(hero: Hero, npc: Npc): void {
-    const dialog = this.dialogs.dialog(hero, npc);
+  showDialog(hero: HeroState, npc: NpcState): void {
+    const dialog = this.dialogManager.dialog(hero, npc);
     this.modal(new DialogModalScene(this, dialog));
   }
 
-  showBonfire(hero: Hero): void {
+  showBonfire(hero: HeroState): void {
     this.modal(new DungeonBonfireModal(this, hero));
   }
 

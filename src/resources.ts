@@ -10,7 +10,7 @@ export interface AnimatedSpriteOptions {
 export class Resources {
   readonly loader: PIXI.Loader;
 
-  private readonly _sprites: Partial<Record<string, PIXI.Texture>> = {};
+  private readonly _textures: Partial<Record<string, PIXI.Texture>> = {};
   private readonly _animations: Partial<Record<string, any>> = {};
 
   constructor(loader: PIXI.Loader) {
@@ -20,14 +20,17 @@ export class Resources {
   async load(): Promise<void> {
     return await new Promise<void>((resolve => {
       this.loader
+        // tilemaps
+        .add('spritesheets/npc.json')
+        .add('spritesheets/dungeon.json')
+        .add('spritesheets/bonfire.json')
         // configs
-        .add('npc.json')
-        .add('dungeon.json')
-        .add('bonfire.json')
         .add('dungeon.rules.json')
-        .add('dungeon.rules.4.json')
         .add('dungeon.design.json')
         .add('dialogs.json')
+        .add('npc.config.json')
+        .add('weapon.config.json')
+        .add('monster.config.json')
         // fonts
         .add('alagard', 'fonts/alagard.fnt')
         // sounds
@@ -41,9 +44,11 @@ export class Resources {
         .add('hit_damage', 'sounds/hit_damage.{ogg,mp3}')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-          this.add(resources['npc.json']!.spritesheet!);
-          this.add(resources['dungeon.json']!.spritesheet!);
-          this.add(resources['bonfire.json']!.spritesheet!);
+          this.add(resources['spritesheets/npc.json']!.spritesheet!);
+          this.add(resources['spritesheets/dungeon.json']!.spritesheet!);
+          this.add(resources['spritesheets/bonfire.json']!.spritesheet!);
+          console.log('_animations', this._animations);
+          console.log('_textures', this._textures);
           resolve();
         });
     }));
@@ -52,37 +57,37 @@ export class Resources {
   private add(spritesheet: PIXI.Spritesheet): void {
     spritesheet.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     for (const name of Object.keys(spritesheet.textures)) {
-      this._sprites[name] = spritesheet.textures[name];
+      this._textures[name] = spritesheet.textures[name];
     }
     for (const name of Object.keys(spritesheet.animations)) {
       this._animations[name] = spritesheet.animations[name];
     }
   }
 
-  sprite(name: string, options: AnimatedSpriteOptions = {}): PIXI.Sprite | PIXI.AnimatedSprite {
-    if (this._sprites[name]) {
-      return this.fixed(name);
-    } else if (this._animations[name]) {
-      return this.animated(name, options);
-    } else {
-      throw `sprite or animation not found: ${name}`;
+  texture(name: string): PIXI.Texture {
+    const texture = this._textures[name];
+    if (!texture) {
+      throw `texture not found: ${name}`;
     }
+    return texture;
   }
 
-  fixed(name: string): PIXI.Sprite {
-    if (!this._sprites[name]) {
-      throw `sprite not found: ${name}`;
-    }
-    const sprite = new PIXI.Sprite(this._sprites[name]);
+  sprite(name: string): PIXI.Sprite {
+    const sprite = new PIXI.Sprite(this.texture(name));
     sprite.name = name;
     return sprite;
   }
 
-  animated(name: string, options: AnimatedSpriteOptions = {}): PIXI.AnimatedSprite {
-    if (!this._animations[name]) {
+  animation(name: string): PIXI.Texture[] {
+    const animation = this._animations[name];
+    if (!animation) {
       throw `animation not found: ${name}`;
     }
-    const sprite = new PIXI.AnimatedSprite(this._animations[name]);
+    return [...animation];
+  }
+
+  animatedSprite(name: string, options: AnimatedSpriteOptions = {}): PIXI.AnimatedSprite {
+    const sprite = new PIXI.AnimatedSprite(this.animation(name));
     sprite.name = name;
     sprite.autoUpdate = options.autoUpdate !== undefined ? options.autoUpdate : true;
     sprite.animationSpeed = options.animationSpeed !== undefined ? options.animationSpeed : 0.2;
@@ -91,5 +96,15 @@ export class Resources {
       sprite.play();
     }
     return sprite;
+  }
+
+  spriteOrAnimation(name: string, options: AnimatedSpriteOptions = {}): PIXI.Sprite | PIXI.AnimatedSprite {
+    if (this._textures[name]) {
+      return this.sprite(name);
+    } else if (this._animations[name]) {
+      return this.animatedSprite(name, options);
+    } else {
+      throw `sprite or animation not found: ${name}`;
+    }
   }
 }

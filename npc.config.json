@@ -1,0 +1,389 @@
+{
+  "$schema": "npc.config.schema.json",
+  "npc": {
+    "alchemist": {
+      "name": "alchemist",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": [
+        "potions"
+      ],
+      "width": 1,
+      "height": 1
+    },
+    "archer": {
+      "width": 1,
+      "height": 1,
+      "name": "archer",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "bishop": {
+      "width": 1,
+      "height": 2,
+      "name": "bishop",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "blacksmith": {
+      "width": 1,
+      "height": 1,
+      "name": "blacksmith",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [
+        "hammer"
+      ],
+      "trading": [
+        "weapons"
+      ]
+    },
+    "butcher": {
+      "width": 1,
+      "height": 1,
+      "name": "butcher",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": []
+    },
+    "executioner": {
+      "width": 2,
+      "height": 2,
+      "name": "executioner",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [
+        "axe"
+      ],
+      "trading": []
+    },
+    "herald": {
+      "width": 1,
+      "height": 1,
+      "name": "herald",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "king": {
+      "width": 1,
+      "height": 1,
+      "name": "king",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "knight": {
+      "width": 1,
+      "height": 1,
+      "name": "knight",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [
+        "regular_sword"
+      ],
+      "trading": []
+    },
+    "knight_elite": {
+      "width": 1,
+      "height": 1,
+      "name": "knight_elite",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [
+        "regular_sword"
+      ],
+      "trading": []
+    },
+    "knight_heavy": {
+      "width": 1,
+      "height": 1,
+      "name": "knight_heavy",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [
+        "regular_sword"
+      ],
+      "trading": []
+    },
+    "large_knight": {
+      "width": 2,
+      "height": 2,
+      "name": "large_knight",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [
+        "knight_sword"
+      ],
+      "trading": []
+    },
+    "large_knight_elite": {
+      "name": "large_knight_elite",
+      "width": 2,
+      "height": 2,
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "coins": 0,
+      "speed": 1,
+      "skills": [],
+      "weapons": [
+        "knight_sword"
+      ],
+      "trading": []
+    },
+    "mage": {
+      "width": 1,
+      "height": 1,
+      "name": "mage",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": [
+        "potions"
+      ]
+    },
+    "magic_shop_keeper": {
+      "width": 1,
+      "height": 1,
+      "name": "magic_shop_keeper",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": [
+        "potions"
+      ]
+    },
+    "merchant": {
+      "width": 1,
+      "height": 1,
+      "name": "merchant",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 10000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": [
+        "potions"
+      ]
+    },
+    "mountain_king": {
+      "width": 1,
+      "height": 1,
+      "name": "mountain_king",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "nun": {
+      "width": 1,
+      "height": 1,
+      "name": "nun",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [
+        "heal"
+      ],
+      "weapons": [],
+      "trading": []
+    },
+    "nun_fat": {
+      "width": 1,
+      "height": 1,
+      "name": "nun_fat",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [
+        "heal"
+      ],
+      "weapons": [],
+      "trading": []
+    },
+    "nun_tall": {
+      "width": 1,
+      "height": 1,
+      "name": "nun_tall",
+      "healthMax": 100,
+      "health": 100,
+      "speed": 1,
+      "baseDamage": 1,
+      "coins": 0,
+      "skills": [
+        "heal"
+      ],
+      "weapons": [],
+      "trading": []
+    },
+    "princess": {
+      "width": 1,
+      "height": 1,
+      "name": "princess",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 0,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "queen": {
+      "width": 1,
+      "height": 1,
+      "name": "queen",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "coins": 0,
+      "speed": 1,
+      "skills": [],
+      "weapons": [],
+      "trading": []
+    },
+    "thief": {
+      "width": 1,
+      "height": 1,
+      "name": "thief",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 1000,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [
+        "knife"
+      ],
+      "trading": []
+    },
+    "townsfolk_f": {
+      "width": 1,
+      "height": 1,
+      "name": "townsfolk_f",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 100,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": []
+    },
+    "townsfolk_m": {
+      "width": 1,
+      "height": 1,
+      "name": "townsfolk_m",
+      "healthMax": 100,
+      "health": 100,
+      "baseDamage": 1,
+      "speed": 1,
+      "coins": 100,
+      "skills": [
+        "selling",
+        "buying"
+      ],
+      "weapons": [],
+      "trading": []
+    }
+  }
+}

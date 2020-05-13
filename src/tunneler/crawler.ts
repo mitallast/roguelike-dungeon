@@ -1,12 +1,12 @@
 import {TunnelerCellType, ImmutablePoint, Point} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
-import {Config} from "./config";
+import {DungeonCrawlerConfig} from "./config";
 import {RNG} from "../rng";
 
 export abstract class Crawler {
   protected readonly rng: RNG;
   protected readonly dungeonCrawler: DungeonCrawler;
-  protected readonly config: Config;
+  protected readonly config: DungeonCrawlerConfig;
   protected location: Point;
   protected direction: Point; // the direction the crawler is facing
   age: number;

@@ -273,7 +273,7 @@ class EditorMapCell extends PIXI.Container {
     this.floorSprite?.destroy();
     this.floorSprite = null;
     if (name) {
-      this.floorSprite = this._resources.sprite(name);
+      this.floorSprite = this._resources.spriteOrAnimation(name);
       this.floorSprite.zIndex = DungeonZIndexes.floor;
       this.addChild(this.floorSprite);
       this.sortChildren();
@@ -284,7 +284,7 @@ class EditorMapCell extends PIXI.Container {
     this.wallSprite?.destroy();
     this.wallSprite = null;
     if (name) {
-      this.wallSprite = this._resources.sprite(name);
+      this.wallSprite = this._resources.spriteOrAnimation(name);
       this.wallSprite.zIndex = DungeonZIndexes.wall;
       this.addChild(this.wallSprite);
       this.sortChildren();
@@ -336,7 +336,7 @@ abstract class SpritePaletteCell extends EditorPaletteCell {
   }
 
   init(): void {
-    const sprite = this.resources.sprite(this.name);
+    const sprite = this.resources.spriteOrAnimation(this.name);
     this.addChild(sprite);
   }
 
@@ -744,14 +744,14 @@ class SimpleTiledWFC {
             const [floor, wall] = tileset.cells[t];
             const tiles = (floor >= 0 ? 1 : 0) + (wall >= 0 ? 1 : 0);
             if (floor >= 0) {
-              const sprite = this._resources.sprite(tileset.tiles[floor]);
+              const sprite = this._resources.spriteOrAnimation(tileset.tiles[floor]);
               sprite.position.set(x * tilesize, y * tilesize);
               sprite.zIndex = 1;
               sprite.alpha = alpha * (1 / tiles);
               container.addChild(sprite);
             }
             if (wall >= 0) {
-              const sprite = this._resources.sprite(tileset.tiles[wall]);
+              const sprite = this._resources.spriteOrAnimation(tileset.tiles[wall]);
               sprite.position.set(x * tilesize, y * tilesize);
               sprite.zIndex = 2;
               sprite.alpha = alpha * (1 / tiles);

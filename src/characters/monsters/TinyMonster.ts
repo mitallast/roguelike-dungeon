@@ -1,73 +1,26 @@
-import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {
-  Monster,
-  MonsterCategory,
-  MonsterController,
-  MonsterHitController,
-  MonsterType
-} from "./Monster";
-import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
-import {FiniteStateMachine} from "../fsm";
+import {DungeonMap, DungeonZIndexes} from "../../dungeon";
+import {Monster, MonsterHitController} from "./Monster";
+import {FiniteStateMachine} from "../../fsm";
+import {MonsterState} from "./MonsterState";
 
-export interface TinyMonsterConfig {
-  readonly name: string;
-  readonly category: MonsterCategory;
-  readonly type: MonsterType.NORMAL | MonsterType.MINION;
-  readonly luck: number;
-  readonly weapons: readonly WeaponConfig[];
-}
+export class TinyMonster extends Monster {
 
-const knife = monsterWeapons.knife;
-
-export const tinyMonsters: TinyMonsterConfig[] = [
-  {name: "chort", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {name: "wogol", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {name: "imp", category: MonsterCategory.DEMON, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {name: "ice_zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
-  {name: "tiny_zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
-  {name: "zombie", category: MonsterCategory.ZOMBIE, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
-  {name: "masked_orc", category: MonsterCategory.ORC, type: MonsterType.NORMAL, luck: 0.3, weapons: [knife]},
-  {name: "orc_warrior", category: MonsterCategory.ORC, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
-  {name: "goblin", category: MonsterCategory.ORC, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
-  {name: "swampy", category: MonsterCategory.SLIME, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {name: "muddy", category: MonsterCategory.SLIME, type: MonsterType.NORMAL, luck: 0.3, weapons: []},
-  {name: "skeleton", category: MonsterCategory.UNDEAD, type: MonsterType.MINION, luck: 0.3, weapons: [knife]},
-];
-
-export class TinyMonsterController extends MonsterController {
-  readonly character: Monster;
-
-  constructor(config: TinyMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {
+  constructor(state: MonsterState, dungeon: DungeonMap, x: number, y: number) {
+    super(state, dungeon, {
       x: x,
       y: y,
       width: 1,
       height: 1,
       static: false,
       interacting: false,
+      animation: state.name + "_idle",
       zIndex: DungeonZIndexes.character,
-      maxDistance: 7,
     });
-    this.character = new Monster({
-      name: config.name,
-      category: config.category,
-      type: config.type,
-      speed: 0.8,
-      healthMax: 20 + 2 * dungeon.level * 2,
-      level: dungeon.level,
-      luck: config.luck,
-      baseDamage: 1 + 0.5 * dungeon.level,
-      xp: 35 + 5 * dungeon.level,
-    });
-    const weapon = config.luck < this._dungeon.rng.float() ? Weapon.select(this._dungeon.rng, config.weapons) : null;
-    if (weapon) {
-      this.character.inventory.equipment.weapon.set(weapon);
-    }
     this.init();
   }
 
   protected onDead(): void {
-    if (Math.random() < this.character.luck) {
+    if (Math.random() < this.state.luck) {
       this.findDropCell()?.randomDrop();
     }
     this.destroy();
@@ -267,12 +220,10 @@ export class TinyMonsterController extends MonsterController {
     // initial
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.HIT)
-      .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => this.heroOnAttack);
 
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.RUN)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(TinyMonsterAttackState.INITIAL)
@@ -291,12 +242,11 @@ export class TinyMonsterController extends MonsterController {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(TinyMonsterAttackState.IDLE)
       .transitionTo(TinyMonsterAttackState.RUN)
       .condition(() => idle.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(TinyMonsterAttackState.IDLE)
@@ -316,12 +266,11 @@ export class TinyMonsterController extends MonsterController {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(TinyMonsterAttackState.RUN)
       .transitionTo(TinyMonsterAttackState.RUN)
       .condition(() => run.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(TinyMonsterAttackState.RUN)
@@ -336,7 +285,6 @@ export class TinyMonsterController extends MonsterController {
     fsm.state(TinyMonsterAttackState.HIT)
       .transitionTo(TinyMonsterAttackState.RUN)
       .condition(() => hit.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(TinyMonsterAttackState.HIT)

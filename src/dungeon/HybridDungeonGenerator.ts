@@ -1,24 +1,15 @@
 import {SceneController} from "../scene";
 import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "../wfc/even.simple.tiled";
 import {Resolution} from "../wfc/model";
-import {Config, Room} from "../tunneler";
+import {DungeonCrawlerConfig, Room} from "../tunneler";
 import {yields} from "../concurency";
 import {RNG} from "../rng";
 import {BaseDungeonGenerator, GenerateOptions} from "./DungeonGenerator";
 import {DungeonMap, DungeonMapCell} from "./DungeonMap";
-import {
-  BossConfig,
-  BossMonsterController, bossMonsters,
-  Hero,
-  HeroController,
-  MonsterCategory,
-  NpcController,
-  NPCs, SummonMonsterController, summonMonsters, TinyMonsterController,
-  tinyMonsters
-} from "../characters";
+import {Hero, HeroState} from "../characters";
 import {DungeonBonfire} from "./DungeonBonfire";
 import {DungeonLightType} from "./DungeonLight";
-import {Coins, HealthBigFlask, HealthFlask, Weapon, weaponConfigs} from "../drop";
+import {Coins, HealthBigFlask, HealthFlask} from "../drop";
 
 export class HybridDungeonGenerator extends BaseDungeonGenerator {
   private _model: EvenSimpleTiledModel | null = null;
@@ -32,18 +23,18 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
   }
 
   async generate(options: GenerateOptions): Promise<DungeonMap> {
-    const tileset: TilesetRules = this.controller.loader.resources['dungeon.rules.4.json'].data;
-    const config: Config = this.controller.loader.resources['dungeon.design.json'].data;
+    const tileset: TilesetRules = this.controller.loader.resources['dungeon.rules.json'].data;
+    const config: DungeonCrawlerConfig = this.controller.loader.resources['dungeon.design.json'].data;
 
-    const hero = options.hero;
+    const hero = this.controller.heroManager.state(options.hero);
     let seed: number;
-    if (hero.dungeonSeeds.has(options.level)) {
-      seed = hero.dungeonSeeds.get(options.level)!;
+    if (hero.dungeons.hasSeed(options.level)) {
+      seed = hero.dungeons.getSeed(options.level);
       console.log(`dungeon level ${options.level} exists seed: ${seed}`);
     } else {
       seed = this.controller.rng.int();
       console.log(`dungeon level ${options.level} new seed: ${seed}`);
-      hero.dungeonSeeds.set(options.level, seed);
+      hero.dungeons.setSeed(options.level, seed);
     }
     const rng = RNG.seeded(seed);
 
@@ -100,9 +91,9 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
 
     const isBoss = options.level % 5 === 0;
     if (isBoss) {
-      await this.placeWithBoss(rng, dungeon, rooms, options.hero);
+      await this.placeWithBoss(rng, dungeon, rooms, hero);
     } else {
-      await this.placeWithoutBoss(rng, dungeon, rooms, options.hero);
+      await this.placeWithoutBoss(rng, dungeon, rooms, hero);
     }
 
     await this.placeDrop(rng, dungeon);
@@ -112,26 +103,26 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     return dungeon;
   }
 
-  private async placeWithoutBoss(rng: RNG, dungeon: DungeonMap, rooms: Room[], hero: Hero): Promise<void> {
+  private async placeWithoutBoss(rng: RNG, dungeon: DungeonMap, rooms: Room[], hero: HeroState): Promise<void> {
     const spawnRoom = rooms.shift()!; // 1st biggest room
     const exitRoom = rooms.shift()!; // 2nd biggest room
 
-    const heroAI = await this.placeHero(rng, dungeon, hero, spawnRoom);
+    await this.placeHero(rng, dungeon, hero, spawnRoom);
     await this.placeLadder(rng, dungeon, exitRoom);
-    await this.placeBonfire(rng, dungeon, heroAI, spawnRoom);
+    await this.placeBonfire(rng, dungeon, hero, spawnRoom);
     await this.placeNpc(rng, dungeon, spawnRoom);
 
     await this.placeMonsters(rng, dungeon, spawnRoom);
   }
 
-  private async placeWithBoss(rng: RNG, dungeon: DungeonMap, rooms: Room[], hero: Hero): Promise<void> {
+  private async placeWithBoss(rng: RNG, dungeon: DungeonMap, rooms: Room[], hero: HeroState): Promise<void> {
     const bossRoom = rooms.shift()!; // 1st biggest room
     const spawnRoom = rooms.shift()!; //  2nd biggest room
 
-    const heroAI = await this.placeHero(rng, dungeon, hero, spawnRoom);
+    await this.placeHero(rng, dungeon, hero, spawnRoom);
 
     await this.placeNpc(rng, dungeon, spawnRoom);
-    await this.placeBonfire(rng, dungeon, heroAI, spawnRoom);
+    await this.placeBonfire(rng, dungeon, hero, spawnRoom);
 
     await this.placeLadder(rng, dungeon, bossRoom);
     await this.placeBoss(rng, dungeon, bossRoom);
@@ -139,12 +130,11 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     await this.placeMonsters(rng, dungeon, spawnRoom);
   }
 
-  private async placeHero(rng: RNG, dungeon: DungeonMap, hero: Hero, room: Room): Promise<HeroController> {
+  private async placeHero(rng: RNG, dungeon: DungeonMap, hero: HeroState, room: Room): Promise<void> {
     const cell = this.findSpawnCellInRoom(rng, dungeon, 3, 3, room);
     if (cell) {
-      const ai = new HeroController(hero, dungeon, cell.x + 1, cell.y - 2);
+      const ai = new Hero(hero, dungeon, cell.x + 1, cell.y - 2);
       dungeon.light.addLight(ai.view, DungeonLightType.HERO);
-      return ai;
     } else {
       throw "error place bonfire";
     }
@@ -159,10 +149,10 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     }
   }
 
-  private async placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroController, room: Room): Promise<void> {
+  private async placeBonfire(rng: RNG, dungeon: DungeonMap, hero: HeroState, room: Room): Promise<void> {
     const cell = this.findSpawnCellInRoom(rng, dungeon, 3, 3, room);
     if (cell) {
-      const light = hero.character.bonfires.has(dungeon.level);
+      const light = hero.dungeons.hasBonfire(dungeon.level);
       new DungeonBonfire(dungeon, cell.x + 1, cell.y - 1, light);
     } else {
       throw "error place bonfire";
@@ -174,8 +164,7 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     for (let i = 0; i < npcCount; i++) {
       const cell = this.findSpawnCellInRoom(rng, dungeon, 2, 2, room);
       if (cell) {
-        const config = rng.select(NPCs)!;
-        new NpcController(config, dungeon, cell.x, cell.y);
+        this.controller.npcManager.spawnRandom(dungeon, cell.x, cell.y);
       } else {
         break;
       }
@@ -184,12 +173,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
 
   private async placeBoss(rng: RNG, dungeon: DungeonMap, room: Room): Promise<void> {
     const cell = this.findSpawnCellInRoom(rng, dungeon, 4, 4, room);
-    if (cell) {
-      const config = this.bossConfig(dungeon);
-      new BossMonsterController(config, dungeon, cell.x + 1, cell.y - 1);
-    } else {
-      throw "error place boos";
-    }
+    if (!cell) throw "error place boos";
+    this.controller.monsterManager.spawnLevelBossMonster(dungeon, cell.x + 1, cell.y - 1);
   }
 
   private async placeMonsters(rng: RNG, dungeon: DungeonMap, exclude: Room): Promise<void> {
@@ -206,59 +191,35 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     console.log(`tiny monster count: ${tinyMonsterCount}`);
     console.log(`summon monster count: ${summonMonsterCount}`);
 
-    const category = this.bossConfig(dungeon).category;
-
     for (let m = 0; m < tinyMonsterCount; m++) {
-      if (!await this.placeTinyMonster(rng, dungeon, exclude, category)) {
+      if (!await this.placeTinyMonster(rng, dungeon, exclude)) {
         break;
       }
     }
     for (let m = 0; m < summonMonsterCount; m++) {
-      if (!await this.placeSummonMonster(rng, dungeon, exclude, category)) {
+      if (!await this.placeSummonMonster(rng, dungeon, exclude)) {
         break;
       }
     }
   }
 
-  private async placeTinyMonster(rng: RNG, dungeon: DungeonMap, exclude: Room, category: MonsterCategory): Promise<boolean> {
-    const filteredMonsters = tinyMonsters.filter(config => {
-      return config.category === category ||
-        (config.category != MonsterCategory.DEMON &&
-          config.category != MonsterCategory.ORC &&
-          config.category != MonsterCategory.ZOMBIE);
-    });
-    if (filteredMonsters.length === 0) {
-      console.warn("no tiny monster config found");
-      return false;
-    }
+  private async placeTinyMonster(rng: RNG, dungeon: DungeonMap, exclude: Room): Promise<boolean> {
     const cell = this.findSpawnCellExcludeRoom(rng, dungeon, 2, 2, exclude);
     if (cell === null) {
       console.warn("no free place for tiny monster");
       return false;
     }
-    const config = rng.select(filteredMonsters)!;
-    new TinyMonsterController(config, dungeon, cell.x, cell.y);
+    this.controller.monsterManager.spawnRandomTinyMonster(dungeon, cell.x, cell.y);
     return true;
   }
 
-  private async placeSummonMonster(rng: RNG, dungeon: DungeonMap, exclude: Room, category: MonsterCategory): Promise<boolean> {
-    const filteredSummonMonsters = summonMonsters.filter(config => {
-      return config.category === category ||
-        (config.category != MonsterCategory.DEMON &&
-          config.category != MonsterCategory.ORC &&
-          config.category != MonsterCategory.ZOMBIE);
-    });
-    if (filteredSummonMonsters.length === 0) {
-      console.warn("no summon monster config found");
-      return false;
-    }
+  private async placeSummonMonster(rng: RNG, dungeon: DungeonMap, exclude: Room): Promise<boolean> {
     const cell = this.findSpawnCellExcludeRoom(rng, dungeon, 3, 3, exclude);
     if (cell === null) {
       console.warn("no free place for tiny monster");
       return false;
     }
-    const config = rng.select(filteredSummonMonsters)!;
-    new SummonMonsterController(config, dungeon, cell.x + 1, cell.y - 1);
+    this.controller.monsterManager.spawnRandomSummonMonster(dungeon, cell.x + 1, cell.y - 1);
     return true;
   }
 
@@ -289,7 +250,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     console.log(`weapons     = ${weaponCount}`);
 
     for (let i = 0; i < weaponCount && free.length > 0; i++) {
-      nextCell().dropItem = Weapon.select(rng, weaponConfigs);
+      // nextCell().dropItem = Weapon.create(rng, dungeon.level);
+      nextCell().dropItem = this.controller.weaponManager.randomHeroWeapon(dungeon);
     }
     for (let i = 0; i < healthBigFlaskCount && free.length > 0; i++) {
       nextCell().dropItem = new HealthBigFlask();
@@ -341,9 +303,5 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
       }
     }
     return rng.select(free);
-  }
-
-  private bossConfig(dungeon: DungeonMap): BossConfig {
-    return bossMonsters[Math.floor((dungeon.level - 1) / 5) % bossMonsters.length];
   }
 }

@@ -27,7 +27,7 @@ export class DialogModalScene extends ModalScene {
     });
     container.addChild(iconView);
 
-    const icon = this._controller.resources.animated(this._dialog.npc.name + "_idle");
+    const icon = this._controller.resources.animatedSprite(this._dialog.npc.name + "_idle");
     icon.width = icon.width * 4;
     icon.height = icon.height * 4;
     iconView.addChild(icon);

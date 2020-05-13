@@ -1,7 +1,6 @@
 import * as PIXI from "pixi.js";
 import {Scene, SceneController} from "./scene";
-import {heroCharacterNames, Hero} from "./characters";
-import {Weapon, weapons} from "./drop";
+import {heroNames} from "./characters";
 import {Colors, UISelectable, UISelectableGrid} from "./ui";
 import {Resources} from "./resources";
 
@@ -45,7 +44,7 @@ export class SelectHeroScene extends Scene {
   private renderHeroes(): void {
     const screen = this._controller.screen;
 
-    const total = heroCharacterNames.length;
+    const total = heroNames.length;
 
     const rectWidth = Math.floor((screen.width - MARGIN * (total + 1)) / total);
     const spriteWidth = rectWidth - (MARGIN << 1);
@@ -54,7 +53,7 @@ export class SelectHeroScene extends Scene {
     const rectHeight = spriteHeight + TITLE_H + MARGIN * 3;
 
     for (let i = 0; i < total; i++) {
-      const heroName = heroCharacterNames[i];
+      const heroName = heroNames[i];
 
       const posX = MARGIN * (i + 1) + rectWidth * i;
       const posY = (screen.height >> 1) - (rectHeight >> 1);
@@ -69,12 +68,13 @@ export class SelectHeroScene extends Scene {
   }
 
   private select(name: string): void {
-    const hero = Hero.load(name, this._controller.persistent);
-    const weapon = new Weapon(weapons.knife);
-    hero.inventory.equipment.weapon.set(weapon);
+    const state = this._controller.heroManager.state(name);
+    const bonfires = state.dungeons.bonfires();
+    const level = bonfires.length > 0 ? bonfires[bonfires.length - 1] : 1;
+
     this._controller.generateDungeon({
-      level: 1,
-      hero: hero
+      level: level,
+      hero: name
     });
   }
 }
@@ -110,7 +110,7 @@ class SelectHeroView extends PIXI.Container implements UISelectable {
     const scale = spriteWidth / TILE_W;
     const spriteHeight = Math.floor(TILE_H * scale);
 
-    this._sprite = resources.animated(heroName + "_idle");
+    this._sprite = resources.animatedSprite(heroName + "_idle");
     this._sprite.width = spriteWidth;
     this._sprite.height = spriteHeight;
     this._sprite.position.set(MARGIN, MARGIN + MARGIN + TITLE_H);

@@ -17,6 +17,7 @@ export class ObservableVar<T> implements Observable<T> {
 
   set(value: T): void {
     this._value = value;
+    this.onUpdate(value);
     for (let i = this._listeners.length - 1; i >= 0; i--) {
       const listener = this._listeners[i];
       if (listener.gc) {
@@ -25,6 +26,10 @@ export class ObservableVar<T> implements Observable<T> {
         listener.send(this._value);
       }
     }
+  }
+
+  protected onUpdate(_value: T): void {
+
   }
 
   update(f: (value: T) => T): void {

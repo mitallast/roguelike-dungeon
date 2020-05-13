@@ -13,6 +13,7 @@
         "answers": [
           {
             "text": "Hi, my name is {{hero.name}}!",
+            "conditions": [],
             "commands": [
               "context('meets', true)",
               "goto('hello', 'hello-again')"
@@ -50,6 +51,7 @@
           },
           {
             "text": "Bye!",
+            "conditions": [],
             "commands": [
               "exit()"
             ]
@@ -58,9 +60,11 @@
       },
       "hello-again": {
         "text": "Hello, {{hero.name}}!",
+        "conditions": [],
         "answers": [
           {
             "text": "Hi, {{npc.name}}!",
+            "conditions": [],
             "commands": [
               "goto('hello', 'hello-again')"
             ]
@@ -97,6 +101,7 @@
           },
           {
             "text": "Bye!",
+            "conditions": [],
             "commands": [
               "exit()"
             ]
@@ -105,15 +110,18 @@
       },
       "take-care": {
         "text": "Take care of yourself, {{hero.name}}",
+        "conditions": [],
         "answers": [
           {
             "text": "Thanks!",
+            "conditions": [],
             "commands": [
               "goto('hello', 'hello-again')"
             ]
           },
           {
             "text": "Bye!",
+            "conditions": [],
             "commands": [
               "exit()"
             ]

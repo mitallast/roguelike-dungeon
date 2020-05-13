@@ -1,76 +1,27 @@
-import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {Monster, MonsterCategory, MonsterController, MonsterHitController, MonsterType} from "./Monster";
-import {Colors} from "../ui";
-import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
-import {BossHealthView} from "./BossHealthView";
-import {FiniteStateMachine} from "../fsm";
+import {DungeonMap, DungeonObject, DungeonZIndexes} from "../../dungeon";
+import {Monster, MonsterHitController} from "./Monster";
+import {FiniteStateMachine} from "../../fsm";
+import {MonsterState} from "./MonsterState";
+import {Colors} from "../../ui";
 
-export interface BossConfig {
-  readonly name: string;
-  readonly category: MonsterCategory;
-  readonly weapons: readonly WeaponConfig[];
-}
+export class BossMonster extends Monster {
+  static type: (o: DungeonObject) => o is BossMonster =
+    (o: DungeonObject): o is BossMonster => {
+      return o instanceof BossMonster;
+    };
 
-export const bossMonsters: BossConfig[] = [
-  {
-    name: "big_zombie", category: MonsterCategory.ZOMBIE, weapons: [
-      monsterWeapons.anime_sword,
-      monsterWeapons.baton_with_spikes,
-      monsterWeapons.big_hammer,
-      monsterWeapons.cleaver,
-      monsterWeapons.mace,
-    ]
-  },
-  {
-    name: "ogre", category: MonsterCategory.ORC, weapons: [
-      monsterWeapons.anime_sword,
-      monsterWeapons.baton_with_spikes,
-      monsterWeapons.big_hammer,
-      monsterWeapons.cleaver,
-      monsterWeapons.mace,
-    ]
-  },
-  {name: "big_demon", category: MonsterCategory.DEMON, weapons: []},
-];
-
-export class BossMonsterController extends MonsterController {
-  readonly character: Monster;
-
-  constructor(config: BossConfig, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {
+  constructor(state: MonsterState, dungeon: DungeonMap, x: number, y: number) {
+    super(state, dungeon, {
       width: 2,
       height: 2,
       x: x,
       y: y,
+      animation: state.name + "_idle",
       zIndex: DungeonZIndexes.character,
       static: false,
       interacting: false,
-      maxDistance: 7,
     });
-    this.character = new Monster({
-      name: config.name,
-      category: config.category,
-      type: MonsterType.SUMMON,
-      speed: 0.7,
-      healthMax: 200 + 20 * dungeon.level,
-      level: dungeon.level,
-      luck: 0.9,
-      baseDamage: 5 + 0.5 * dungeon.level,
-      xp: 200 + 20 * dungeon.level,
-    });
-
-    const weapon = Weapon.select(this._dungeon.rng, config.weapons);
-    if (weapon) {
-      this.character.inventory.equipment.weapon.set(weapon);
-    }
-
     this.init();
-
-    const screen = dungeon.controller.screen;
-    const healthView = new BossHealthView(this.character);
-    healthView.zIndex = 13;
-    healthView.position.set((screen.width >> 1), 64);
-    dungeon.controller.scene!.addChild(healthView);
   }
 
   protected onDead(): void {
@@ -282,11 +233,10 @@ export class BossMonsterController extends MonsterController {
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.HIT)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.RUN)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(BossAttackState.INITIAL)
@@ -305,12 +255,11 @@ export class BossMonsterController extends MonsterController {
       .transitionTo(BossAttackState.HIT)
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(BossAttackState.IDLE)
       .transitionTo(BossAttackState.RUN)
       .condition(() => idle.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(BossAttackState.IDLE)
@@ -330,12 +279,11 @@ export class BossMonsterController extends MonsterController {
       .transitionTo(BossAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(BossAttackState.RUN)
       .transitionTo(BossAttackState.RUN)
       .condition(() => run.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(BossAttackState.RUN)
@@ -350,7 +298,6 @@ export class BossMonsterController extends MonsterController {
     fsm.state(BossAttackState.HIT)
       .transitionTo(BossAttackState.RUN)
       .condition(() => hit.isFinal)
-      .condition(() => this.heroIsNear)
       .condition(() => this.moveToHero());
 
     fsm.state(BossAttackState.HIT)

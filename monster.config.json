@@ -1,0 +1,205 @@
+{
+  "$schema": "monster.config.schema.json",
+  "boss": [
+    {
+      "name": "big_zombie",
+      "race": "zombie",
+      "health": 200,
+      "damage": 10,
+      "luck": 0.9,
+      "xp": 200,
+      "speed": 1,
+      "weapons": [
+        "anime_sword",
+        "baton_with_spikes",
+        "big_hammer",
+        "cleaver",
+        "mace"
+      ]
+    },
+    {
+      "name": "ogre",
+      "race": "orc",
+      "health": 200,
+      "damage": 10,
+      "luck": 0.9,
+      "xp": 200,
+      "speed": 1,
+      "weapons": [
+        "anime_sword",
+        "baton_with_spikes",
+        "big_hammer",
+        "cleaver",
+        "mace"
+      ]
+    },
+    {
+      "name": "big_demon",
+      "race": "demon",
+      "health": 200,
+      "damage": 10,
+      "luck": 0.9,
+      "xp": 200,
+      "speed": 1,
+      "weapons": []
+    }
+  ],
+  "tiny": [
+    {
+      "name": "chort",
+      "race": "demon",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": []
+    },
+    {
+      "name": "wogol",
+      "race": "demon",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": []
+    },
+    {
+      "name": "imp",
+      "race": "demon",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": []
+    },
+    {
+      "name": "ice_zombie",
+      "race": "zombie",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "tiny_zombie",
+      "race": "zombie",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "zombie",
+      "race": "zombie",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "masked_orc",
+      "race": "orc",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "orc_warrior",
+      "race": "orc",
+      "type": "minion",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "goblin",
+      "race": "orc",
+      "type": "minion",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    },
+    {
+      "name": "swampy",
+      "race": "slime",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": []
+    },
+    {
+      "name": "muddy",
+      "race": "slime",
+      "type": "normal",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": []
+    },
+    {
+      "name": "skeleton",
+      "race": "undead",
+      "type": "minion",
+      "health": 20,
+      "damage": 2,
+      "luck": 0.4,
+      "xp": 30,
+      "speed": 0.7,
+      "weapons": ["knife"]
+    }
+  ],
+  "summon": [
+    {
+      "name": "orc_shaman",
+      "race": "orc",
+      "luck": 0.4,
+      "health": 15,
+      "damage": 2,
+      "weapons": ["knife"],
+      "xp": 30,
+      "speed": 0.7,
+      "spawn": 3
+    },
+    {
+      "name": "necromancer",
+      "race": "undead",
+      "luck": 0.4,
+      "health": 15,
+      "damage": 2,
+      "weapons": ["knife"],
+      "xp": 30,
+      "speed": 0.7,
+      "spawn": 3
+    }
+  ]
+}

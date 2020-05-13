@@ -19,7 +19,7 @@ export interface CrawlerConfig {
 }
 
 export interface RandCrawlerConfig {
-  readonly perGeneration: readonly number[];
+  readonly perGeneration: number[];
   readonly straightSingleSpawnProbability: number;
   readonly straightDoubleSpawnProbability: number;
   readonly turnSingleSpawnProbability: number;
@@ -45,26 +45,26 @@ export interface TunnelCrawlerConfig {
   readonly joinPreference: number;
 }
 
-export interface Config {
+export interface DungeonCrawlerConfig {
   readonly width: number;
   readonly height: number;
   readonly background: TunnelerCellType;
-  readonly openings: readonly Direction[]; // openings (in edge od dungeon wall)
-  readonly design: readonly FillRect[]; // design elements (pre-placed rooms, etc)
-  readonly stepLengths: readonly number[];
-  readonly corridorWidths: readonly number[];
-  readonly maxAgesCrawlers: readonly number[];
-  readonly maxAgesTunnelCrawlers: readonly number[];
-  readonly crawlers: readonly CrawlerConfig[];
-  readonly tunnelCrawlers: readonly TunnelCrawlerConfig[];
-  readonly crawlerPairs: readonly (readonly [CrawlerConfig, CrawlerConfig])[];
+  readonly openings: Direction[]; // openings (in edge od dungeon wall)
+  readonly design: FillRect[]; // design elements (pre-placed rooms, etc)
+  readonly stepLengths: number[];
+  readonly corridorWidths: number[];
+  readonly maxAgesCrawlers: number[];
+  readonly maxAgesTunnelCrawlers: number[];
+  readonly crawlers: CrawlerConfig[];
+  readonly tunnelCrawlers: TunnelCrawlerConfig[];
+  readonly crawlerPairs: [CrawlerConfig, CrawlerConfig][];
 
-  readonly childDelayProbabilityForGenerationTunnelCrawlers: readonly number[];
-  readonly childDelayProbabilityForGenerationCrawlers: readonly number[];
-  readonly childDelayProbabilityForGenerationRoomCrawlers: readonly number[];
+  readonly childDelayProbabilityForGenerationTunnelCrawlers: number[];
+  readonly childDelayProbabilityForGenerationCrawlers: number[];
+  readonly childDelayProbabilityForGenerationRoomCrawlers: number[];
 
-  readonly roomSizeProbabilitySidewaysRooms: readonly (readonly [number, number, number])[];
-  readonly roomSizeProbabilityBranching: readonly (readonly [number, number, number])[];
+  readonly roomSizeProbabilitySidewaysRooms: number[][];
+  readonly roomSizeProbabilityBranching: number[][];
 
   readonly mutator: number;
   readonly noHeadingProbability: number;
@@ -85,15 +85,15 @@ export interface Config {
 
   readonly randCrawler: RandCrawlerConfig;
 
-  readonly joinPreference: readonly number[];
-  readonly sizeUpProbability: readonly number[];
-  readonly sizeDownProbability: readonly number[];
+  readonly joinPreference: number[];
+  readonly sizeUpProbability: number[];
+  readonly sizeDownProbability: number[];
   readonly patience: number;
   readonly tunnelJoinDist: number;
   readonly sizeUpGenDelay: number;
   readonly columnsInTunnels: boolean;
   readonly roomAspectRatio: number;
-  readonly anteroomProbability: readonly number[];
+  readonly anteroomProbability: number[];
   readonly genSpeedUpOnAnteroom: number;
   readonly crawlersInTunnels: boolean;
   readonly crawlersInAnterooms: boolean;

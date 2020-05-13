@@ -1,62 +1,28 @@
-import {Monster, MonsterCategory, MonsterController, MonsterHitController, MonsterType} from "./Monster";
-import {DungeonMap, DungeonZIndexes} from "../dungeon";
-import {monsterWeapons, Weapon, WeaponConfig} from "../drop";
-import {FiniteStateMachine} from "../fsm";
-import {TinyMonsterController, tinyMonsters} from "./TinyMonster";
+import {Monster, MonsterHitController} from "./Monster";
+import {DungeonMap, DungeonZIndexes} from "../../dungeon";
+import {FiniteStateMachine} from "../../fsm";
+import {MonsterState} from "./MonsterState";
 
-export interface SummonMonsterConfig {
-  readonly name: string;
-  readonly category: MonsterCategory;
-  readonly luck: number;
-  readonly weapons: readonly WeaponConfig[];
-  readonly spawn: number;
-}
+export class SummonMonster extends Monster {
+  private readonly _spawn: number = 3;
+  private readonly _spawned: Monster[] = [];
 
-const knife = monsterWeapons.knife;
-
-export const summonMonsters: SummonMonsterConfig[] = [
-  {name: "orc_shaman", category: MonsterCategory.ORC, luck: 0.4, weapons: [knife], spawn: 3},
-  {name: "necromancer", category: MonsterCategory.UNDEAD, luck: 0.4, weapons: [knife], spawn: 3},
-];
-
-export class SummonMonsterController extends MonsterController {
-  private readonly _spawn: number;
-  private readonly _spawned: MonsterController[] = [];
-
-  readonly character: Monster;
-
-  constructor(config: SummonMonsterConfig, dungeon: DungeonMap, x: number, y: number) {
-    super(dungeon, {
+  constructor(state: MonsterState, dungeon: DungeonMap, x: number, y: number) {
+    super(state, dungeon, {
       x: x,
       y: y,
       width: 1,
       height: 1,
       static: false,
       interacting: false,
+      animation: state.name + "_idle",
       zIndex: DungeonZIndexes.character,
-      maxDistance: 7,
     });
-    this._spawn = config.spawn;
-    this.character = new Monster({
-      name: config.name,
-      category: config.category,
-      type: MonsterType.SUMMON,
-      speed: 0.8,
-      healthMax: 20 + 2 * dungeon.level * 2,
-      level: dungeon.level,
-      luck: config.luck,
-      baseDamage: 1 + 0.5 * dungeon.level,
-      xp: 35 + 5 * dungeon.level,
-    });
-    const weapon = config.luck < this._dungeon.rng.float() ? Weapon.select(this._dungeon.rng, config.weapons) : null;
-    if (weapon) {
-      this.character.inventory.equipment.weapon.set(weapon);
-    }
     this.init();
   }
 
   protected onDead(): void {
-    if (Math.random() < this.character.luck) {
+    if (Math.random() < this.state.luck) {
       this.findDropCell()?.randomDrop();
     }
     this.destroy();
@@ -64,7 +30,7 @@ export class SummonMonsterController extends MonsterController {
 
   protected spawnMinions(): boolean {
     for (let i = this._spawned.length - 1; i >= 0; i--) {
-      if (this._spawned[i].character.dead.get()) {
+      if (this._spawned[i].isDead) {
         this._spawned.splice(i, 1);
       }
     }
@@ -74,30 +40,20 @@ export class SummonMonsterController extends MonsterController {
       }
       const cell = this.findSpawnCell();
       if (!cell) {
-        console.warn(`spawn cell not found at ${this.x}:${this.y}`, this.character.category, this.character.type);
+        console.warn(`spawn cell not found at ${this.x}:${this.y}`, this.state.race, this.state.type);
         return false;
       }
-      const minion = this.spawnMinion(cell.x, cell.y);
+      const minion = this._dungeon.controller.monsterManager.spawnRandomMinion(this.state.race, this._dungeon, cell.x, cell.y);
       if (minion) {
         cell.object = minion;
         this._spawned.push(minion);
         return true;
       } else {
-        console.warn("minion not spawned", this.character.category, this.character.type);
+        console.warn("minion not spawned", this.state.race, this.state.type);
         return false;
       }
     }
     return false;
-  }
-
-  private spawnMinion(x: number, y: number): MonsterController | null {
-    const minions = tinyMonsters.filter(c => c.category === this.character.category && c.type === MonsterType.MINION);
-    if (minions.length === 0) {
-      console.warn("no minion config found", this.character.category);
-      return null;
-    }
-    const config = this._dungeon.rng.select(minions)!;
-    return new TinyMonsterController(config, this._dungeon, x, y);
   }
 
   protected fsm(): FiniteStateMachine<SummonMonsterFsmState> {
@@ -199,7 +155,7 @@ export class SummonMonsterController extends MonsterController {
     fsm.state(SummonMonsterAttackFsmState.DECISION)
       .transitionTo(SummonMonsterAttackFsmState.HIT)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.character.luck);
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(SummonMonsterAttackFsmState.DECISION)
       .transitionTo(SummonMonsterAttackFsmState.RUN_AWAY)
@@ -216,7 +172,6 @@ export class SummonMonsterController extends MonsterController {
     // idle
     fsm.state(SummonMonsterAttackFsmState.IDLE)
       .nested(idle)
-      .onEnter(() => this.lookAtHero())
       .onEnter(() => this.spawnMinions())
       .transitionTo(SummonMonsterAttackFsmState.DECISION)
       .condition(() => idle.isFinal)

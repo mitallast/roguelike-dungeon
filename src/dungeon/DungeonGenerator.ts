@@ -1,13 +1,12 @@
 import * as PIXI from 'pixi.js';
 import {DungeonMap} from "./DungeonMap";
 import {RNG} from "../rng";
-import {Hero} from "../characters";
 import {Resources} from "../resources";
 import {SceneController} from "../scene";
 
 export interface GenerateOptions {
   readonly level: number;
-  readonly hero: Hero;
+  readonly hero: string;
 }
 
 export interface DungeonGenerator {

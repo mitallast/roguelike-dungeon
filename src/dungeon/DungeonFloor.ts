@@ -24,7 +24,7 @@ export class DungeonFloor extends DungeonObject {
     this.y = y;
     this.name = name;
     this._dungeon = dungeon;
-    this._sprite = this._dungeon.controller.resources.sprite(name);
+    this._sprite = this._dungeon.controller.resources.spriteOrAnimation(name);
     this._sprite.zIndex = DungeonZIndexes.floor;
     this._sprite.position.set(x * TILE_SIZE, y * TILE_SIZE);
     if (this._sprite instanceof PIXI.AnimatedSprite) {

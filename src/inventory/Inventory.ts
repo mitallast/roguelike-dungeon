@@ -1,7 +1,11 @@
-import {UsableDrop, Weapon} from "../drop";
+import {UsableDrop} from "../drop";
+import {Weapon} from "../weapon";
 import {EventPublisher, Publisher} from "../observable";
-import {Character} from "../characters";
 import {InventoryCell} from "./InventoryCell";
+import {InventoryState} from "./InventoryState";
+import {EquipmentInventoryState} from "./EquipmentInventoryState";
+import {BeltInventoryState} from "./BeltInventoryState";
+import {BackpackInventoryState} from "./BackpackInventoryState";
 
 export class Inventory {
   readonly equipment: EquipmentInventory;
@@ -14,10 +18,10 @@ export class Inventory {
     return this._drop;
   }
 
-  constructor(character: Character) {
-    this.equipment = new EquipmentInventory(character, this._drop);
-    this.belt = new BeltInventory(character, this._drop);
-    this.backpack = new BackpackInventory(character, this._drop);
+  constructor(state: InventoryState) {
+    this.equipment = new EquipmentInventory(this, state.equipment, this._drop);
+    this.belt = new BeltInventory(this, state.belt, this._drop);
+    this.backpack = new BackpackInventory(this, state.backpack, this._drop);
   }
 
   stack(item: UsableDrop): boolean {
@@ -38,21 +42,25 @@ export class Inventory {
 }
 
 export class EquipmentInventory {
+  readonly inventory: Inventory;
   readonly weapon: InventoryCell;
 
-  constructor(character: Character, drop: EventPublisher<[UsableDrop, number]>) {
-    this.weapon = new InventoryCell(character, 1, (item) => item instanceof Weapon, drop, this);
+  constructor(inventory: Inventory, state: EquipmentInventoryState, drop: EventPublisher<[UsableDrop, number]>) {
+    this.inventory = inventory;
+    this.weapon = new InventoryCell(state.cell("weapon"), 1, item => item instanceof Weapon, drop, this);
   }
 }
 
 export class BeltInventory {
+  readonly inventory: Inventory;
   readonly length: number = 10;
   private readonly _cells: InventoryCell[];
 
-  constructor(character: Character, drop: EventPublisher<[UsableDrop, number]>) {
+  constructor(inventory: Inventory, state: BeltInventoryState, drop: EventPublisher<[UsableDrop, number]>) {
+    this.inventory = inventory;
     this._cells = [];
     for (let i = 0; i < 10; i++) {
-      this._cells[i] = new InventoryCell(character, 3, () => true, drop, this);
+      this._cells[i] = new InventoryCell(state.cell(i), 3, () => true, drop, this);
     }
   }
 
@@ -93,16 +101,18 @@ export class BeltInventory {
 }
 
 export class BackpackInventory {
+  readonly inventory: Inventory;
   readonly width: number = 10;
   readonly height: number = 5;
   private readonly _cells: InventoryCell[][];
 
-  constructor(character: Character, drop: EventPublisher<[UsableDrop, number]>) {
+  constructor(inventory: Inventory, state: BackpackInventoryState, drop: EventPublisher<[UsableDrop, number]>) {
+    this.inventory = inventory;
     this._cells = [];
     for (let y = 0; y < this.height; y++) {
       this._cells.push([]);
       for (let x = 0; x < this.width; x++) {
-        this._cells[y][x] = new InventoryCell(character, 3, () => true, drop, this);
+        this._cells[y][x] = new InventoryCell(state.cell(x, y), 3, () => true, drop, this);
       }
     }
   }

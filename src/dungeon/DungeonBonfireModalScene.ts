@@ -1,11 +1,11 @@
 import {ModalScene, SceneController} from "../scene";
 import {UIButton} from "../ui";
-import {Hero} from "../characters";
+import {HeroState} from "../characters";
 
 export class DungeonBonfireModal extends ModalScene {
-  private readonly _hero: Hero;
+  private readonly _hero: HeroState;
 
-  constructor(controller: SceneController, hero: Hero) {
+  constructor(controller: SceneController, hero: HeroState) {
     super(controller, "Bonfire");
     this._hero = hero;
   }
@@ -24,12 +24,12 @@ export class DungeonBonfireModal extends ModalScene {
       this._selectable!.set(0, y, button, action);
       y++;
     };
-    const levels = [...this._hero.bonfires].sort((a: number, b: number) => a - b);
+    const levels = this._hero.dungeons.bonfires().sort((a: number, b: number) => a - b);
     for (const level of levels) {
       addButton(`Level ${level}`, () => {
         this._controller.closeModal();
         this._controller.generateDungeon({
-          hero: this._hero,
+          hero: this._hero.name,
           level: level
         })
       });

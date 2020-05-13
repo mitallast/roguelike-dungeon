@@ -456,14 +456,14 @@ class RuleSampleCell extends PIXI.Container {
     super()
 
     if (floor) {
-      this._floorSprite = resources.sprite(floor);
+      this._floorSprite = resources.spriteOrAnimation(floor);
       this.addChild(this._floorSprite);
     } else {
       this._floorSprite = null;
     }
 
     if (wall) {
-      this._wallSprite = resources.sprite(wall);
+      this._wallSprite = resources.spriteOrAnimation(wall);
       this.addChild(this._wallSprite);
     } else {
       this._wallSprite = null;

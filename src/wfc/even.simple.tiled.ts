@@ -3,7 +3,7 @@ import {RNG} from "../rng";
 import {Indexer} from "../indexer";
 import {Resources} from "../resources";
 import {buffer, Model, Resolution} from "./model";
-import {Config, DungeonCrawler} from "../tunneler";
+import {DungeonCrawlerConfig, DungeonCrawler} from "../tunneler";
 
 export enum Direction {
   RIGHT = 2,
@@ -21,11 +21,11 @@ export enum CellType {
 
 export interface TilesetRules {
   readonly size: number;
-  readonly tiles: readonly string[];
-  readonly cells: readonly (readonly [number, number, CellType])[];
+  readonly tiles: string[];
+  readonly cells: [number, number, CellType][];
 
-  readonly right: readonly (readonly [number, number])[];
-  readonly down: readonly (readonly [number, number])[];
+  readonly right: [number, number][];
+  readonly down: [number, number][];
 }
 
 export class TilesetRulesBuilder {
@@ -203,13 +203,13 @@ export class EvenSimpleTiledModel extends Model {
         for (let y = 0; y < this.FMY; y++) {
           const [floor, wall] = this.tileset.cells[this.observed[x + y * this.FMX]];
           if (floor >= 0) {
-            const sprite = this._resources.sprite(this.tileset.tiles[floor]);
+            const sprite = this._resources.spriteOrAnimation(this.tileset.tiles[floor]);
             sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 1;
             container.addChild(sprite);
           }
           if (wall >= 0) {
-            const sprite = this._resources.sprite(this.tileset.tiles[wall]);
+            const sprite = this._resources.spriteOrAnimation(this.tileset.tiles[wall]);
             sprite.position.set(x * tilesize, y * tilesize);
             sprite.zIndex = 2;
             container.addChild(sprite);
@@ -232,14 +232,14 @@ export class EvenSimpleTiledModel extends Model {
               const [floor, wall] = this.tileset.cells[t];
               const tiles = (floor >= 0 ? 1 : 0) + (wall >= 0 ? 1 : 0);
               if (floor >= 0) {
-                const sprite = this._resources.sprite(this.tileset.tiles[floor]);
+                const sprite = this._resources.spriteOrAnimation(this.tileset.tiles[floor]);
                 sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 1;
                 sprite.alpha = alpha * (1 / tiles) * this.weights[t];
                 container.addChild(sprite);
               }
               if (wall >= 0) {
-                const sprite = this._resources.sprite(this.tileset.tiles[wall]);
+                const sprite = this._resources.spriteOrAnimation(this.tileset.tiles[wall]);
                 sprite.position.set(x * tilesize, y * tilesize);
                 sprite.zIndex = 2;
                 sprite.alpha = alpha * (1 / tiles) * this.weights[t];
@@ -732,7 +732,7 @@ interface SimpleGraph {
 }
 
 export class DungeonCrawlerConstraint implements Constraint {
-  private readonly _config: Config;
+  private readonly _config: DungeonCrawlerConfig;
 
   private _model: EvenSimpleTiledModel | null = null;
   private _crawler: DungeonCrawler | null = null;
@@ -741,7 +741,7 @@ export class DungeonCrawlerConstraint implements Constraint {
     return this._crawler;
   }
 
-  constructor(config: Config) {
+  constructor(config: DungeonCrawlerConfig) {
     this._config = config;
   }
 
