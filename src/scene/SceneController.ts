@@ -7,7 +7,9 @@ import {GenerateOptions, GenerateDungeonScene, DungeonScene, DungeonMap, Dungeon
 import {KeyBindScene} from "../keybind.scene";
 import {SelectHeroScene} from "../select.hero.scene";
 import {InventoryModalScene} from "../inventory";
-import {HeroState, HeroStateManager, NpcManager, NpcState} from "../characters";
+import {HeroState, HeroStateManager} from "../characters/hero";
+import {NpcManager, NpcState} from "../characters/npc";
+import {MonsterManager} from "../characters/monsters";
 import {DialogManager, DialogModalScene} from "../dialog";
 import {Banner, BannerOptions} from "./Banner";
 import {
@@ -18,7 +20,6 @@ import {
 import {Scene} from "./Scene";
 import {ModalScene} from "./ModalScene";
 import {PersistentStore} from "../persistent";
-import {MonsterManager} from "../characters/monsters";
 import {WeaponManager} from "../weapon";
 
 export class SceneController {

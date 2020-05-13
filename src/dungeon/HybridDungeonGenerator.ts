@@ -6,7 +6,7 @@ import {yields} from "../concurency";
 import {RNG} from "../rng";
 import {BaseDungeonGenerator, GenerateOptions} from "./DungeonGenerator";
 import {DungeonMap, DungeonMapCell} from "./DungeonMap";
-import {Hero, HeroState} from "../characters";
+import {Hero, HeroState} from "../characters/hero";
 import {DungeonBonfire} from "./DungeonBonfire";
 import {DungeonLightType} from "./DungeonLight";
 import {Coins, HealthBigFlask, HealthFlask} from "../drop";

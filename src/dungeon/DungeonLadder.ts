@@ -1,5 +1,5 @@
 import {DungeonMap} from "./DungeonMap";
-import {Hero} from "../characters";
+import {Hero} from "../characters/hero";
 import {DungeonFloor} from "./DungeonFloor";
 
 export class DungeonLadder extends DungeonFloor {

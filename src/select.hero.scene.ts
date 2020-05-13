@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import {Scene, SceneController} from "./scene";
-import {heroNames} from "./characters";
+import {heroNames} from "./characters/hero";
 import {Colors, UISelectable, UISelectableGrid} from "./ui";
 import {Resources} from "./resources";
 

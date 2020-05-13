@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import {Coins, Drop, HealthBigFlask, HealthFlask} from "../drop";
-import {Hero} from "../characters";
+import {Hero} from "../characters/hero";
 import {SceneController} from "../scene";
 import {RNG} from "../rng";
 import {DungeonCamera} from "./DungeonCamera";

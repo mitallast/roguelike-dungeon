@@ -1,6 +1,6 @@
 import {ModalScene, SceneController} from "../scene";
 import {UIButton} from "../ui";
-import {HeroState} from "../characters";
+import {HeroState} from "../characters/hero";
 
 export class DungeonBonfireModal extends ModalScene {
   private readonly _hero: HeroState;

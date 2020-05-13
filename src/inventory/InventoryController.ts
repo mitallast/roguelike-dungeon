@@ -1,4 +1,5 @@
-import {HeroState, NpcState} from "../characters";
+import {HeroState} from "../characters/hero";
+import {NpcState} from "../characters/npc";
 import {DropInfo, UsableDrop} from "../drop";
 import {BackpackInventory, BeltInventory, Inventory} from "./Inventory";
 import {InventoryCellActionsView} from "./InventoryView";

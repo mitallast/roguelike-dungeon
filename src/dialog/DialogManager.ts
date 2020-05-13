@@ -1,4 +1,5 @@
-import {HeroState, NpcState} from "../characters";
+import {NpcState} from "../characters/npc";
+import {HeroState} from "../characters/hero";
 import {SceneController} from "../scene";
 import {EventPublisher, Publisher} from "../observable";
 import {Expression} from "../expression";

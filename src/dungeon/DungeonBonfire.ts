@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import {Colors} from "../ui";
-import {Hero} from "../characters";
+import {Hero} from "../characters/hero";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {DungeonObject} from "./DungeonObject";
 import {DungeonLightType} from "./DungeonLight";

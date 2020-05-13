@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import {DungeonMap, DungeonZIndexes} from "./DungeonMap";
 import {Drop} from "../drop";
-import {Hero} from "../characters";
+import {Hero} from "../characters/hero";
 import {DungeonObject} from "./DungeonObject";
 
 const TILE_SIZE = 16;
