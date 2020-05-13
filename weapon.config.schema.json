@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://mitallast.github.io/roguelike-dungeon/weapon.config.schema.json",
+  "title": "Weapon configuration schema",
+  "type": "object",
+  "properties": {
+    "animations": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+(_[a-z0-9]+)*$": {
+          "$ref": "#/definitions/Animation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "weapons": {
+      "type": "object",
+      "properties": {
+        "hero": {
+          "$ref": "#/definitions/WeaponSet"
+        },
+        "npc": {
+          "$ref": "#/definitions/WeaponSet"
+        },
+        "monster": {
+          "$ref": "#/definitions/WeaponSet"
+        }
+      },
+      "required": ["hero", "npc", "monster"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["animations", "weapons"],
+  "definitions": {
+    "Animation": {
+      "type": "object",
+      "properties": {
+        "smoothly": {
+          "type": "boolean"
+        },
+        "angle": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "type": "number",
+                "minimum": 0
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -360,
+                  "maximum": 360
+                },
+                "minItems": 1,
+                "maxItems": 1
+              }
+            },
+            "required": [
+              "time",
+              "args"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "type": "number",
+                "minimum": 0
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "time",
+              "args"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "smoothly"
+      ]
+    },
+    "AnimationSet": {
+      "type": "object",
+      "properties": {
+        "idle": {
+          "$ref": "#/definitions/AnimationRef"
+        },
+        "run": {
+          "$ref": "#/definitions/AnimationRef"
+        },
+        "hit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AnimationRef"
+          }
+        }
+      },
+      "required": ["idle", "run", "hit"],
+      "additionalProperties": false
+    },
+    "AnimationRef": {
+      "type": "string",
+      "pattern": "^[a-z]+(_[a-z0-9]+)*$"
+    },
+    "Weapon": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "number"
+        },
+        "distance": {
+          "type": "number"
+        },
+        "damage": {
+          "type": "number"
+        },
+        "level": {
+          "type": "number"
+        },
+        "price": {
+          "type": "number"
+        },
+        "animations": {
+          "$ref": "#/definitions/AnimationSet"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "speed", "distance", "damage", "level", "price", "animations"]
+    },
+    "WeaponSet": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+(_[a-z0-9]+)*$": {
+          "$ref": "#/definitions/Weapon"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

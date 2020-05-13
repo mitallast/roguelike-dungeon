@@ -1,0 +1,558 @@
+{
+  "$schema": "weapon.config.schema.json",
+  "animations": {
+    "default_idle": {
+      "smoothly": false,
+      "angle": [
+        {"time": 0, "args": [0]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-1, 0]},
+        {"time": 1, "args": [-1, 1]},
+        {"time": 2, "args": [-1, 2]},
+        {"time": 3, "args": [-1, 1]}
+      ]
+    },
+    "default_run": {
+      "smoothly": false,
+      "angle": [
+        {"time": 0, "args": [0]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-1, -1]},
+        {"time": 1, "args": [-1, -2]},
+        {"time": 2, "args": [-1, -1]},
+        {"time": 3, "args": [-1, 0]}
+      ]
+    },
+    "default_hit": {
+      "smoothly": false,
+      "angle": [
+        {"time": 0, "args": [0]},
+        {"time": 1.5, "args": [-30]},
+        {"time": 2, "args": [120]},
+        {"time": 3, "args": [90]},
+        {"time": 4, "args": [0]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-1, 0]}
+      ]
+    },
+    "default_sword_hit_0": {
+      "smoothly": false,
+      "angle": [
+        {"time": 0.0, "args": [0]},
+        {"time": 1.5, "args": [-30]},
+        {"time": 2.0, "args": [120]},
+        {"time": 4.0, "args": [120]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-1, 0]}
+      ]
+    },
+    "default_sword_hit_1": {
+      "smoothly": false,
+      "angle": [
+        {"time": 0.0, "args": [120]},
+        {"time": 1.5, "args": [150]},
+        {"time": 2.0, "args": [-15]},
+        {"time": 4.0, "args": [-15]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-1, 0]}
+      ]
+    },
+    "default_sword_hit_2": {
+      "smoothly": true,
+      "angle": [
+        {"time": 0, "args": [-15]},
+        {"time": 1.5, "args": [90]},
+        {"time": 4, "args": [90]}
+      ],
+      "pos": [
+        {"time": 0.0, "args": [-1, 0]},
+        {"time": 0.5, "args": [-14, -4]},
+        {"time": 3.0, "args": [-14, -4]},
+        {"time": 3.5, "args": [0, -4]},
+        {"time": 6.0, "args": [0, -4]}
+      ]
+    },
+    "knife_hit": {
+      "smoothly": true,
+      "angle": [
+        {"time": 0, "args": [90]}
+      ],
+      "pos": [
+        {"time": 0, "args": [-8, -4]},
+        {"time": 1, "args": [-4, -4]},
+        {"time": 2, "args": [4, -4]},
+        {"time": 3, "args": [-2, -4]}
+      ]
+    }
+  },
+  "combo": {
+    "default_sword": [
+      "default_sword_hit_0",
+      "default_sword_hit_1",
+      "default_sword_hit_2"
+    ]
+  },
+  "weapons": {
+    "hero": {
+      "knife": {
+        "name": "knife",
+        "speed": 1.4,
+        "distance": 1,
+        "damage": 2,
+        "level": 1,
+        "price": 12,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["knife_hit"]
+        }
+      },
+      "rusty_sword": {
+        "name": "rusty_sword",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 4,
+        "level": 1,
+        "price": 15,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "regular_sword": {
+        "name": "regular_sword",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 5,
+        "level": 3,
+        "price": 20,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "red_gem_sword": {
+        "name": "red_gem_sword",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 6,
+        "level": 3,
+        "price": 30,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "hammer": {
+        "name": "hammer",
+        "speed": 0.7,
+        "distance": 1,
+        "damage": 7,
+        "level": 5,
+        "price": 38,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "big_hammer": {
+        "name": "big_hammer",
+        "speed": 0.5,
+        "distance": 2,
+        "damage": 10,
+        "level": 5,
+        "price": 40,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "baton_with_spikes": {
+        "name": "baton_with_spikes",
+        "speed": 0.6,
+        "distance": 1,
+        "damage": 7,
+        "level": 5,
+        "price": 42,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "mace": {
+        "name": "mace",
+        "speed": 0.6,
+        "distance": 1,
+        "damage": 7,
+        "level": 5,
+        "price": 45,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "katana": {
+        "name": "katana",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 8,
+        "level": 7,
+        "price": 100,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "saw_sword": {
+        "name": "saw_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 9,
+        "level": 7,
+        "price": 110,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "anime_sword": {
+        "name": "anime_sword",
+        "speed": 0.7,
+        "distance": 1,
+        "damage": 12,
+        "level": 7,
+        "price": 130,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "axe": {
+        "name": "axe",
+        "speed": 0.8,
+        "distance": 1,
+        "damage": 12,
+        "level": 7,
+        "price": 115,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "machete": {
+        "name": "machete",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 11,
+        "level": 9,
+        "price": 150,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "cleaver": {
+        "name": "cleaver",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 12,
+        "level": 9,
+        "price": 160,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "duel_sword": {
+        "name": "duel_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 13,
+        "level": 9,
+        "price": 170,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "knight_sword": {
+        "name": "knight_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 14,
+        "level": 9,
+        "price": 180,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "golden_sword": {
+        "name": "golden_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 15,
+        "level": 11,
+        "price": 220,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "lavish_sword": {
+        "name": "lavish_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 16,
+        "level": 11,
+        "price": 240,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      }
+    },
+    "npc": {
+      "knife": {
+        "name": "knife",
+        "speed": 1.4,
+        "distance": 1,
+        "damage": 2,
+        "level": 1,
+        "price": 12,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["knife_hit"]
+        }
+      },
+      "hammer": {
+        "name": "hammer",
+        "speed": 0.7,
+        "distance": 1,
+        "damage": 7,
+        "level": 5,
+        "price": 38,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "cleaver": {
+        "name": "cleaver",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 12,
+        "level": 9,
+        "price": 160,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "axe": {
+        "name": "axe",
+        "speed": 0.8,
+        "distance": 1,
+        "damage": 12,
+        "level": 7,
+        "price": 115,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "regular_sword": {
+        "name": "regular_sword",
+        "speed": 1.0,
+        "distance": 1,
+        "damage": 5,
+        "level": 3,
+        "price": 20,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "knight_sword": {
+        "name": "knight_sword",
+        "speed": 1.5,
+        "distance": 1,
+        "damage": 14,
+        "level": 9,
+        "price": 180,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      }
+    },
+    "monster": {
+      "knife": {
+        "name": "knife",
+        "speed": 0.7,
+        "distance": 1,
+        "damage": 0.5,
+        "level": 1,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["knife_hit"]
+        }
+      },
+      "baton_with_spikes": {
+        "name": "baton_with_spikes",
+        "speed": 0.3,
+        "distance": 1,
+        "damage": 3,
+        "level": 5,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "anime_sword": {
+        "name": "anime_sword",
+        "speed": 0.4,
+        "distance": 1,
+        "damage": 4,
+        "level": 10,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "big_hammer": {
+        "name": "big_hammer",
+        "speed": 0.3,
+        "distance": 2,
+        "damage": 5,
+        "level": 15,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      },
+      "mace": {
+        "name": "mace",
+        "speed": 0.6,
+        "distance": 1,
+        "damage": 6,
+        "level": 20,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": [
+            "default_sword_hit_0",
+            "default_sword_hit_1",
+            "default_sword_hit_2"
+          ]
+        }
+      },
+      "cleaver": {
+        "name": "cleaver",
+        "speed": 0.5,
+        "distance": 1,
+        "damage": 7,
+        "level": 25,
+        "price": 0,
+        "animations": {
+          "idle": "default_idle",
+          "run": "default_run",
+          "hit": ["default_hit"]
+        }
+      }
+    }
+  }
+}
