@@ -4,7 +4,23 @@ import {SceneController} from "../scene";
 import {EventPublisher, Publisher} from "../observable";
 import {Expression} from "../expression";
 import {Template} from "../template";
-import {DialogConfig} from "./DialogConfig";
+
+export interface DialogConfig {
+  readonly start: string[];
+  readonly questions: Partial<Record<string, DialogQuestionConfig>>;
+}
+
+export interface DialogQuestionConfig {
+  readonly text: string;
+  readonly conditions: string[];
+  readonly answers: DialogAnswerConfig[];
+}
+
+export interface DialogAnswerConfig {
+  readonly text: string;
+  readonly conditions: string[];
+  readonly commands: string[];
+}
 
 export class DialogManager {
   private readonly _controller: SceneController;

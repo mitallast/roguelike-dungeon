@@ -1,7 +1,7 @@
 import {Animation} from "../animation";
-import {WeaponAnimation} from "../weapon";
 import {CharacterView} from "./CharacterView";
 import {Character} from "./Character";
+import {WeaponAnimation} from "../weapon";
 
 export class Animator {
   private readonly _view: CharacterView;

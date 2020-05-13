@@ -1,5 +1,4 @@
 export * from "./Npc"
-export * from "./NpcConfig"
 export * from "./NpcManager"
 export * from "./NpcSkill"
 export * from "./NpcState"

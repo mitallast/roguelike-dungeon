@@ -1,6 +1,5 @@
-import {DungeonCrawlerConfig} from "./config";
 import {DungeonCrawler} from "./dungeon.crawler";
-import {TunnelerCellType} from "./model";
+import {TunnelerCellType, DungeonCrawlerConfig} from "./model";
 import {RNG} from "../rng";
 import {DungeonCrawlerConstraint, EvenSimpleTiledModel, TilesetRules} from "../wfc/even.simple.tiled";
 import {Resolution} from "../wfc/model";

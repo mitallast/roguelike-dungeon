@@ -1,4 +1,3 @@
-export * from "./config";
 export * from "./model";
 export * from "./crawler";
 export * from "./room.crawler";

@@ -1,8 +1,41 @@
+import * as PIXI from "pixi.js";
 import {Weapon} from "./Weapon";
+import {Resources} from "../resources";
 
-export interface WeaponView {
-  setWeapon(weapon: Weapon | null): void;
-  setPosition(x: number, y: number): void;
-  setAngle(angle: number): void;
-  destroy(): void;
+export class WeaponView extends PIXI.Container implements WeaponView {
+  private readonly _resources: Resources;
+  private _sprite: PIXI.Sprite | null = null;
+
+  constructor(resources: Resources) {
+    super();
+    this._resources = resources;
+  }
+
+  destroy(): void {
+    this._sprite?.destroy();
+    this._sprite = null;
+    super.destroy();
+  }
+
+  setWeapon(weapon: Weapon | null): void {
+    this._sprite?.destroy();
+    this._sprite = null;
+    if (weapon) {
+      this._sprite = this._resources.spriteOrAnimation(weapon.spriteName);
+      this._sprite.anchor.set(0.5, 1);
+      this.addChild(this._sprite);
+    }
+  }
+
+  setAngle(angle: number): void {
+    if (this._sprite) {
+      this._sprite.angle = angle;
+    }
+  }
+
+  setPosition(x: number, y: number): void {
+    if (this._sprite) {
+      this._sprite.position.set(x, y);
+    }
+  }
 }

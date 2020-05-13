@@ -1,8 +1,7 @@
-import {DungeonCrawlerConfig} from "./config";
-import {DungeonCrawler} from "./dungeon.crawler";
-import {RNG} from "../rng";
 import * as PIXI from "pixi.js";
-import {TunnelerCellType} from "./model";
+import {RNG} from "../rng";
+import {DungeonCrawler} from "./dungeon.crawler";
+import {TunnelerCellType, DungeonCrawlerConfig} from "./model";
 
 export class DungeonMakerTest {
   static async test(): Promise<void> {

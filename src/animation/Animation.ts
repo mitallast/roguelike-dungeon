@@ -4,6 +4,11 @@ import {AnimationKeyFrameClip} from "./AnimationKeyFrameClip";
 import {AnimationCurveClip} from "./AnimationCurveClip";
 import {Curve} from "../curves";
 
+export interface AnimationEventFrame<Args extends any[]> {
+  readonly time: number;
+  readonly args: Args;
+}
+
 export class Animation {
   private readonly _clips: AnimationClip[] = [];
   private _playing: boolean = false;

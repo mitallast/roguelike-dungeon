@@ -1,5 +1,13 @@
-import {Point, TunnelerCellType, Direction, RoomSize, FillRect, Room, ImmutablePoint} from "./model";
-import {DungeonCrawlerConfig} from "./config"
+import {
+  Point,
+  TunnelerCellType,
+  Direction,
+  RoomSize,
+  FillRect,
+  Room,
+  ImmutablePoint,
+  DungeonCrawlerConfig
+} from "./model";
 import {WallCrawler} from "./wall.crawler";
 import {TunnelCrawler} from "./tunnel.crawler";
 import {RoomCrawler} from "./room.crawler";

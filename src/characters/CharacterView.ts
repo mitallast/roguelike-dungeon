@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import {Resources} from "../resources";
 import {DungeonZIndexes} from "../dungeon";
-import {WeaponView, DefaultWeaponView} from "../weapon";
+import {WeaponView} from "../weapon";
 
 const TILE_SIZE = 16;
 
@@ -13,7 +13,7 @@ export class CharacterView {
   private _isLeft: boolean = false;
 
   private readonly _container: PIXI.Container;
-  private readonly _weapon: DefaultWeaponView;
+  private readonly _weapon: WeaponView;
   private readonly _sprite: PIXI.AnimatedSprite;
 
   private _x: number = 0;
@@ -63,7 +63,7 @@ export class CharacterView {
       this._sprite.position.x -= (this._sprite.width - this._gridWidth * TILE_SIZE) / 2;
     }
 
-    this._weapon = new DefaultWeaponView(this._resources);
+    this._weapon = new WeaponView(this._resources);
     this._weapon.zIndex = 1;
     this._weapon.position.set(TILE_SIZE * this._gridWidth, TILE_SIZE - 4);
 

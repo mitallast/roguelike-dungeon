@@ -3,7 +3,7 @@ import {Resources} from "../resources";
 import {CharacterView} from "./CharacterView";
 import {Animator} from "./Animator";
 import {Weapon, WeaponAnimation, WeaponManager} from "../weapon";
-import {AnimationEvent} from "../animation";
+import {AnimationEventFrame} from "../animation";
 
 export class AnimationEditor {
   private readonly app: PIXI.Application;
@@ -163,8 +163,8 @@ export class AnimationEditor {
   }
 
   private getAnimation(): WeaponAnimation {
-    const angle: AnimationEvent<[number]>[] = []
-    const pos: AnimationEvent<[number, number]>[] = []
+    const angle: AnimationEventFrame<[number]>[] = []
+    const pos: AnimationEventFrame<[number, number]>[] = []
 
     for (const frame of this.angleEditor.frames) {
       angle.push({time: frame.time, args: [frame.value]});

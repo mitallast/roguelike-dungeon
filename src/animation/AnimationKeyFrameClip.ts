@@ -1,10 +1,10 @@
 import {AnimationClip} from "./AnimationClip";
-import {AnimationEvent} from "./AnimationEvent";
+import {AnimationEventFrame} from "./Animation";
 
 export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip {
   private readonly _method: (...args: Args) => void;
   private readonly _context: any;
-  private readonly _frames: AnimationEvent<Args>[] = [];
+  private readonly _frames: AnimationEventFrame<Args>[] = [];
 
   get duration(): number {
     if (this._frames.length > 0) {
@@ -21,8 +21,8 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
   }
 
   protected play(): void {
-    let start: AnimationEvent<Args> | null = null;
-    let end: AnimationEvent<Args> | null = null;
+    let start: AnimationEventFrame<Args> | null = null;
+    let end: AnimationEventFrame<Args> | null = null;
     for (let i = 0; i < this._frames.length; i++) {
       const frame = this._frames[i];
       if (frame.time <= this._time) {
@@ -52,13 +52,13 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     }
   }
 
-  addEvent(event: AnimationEvent<Args>): AnimationKeyFrameClip<Args> {
+  addEvent(event: AnimationEventFrame<Args>): AnimationKeyFrameClip<Args> {
     this._frames.push(event);
     this._frames.sort(this.compare);
     return this;
   }
 
-  addEvents(event: readonly AnimationEvent<Args>[]): AnimationKeyFrameClip<Args> {
+  addEvents(event: readonly AnimationEventFrame<Args>[]): AnimationKeyFrameClip<Args> {
     this._frames.push(...event);
     this._frames.sort(this.compare);
     return this;
@@ -69,7 +69,7 @@ export class AnimationKeyFrameClip<Args extends number[]> extends AnimationClip 
     return this;
   }
 
-  private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {
+  private compare(a: AnimationEventFrame<Args>, b: AnimationEventFrame<Args>): number {
     return a.time - b.time;
   }
 }

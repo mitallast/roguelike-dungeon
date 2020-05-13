@@ -1,7 +1,19 @@
 import {InventoryCell} from "../inventory";
 import {DropInfo, UsableDrop} from "../drop";
-import {WeaponAnimationSet} from "./WeaponAnimation";
 import {CharacterState} from "../characters/CharacterState";
+import {AnimationEventFrame} from "../animation";
+
+export interface WeaponAnimation {
+  readonly smoothly: boolean;
+  readonly angle: readonly AnimationEventFrame<[number]>[];
+  readonly pos: readonly AnimationEventFrame<[number, number]>[];
+}
+
+export interface WeaponAnimationSet {
+  readonly idle: WeaponAnimation;
+  readonly run: WeaponAnimation;
+  readonly hit: WeaponAnimation[];
+}
 
 export class Weapon implements UsableDrop {
   readonly name: string;
@@ -54,23 +66,4 @@ export class Weapon implements UsableDrop {
   use(cell: InventoryCell): void {
     cell.equip();
   }
-
-  // static create(rng: RNG, level: number): Weapon | null {
-  //   const available = weaponConfigs.filter(c => c.level <= level);
-  //   if (available.length > 0) {
-  //     const config = rng.select(available)!;
-  //     return new Weapon(config);
-  //   } else {
-  //     return null;
-  //   }
-  // }
-
-  // static select(rng: RNG, weapons: readonly WeaponConfig[]): Weapon | null {
-  //   if (weapons.length > 0) {
-  //     const config = rng.select(weapons)!;
-  //     return new Weapon(config);
-  //   } else {
-  //     return null;
-  //   }
-  // }
 }

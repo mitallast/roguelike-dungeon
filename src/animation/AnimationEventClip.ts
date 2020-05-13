@@ -1,10 +1,10 @@
 import {AnimationClip} from "./AnimationClip";
-import {AnimationEvent} from "./AnimationEvent";
+import {AnimationEventFrame} from "./Animation";
 
 export class AnimationEventClip<Args extends any[]> extends AnimationClip {
   private readonly _method: (...args: Args) => void;
   private readonly _context: any;
-  private readonly _events: AnimationEvent<Args>[] = [];
+  private readonly _events: AnimationEventFrame<Args>[] = [];
   private _event: number | null = null;
 
   get duration(): number {
@@ -37,13 +37,13 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
     }
   }
 
-  addEvent(event: AnimationEvent<Args>): AnimationEventClip<Args> {
+  addEvent(event: AnimationEventFrame<Args>): AnimationEventClip<Args> {
     this._events.push(event);
     this._events.sort(this.compare);
     return this;
   }
 
-  addEvents(event: readonly AnimationEvent<Args>[]): AnimationEventClip<Args> {
+  addEvents(event: readonly AnimationEventFrame<Args>[]): AnimationEventClip<Args> {
     this._events.push(...event);
     this._events.sort(this.compare);
     return this;
@@ -54,7 +54,7 @@ export class AnimationEventClip<Args extends any[]> extends AnimationClip {
     return this;
   }
 
-  private compare(a: AnimationEvent<Args>, b: AnimationEvent<Args>): number {
+  private compare(a: AnimationEventFrame<Args>, b: AnimationEventFrame<Args>): number {
     return a.time - b.time;
   }
 }

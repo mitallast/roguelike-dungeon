@@ -1,8 +1,31 @@
 import {SceneController} from "../scene";
-import {Weapon} from "./Weapon";
-import {WeaponAnimationConfig, WeaponConfig, WeaponsConfig} from "./WeaponConfig";
-import {WeaponAnimation, WeaponAnimationSet} from "./WeaponAnimation";
+import {Weapon, WeaponAnimation, WeaponAnimationSet} from "./Weapon";
 import {DungeonMap} from "../dungeon";
+
+interface WeaponConfig {
+  readonly name: string;
+  readonly speed: number;
+  readonly distance: number;
+  readonly damage: number;
+  readonly level: number;
+  readonly price: number;
+  readonly animations: WeaponAnimationConfig;
+}
+
+interface WeaponAnimationConfig {
+  readonly idle: string;
+  readonly run: string;
+  readonly hit: string[];
+}
+
+interface WeaponsConfig {
+  readonly animations: Partial<Record<string, WeaponAnimation>>;
+  readonly weapons: {
+    readonly hero: Partial<Record<string, WeaponConfig>>;
+    readonly npc: Partial<Record<string, WeaponConfig>>;
+    readonly monster: Partial<Record<string, WeaponConfig>>;
+  };
+}
 
 export class WeaponManager {
   private readonly _controller: SceneController;

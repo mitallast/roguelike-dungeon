@@ -1,6 +1,5 @@
-import {TunnelerCellType, ImmutablePoint, Point} from "./model";
+import {TunnelerCellType, ImmutablePoint, Point, DungeonCrawlerConfig} from "./model";
 import {DungeonCrawler} from "./dungeon.crawler";
-import {DungeonCrawlerConfig} from "./config";
 import {RNG} from "../rng";
 
 export abstract class Crawler {
