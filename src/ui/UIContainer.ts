@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import {Sizes} from "./index";
+import {Sizes} from "./UISizeScheme";
 
 export interface UIContainerOptions {
   readonly spacing?: number;

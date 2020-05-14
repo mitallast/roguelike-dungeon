@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
-import {Colors, Sizes} from "./index";
+import {Colors} from "./UIColorScheme";
+import {Sizes} from "./UISizeScheme";
 
 export class UIBarView extends PIXI.Container {
   private readonly _rect: PIXI.Graphics;

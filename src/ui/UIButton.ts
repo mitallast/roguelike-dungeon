@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import {UISelectable} from "./UISelectableGrid";
-import {Colors, Sizes} from "./index";
+import {Colors} from "./UIColorScheme";
+import {Sizes} from "./UISizeScheme";
 
 export class UIButton extends PIXI.Container implements UISelectable {
   private readonly _width: number;

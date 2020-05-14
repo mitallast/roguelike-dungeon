@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import {SceneController} from "./index";
+import {SceneController} from "./SceneController";
 
 export interface BannerOptions {
   readonly text: string;
