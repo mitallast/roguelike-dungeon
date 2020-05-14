@@ -9,7 +9,8 @@ export default {
     format: 'iife',
     globals: {
       "pixi.js": "PIXI",
-      "pixi-sound": "PIXI.sound"
+      "pixi-sound": "PIXI.sound",
+      "pixi-layers": "PIXI.display"
     },
     sourcemap: true,
   },
@@ -17,16 +18,52 @@ export default {
     typescript(),
     terser({
       ecma: 2020,
+      keep_fnames: false,
       compress: {
         ecma: 2020,
         drop_console: true,
         unsafe_arrows: true,
+        warnings: true
       },
       mangle: {
         properties: {
-          regex: /^_/,
+          // regex: /^_/,
           keep_quoted: true,
           reserved: [
+            "Stage",
+            "Container",
+            "AnimatedSprite",
+            "Application",
+            "BLEND_MODES", "ADD", "MULTIPLY",
+            "BitmapText",
+            "Container",
+            "Graphics",
+            "Point",
+            "SCALE_MODES", "NEAREST",
+            "Sprite",
+            "Texture.from",
+            "Ticker",
+            "shared", "add", "remove",
+            "TilingSprite",
+            "UPDATE_PRIORITY", "LOW",
+            "display", "Layer",
+            "display", "Stage",
+            "filters", "BlurFilter",
+            "sound", "play",
+            "loader",
+            "ticker",
+            "screen",
+            "texture", "baseTexture", "scaleMode",
+            "spritesheet",
+            "textures", "animations",
+            "name",
+            "autoUpdate",
+            "animationSpeed",
+            "loop",
+            "play",
+            "resources",
+
+
             "__Hint__",
             "_accessibleActive",
             "_accessibleDiv",
