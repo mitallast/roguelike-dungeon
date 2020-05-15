@@ -68,6 +68,7 @@ export class Joystick {
   readonly hit: KeyBind;
   readonly drop: KeyBind;
   readonly inventory: KeyBind;
+  readonly stats: KeyBind;
   readonly digit1: KeyBind;
   readonly digit2: KeyBind;
   readonly digit3: KeyBind;
@@ -89,6 +90,7 @@ export class Joystick {
     this.hit = new KeyBind('KeyF');
     this.drop = new KeyBind('KeyQ');
     this.inventory = new KeyBind('KeyI');
+    this.stats = new KeyBind('KeyP');
 
     this.digit1 = new KeyBind('Digit1');
     this.digit2 = new KeyBind('Digit2');

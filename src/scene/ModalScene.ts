@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js";
-import {UIButton, HStack, UISelectableGrid, VStack, Colors} from "../ui";
+import {UIButton, UIHorizontalStack, UISelectableGrid, UIVerticalStack, Colors} from "../ui";
 import {SceneController} from "./SceneController";
 
-export class ModalScene extends VStack {
+export class ModalScene extends UIVerticalStack {
   protected readonly _controller: SceneController;
   protected readonly _selectable: UISelectableGrid;
 
@@ -14,7 +14,7 @@ export class ModalScene extends VStack {
     this._controller = controller;
     this._selectable = new UISelectableGrid(controller.joystick);
 
-    const head = new HStack({padding: 0});
+    const head = new UIHorizontalStack({padding: 0});
     this.addChild(head);
 
     this._closeButton = new UIButton({label: "X", width: 40, height: 32});

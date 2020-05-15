@@ -248,6 +248,9 @@ export class Hero extends Character {
     if (joystick.inventory.once()) {
       this._dungeon.controller.showInventory(this.state);
     }
+    if (joystick.stats.once()) {
+      this._dungeon.controller.showStats(this.state);
+    }
   }
 }
 

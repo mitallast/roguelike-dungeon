@@ -23,8 +23,8 @@ export class HeroState extends CharacterState {
 
   readonly level: ObservableVar<number>;
   readonly levelXp: ObservableVar<number>;
-  readonly skillPoints: ObservableVar<number>;
   readonly xp: ObservableVar<number>;
+  readonly skillPoints: ObservableVar<number>;
 
   readonly dungeons: DungeonsState;
 
@@ -54,8 +54,8 @@ export class HeroState extends CharacterState {
 
     this.level = this._global.integerVar("level", 1);
     this.levelXp = this._global.integerVar("levelXp", 0);
-    this.skillPoints = this._global.integerVar("skillPoints", 0);
     this.xp = this._global.integerVar("xp", 0);
+    this.skillPoints = this._global.integerVar("skillPoints", 0);
 
     this.dungeons = new DungeonsState(this._session);
   }
@@ -81,6 +81,22 @@ export class HeroState extends CharacterState {
       }
       return newXp;
     });
+  }
+
+  increaseHealthMax(): void {
+    this.healthMax.update(hp => hp + 1);
+  }
+
+  increaseStamina(): void {
+    this.staminaMax.update(st => st + 1);
+  }
+
+  increaseBaseDamage(): void {
+    this.baseDamage.update(bd => bd + 1);
+  }
+
+  increaseSpeed(): void {
+    this.speed.update(sp => sp + 0.01);
   }
 }
 

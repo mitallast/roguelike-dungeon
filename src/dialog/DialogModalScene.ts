@@ -1,12 +1,12 @@
 import * as PIXI from "pixi.js";
 import {ModalScene, SceneController} from "../scene";
-import {UIButton, HStack, VStack, Colors, Sizes} from "../ui";
+import {UIButton, UIHorizontalStack, UIVerticalStack, Colors, Sizes} from "../ui";
 import {Dialog, DialogQuestion} from "./DialogManager";
 
 export class DialogModalScene extends ModalScene {
   private readonly _dialog: Dialog;
 
-  private _dialogView: VStack | null = null;
+  private _dialogView: UIVerticalStack | null = null;
   private _questionView: DialogQuestionView | null = null;
   private _answers: UIButton[] = [];
 
@@ -18,10 +18,10 @@ export class DialogModalScene extends ModalScene {
   init(): void {
     super.init();
 
-    const container = new HStack({padding: 0});
+    const container = new UIHorizontalStack({padding: 0});
     this.addChild(container);
 
-    const iconView = new VStack({
+    const iconView = new UIVerticalStack({
       spacing: 0,
       backgroundColor: Colors.uiBackground,
     });
@@ -32,7 +32,7 @@ export class DialogModalScene extends ModalScene {
     icon.height = icon.height * 4;
     iconView.addChild(icon);
 
-    this._dialogView = new VStack({padding: 0});
+    this._dialogView = new UIVerticalStack({padding: 0});
     container.addChild(this._dialogView);
 
     this._questionView = new DialogQuestionView(300);

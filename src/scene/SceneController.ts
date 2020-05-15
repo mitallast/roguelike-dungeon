@@ -7,7 +7,7 @@ import {GenerateOptions, GenerateDungeonScene, DungeonScene, DungeonMap, Dungeon
 import {KeyBindScene} from "../keybind.scene";
 import {SelectHeroScene} from "../select.hero.scene";
 import {InventoryModalScene} from "../inventory";
-import {HeroState, HeroStateManager} from "../characters/hero";
+import {HeroState, HeroStateManager, HeroStatsModalScene} from "../characters/hero";
 import {NpcManager, NpcState} from "../characters/npc";
 import {MonsterManager} from "../characters/monsters";
 import {DialogManager, DialogModalScene} from "../dialog";
@@ -120,6 +120,10 @@ export class SceneController {
     this._modalScene?.destroy();
     this.joystick.reset();
     this._scene?.resume();
+  }
+
+  showStats(hero: HeroState): void {
+    this.modal(new HeroStatsModalScene(this, hero));
   }
 
   showInventory(hero: HeroState): void {

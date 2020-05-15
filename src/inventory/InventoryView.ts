@@ -1,5 +1,5 @@
 import {Resources} from "../resources";
-import {UIButton, Colors, HStack, UISelectable, UISelectableGrid, Sizes, VStack} from "../ui";
+import {UIButton, Colors, UIHorizontalStack, UISelectable, UISelectableGrid, Sizes, UIVerticalStack} from "../ui";
 import {Observable, ObservableVar, Publisher} from "../observable";
 import {UsableDrop} from "../drop";
 import {InventoryController} from "./InventoryController";
@@ -37,9 +37,9 @@ export class InventoryView extends PIXI.Container {
 
     const inventory = controller.inventory;
 
-    const viewStack = new HStack({padding: 0});
+    const viewStack = new UIHorizontalStack({padding: 0});
     this.addChild(viewStack);
-    const inventoryStack = new VStack({padding: 0});
+    const inventoryStack = new UIVerticalStack({padding: 0});
     viewStack.addChild(inventoryStack);
 
     this._equipment = new EquipmentInventoryView(resources, inventory.equipment);
