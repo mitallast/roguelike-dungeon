@@ -5,6 +5,7 @@ import {Hero} from "./Hero";
 export class HeroStateView extends PIXI.Container {
   private readonly _hero: Hero;
   private readonly _healthBar: UIBarView;
+  private readonly _staminaBar: UIBarView;
   private readonly _xpBar: UIBarView;
   private readonly _coins: PIXI.BitmapText;
 
@@ -33,20 +34,30 @@ export class HeroStateView extends PIXI.Container {
       width: this._maxBarInnerSize,
       valueMax: hero.state.healthMax.get(),
     });
+
+    this._staminaBar = new UIBarView({
+      color: Colors.uiGreen,
+      width: this._maxBarInnerSize,
+      valueMax: hero.state.staminaMax.get(),
+    });
+    this._staminaBar.position.set(0, offsetY);
+
     this._xpBar = new UIBarView({
       color: Colors.uiYellow,
       width: this._maxBarInnerSize,
       valueMax: hero.state.levelXp.get(),
     });
-    this._xpBar.position.set(0, offsetY);
+    this._xpBar.position.set(0, offsetY * 2);
 
     this._coins = new PIXI.BitmapText("", {font: {name: "alagard", size: 16}});
-    this._coins.position.set(0, offsetY * 2);
+    this._coins.position.set(0, offsetY * 3);
 
-    super.addChild(this._healthBar, this._xpBar, this._coins);
+    super.addChild(this._healthBar, this._staminaBar, this._xpBar, this._coins);
 
-    hero.state.health.subscribe(this.updateHealth, this);
     hero.state.healthMax.subscribe(this.updateHealthMax, this);
+    hero.state.health.subscribe(this.updateHealth, this);
+    hero.state.staminaMax.subscribe(this.updateStaminaMax, this);
+    hero.state.stamina.subscribe(this.updateStamina, this);
     hero.state.level.subscribe(this.updateXp, this);
     hero.state.levelXp.subscribe(this.updateXp, this);
     hero.state.skillPoints.subscribe(this.updateXp, this);
@@ -56,8 +67,10 @@ export class HeroStateView extends PIXI.Container {
 
   destroy(): void {
     super.destroy();
-    this._hero.state.health.unsubscribe(this.updateHealth, this);
     this._hero.state.healthMax.unsubscribe(this.updateHealthMax, this);
+    this._hero.state.health.unsubscribe(this.updateHealth, this);
+    this._hero.state.staminaMax.unsubscribe(this.updateStaminaMax, this);
+    this._hero.state.stamina.unsubscribe(this.updateStamina, this);
     this._hero.state.level.unsubscribe(this.updateXp, this);
     this._hero.state.levelXp.unsubscribe(this.updateXp, this);
     this._hero.state.skillPoints.unsubscribe(this.updateXp, this);
@@ -68,7 +81,7 @@ export class HeroStateView extends PIXI.Container {
   private updateHealthMax(healthMax: number): void {
     const health = this._hero.state.health.get();
     this._healthBar.valueMax = healthMax;
-    this._healthBar.label = `${health}/${healthMax}`;
+    this._healthBar.label = `${health.toFixed(1)}/${healthMax}`;
     if (!this._fixedHPSize) {
       this._healthBar.rectWidth = this._hpBarSize * healthMax;
     }
@@ -77,7 +90,19 @@ export class HeroStateView extends PIXI.Container {
   private updateHealth(health: number): void {
     const healthMax = this._hero.state.healthMax.get();
     this._healthBar.value = health;
-    this._healthBar.label = `${health}/${healthMax}`;
+    this._healthBar.label = `${health.toFixed(1)}/${healthMax}`;
+  }
+
+  private updateStaminaMax(staminaMax: number): void {
+    const stamina = this._hero.state.stamina.get();
+    this._staminaBar.valueMax = staminaMax;
+    this._staminaBar.label = `${stamina.toFixed(1)}/${staminaMax}`;
+  }
+
+  private updateStamina(stamina: number): void {
+    const staminaMax = this._hero.state.staminaMax.get();
+    this._staminaBar.value = stamina;
+    this._staminaBar.label = `${stamina.toFixed(1)}/${staminaMax}`;
   }
 
   private updateXp(): void {

@@ -104,6 +104,7 @@
         "speed": 1.4,
         "distance": 1,
         "damage": 2,
+        "stamina": 15,
         "level": 1,
         "price": 12,
         "animations": {
@@ -117,6 +118,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 4,
+        "stamina": 20,
         "level": 1,
         "price": 15,
         "animations": {
@@ -134,6 +136,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 5,
+        "stamina": 20,
         "level": 3,
         "price": 20,
         "animations": {
@@ -151,6 +154,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 6,
+        "stamina": 20,
         "level": 3,
         "price": 30,
         "animations": {
@@ -168,6 +172,7 @@
         "speed": 0.7,
         "distance": 1,
         "damage": 7,
+        "stamina": 25,
         "level": 5,
         "price": 38,
         "animations": {
@@ -181,6 +186,7 @@
         "speed": 0.5,
         "distance": 2,
         "damage": 10,
+        "stamina": 35,
         "level": 5,
         "price": 40,
         "animations": {
@@ -194,6 +200,7 @@
         "speed": 0.6,
         "distance": 1,
         "damage": 7,
+        "stamina": 25,
         "level": 5,
         "price": 42,
         "animations": {
@@ -207,6 +214,7 @@
         "speed": 0.6,
         "distance": 1,
         "damage": 7,
+        "stamina": 25,
         "level": 5,
         "price": 45,
         "animations": {
@@ -224,6 +232,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 8,
+        "stamina": 25,
         "level": 7,
         "price": 100,
         "animations": {
@@ -241,6 +250,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 9,
+        "stamina": 30,
         "level": 7,
         "price": 110,
         "animations": {
@@ -258,6 +268,7 @@
         "speed": 0.7,
         "distance": 1,
         "damage": 12,
+        "stamina": 45,
         "level": 7,
         "price": 130,
         "animations": {
@@ -275,6 +286,7 @@
         "speed": 0.8,
         "distance": 1,
         "damage": 12,
+        "stamina": 25,
         "level": 7,
         "price": 115,
         "animations": {
@@ -288,6 +300,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 11,
+        "stamina": 20,
         "level": 9,
         "price": 150,
         "animations": {
@@ -301,6 +314,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 12,
+        "stamina": 25,
         "level": 9,
         "price": 160,
         "animations": {
@@ -314,6 +328,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 13,
+        "stamina": 20,
         "level": 9,
         "price": 170,
         "animations": {
@@ -331,6 +346,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 14,
+        "stamina": 30,
         "level": 9,
         "price": 180,
         "animations": {
@@ -348,6 +364,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 15,
+        "stamina": 30,
         "level": 11,
         "price": 220,
         "animations": {
@@ -365,6 +382,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 16,
+        "stamina": 30,
         "level": 11,
         "price": 240,
         "animations": {
@@ -384,6 +402,7 @@
         "speed": 1.4,
         "distance": 1,
         "damage": 2,
+        "stamina": 15,
         "level": 1,
         "price": 12,
         "animations": {
@@ -397,6 +416,7 @@
         "speed": 0.7,
         "distance": 1,
         "damage": 7,
+        "stamina": 25,
         "level": 5,
         "price": 38,
         "animations": {
@@ -410,6 +430,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 12,
+        "stamina": 25,
         "level": 9,
         "price": 160,
         "animations": {
@@ -423,6 +444,7 @@
         "speed": 0.8,
         "distance": 1,
         "damage": 12,
+        "stamina": 25,
         "level": 7,
         "price": 115,
         "animations": {
@@ -436,6 +458,7 @@
         "speed": 1.0,
         "distance": 1,
         "damage": 5,
+        "stamina": 20,
         "level": 3,
         "price": 20,
         "animations": {
@@ -453,6 +476,7 @@
         "speed": 1.5,
         "distance": 1,
         "damage": 14,
+        "stamina": 30,
         "level": 9,
         "price": 180,
         "animations": {
@@ -472,6 +496,7 @@
         "speed": 0.7,
         "distance": 1,
         "damage": 0.5,
+        "stamina": 15,
         "level": 1,
         "price": 0,
         "animations": {
@@ -485,6 +510,7 @@
         "speed": 0.3,
         "distance": 1,
         "damage": 3,
+        "stamina": 25,
         "level": 5,
         "price": 0,
         "animations": {
@@ -498,6 +524,7 @@
         "speed": 0.4,
         "distance": 1,
         "damage": 4,
+        "stamina": 45,
         "level": 10,
         "price": 0,
         "animations": {
@@ -515,6 +542,7 @@
         "speed": 0.3,
         "distance": 2,
         "damage": 5,
+        "stamina": 35,
         "level": 15,
         "price": 0,
         "animations": {
@@ -528,6 +556,7 @@
         "speed": 0.6,
         "distance": 1,
         "damage": 6,
+        "stamina": 25,
         "level": 20,
         "price": 0,
         "animations": {
@@ -545,6 +574,7 @@
         "speed": 0.5,
         "distance": 1,
         "damage": 7,
+        "stamina": 25,
         "level": 25,
         "price": 0,
         "animations": {

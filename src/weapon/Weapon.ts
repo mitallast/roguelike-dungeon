@@ -21,6 +21,7 @@ export class Weapon implements UsableDrop {
   readonly animations: WeaponAnimationSet;
   readonly distance: number;
   readonly damage: number;
+  readonly stamina: number;
   private readonly _price: number;
 
   get spriteName(): string {
@@ -32,6 +33,7 @@ export class Weapon implements UsableDrop {
     speed: number;
     distance: number;
     damage: number;
+    stamina: number;
     level: number;
     price: number;
     animations: WeaponAnimationSet;
@@ -40,6 +42,7 @@ export class Weapon implements UsableDrop {
     this.speed = options.speed;
     this.distance = options.distance;
     this.damage = options.damage;
+    this.stamina = options.stamina;
     this._price = options.price;
     this.animations = options.animations;
   }
@@ -49,6 +52,7 @@ export class Weapon implements UsableDrop {
       name: this.name,
       speed: this.speed,
       distance: this.distance,
+      stamina: this.stamina,
       damage: this.damage,
       sellPrice: this._price,
       buyPrice: this._price * 10,

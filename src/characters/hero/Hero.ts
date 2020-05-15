@@ -50,10 +50,6 @@ export class Hero extends Character {
     super.destroy();
   }
 
-  protected onKilledBy(by: Character): void {
-    this._dungeon.log(`${this.state.name} killed by ${by.state.name}`);
-  }
-
   protected onDead(): void {
     this.destroy();
     this.state.destroySession();
@@ -83,7 +79,7 @@ export class Hero extends Character {
 
     const damage = this.state.damage + combo; // @todo improve?
     for (const monster of monsters) {
-      monster.hitDamage(this, damage);
+      monster.state.hitDamage(this, damage);
     }
     if (monsters.length > 0) {
       PIXI.sound.play('hit_damage', {speed: weapon?.speed || 1});
@@ -202,7 +198,8 @@ export class Hero extends Character {
     // on hit pressed
     fsm.state(HeroBrainState.ON_HIT)
       .transitionTo(HeroBrainState.HIT)
-      .condition(() => this.scanMonsters(ScanDirection.AROUND, 1).length > 0);
+      .condition(() => this.scanMonsters(ScanDirection.AROUND, 1).length > 0)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(HeroBrainState.ON_HIT)
       .transitionTo(HeroBrainState.IDLE)
@@ -210,7 +207,11 @@ export class Hero extends Character {
       .action(() => joystick.hit.reset());
 
     fsm.state(HeroBrainState.ON_HIT)
-      .transitionTo(HeroBrainState.HIT);
+      .transitionTo(HeroBrainState.HIT)
+      .condition(() => this.state.spendHitStamina());
+
+    fsm.state(HeroBrainState.ON_HIT)
+      .transitionTo(HeroBrainState.IDLE);
 
     return fsm;
   }

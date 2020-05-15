@@ -1,6 +1,6 @@
 export * from "./BossMonster"
 export * from "./Monster"
-export * from "./MonsterHealthView"
+export * from "./MonsterStateView"
 export * from "./MonsterManager"
 export * from "./MonsterState"
 export * from "./SummonMonster"

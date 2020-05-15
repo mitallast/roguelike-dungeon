@@ -23,15 +23,15 @@
           "type": "string",
           "pattern": "^[a-z]+(_[a-z0-9]+)*$"
         },
-        "healthMax": {
-          "type": "number",
-          "minimum": 1,
-          "maximum": 100
-        },
         "health": {
           "type": "number",
           "minimum": 1,
           "maximum": 100
+        },
+        "stamina": {
+          "type": "number",
+          "minimum": 70,
+          "maximum": 160
         },
         "baseDamage": {
           "type": "number",
@@ -88,8 +88,8 @@
       },
       "required": [
         "name",
-        "healthMax",
         "health",
+        "stamina",
         "baseDamage",
         "speed",
         "coins",

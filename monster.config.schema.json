@@ -42,6 +42,11 @@
           "type": "number",
           "minimum": 10
         },
+        "stamina": {
+          "type": "number",
+          "minimum": 70,
+          "maximum": 160
+        },
         "damage": {
           "type": "number",
           "minimum": 1
@@ -70,6 +75,7 @@
         "name",
         "race",
         "health",
+        "stamina",
         "damage",
         "luck",
         "xp",
@@ -96,6 +102,10 @@
         "health": {
           "type": "number",
           "minimum": 1
+        },
+        "stamina": {
+          "type": "number",
+          "minimum": 10
         },
         "damage": {
           "type": "number",
@@ -126,6 +136,7 @@
         "race",
         "type",
         "health",
+        "stamina",
         "damage",
         "luck",
         "xp",
@@ -143,6 +154,10 @@
           "$ref": "#/definitions/MonsterRace"
         },
         "health": {
+          "type": "number",
+          "minimum": 10
+        },
+        "stamina": {
           "type": "number",
           "minimum": 10
         },
@@ -178,6 +193,7 @@
         "name",
         "race",
         "health",
+        "stamina",
         "damage",
         "luck",
         "xp",

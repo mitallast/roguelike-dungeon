@@ -9,8 +9,8 @@ export interface NpcConfig {
   readonly width: number;
   readonly height: number;
 
-  readonly healthMax: number;
   readonly health: number;
+  readonly stamina: number;
   readonly baseDamage: number;
   readonly speed: number;
   readonly coins: number;
@@ -43,8 +43,10 @@ export class NpcManager {
     const state = new NpcState({
       name: config.name,
 
-      healthMax: config.healthMax,
+      healthMax: config.health,
       health: config.health,
+      staminaMax: config.stamina,
+      stamina: config.stamina,
       baseDamage: config.baseDamage,
       speed: config.speed,
       coins: config.coins,

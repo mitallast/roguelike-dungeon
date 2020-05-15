@@ -8,6 +8,8 @@ export abstract class DefaultCharacterState extends CharacterState {
 
   readonly healthMax: ObservableVar<number>;
   readonly health: ObservableVar<number>;
+  readonly staminaMax: ObservableVar<number>;
+  readonly stamina: ObservableVar<number>;
   readonly baseDamage: ObservableVar<number>;
   readonly speed: ObservableVar<number>;
   readonly coins: ObservableVar<number>;
@@ -18,6 +20,8 @@ export abstract class DefaultCharacterState extends CharacterState {
     name: string;
     healthMax: number;
     health: number;
+    staminaMax: number;
+    stamina: number;
     baseDamage: number;
     speed: number;
     coins: number;
@@ -27,6 +31,8 @@ export abstract class DefaultCharacterState extends CharacterState {
 
     this.healthMax = new ObservableVar<number>(options.healthMax);
     this.health = new ObservableVar<number>(options.health);
+    this.staminaMax = new ObservableVar<number>(options.staminaMax);
+    this.stamina = new ObservableVar<number>(options.stamina);
     this.baseDamage = new ObservableVar<number>(options.baseDamage);
     this.speed = new ObservableVar<number>(options.speed);
     this.coins = new ObservableVar<number>(options.coins);

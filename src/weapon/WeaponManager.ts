@@ -7,6 +7,7 @@ interface WeaponConfig {
   readonly speed: number;
   readonly distance: number;
   readonly damage: number;
+  readonly stamina: number;
   readonly level: number;
   readonly price: number;
   readonly animations: WeaponAnimationConfig;
@@ -59,6 +60,7 @@ export class WeaponManager {
       speed: config.speed,
       distance: config.distance,
       damage: config.damage,
+      stamina: config.stamina,
       level: config.level,
       price: config.price,
       animations: this.animations(config.animations),

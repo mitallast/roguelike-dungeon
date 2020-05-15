@@ -51,6 +51,8 @@ export class MonsterManager {
       name: config.name,
       healthMax: this.modify(config.health, 0.1, dungeon.level),
       health: this.modify(config.health, 0.1, dungeon.level),
+      staminaMax: config.stamina,
+      stamina: config.stamina,
       baseDamage: this.modify(config.damage, 0.1, dungeon.level),
       speed: config.speed,
       coins: 0,
@@ -91,6 +93,8 @@ export class MonsterManager {
       name: config.name,
       healthMax: this.modify(config.health, 0.1, dungeon.level),
       health: this.modify(config.health, 0.1, dungeon.level),
+      staminaMax: config.stamina,
+      stamina: config.stamina,
       baseDamage: this.modify(config.damage, 0.1, dungeon.level),
       speed: config.speed,
       coins: 0,
@@ -124,6 +128,8 @@ export class MonsterManager {
       name: config.name,
       healthMax: this.modify(config.health, 0.1, dungeon.level),
       health: this.modify(config.health, 0.1, dungeon.level),
+      staminaMax: config.stamina,
+      stamina: config.stamina,
       baseDamage: this.modify(config.damage, 0.1, dungeon.level),
       speed: config.speed,
       coins: 0,
@@ -139,7 +145,7 @@ export class MonsterManager {
       height: 2
     });
 
-    const weaponId = state.luck < dungeon.rng.float() ? dungeon.rng.select(config.weapons) : null;
+    const weaponId = dungeon.rng.select(config.weapons);
     if (weaponId) {
       const weapon = this._controller.weaponManager.monsterWeapon(weaponId);
       state.inventory.equipment.weapon.set(weapon);

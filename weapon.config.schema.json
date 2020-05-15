@@ -128,26 +128,44 @@
           "type": "string"
         },
         "speed": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.1
         },
         "distance": {
-          "type": "number"
+          "type": "number",
+          "minimum": 1
         },
         "damage": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.1
+        },
+        "stamina": {
+          "type": "number",
+          "minimum": 10
         },
         "level": {
-          "type": "number"
+          "type": "number",
+          "minimum": 1
         },
         "price": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         },
         "animations": {
           "$ref": "#/definitions/AnimationSet"
         }
       },
       "additionalProperties": false,
-      "required": ["name", "speed", "distance", "damage", "level", "price", "animations"]
+      "required": [
+        "name",
+        "speed",
+        "distance",
+        "damage",
+        "stamina",
+        "level",
+        "price",
+        "animations"
+      ]
     },
     "WeaponSet": {
       "type": "object",

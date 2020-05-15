@@ -79,10 +79,6 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
       .sort(Room.compare)
       .reverse();
 
-    for (const room of rooms) {
-      console.log(`room size=${room.inside.length} center=${room.center()}`);
-    }
-
     await yields();
     this.replaceFloorRandomly(rng, dungeon);
 
@@ -181,9 +177,8 @@ export class HybridDungeonGenerator extends BaseDungeonGenerator {
     const totalSpace = dungeon.width * dungeon.height;
     const floorSpace = Math.floor(totalSpace * 0.4);
     const spawnSpace = Math.floor(floorSpace * 0.2);
-    const tinyMonsterCount = Math.floor(spawnSpace * 0.15);
-    const summonMonsterCount = Math.floor(spawnSpace * 0.01);
-
+    const tinyMonsterCount = Math.floor(spawnSpace * 0.07);
+    const summonMonsterCount = Math.floor(spawnSpace * 0.005);
 
     console.log(`total space: ${floorSpace}`);
     console.log(`floor space: ${floorSpace}`);

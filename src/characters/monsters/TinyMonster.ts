@@ -220,7 +220,8 @@ export class TinyMonster extends Monster {
     // initial
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.HIT)
-      .condition(() => this.heroOnAttack);
+      .condition(() => this.heroOnAttack)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.RUN)
@@ -242,7 +243,8 @@ export class TinyMonster extends Monster {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(TinyMonsterAttackState.IDLE)
       .transitionTo(TinyMonsterAttackState.RUN)
@@ -266,7 +268,8 @@ export class TinyMonster extends Monster {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(TinyMonsterAttackState.RUN)
       .transitionTo(TinyMonsterAttackState.RUN)

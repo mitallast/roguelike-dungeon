@@ -30,7 +30,7 @@ export class SummonMonster extends Monster {
 
   protected spawnMinions(): boolean {
     for (let i = this._spawned.length - 1; i >= 0; i--) {
-      if (this._spawned[i].isDead) {
+      if (this._spawned[i].state.dead.get()) {
         this._spawned.splice(i, 1);
       }
     }
@@ -155,7 +155,8 @@ export class SummonMonster extends Monster {
     fsm.state(SummonMonsterAttackFsmState.DECISION)
       .transitionTo(SummonMonsterAttackFsmState.HIT)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(SummonMonsterAttackFsmState.DECISION)
       .transitionTo(SummonMonsterAttackFsmState.RUN_AWAY)

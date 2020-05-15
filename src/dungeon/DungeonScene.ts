@@ -2,7 +2,7 @@ import {Scene, SceneController} from "../scene";
 import {DungeonMap} from "./DungeonMap";
 import {DungeonTitle} from "./DungeonTitle";
 import {Hero, HeroStateView} from "../characters/hero";
-import {BossMonster, MonsterHealthView} from "../characters/monsters";
+import {BossMonster, MonsterStateView} from "../characters/monsters";
 import {BeltInventoryView} from "../inventory";
 
 export class DungeonScene extends Scene {
@@ -46,7 +46,7 @@ export class DungeonScene extends Scene {
 
     const [boss] = this._dungeon.registry.query({type: BossMonster.type});
     if (boss) {
-      const healthView = new MonsterHealthView(boss);
+      const healthView = new MonsterStateView(boss);
       healthView.zIndex = 13;
       healthView.position.set((screen.width >> 1), 64);
       this.addChild(healthView);

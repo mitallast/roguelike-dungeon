@@ -4,6 +4,7 @@ export interface BossConfig {
   readonly name: string;
   readonly race: MonsterRace;
   readonly health: number;
+  readonly stamina: number;
   readonly damage: number;
   readonly luck: number;
   readonly xp: number;
@@ -15,6 +16,7 @@ export interface SummonMonsterConfig {
   readonly name: string;
   readonly race: MonsterRace;
   readonly health: number;
+  readonly stamina: number;
   readonly damage: number;
   readonly luck: number;
   readonly xp: number;
@@ -27,6 +29,7 @@ export interface TinyMonsterConfig {
   readonly name: string;
   readonly race: MonsterRace;
   readonly health: number;
+  readonly stamina: number;
   readonly damage: number;
   readonly luck: number;
   readonly xp: number;

@@ -34,6 +34,8 @@ export class NpcState extends DefaultCharacterState {
 
     healthMax: number;
     health: number;
+    staminaMax: number;
+    stamina: number;
     baseDamage: number;
     speed: number;
     coins: number;

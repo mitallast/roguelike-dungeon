@@ -233,7 +233,8 @@ export class BossMonster extends Monster {
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.HIT)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.RUN)
@@ -255,7 +256,8 @@ export class BossMonster extends Monster {
       .transitionTo(BossAttackState.HIT)
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(BossAttackState.IDLE)
       .transitionTo(BossAttackState.RUN)
@@ -279,7 +281,8 @@ export class BossMonster extends Monster {
       .transitionTo(BossAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck);
+      .condition(() => rng.float() < this.state.luck)
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(BossAttackState.RUN)
       .transitionTo(BossAttackState.RUN)

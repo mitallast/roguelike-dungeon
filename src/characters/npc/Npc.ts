@@ -28,9 +28,6 @@ export class Npc extends Character {
     this.destroy();
   }
 
-  protected onKilledBy(_: Character): void {
-  }
-
   interact(hero: Hero): void {
     this.lookAt(hero);
     this._dungeon.controller.showDialog(hero.state, this.state);

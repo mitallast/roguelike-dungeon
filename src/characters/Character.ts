@@ -1,5 +1,4 @@
 import {DungeonMap, DungeonMapCell, DungeonObject, DungeonObjectOptions} from "../dungeon";
-import {Observable, ObservableVar} from "../observable";
 import {UsableDrop} from "../drop";
 import {Weapon, WeaponAnimation} from "../weapon";
 import {PathFinding, PathPoint} from "../pathfinding";
@@ -28,8 +27,6 @@ export abstract class Character extends DungeonObject {
 
   abstract readonly state: CharacterState;
 
-  protected readonly _dead: ObservableVar<boolean> = new ObservableVar<boolean>(false);
-
   protected readonly _fsm: FiniteStateMachine<any>;
   protected readonly _dungeon: DungeonMap;
   private _x: number;
@@ -51,14 +48,6 @@ export abstract class Character extends DungeonObject {
 
   get newY(): number {
     return this._newY;
-  }
-
-  get dead(): Observable<boolean> {
-    return this._dead;
-  }
-
-  get isDead(): boolean {
-    return this._dead.get();
   }
 
   protected constructor(dungeon: DungeonMap, options: CharacterOptions) {
@@ -85,7 +74,7 @@ export abstract class Character extends DungeonObject {
 
   init(): void {
     this.setPosition(this._x, this._y);
-    this._dead.subscribe(this.handleDead, this);
+    this.state.dead.subscribe(this.handleDead, this);
     this.state.inventory.equipment.weapon.item.subscribe(this.onWeaponUpdate, this);
     this._fsm.start();
     this._dungeon.ticker.add(this._fsm.update, this._fsm);
@@ -95,7 +84,7 @@ export abstract class Character extends DungeonObject {
     super.destroy();
     this._dungeon.ticker.remove(this._fsm.update, this._fsm);
     this._fsm.stop();
-    this._dead.unsubscribe(this.handleDead, this);
+    this.state.dead.unsubscribe(this.handleDead, this);
     this.state.inventory.equipment.weapon.item.unsubscribe(this.onWeaponUpdate, this);
     this._dungeon.remove(this._x, this._y, this);
     if (this._newX !== -1 && this._newY !== -1) {
@@ -108,24 +97,6 @@ export abstract class Character extends DungeonObject {
     return this !== object;
   }
 
-  hitDamage(by: Character, damage: number): void {
-    if (!this.isDead) {
-      this.state.health.update((h) => {
-        const hp = parseFloat(Math.max(0, h - damage).toFixed(1));
-        console.log(`${this.state.name} damaged by ${by.state.name} damage=${damage} hp=${hp}`);
-        return hp
-      });
-      if (this.state.health.get() === 0) {
-        this.handleKilledBy(by);
-        this._dead.set(true);
-      }
-    }
-  }
-
-  private handleKilledBy(by: Character | null): void {
-    if (by) this.onKilledBy(by);
-  }
-
   private handleDead(dead: boolean): void {
     if (dead) {
       this.onDead();
@@ -135,8 +106,6 @@ export abstract class Character extends DungeonObject {
   private onWeaponUpdate(weapon: UsableDrop | null): void {
     this.view.weapon.setWeapon(weapon as (Weapon | null));
   }
-
-  protected abstract onKilledBy(by: Character): void;
 
   protected abstract onDead(): void;
 
@@ -383,6 +352,7 @@ export abstract class Character extends DungeonObject {
         animator.start();
       })
       .onUpdate(deltaTime => animator.update(deltaTime))
+      .onUpdate(() => this.state.regenStamina())
       .onExit(() => animator.stop())
       .transitionTo(IdleState.COMPLETE)
       .condition(() => !animator.isPlaying);
@@ -413,6 +383,7 @@ export abstract class Character extends DungeonObject {
         }
       })
       .onUpdate(deltaTime => animator.update(deltaTime))
+      .onUpdate(() => this.state.regenStamina())
       .transitionTo(RunState.COMPLETE).condition(() => !animator.isPlaying);
     return fsm;
   }
@@ -498,12 +469,12 @@ export abstract class Character extends DungeonObject {
     fsm.state(ComboHitState.FIRST_HIT)
       .transitionTo(ComboHitState.NEXT_HIT)
       .condition(() => !animator.isPlaying)
-      .condition(() => hitController.continueCombo());
+      .condition(() => hitController.continueCombo())
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(ComboHitState.FIRST_HIT)
       .transitionTo(ComboHitState.COMPLETE)
-      .condition(() => !animator.isPlaying)
-      .condition(() => !hitController.continueCombo());
+      .condition(() => !animator.isPlaying);
 
     // next hit
     fsm.state(ComboHitState.NEXT_HIT)
@@ -521,18 +492,12 @@ export abstract class Character extends DungeonObject {
       .transitionTo(ComboHitState.NEXT_HIT)
       .condition(() => !animator.isPlaying)
       .condition(() => hits < combo.length)
-      .condition(() => hitController.continueCombo());
-
-    fsm.state(ComboHitState.NEXT_HIT)
-      .transitionTo(ComboHitState.NEXT_HIT)
-      .condition(() => !animator.isPlaying)
-      .condition(() => hits < combo.length)
-      .condition(() => !hitController.continueCombo());
+      .condition(() => hitController.continueCombo())
+      .condition(() => this.state.spendHitStamina());
 
     fsm.state(ComboHitState.NEXT_HIT)
       .transitionTo(ComboHitState.COMPLETE)
-      .condition(() => !animator.isPlaying)
-      .condition(() => hits === combo.length);
+      .condition(() => !animator.isPlaying);
 
     return fsm;
   }

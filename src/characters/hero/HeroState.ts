@@ -13,6 +13,8 @@ export class HeroState extends CharacterState {
 
   readonly healthMax: ObservableVar<number>;
   readonly health: ObservableVar<number>;
+  readonly staminaMax: ObservableVar<number>;
+  readonly stamina: ObservableVar<number>;
   readonly baseDamage: ObservableVar<number>;
   readonly speed: ObservableVar<number>;
   readonly coins: ObservableVar<number>;
@@ -40,6 +42,10 @@ export class HeroState extends CharacterState {
 
     this.healthMax = this._global.floatVar("healthMax", 30);
     this.health = this._session.floatVar("health", 30);
+
+    this.staminaMax = this._global.floatVar("staminaMax", 70);
+    this.stamina = this._session.floatVar("stamina", 70);
+
     this.baseDamage = this._global.integerVar("baseDamage", 3);
     this.speed = this._global.floatVar("speed", 1);
     this.coins = this._global.integerVar("coins", 0);
@@ -121,7 +127,7 @@ export class DungeonsState {
   }
 
   bonfires(): number[] {
-    return this._bonfire.keys().map(parseInt).sort((a: number, b: number) => a - b);
+    return this._bonfire.keys().map(key => parseInt(key)).sort((a: number, b: number) => a - b);
   }
 }
 

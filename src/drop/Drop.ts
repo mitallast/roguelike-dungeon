@@ -60,6 +60,7 @@ export interface DropInfo {
   readonly health?: number;
   readonly speed?: number;
   readonly distance?: number;
+  readonly stamina?: number;
   readonly damage?: number;
 
   price?: number;
@@ -131,7 +132,7 @@ export class HealthBigFlask implements UsableDrop {
   }
 
   use(cell: InventoryCell, character: CharacterState): void {
-    character.health.update(h => Math.min(character.healthMax.get(), h + this._health));
+    character.heal(this._health);
     cell.decrease();
   }
 }

@@ -38,13 +38,6 @@ export abstract class Monster extends Character {
     this.state = state;
   }
 
-  protected onKilledBy(by: Character): void {
-    if (by && by instanceof Hero) {
-      this._dungeon.log(`${this.state.name} killed by ${by.state.name}`);
-      by.state.addXp(this.state.xp);
-    }
-  }
-
   scanHit(combo: number): void {
     const weapon = this.state.weapon;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
@@ -52,7 +45,7 @@ export abstract class Monster extends Character {
     const heroes = this.scanHeroes(direction, distance);
     const damage = this.state.damage + combo;
     for (const hero of heroes) {
-      hero.hitDamage(this, damage);
+      hero.state.hitDamage(this, damage);
     }
   }
 
@@ -66,7 +59,7 @@ export abstract class Monster extends Character {
     return this._dungeon.registry.query<Hero>({
       type: Hero.type,
       filter: hero => {
-        return !hero.isDead &&
+        return !hero.state.dead.get() &&
           this.distanceTo(hero) <= maxDistance &&
           this.checkDirection(direction, hero) &&
           this.raycastIsVisible(hero);
@@ -125,7 +118,7 @@ export abstract class Monster extends Character {
     return this._dungeon.registry.query<Monster>({
       type: Monster.type,
       filter: monster => {
-        return !monster.isDead &&
+        return !monster.state.dead.get() &&
           this.distanceTo(monster) <= this.state.viewRange &&
           this.raycastIsVisible(monster)
       }
