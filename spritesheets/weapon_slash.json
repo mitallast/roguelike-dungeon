@@ -1,0 +1,139 @@
+{
+  "frames": {
+    "w_slash_anime_sword.png": {
+      "frame": {"x": 0, "y": 48, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_axe.png": {
+      "frame": {"x": 0, "y": 80, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_baton_with_spikes.png": {
+      "frame": {"x": 32, "y": 0, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_big_hammer.png": {
+      "frame": {"x": 0, "y": 0, "w": 16, "h": 48},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 48},
+      "sourceSize": {"w": 16, "h": 48}
+    },
+    "w_slash_cleaver.png": {
+      "frame": {"x": 16, "y": 0, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_duel_sword.png": {
+      "frame": {"x": 64, "y": 0, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_golden_sword.png": {
+      "frame": {"x": 16, "y": 32, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_hammer.png": {
+      "frame": {"x": 16, "y": 64, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_katana.png": {
+      "frame": {"x": 32, "y": 80, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_knife.png": {
+      "frame": {"x": 64, "y": 48, "w": 16, "h": 16},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 16},
+      "sourceSize": {"w": 16, "h": 16}
+    },
+    "w_slash_knight_sword.png": {
+      "frame": {"x": 64, "y": 16, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_lavish_sword.png": {
+      "frame": {"x": 32, "y": 16, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_mace.png": {
+      "frame": {"x": 32, "y": 32, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_machete.png": {
+      "frame": {"x": 64, "y": 32, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_red_gem_sword.png": {
+      "frame": {"x": 48, "y": 32, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_regular_sword.png": {
+      "frame": {"x": 48, "y": 32, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_rusty_sword.png": {
+      "frame": {"x": 48, "y": 32, "w": 16, "h": 32},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    },
+    "w_slash_saw_sword.png": {
+      "frame": {"x": 48, "y": 64, "w": 16, "h": 32},
+      "rotated": true,
+      "trimmed": false,
+      "spriteSourceSize": {"x": 0, "y": 0, "w": 16, "h": 32},
+      "sourceSize": {"w": 16, "h": 32}
+    }
+  },
+  "meta": {
+    "app": "https://www.codeandweb.com/texturepacker",
+    "version": "1.0",
+    "image": "weapon_slash.png",
+    "format": "RGBA8888",
+    "size": {"w": 96, "h": 96},
+    "scale": "1",
+    "smartupdate": "$TexturePacker:SmartUpdate:0aa461fa3c0fef76ccd93cf0f3b4df65:1e8bb40c00bcf1fd441a73dd7d087286:5b429c177f904e1209fe062a81172c33$"
+  }
+}
