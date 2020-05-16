@@ -252,7 +252,7 @@ export abstract class Character extends DungeonObject {
     return this.segmentDistance(aMin, aMax, bMin, bMax) === 0;
   }
 
-  metric(a: { readonly x: number, readonly y: number }): number {
+  metric(a: { readonly x: number; readonly y: number }): number {
     return Math.max(Math.abs(a.x - this._x), Math.abs(a.y - this._y)) +
       (a.y !== this._y ? 0.5 : 0) + // boost X
       (a.x === this._x && a.y === this._y ? 0 : 1) + // boost self
