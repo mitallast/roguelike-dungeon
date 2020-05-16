@@ -76,7 +76,6 @@ export class SceneController {
 
   private setScene(scene: Scene): void {
     this._scene?.destroy();
-    this.joystick.reset();
     this._scene = scene;
     this._app.stage = this._scene;
     this._scene.init();
@@ -106,7 +105,6 @@ export class SceneController {
     PIXI.sound.play('text');
 
     this._scene?.pause();
-    this.joystick.reset();
     this._modalScene = scene;
     this._scene?.addChild(scene);
     this._modalScene.init();
@@ -118,7 +116,6 @@ export class SceneController {
 
   closeModal(): void {
     this._modalScene?.destroy();
-    this.joystick.reset();
     this._scene?.resume();
   }
 

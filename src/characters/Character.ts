@@ -126,16 +126,21 @@ export abstract class Character extends DungeonObject {
   }
 
   tryMove(dx: number, dy: number): boolean {
-    return ((dx !== 0 || dy !== 0) && this.move(dx, dy)) ||
-      (dx !== 0 && this.move(dx, 0)) ||
-      (dy !== 0 && this.move(0, dy))
+    return this.moveRel(dx, dy) ||
+      this.moveRel(dx, 0) ||
+      this.moveRel(0, dy)
   }
 
-  move(dx: number, dy: number): boolean {
+  moveRel(dx: number, dy: number): boolean {
+    return this.move(this._x + dx, this._y + dy);
+  }
+
+  move(newX: number, newY: number): boolean {
+    const dx = newX - this._x;
+    const dy = newY - this._y;
+    if (dx === 0 && dy === 0) return false;
     if (dx > 0) this.view.isLeft = false;
     if (dx < 0) this.view.isLeft = true;
-    const newX = this._x + dx;
-    const newY = this._y + dy;
     if (this._dungeon.available(newX, newY, this)) {
       this.setDestination(newX, newY);
       return true;
@@ -247,7 +252,7 @@ export abstract class Character extends DungeonObject {
     return this.segmentDistance(aMin, aMax, bMin, bMax) === 0;
   }
 
-  metric(a: DungeonMapCell): number {
+  metric(a: { readonly x: number, readonly y: number }): number {
     return Math.max(Math.abs(a.x - this._x), Math.abs(a.y - this._y)) +
       (a.y !== this._y ? 0.5 : 0) + // boost X
       (a.x === this._x && a.y === this._y ? 0 : 1) + // boost self
@@ -329,7 +334,7 @@ export abstract class Character extends DungeonObject {
 
       const cell = this._dungeon.cell(x0, y0);
       if (!cell.hasFloor) return false;
-      if (cell.collide(this)) return false;
+      if (cell.collide(this) && cell.object !== object) return false;
     }
 
     return true;
@@ -361,7 +366,7 @@ export abstract class Character extends DungeonObject {
 
   protected run(): FiniteStateMachine<RunState> {
     const animator = this.animator;
-    const fsm = new FiniteStateMachine<RunState>(RunState.PLAY, [RunState.PLAY, RunState.PLAY, RunState.COMPLETE]);
+    const fsm = new FiniteStateMachine<RunState>(RunState.PLAY, [RunState.PLAY, RunState.COMPLETE]);
     fsm.state(RunState.PLAY)
       .onEnter(() => {
         const speed = this.state.speed.get() * 0.2;
@@ -384,7 +389,38 @@ export abstract class Character extends DungeonObject {
       })
       .onUpdate(deltaTime => animator.update(deltaTime))
       .onUpdate(() => this.state.regenStamina())
-      .transitionTo(RunState.COMPLETE).condition(() => !animator.isPlaying);
+      .transitionTo(RunState.COMPLETE)
+      .condition(() => !animator.isPlaying);
+    return fsm;
+  }
+
+  protected dash(): FiniteStateMachine<DashState> {
+    const animator = this.animator;
+    const fsm = new FiniteStateMachine<DashState>(DashState.PLAY, [DashState.PLAY, DashState.COMPLETE]);
+    fsm.state(DashState.PLAY)
+      .onEnter(() => this.state.spendStamina(this.state.dashStamina))
+      .onEnter(() => {
+        const speed = 1;
+        animator.clear();
+        animator.animateCharacter(speed, this.state.name + "_run", 4);
+        animator.animateMove(speed, this);
+        const weapon = this.state.weapon;
+        if (weapon) {
+          animator.animateWeapon(speed, weapon.animations.run);
+        }
+        animator.start();
+      })
+      .onExit(() => {
+        if (animator.isPlaying) {
+          this.resetDestination();
+          animator.stop();
+        } else {
+          this.moveToDestination();
+        }
+      })
+      .onUpdate(deltaTime => animator.update(deltaTime))
+      .transitionTo(DashState.COMPLETE)
+      .condition(() => !animator.isPlaying);
     return fsm;
   }
 
@@ -423,6 +459,7 @@ export abstract class Character extends DungeonObject {
     const animator = this.animator;
     const fsm = new FiniteStateMachine<SimpleHitState>(SimpleHitState.INITIAL, [SimpleHitState.INITIAL, SimpleHitState.PLAY, SimpleHitState.COMPLETE]);
     fsm.state(SimpleHitState.INITIAL)
+      .onEnter(() => this.state.spendStamina(this.state.hitStamina))
       .onEnter(() => {
         const weapon = this.state.weapon;
         animator.clear();
@@ -452,6 +489,7 @@ export abstract class Character extends DungeonObject {
 
     // first hit
     fsm.state(ComboHitState.FIRST_HIT)
+      .onEnter(() => this.state.spendStamina(this.state.hitStamina))
       .onEnter(() => {
         const weapon = this.state.weapon!;
         combo = weapon.animations.hit;
@@ -470,7 +508,7 @@ export abstract class Character extends DungeonObject {
       .transitionTo(ComboHitState.NEXT_HIT)
       .condition(() => !animator.isPlaying)
       .condition(() => hitController.continueCombo())
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(ComboHitState.FIRST_HIT)
       .transitionTo(ComboHitState.COMPLETE)
@@ -478,6 +516,7 @@ export abstract class Character extends DungeonObject {
 
     // next hit
     fsm.state(ComboHitState.NEXT_HIT)
+      .onEnter(() => this.state.spendStamina(this.state.hitStamina))
       .onEnter(() => {
         animator.clear();
         animator.animateCharacter(speed, this.state.name + "_idle", 4);
@@ -493,7 +532,7 @@ export abstract class Character extends DungeonObject {
       .condition(() => !animator.isPlaying)
       .condition(() => hits < combo.length)
       .condition(() => hitController.continueCombo())
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(ComboHitState.NEXT_HIT)
       .transitionTo(ComboHitState.COMPLETE)
@@ -509,6 +548,11 @@ export const enum IdleState {
 }
 
 export const enum RunState {
+  PLAY = 0,
+  COMPLETE = 1,
+}
+
+export const enum DashState {
   PLAY = 0,
   COMPLETE = 1,
 }

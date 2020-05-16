@@ -3,6 +3,7 @@ import {Monster, MonsterHitController} from "./Monster";
 import {FiniteStateMachine} from "../../fsm";
 import {MonsterState} from "./MonsterState";
 import {Colors} from "../../ui";
+import {AttackType} from "../CharacterState";
 
 export class BossMonster extends Monster {
   static type: (o: DungeonObject) => o is BossMonster =
@@ -227,14 +228,14 @@ export class BossMonster extends Monster {
 
     const idle = this.idle();
     const run = this.run();
-    const hit = this.hit(new MonsterHitController(this));
+    const hit = this.hit(new MonsterHitController(this, AttackType.LIGHT));
 
     // initial
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.HIT)
       .condition(() => this.heroOnAttack)
       .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(BossAttackState.INITIAL)
       .transitionTo(BossAttackState.RUN)
@@ -257,7 +258,7 @@ export class BossMonster extends Monster {
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
       .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(BossAttackState.IDLE)
       .transitionTo(BossAttackState.RUN)
@@ -281,8 +282,8 @@ export class BossMonster extends Monster {
       .transitionTo(BossAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina))
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(BossAttackState.RUN)
       .transitionTo(BossAttackState.RUN)

@@ -3,6 +3,7 @@ import {Hero} from "../hero";
 import {Character, CharacterOptions, HitController, ScanDirection} from "../Character";
 import {PathPoint} from "../../pathfinding";
 import {MonsterState} from "./MonsterState";
+import {AttackType} from "../CharacterState";
 
 export const enum MonsterRace {
   DEMON = "demon",
@@ -38,12 +39,12 @@ export abstract class Monster extends Character {
     this.state = state;
   }
 
-  scanHit(combo: number): void {
+  scanHit(combo: number, attackType: AttackType): void {
     const weapon = this.state.weapon;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const distance = weapon?.distance || 1;
     const heroes = this.scanHeroes(direction, distance);
-    const damage = this.state.damage + combo;
+    const damage = this.state._damage(combo, attackType);
     for (const hero of heroes) {
       hero.state.hitDamage(this, damage);
     }
@@ -128,9 +129,7 @@ export abstract class Monster extends Character {
   protected moveByPath(): boolean {
     if (this._path.length > 0) {
       const next = this._path[0];
-      const deltaX = next.x - this.x;
-      const deltaY = next.y - this.y;
-      if (this.move(deltaX, deltaY)) {
+      if (this.move(next.x, next.y)) {
         this._path.splice(0, 1);
         return true;
       } else {
@@ -150,13 +149,15 @@ export abstract class Monster extends Character {
 
 export class MonsterHitController implements HitController {
   private readonly _controller: Monster;
+  private readonly _attackType: AttackType;
 
-  constructor(controller: Monster) {
+  constructor(controller: Monster, attackType: AttackType) {
     this._controller = controller;
+    this._attackType = attackType;
   }
 
   onHit(combo: number): void {
-    this._controller.scanHit(combo);
+    this._controller.scanHit(combo, this._attackType);
   }
 
   continueCombo(): boolean {

@@ -15,9 +15,11 @@ export class KeyBindScene extends Scene {
 
     const bindings = [
       "WASD - top, left, bottom, right",
-      "F - action",
+      "WASD + SPACE - dodge",
+      "F - action, hold for charged attack",
       "Q - drop weapon",
       "I - inventory",
+      "P - show stats",
       "1 ... 0 - belt",
       "",
       "PRESS F TO CONTINUE",

@@ -2,6 +2,7 @@ import {DungeonMap, DungeonZIndexes} from "../../dungeon";
 import {Monster, MonsterHitController} from "./Monster";
 import {FiniteStateMachine} from "../../fsm";
 import {MonsterState} from "./MonsterState";
+import {AttackType} from "../CharacterState";
 
 export class TinyMonster extends Monster {
 
@@ -215,13 +216,13 @@ export class TinyMonster extends Monster {
 
     const idle = this.idle();
     const run = this.run();
-    const hit = this.hit(new MonsterHitController(this));
+    const hit = this.hit(new MonsterHitController(this, AttackType.LIGHT));
 
     // initial
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => this.heroOnAttack)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(TinyMonsterAttackState.INITIAL)
       .transitionTo(TinyMonsterAttackState.RUN)
@@ -243,8 +244,8 @@ export class TinyMonster extends Monster {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => idle.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina))
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(TinyMonsterAttackState.IDLE)
       .transitionTo(TinyMonsterAttackState.RUN)
@@ -268,8 +269,8 @@ export class TinyMonster extends Monster {
       .transitionTo(TinyMonsterAttackState.HIT)
       .condition(() => run.isFinal)
       .condition(() => this.heroOnAttack)
-      .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina))
+      .condition(() => rng.float() < this.state.luck);
 
     fsm.state(TinyMonsterAttackState.RUN)
       .transitionTo(TinyMonsterAttackState.RUN)

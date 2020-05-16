@@ -1,13 +1,31 @@
-enum KeyBindState {Await = 1, Pressed = 2}
-
 export class KeyBind {
   readonly code: string;
-  private _state: KeyBindState;
   private _triggered: boolean;
   private _processed: boolean;
+  private _startedAt: number = 0;
+  private _finishedAt: number = 0;
 
   get triggered(): boolean {
     return this._triggered;
+  }
+
+  get startedAt(): number {
+    return this._startedAt;
+  }
+
+  get finishedAt(): number {
+    return this._finishedAt;
+  }
+
+  get duration(): number {
+    return this._finishedAt - this._startedAt;
+  }
+
+  constructor(code: string, bindings: Partial<Record<string, KeyBind>>) {
+    this.code = code;
+    this._triggered = false;
+    this._processed = true;
+    bindings[code] = this;
   }
 
   once(): boolean {
@@ -24,37 +42,22 @@ export class KeyBind {
     } else return this._triggered;
   }
 
-  constructor(code: string) {
-    this.code = code;
-    this._state = KeyBindState.Await;
-    this._triggered = false;
-    this._processed = true;
-  }
-
   keydown(e: KeyboardEvent): void {
-    if (e.code === this.code) {
+    if (!e.repeat && e.code === this.code) {
       e.preventDefault();
-      if (this._state === KeyBindState.Await) {
-        this._triggered = true;
-        this._processed = false;
-        this._state = KeyBindState.Pressed;
-      }
+      this._startedAt = e.timeStamp;
+      this._finishedAt = 0;
+      this._triggered = true;
+      this._processed = false;
     }
   }
 
   keyup(e: KeyboardEvent): void {
-    if (e.code === this.code) {
+    if (!e.repeat && e.code === this.code) {
       e.preventDefault();
-      if (this._state === KeyBindState.Pressed) {
-        this._triggered = false;
-        this._state = KeyBindState.Await;
-      }
+      this._finishedAt = e.timeStamp;
+      this._triggered = false;
     }
-  }
-
-  reset(): void {
-    this._triggered = false;
-    this._processed = true;
   }
 }
 
@@ -66,6 +69,7 @@ export class Joystick {
   readonly moveDown: KeyBind;
   readonly moveRight: KeyBind;
   readonly hit: KeyBind;
+  readonly dodge: KeyBind;
   readonly drop: KeyBind;
   readonly inventory: KeyBind;
   readonly stats: KeyBind;
@@ -80,39 +84,42 @@ export class Joystick {
   readonly digit9: KeyBind;
   readonly digit0: KeyBind;
 
+  get direction(): [number, number] {
+    const left = this.moveLeft.triggered ? 1 : 0;
+    const right = this.moveRight.triggered ? 1 : 0;
+    const up = this.moveUp.triggered ? 1 : 0;
+    const down = this.moveDown.triggered ? 1 : 0;
+    return [right - left, down - up];
+  }
+
   private readonly _bindings: Partial<Record<string, KeyBind>>;
 
   constructor() {
-    this.moveUp = new KeyBind('KeyW');
-    this.moveLeft = new KeyBind('KeyA');
-    this.moveDown = new KeyBind('KeyS');
-    this.moveRight = new KeyBind('KeyD');
-    this.hit = new KeyBind('KeyF');
-    this.drop = new KeyBind('KeyQ');
-    this.inventory = new KeyBind('KeyI');
-    this.stats = new KeyBind('KeyP');
-
-    this.digit1 = new KeyBind('Digit1');
-    this.digit2 = new KeyBind('Digit2');
-    this.digit3 = new KeyBind('Digit3');
-    this.digit4 = new KeyBind('Digit4');
-    this.digit5 = new KeyBind('Digit5');
-    this.digit6 = new KeyBind('Digit6');
-    this.digit7 = new KeyBind('Digit7');
-    this.digit8 = new KeyBind('Digit8');
-    this.digit9 = new KeyBind('Digit9');
-    this.digit0 = new KeyBind('Digit0');
-
     this._bindings = {};
 
-    for (const property of Object.getOwnPropertyNames(this)) {
-      const value = (this as Partial<Record<string, any>>)[property];
-      if (value && value instanceof KeyBind) {
-        this._bindings[value.code] = value; // @todo refactor
-      }
-    }
+    this.moveUp = new KeyBind('KeyW', this._bindings);
+    this.moveLeft = new KeyBind('KeyA', this._bindings);
+    this.moveDown = new KeyBind('KeyS', this._bindings);
+    this.moveRight = new KeyBind('KeyD', this._bindings);
+    this.hit = new KeyBind('KeyF', this._bindings);
+    this.dodge = new KeyBind('Space', this._bindings);
 
-    window.addEventListener("keydown", this.keydown.bind(this));
+    this.drop = new KeyBind('KeyQ', this._bindings);
+    this.inventory = new KeyBind('KeyI', this._bindings);
+    this.stats = new KeyBind('KeyP', this._bindings);
+
+    this.digit1 = new KeyBind('Digit1', this._bindings);
+    this.digit2 = new KeyBind('Digit2', this._bindings);
+    this.digit3 = new KeyBind('Digit3', this._bindings);
+    this.digit4 = new KeyBind('Digit4', this._bindings);
+    this.digit5 = new KeyBind('Digit5', this._bindings);
+    this.digit6 = new KeyBind('Digit6', this._bindings);
+    this.digit7 = new KeyBind('Digit7', this._bindings);
+    this.digit8 = new KeyBind('Digit8', this._bindings);
+    this.digit9 = new KeyBind('Digit9', this._bindings);
+    this.digit0 = new KeyBind('Digit0', this._bindings);
+
+    window.addEventListener("keydown", this.keydown.bind(this),);
     window.addEventListener("keyup", this.keyup.bind(this));
   }
 
@@ -138,12 +145,6 @@ export class Joystick {
         return this.digit9;
       case 0:
         return this.digit0;
-    }
-  }
-
-  reset(): void {
-    for (const code of Object.getOwnPropertyNames(this._bindings)) {
-      this._bindings[code]?.reset();
     }
   }
 

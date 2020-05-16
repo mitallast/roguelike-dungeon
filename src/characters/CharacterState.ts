@@ -24,7 +24,15 @@ export abstract class CharacterState {
   }
 
   get damage(): number {
-    return this.baseDamage.get() + (this.weapon?.damage || 0);
+    return this._damage(1, AttackType.LIGHT);
+  }
+
+  _damage(combo: number, attackType: AttackType): number {
+    const base = this.baseDamage.get();
+    const weapon = this.weapon?.damage || 0;
+    const comboBonus = 1 + combo / 10;
+    const attackTypeBonus = attackType === AttackType.CHARGED ? 1.5 : 1;
+    return (base + weapon) * comboBonus * attackTypeBonus;
   }
 
   protected constructor() {
@@ -73,14 +81,24 @@ export abstract class CharacterState {
     }
   }
 
-  spendHitStamina(): boolean {
-    const spend = this.weapon?.stamina || 20;
-    const stamina = this.stamina.get();
-    if (stamina >= spend) {
-      this.stamina.set(stamina - spend);
-      return true;
-    } else {
-      return false;
-    }
+  hasStamina(spend: number): boolean {
+    return this.stamina.get() >= spend;
   }
+
+  spendStamina(spend: number): void {
+    this.stamina.update(st => Math.max(0, st - spend));
+  }
+
+  get hitStamina(): number {
+    return this.weapon?.stamina || 20;
+  }
+
+  get dashStamina(): number {
+    return 16;
+  }
+}
+
+export const enum AttackType {
+  LIGHT = 0,
+  CHARGED = 1,
 }

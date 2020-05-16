@@ -2,10 +2,11 @@ import * as PIXI from "pixi.js";
 import {Character, HitController, ScanDirection} from "../Character";
 import {DungeonMap, DungeonObject, DungeonZIndexes} from "../../dungeon";
 import {UsableDrop} from "../../drop";
-import {DigitKey, Joystick, KeyBind} from "../../input";
+import {DigitKey, Joystick} from "../../input";
 import {Monster} from "../monsters";
 import {FiniteStateMachine} from "../../fsm";
 import {HeroState} from "./HeroState";
+import {AttackType} from "../CharacterState";
 
 export const heroNames = [
   "elf_f",
@@ -71,13 +72,13 @@ export class Hero extends Character {
     }
   }
 
-  scanHit(combo: number): void {
+  scanHit(combo: number, attackType: AttackType): void {
     const weapon = this.state.weapon;
     const distance = weapon?.distance || 1;
     const direction = this.view.isLeft ? ScanDirection.LEFT : ScanDirection.RIGHT;
     const monsters = this.scanMonsters(direction, distance);
 
-    const damage = this.state.damage + combo; // @todo improve?
+    const damage = this.state._damage(combo, attackType);
     for (const monster of monsters) {
       monster.state.hitDamage(this, damage);
     }
@@ -86,15 +87,77 @@ export class Hero extends Character {
     }
   }
 
-  private lookAtMonsters(): void {
-    const distance = this.state.weapon?.distance || 1;
-    const leftHealthSum = this.monstersHealth(ScanDirection.LEFT, distance);
-    const rightHealthSum = this.monstersHealth(ScanDirection.RIGHT, distance);
-    if (leftHealthSum > 0 && leftHealthSum > rightHealthSum) {
-      this.view.isLeft = true;
-    } else if (rightHealthSum > 0 && rightHealthSum > leftHealthSum) {
-      this.view.isLeft = false;
+  private dashToClosestMonster(): boolean {
+    const [monster] = this.scanMonsters(ScanDirection.AROUND, 12);
+    if (monster) {
+      this.lookAt(monster);
+      const point = this.raycastDash(monster);
+      return this.move(point.x, point.y);
+    } else {
+      return false;
     }
+  }
+
+  private raycastDash(object: DungeonObject): PIXI.Point {
+    let x0 = this.x;
+    let y0 = this.y;
+
+    const x1 = object.x;
+    const y1 = object.y;
+
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+
+    let err = (dx > dy ? dx : -dy) / 2;
+
+    const destination = new PIXI.Point(x0, y0);
+    for (; ;) {
+      if (x0 === x1 && y0 === y1) break;
+
+      const e2 = err;
+      if (e2 > -dx) {
+        err -= dy;
+        x0 += sx;
+      }
+      if (e2 < dy) {
+        err += dx;
+        y0 += sy;
+      }
+
+      if (x0 === x1 && y0 === y1) break;
+
+      const cell = this._dungeon.cell(x0, y0);
+      if (!cell.hasFloor) break;
+      if (cell.collide(this)) break;
+
+      destination.set(x0, y0);
+    }
+
+    return destination;
+  }
+
+  private raycastDodge(sx: number, sy: number, distance: number): PIXI.Point {
+    let x0 = this.x;
+    let y0 = this.y;
+    const destination = new PIXI.Point(x0, y0);
+    for (let d = 0; d < distance; d++) {
+      x0 += sx;
+      y0 += sy;
+      const cell = this._dungeon.cell(x0, y0);
+      if (!cell.hasFloor) break;
+      if (cell.collide(this)) break;
+      destination.set(x0, y0);
+    }
+    return destination;
+  }
+
+  private lookAtClosestMonster(maxDistance?: number): void {
+    const distance = maxDistance || this.state.weapon?.distance || 1;
+    const [monster] = this.scanMonsters(ScanDirection.AROUND, distance);
+    if (monster) this.lookAt(monster);
   }
 
   private scanAndInteract(): boolean {
@@ -110,16 +173,14 @@ export class Hero extends Character {
   private scanMonsters(direction: ScanDirection, maxDistance: number): Monster[] {
     return this._dungeon.registry.query<Monster>({
       type: Monster.type,
-      filter: m => {
-        return this.distanceTo(m) <= maxDistance && this.checkDirection(direction, m);
-      }
+      filter: monster => {
+        return !monster.state.dead.get() &&
+          this.distanceTo(monster) <= maxDistance &&
+          this.checkDirection(direction, monster) &&
+          this.raycastIsVisible(monster);
+      },
+      sort: (a: Monster, b: Monster): number => this.metric(a) - this.metric(b)
     });
-  }
-
-  protected monstersHealth(direction: ScanDirection, maxDistance: number): number {
-    return this.scanMonsters(direction, maxDistance)
-      .map(m => m.state.health.get())
-      .reduce((a, b) => a + b, 0);
   }
 
   protected fsm(): FiniteStateMachine<any> {
@@ -128,23 +189,35 @@ export class Hero extends Character {
     const fsm = new FiniteStateMachine<HeroBrainState>(HeroBrainState.IDLE, [
       HeroBrainState.IDLE,
       HeroBrainState.RUN,
-      HeroBrainState.HIT,
-      HeroBrainState.ON_HIT
+      HeroBrainState.DODGE,
+      HeroBrainState.HIT_TRIGGERED,
+      HeroBrainState.LIGHT_ATTACK,
+      HeroBrainState.CHARGED_DASH,
+      HeroBrainState.CHARGED_ATTACK,
     ]);
 
     const idle = this.idle();
     const run = this.run();
-    const hit = this.hit(new HeroHitController(this, this._dungeon.controller.joystick));
+    const dash = this.dash();
+    const lightAttack = this.hit(new HeroHitController(this, joystick, AttackType.LIGHT));
+    const chargedAttack = this.hit(new HeroHitController(this, joystick, AttackType.CHARGED));
 
-    // idle
+    // IDLE
     fsm.state(HeroBrainState.IDLE)
       .nested(idle)
       .onEnter(() => this.scanDrop())
-      .onUpdate(() => this.processInventory());
+      .onUpdate(() => this.processInventory())
+      .onUpdate(() => this.processModal());
 
     fsm.state(HeroBrainState.IDLE)
-      .transitionTo(HeroBrainState.ON_HIT)
+      .transitionTo(HeroBrainState.HIT_TRIGGERED)
       .condition(() => joystick.hit.once());
+
+    fsm.state(HeroBrainState.IDLE)
+      .transitionTo(HeroBrainState.DODGE)
+      .condition(() => joystick.dodge.once())
+      .condition(() => this.state.hasStamina(this.state.dashStamina))
+      .condition(() => this.processDodge());
 
     fsm.state(HeroBrainState.IDLE)
       .transitionTo(HeroBrainState.RUN)
@@ -154,16 +227,23 @@ export class Hero extends Character {
       .transitionTo(HeroBrainState.IDLE)
       .condition(() => idle.isFinal);
 
-    // run
+    // RUN
     fsm.state(HeroBrainState.RUN)
       .nested(run)
       .onEnter(() => this.scanDrop())
       .onUpdate(() => this.processInventory());
 
     fsm.state(HeroBrainState.RUN)
-      .transitionTo(HeroBrainState.ON_HIT)
+      .transitionTo(HeroBrainState.HIT_TRIGGERED)
       .condition(() => run.isFinal)
       .condition(() => joystick.hit.once())
+
+    fsm.state(HeroBrainState.RUN)
+      .transitionTo(HeroBrainState.DODGE)
+      .condition(() => run.isFinal)
+      .condition(() => joystick.dodge.once())
+      .condition(() => this.state.hasStamina(this.state.dashStamina))
+      .condition(() => this.processDodge());
 
     fsm.state(HeroBrainState.RUN)
       .transitionTo(HeroBrainState.RUN)
@@ -174,63 +254,129 @@ export class Hero extends Character {
       .transitionTo(HeroBrainState.IDLE)
       .condition(() => run.isFinal)
 
-    // hit
-    fsm.state(HeroBrainState.HIT)
-      .nested(hit)
-      .onEnter(() => this.scanDrop())
-      .onEnter(() => this.lookAtMonsters())
-      .onUpdate(() => this.processInventory());
+    // DODGE
+    fsm.state(HeroBrainState.DODGE)
+      .nested(dash)
+      .onEnter(() => this.state.spendStamina(this.state.dashStamina));
 
-    fsm.state(HeroBrainState.HIT)
-      .transitionTo(HeroBrainState.ON_HIT)
-      .condition(() => hit.isFinal)
-      .condition(() => joystick.hit.once())
+    fsm.state(HeroBrainState.DODGE)
+      .transitionTo(HeroBrainState.HIT_TRIGGERED)
+      .condition(() => dash.isFinal)
+      .condition(() => joystick.hit.once());
 
-    fsm.state(HeroBrainState.HIT)
+    fsm.state(HeroBrainState.DODGE)
+      .transitionTo(HeroBrainState.DODGE)
+      .condition(() => dash.isFinal)
+      .condition(() => joystick.dodge.once())
+      .condition(() => this.state.hasStamina(this.state.dashStamina))
+      .condition(() => this.processDodge());
+
+    fsm.state(HeroBrainState.DODGE)
       .transitionTo(HeroBrainState.RUN)
-      .condition(() => hit.isFinal)
+      .condition(() => dash.isFinal)
       .condition(() => this.processMove());
 
-    fsm.state(HeroBrainState.HIT)
+    fsm.state(HeroBrainState.DODGE)
       .transitionTo(HeroBrainState.IDLE)
-      .condition(() => hit.isFinal);
+      .condition(() => dash.isFinal);
 
-    // on hit pressed
-    fsm.state(HeroBrainState.ON_HIT)
-      .transitionTo(HeroBrainState.HIT)
-      .condition(() => this.scanMonsters(ScanDirection.AROUND, 1).length > 0)
-      .condition(() => this.state.spendHitStamina());
+    // HIT_TRIGGERED
+    fsm.state(HeroBrainState.HIT_TRIGGERED)
+      .onUpdate(() => this.lookAtClosestMonster(7))
 
-    fsm.state(HeroBrainState.ON_HIT)
+    fsm.state(HeroBrainState.HIT_TRIGGERED)
       .transitionTo(HeroBrainState.IDLE)
-      .condition(() => this.scanAndInteract())
-      .action(() => joystick.hit.reset());
+      .condition(() => this.scanMonsters(ScanDirection.AROUND, 1).length === 0)
+      .condition(() => this.scanAndInteract());
 
-    fsm.state(HeroBrainState.ON_HIT)
-      .transitionTo(HeroBrainState.HIT)
-      .condition(() => this.state.spendHitStamina());
+    fsm.state(HeroBrainState.HIT_TRIGGERED)
+      .transitionTo(HeroBrainState.CHARGED_DASH)
+      .condition(() => !joystick.hit.triggered && joystick.hit.duration > 500)
+      .condition(() => this.state.hasStamina(this.state.dashStamina + this.state.hitStamina))
+      .condition(() => this.dashToClosestMonster());
 
-    fsm.state(HeroBrainState.ON_HIT)
-      .transitionTo(HeroBrainState.IDLE);
+    fsm.state(HeroBrainState.HIT_TRIGGERED)
+      .transitionTo(HeroBrainState.LIGHT_ATTACK)
+      .condition(() => !joystick.hit.triggered)
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
+
+    fsm.state(HeroBrainState.HIT_TRIGGERED)
+      .transitionTo(HeroBrainState.IDLE)
+      .condition(() => !joystick.hit.triggered);
+
+    // LIGHT_ATTACK
+    fsm.state(HeroBrainState.LIGHT_ATTACK)
+      .nested(lightAttack)
+      .onEnter(() => this.lookAtClosestMonster(1));
+
+    fsm.state(HeroBrainState.LIGHT_ATTACK)
+      .transitionTo(HeroBrainState.HIT_TRIGGERED)
+      .condition(() => lightAttack.isFinal)
+      .condition(() => joystick.hit.once())
+
+    fsm.state(HeroBrainState.LIGHT_ATTACK)
+      .transitionTo(HeroBrainState.DODGE)
+      .condition(() => lightAttack.isFinal)
+      .condition(() => joystick.dodge.once())
+      .condition(() => this.state.hasStamina(this.state.dashStamina))
+      .condition(() => this.processDodge());
+
+    fsm.state(HeroBrainState.LIGHT_ATTACK)
+      .transitionTo(HeroBrainState.RUN)
+      .condition(() => lightAttack.isFinal)
+      .condition(() => this.processMove());
+
+    fsm.state(HeroBrainState.LIGHT_ATTACK)
+      .transitionTo(HeroBrainState.IDLE)
+      .condition(() => lightAttack.isFinal);
+
+    // CHARGED_DASH
+    fsm.state(HeroBrainState.CHARGED_DASH)
+      .nested(dash)
+      .transitionTo(HeroBrainState.CHARGED_ATTACK)
+      .condition(() => dash.isFinal);
+
+    // CHARGED_ATTACK
+    fsm.state(HeroBrainState.CHARGED_ATTACK)
+      .nested(chargedAttack)
+      .onEnter(() => this.lookAtClosestMonster(1));
+
+    fsm.state(HeroBrainState.CHARGED_ATTACK)
+      .transitionTo(HeroBrainState.HIT_TRIGGERED)
+      .condition(() => chargedAttack.isFinal)
+      .condition(() => joystick.hit.once())
+
+    fsm.state(HeroBrainState.CHARGED_ATTACK)
+      .transitionTo(HeroBrainState.DODGE)
+      .condition(() => chargedAttack.isFinal)
+      .condition(() => joystick.dodge.once())
+      .condition(() => this.state.hasStamina(this.state.dashStamina))
+      .condition(() => this.processDodge());
+
+    fsm.state(HeroBrainState.CHARGED_ATTACK)
+      .transitionTo(HeroBrainState.RUN)
+      .condition(() => chargedAttack.isFinal)
+      .condition(() => this.processMove());
+
+    fsm.state(HeroBrainState.CHARGED_ATTACK)
+      .transitionTo(HeroBrainState.IDLE)
+      .condition(() => chargedAttack.isFinal);
 
     return fsm;
   }
 
-  private delta(a: KeyBind, b: KeyBind): number {
-    if (a.repeat()) {
-      return -1;
-    } else if (b.repeat()) {
-      return 1;
-    } else {
-      return 0;
-    }
+  private processMove(): boolean {
+    const [dx, dy] = this._dungeon.controller.joystick.direction;
+    return this.tryMove(dx, dy);
   }
 
-  private processMove(): boolean {
-    const joystick = this._dungeon.controller.joystick;
-    const dx = this.delta(joystick.moveLeft, joystick.moveRight);
-    const dy = this.delta(joystick.moveUp, joystick.moveDown);
-    return this.tryMove(dx, dy);
+  private processDodge(): boolean {
+    const [sx, sy] = this._dungeon.controller.joystick.direction;
+    if (sx !== 0 || sy !== 0) {
+      const destination = this.raycastDodge(sx, sy, 7);
+      return this.move(destination.x, destination.y);
+    }
+    return false;
   }
 
   private processInventory(): void {
@@ -245,6 +391,10 @@ export class Hero extends Character {
     if (joystick.drop.once()) {
       inventory.equipment.weapon.drop();
     }
+  }
+
+  private processModal(): void {
+    const joystick = this._dungeon.controller.joystick;
     if (joystick.inventory.once()) {
       this._dungeon.controller.showInventory(this.state);
     }
@@ -256,25 +406,31 @@ export class Hero extends Character {
 
 class HeroHitController implements HitController {
   private readonly _controller: Hero;
-  private readonly _joystick: Joystick
+  private readonly _joystick: Joystick;
+  private readonly _attackType: AttackType;
 
-  constructor(controller: Hero, joystick: Joystick) {
+  constructor(controller: Hero, joystick: Joystick, attackType: AttackType) {
     this._controller = controller;
     this._joystick = joystick;
+    this._attackType = attackType;
   }
 
   continueCombo(): boolean {
-    return this._joystick.hit.once();
+    return this._joystick.hit.once() &&
+      this._controller.state.hasStamina(this._controller.state.hitStamina);
   }
 
   onHit(combo: number): void {
-    this._controller.scanHit(combo);
+    this._controller.scanHit(combo, this._attackType);
   }
 }
 
 const enum HeroBrainState {
   IDLE = 0,
   RUN = 1,
-  HIT = 2,
-  ON_HIT = 3,
+  DODGE = 2,
+  HIT_TRIGGERED = 3,
+  LIGHT_ATTACK = 4,
+  CHARGED_DASH = 5,
+  CHARGED_ATTACK = 6,
 }

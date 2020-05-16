@@ -44,7 +44,7 @@ export class MonsterState extends DefaultCharacterState {
     this.width = options.width;
     this.height = options.height;
 
-    this.killedBy.unsubscribe(ch => {
+    this.killedBy.subscribe(ch => {
       if (ch instanceof Hero) {
         ch.state.addXp(this.xp);
       }

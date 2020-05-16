@@ -2,6 +2,7 @@ import {Monster, MonsterHitController} from "./Monster";
 import {DungeonMap, DungeonZIndexes} from "../../dungeon";
 import {FiniteStateMachine} from "../../fsm";
 import {MonsterState} from "./MonsterState";
+import {AttackType} from "../CharacterState";
 
 export class SummonMonster extends Monster {
   private readonly _spawn: number = 3;
@@ -138,7 +139,7 @@ export class SummonMonster extends Monster {
 
     const idle = this.idle();
     const run = this.run();
-    const hit = this.hit(new MonsterHitController(this));
+    const hit = this.hit(new MonsterHitController(this, AttackType.LIGHT));
 
     // initial
     fsm.state(SummonMonsterAttackFsmState.INITIAL);
@@ -156,7 +157,7 @@ export class SummonMonster extends Monster {
       .transitionTo(SummonMonsterAttackFsmState.HIT)
       .condition(() => this.heroOnAttack)
       .condition(() => rng.float() < this.state.luck)
-      .condition(() => this.state.spendHitStamina());
+      .condition(() => this.state.hasStamina(this.state.hitStamina));
 
     fsm.state(SummonMonsterAttackFsmState.DECISION)
       .transitionTo(SummonMonsterAttackFsmState.RUN_AWAY)
