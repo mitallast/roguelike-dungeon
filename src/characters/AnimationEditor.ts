@@ -183,7 +183,8 @@ export class AnimationEditor {
     return {
       smoothly: true,
       angle: angle,
-      pos: pos
+      pos: pos,
+      trail: [], // @todo implement
     };
   }
 

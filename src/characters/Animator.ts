@@ -30,6 +30,7 @@ export class Animator {
   animateWeapon(animationSpeed: number, animation: WeaponAnimation): void {
     const weapon = this._view.weapon;
     this.animation.addKeyFrameClip(animationSpeed, weapon.setAngle, weapon).addEvents(animation.angle);
+    this.animation.addKeyFrameClip(animationSpeed, weapon.setTrail, weapon).addEvents(animation.trail);
     if (animation.smoothly) {
       this.animation.addKeyFrameClip(animationSpeed, weapon.setPosition, weapon).addEvents(animation.pos);
     } else {

@@ -6,6 +6,7 @@ import {AnimationEventFrame} from "../animation";
 export interface WeaponAnimation {
   readonly smoothly: boolean;
   readonly angle: readonly AnimationEventFrame<[number]>[];
+  readonly trail: readonly AnimationEventFrame<[number, number]>[];
   readonly pos: readonly AnimationEventFrame<[number, number]>[];
 }
 
@@ -26,6 +27,10 @@ export class Weapon implements UsableDrop {
 
   get spriteName(): string {
     return `weapon_${this.name}.png`;
+  }
+
+  get slashTexture(): string {
+    return `w_slash_${this.name}.png`;
   }
 
   constructor(options: {

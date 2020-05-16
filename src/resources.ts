@@ -21,9 +21,10 @@ export class Resources {
     return await new Promise<void>((resolve => {
       this.loader
         // tilemaps
-        .add('spritesheets/npc.json')
-        .add('spritesheets/dungeon.json')
-        .add('spritesheets/bonfire.json')
+        .add('npc.json', 'spritesheets/npc.json')
+        .add('dungeon.json', 'spritesheets/dungeon.json')
+        .add('bonfire.json', 'spritesheets/bonfire.json')
+        .add('weapon_slash.json', 'spritesheets/weapon_slash.json')
         // configs
         .add('dungeon.rules.json')
         .add('dungeon.design.json')
@@ -44,11 +45,10 @@ export class Resources {
         .add('hit_damage', 'sounds/hit_damage.{ogg,mp3}')
         .load((_loader: PIXI.Loader, resources: Partial<Record<string, PIXI.LoaderResource>>) => {
           resources['fonts/alagard.png']!.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-          this.add(resources['spritesheets/npc.json']!.spritesheet!);
-          this.add(resources['spritesheets/dungeon.json']!.spritesheet!);
-          this.add(resources['spritesheets/bonfire.json']!.spritesheet!);
-          console.log('_animations', this._animations);
-          console.log('_textures', this._textures);
+          this.add(resources['npc.json']!.spritesheet!);
+          this.add(resources['dungeon.json']!.spritesheet!);
+          this.add(resources['bonfire.json']!.spritesheet!);
+          this.add(resources['weapon_slash.json']!.spritesheet!);
           resolve();
         });
     }));

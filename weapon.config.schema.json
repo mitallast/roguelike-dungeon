@@ -63,8 +63,34 @@
               "args"
             ]
           },
-          "minItems": 1,
-          "uniqueItems": true
+          "minItems": 1
+        },
+        "trail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "type": "number",
+                "minimum": 0
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -360,
+                  "maximum": 360
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "time",
+              "args"
+            ]
+          },
+          "minItems": 1
         },
         "pos": {
           "type": "array",
@@ -89,13 +115,15 @@
               "args"
             ]
           },
-          "minItems": 1,
-          "uniqueItems": true
+          "minItems": 1
         }
       },
       "additionalProperties": false,
       "required": [
-        "smoothly"
+        "smoothly",
+        "angle",
+        "trail",
+        "pos"
       ]
     },
     "AnimationSet": {
